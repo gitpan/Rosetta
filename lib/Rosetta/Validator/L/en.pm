@@ -1,9 +1,8 @@
 #!perl
-
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta::Validator::L::en;
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 ######################################################################
 
@@ -94,7 +93,8 @@ my %text_strings = (
 ######################################################################
 
 sub get_text_by_key {
-	return $text_strings{$_[1]};
+	my (undef, $msg_key) = @_;
+	return $text_strings{$msg_key};
 }
 
 ######################################################################

@@ -1,12 +1,11 @@
 #!perl
-
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta;
-our $VERSION = '0.42';
+our $VERSION = '0.43';
 
-use Locale::KeyedText '1.02';
-use SQL::Routine '0.56';
+use Locale::KeyedText 1.03;
+use SQL::Routine 0.58;
 
 ######################################################################
 
@@ -24,8 +23,8 @@ Core Modules: I<none>
 
 Non-Core Modules: 
 
-	Locale::KeyedText 1.02 (for error messages)
-	SQL::Routine 0.56
+	Locale::KeyedText 1.03 (for error messages)
+	SQL::Routine 0.58
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -238,7 +237,8 @@ sub _build_child_node_auto_name {
 # This is a convenience wrapper method; its sole argument is a SRT Node.
 
 sub new_application {
-	return Rosetta::Interface->new( $INTFTP_APPLICATION, undef, undef, undef, $_[1] );
+	my ($self, $srt_node) = @_;
+	return Rosetta::Interface->new( $INTFTP_APPLICATION, undef, undef, undef, $srt_node );
 }
 
 ######################################################################
@@ -566,35 +566,40 @@ sub destroy {
 ######################################################################
 
 sub get_interface_type {
-	return $_[0]->{$IPROP_INTF_TYPE};
+	my ($interface) = @_;
+	return $interface->{$IPROP_INTF_TYPE};
 }
 
 ######################################################################
 
 sub get_error_message {
 	# This method returns the Message object by reference.
-	return $_[0]->{$IPROP_ERROR_MSG};
+	my ($interface) = @_;
+	return $interface->{$IPROP_ERROR_MSG};
 }
 
 ######################################################################
 
 sub get_parent_interface {
 	# This method returns the Interface object by reference.
-	return $_[0]->{$IPROP_PARENT_INTF};
+	my ($interface) = @_;
+	return $interface->{$IPROP_PARENT_INTF};
 }
 
 ######################################################################
 
 sub get_root_interface {
 	# This method returns the Interface object by reference.
-	return $_[0]->{$IPROP_ROOT_INTF};
+	my ($interface) = @_;
+	return $interface->{$IPROP_ROOT_INTF};
 }
 
 ######################################################################
 
 sub get_child_interfaces {
 	# This method returns each Interface object by reference.
-	return [@{$_[0]->{$IPROP_CHILD_INTFS}}];
+	my ($interface) = @_;
+	return [@{$interface->{$IPROP_CHILD_INTFS}}];
 }
 
 ######################################################################
@@ -616,18 +621,21 @@ sub get_sibling_interfaces {
 # We may not keep this method
 
 sub get_engine {
-	return $_[0]->{$IPROP_ENGINE};
+	my ($interface) = @_;
+	return $interface->{$IPROP_ENGINE};
 }
 
 ######################################################################
 
 sub get_srt_node {
 	# This method returns the Node object by reference.
-	return $_[0]->{$IPROP_SRT_NODE};
+	my ($interface) = @_;
+	return $interface->{$IPROP_SRT_NODE};
 }
 
 sub get_srt_container {
-	if( my $app_intf = $_[0]->{$IPROP_ROOT_INTF} ) {
+	my ($interface) = @_;
+	if( my $app_intf = $interface->{$IPROP_ROOT_INTF} ) {
 		return $app_intf->{$IPROP_SRT_NODE}->get_container();
 	}
 	return;
@@ -637,7 +645,8 @@ sub get_srt_container {
 # We may not keep this method
 
 sub get_routine {
-	return $_[0]->{$IPROP_ROUTINE};
+	my ($interface) = @_;
+	return $interface->{$IPROP_ROUTINE};
 }
 
 ######################################################################

@@ -9,11 +9,6 @@ open, such as *generating* Perl and SQL; the latter can only be done when the
 connection is open, such as DBI->prepare() stuff.  Consider changing things so 
 the current concept of a Preparation Interface goes away.
 
-* Create a branch of this distribution that is written in Perl 6 but matches
-this mainline distribution feature-wise.  This fork will initially have a
-dependency in Autrijus Tang's "Pugs" distribution, which will be the runtime
-engine that it runs under; later it will run under the "Parrot" engine.
-
 * The primary initial development of the Rosetta core (that which is in the
 'Rosetta' distribution) [was thought to be but in fact wasn't] done.  While
 further improvements are planned, they will be implemented over time as they are

@@ -1,3 +1,45 @@
+2005-04-03   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Rosetta Release 0.43.
+
+	* New code file versions are: Rosetta.pm and Validator.pm v0.43,
+	Rosetta/L/en.pm v0.16, and Validator/L/en.pm v0.10.
+
+	* Updated external dependencies on Locale::KeyedText to v1.03 and on
+	SQL::Routine to v0.58.
+
+	* Added new external dependency on Test::More v0.47 (bundled with Perl
+	5.8.x); this distribution's test suite has been re-factored to use it rather
+	than rolling its own equivalent functionality, which is more in line with
+	CPAN best practices.  The new dependency does not extend to this
+	distribution's core modules (everything in /lib), which do not use it.
+
+	* Updated every 'use' statement in this distribution so that the module
+	version is formatted as a number rather than a string; this fixes a problem
+	where Perl was not asserting that the installed modules were new enough.
+
+	* In order to help ease the transition to Perl 6, updated every in-code
+	function and method which made direct references to @_ elements so that they
+	explicitly declare argument variables instead with "my (...) = @_;";
+	moreover, any functions that don't use their invocant use "undef" for it in
+	the above list.  These 10 Rosetta.pm code routines were affected:
+	new_application(), get_interface_type(), get_error_message(),
+	get_[parent|root|child]_interface[|s](), get_engine(),
+	get_srt_[node|container](), get_routine().  The get_text_by_key() routines
+	in Rosetta/L/en.pm and Validator/L/en.pm were also affected.
+
+	* Added a brand new SYNOPSIS to Validator.pm which replaces the one that was
+	removed in release 0.41; it is a generified version of the main test script
+	for the separately distributed Rosetta::Engine::Generic module.
+
+	* A few trivial Framework.pod updates.
+
+	* Removed the section in the TODO file about a branch to Perl 6.
+
+	* NOTICE: This release v0.43 is the last one to contain detailed ChangeLog
+	entries for releases v0.28 thru v0.43; release v0.44 will truncate the
+	ChangeLog so it only shows details for v0.44 and later.
+
 2005-03-22   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Rosetta Release 0.42.

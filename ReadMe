@@ -40,12 +40,14 @@ DEPENDENCIES
 
 Perl Version: 5.008001
 
-Core Modules: none
+Core Modules:
+
+	Test::More 0.47 (but only for the test suite)
 
 Non-Core Modules: 
 
-	Locale::KeyedText 1.02 (for error messages)
-	SQL::Routine 0.56
+	Locale::KeyedText 1.03 (for error messages)
+	SQL::Routine 0.58
 
 This module doesn't require anything else.
 

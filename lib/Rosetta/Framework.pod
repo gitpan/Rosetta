@@ -481,7 +481,7 @@ something not DBI based like Win32::ODBC.
 I<Note: more databases (and data access protocols) can be found listed at 
 "http://freshmeat.net/articles/view/305/" and "http://freshmeat.net/articles/view/307/">
 
-	Rosetta::Engine::SQLite (binding to public domain SQLite embedded db 3.0.7, 2.8.15)
+	Rosetta::Engine::SQLite (binding to public domain SQLite embedded db 3.x, 2.8.x)
 	Rosetta::Engine::MySQL (interface/binding to MySQL cli-serv/embed db 5.x, 4.1.x, 4.0.x, 3.23.x)
 	Rosetta::Engine::PostgreSQL (interface to PostgreSQL db 8.0.x, 7.4.x, 7.3.x, 7.2.x)
 	Rosetta::Engine::Oracle (interface to Oracle db 10.x, 9.x, 8.x)
@@ -670,14 +670,14 @@ at the time of each Engine update, so mention of version ranges being supported
 or not is not applicable.  That said, given that SQLite recently went through a
 major revision that involves a file format change, where the current version
 can't read files of the older version, this class will temporarily embed both
-main versions, v3.2.0 and v2.8.16 (both of which are declared stable); the 2.x
+main versions, v3.2.1 and v2.8.16 (both of which are declared stable); the 2.x
 support is deprecated.
 
 =item
 
 B<Rosetta::Engine::MySQL> - This class implements an Engine for talking to
 MySQL databases.  It is recommended for use only with MySQL versions 4.1.10a
-(stable) and greater, including v5.0.2 (alpha) and v5.1.x.  Support for MySQL
+(stable) and greater, including v5.0.3 (beta) and v5.1.x.  Support for MySQL
 versions 4.0.24 (stable) and 3.23.58 (stable) is present but deprecated. 
 v3.22.x and earlier will not be supported at all, without great demand.
 
