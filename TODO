@@ -1,3 +1,61 @@
+ONE DEVELOPMENT TRACK
+
+r0.11 - Update Rosetta::DataDictionary to finish describing views, and then add 
+descriptions for procedures, functions, other blocks, sequences, packages.
+
+r0.12 - Create the Rosetta::Locale/::en/::fr modules, which might be used in
+any of the other code modules.  The french module will only contain mock text
+(to be replaced later) since I'm not fluent in non-english languages.
+
+r0.13 - Create module Rosetta::Schema::Codes, bringing it up to DataDictionary
+state.
+
+r0.14 - Update module Rosetta::Schema::DataType to spec.
+
+r0.15 - Complete module Rosetta::Schema::Table to spec.
+
+r0.16 - Create modules Rosetta::Schema, Rosetta::Engine, Rosetta::Connection,
+as well as Rosetta::Driver::Null.
+
+* Start Rosetta-Drivers distribution, having just module ::Native.  This driver
+should be able to create and delete databases, open and close connections to
+them, and add and remove tables, as well as verify either.  May need some
+"user" details as well.  Note that part of creating a database is to make a
+root user.
+
+* Add to Rosetta-Drivers the ::MySQL module, which is able to connect to or
+disconnect existing databases (but not create or remove them yet), and
+create/verify/delete tables.  A MySQL specific driver option will allow one to
+choose the default table type to use, which would determine whether foreign
+keys are enforceable or not.  Also make support modules like ::DBIWrapper and
+::SQLWriter.
+
+* Add to Rosetta-Drivers the ::Oracle module, which I know how to use, but
+don't have a database install to test against yet.
+
+* Complete module Rosetta::Schema::View to spec.
+
+* Update other modules to support working with table records.  Add
+::Transaction and ::Cursor modules.
+
+* Update existing drivers to support working with records from one table at a
+time.  This should enable the SYNOPSIS to work.
+
+* Update existing drivers to support working with records from multiple tables
+at a time.
+
+* Start working on the ::Validator modules.
+
+* Start working on the ::Emulator modules.
+
+* Start working on the ::Proxy modules.
+
+* Start adding support for stored procedures and other features.
+
+* Whatever else needs doing ...
+
+ANOTHER DEVELOPMENT TRACK
+
 * Connect to (or open) an existing database as a registered or anonymous user,
 which establishes a current working context for doing anything else, and close
 it; multiple simultaneous connections should be supported; the database and

@@ -1,3 +1,47 @@
+2003-05-28   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.10.
+
+	* The DataDictionary.pod pure documentation file saw large changes,
+	increasing in size from 38K to 71K (removed 14K, added 47K).  The 3
+	deprecated sections named ["ROSETTA NATIVE DATA DICTIONARY STRUCTURE", "A
+	BASIC TABLE STRUCTURE FOR STORING ROSETTA SCHEMAS", "ANOTHER WAY OF SAYING
+	THAT"] were removed.  Large updates were made to the "STRUCTURE" and
+	"CONSTANT CODE TABLES" main sections.  These new main sections were added:
+	"DATA TYPES", "NAME SPACES AND SCHEMA OBJECTS", "TABLES", "VIEWS"; all
+	except "VIEWS" are complete, and the last is two-thirds complete.  Also
+	added main sections "BLOCKS" and "COMMANDS AND RESULTS" as placeholders,
+	but they hardly contain anything yet.  Technically a small amount of the 
+	removed sections haven't been replaced yet, but they should be next time.  
+	Note: the rest of DataDictionary.pod should be done for release 0.11.
+
+	* Small documentation changes in Framework.pod, mainly in BRIEF MODULE
+	LIST.  Among other things, the possibility that the "Rosetta" distribution
+	may be split so that the "Schema" modules are distributed independently, as
+	well as other splits, is documented as being considered.  This is meant
+	partly to help avoid the public perception that Rosetta has a strong "not
+	invented here" problem; the framework is in fact very separable and
+	extensible.  Also, there is no longer a base class for driver modules; 
+	rather, all Driver modules must simply have a certain documented interface.
+
+	* Updated DEPENDENCIES in the ReadMe file (and in Framework.pod) to clarify
+	that, while the Rosetta core doesn't have any dependencies in other
+	modules, the various Rosetta extensions (like Drivers) probably do.  These 
+	same notes were also added to the DEPENDENCIES section in Framework.pod.
+
+	* Added new section to the top of the TODO file, ONE DEVELOPMENT TRACK,
+	which shows my short term goals (allow tables to be created or changed,
+	allow records to be fetched or changed); things like stored procedures will
+	wait until later.  The first several of these goals have been assigned to
+	specific release numbers.  The previous content of the file is still there,
+	beneath the new stuff, under new title of ANOTHER DEVELOPMENT TRACK.
+
+	* Added DataDictionary.pod to the SEE ALSO section of several modules, and 
+	also mentioned the file twice in Framework.pod, as the second main 
+	documentation, to read after Framework.pod.
+
+	* Fixed a documentation bug in the SYNOPSIS of View.pm; version->0.12.
+
 2003-05-11   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.09.

@@ -15,7 +15,7 @@ require 5.004;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.011';
+$VERSION = '0.012';
 
 ######################################################################
 
@@ -152,7 +152,7 @@ use Rosetta::Schema::Table 0.01;
 					'rhs_source' => 'father',
 					'join_type' => 'left',
 					'column_list' => [
-						{ 'lhs_column' => 'person_id', 'rhs_column' => 'person_id', },
+						{ 'lhs_column' => 'father_id', 'rhs_column' => 'person_id', },
 					],
 				},
 				{
@@ -160,7 +160,7 @@ use Rosetta::Schema::Table 0.01;
 					'rhs_source' => 'mother',
 					'join_type' => 'left',
 					'column_list' => [
-						{ 'lhs_column' => 'person_id', 'rhs_column' => 'person_id', },
+						{ 'lhs_column' => 'mother_id', 'rhs_column' => 'person_id', },
 					],
 				},
 			],

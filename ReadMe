@@ -41,11 +41,17 @@ changed.
 DEPENDENCIES
 
 All of my modules require Perl 5.004 or newer, even though only some of them need
-it, in the interest of consistency.  That said, Perl 5.004 is already 3 years 
+it, in the interest of consistency.  That said, Perl 5.004 is more than 3 years 
 old, is available as a binary on practically every OS that supports Perl at all, 
 and is a very solid release, so I see no reason to support anything older.
 
-The Rosetta core modules don't require anything else.
+The Rosetta core modules, meaning all modules that are in the distribution that 
+you hold right now, don't require anything else.  
+
+However, other distributions which hold extensions to the Rosetta core, such as
+the almost always used Rosetta-Drivers distributions, do have other
+dependencies.  These are specified in said other distributions, and often
+include the popular DBI and DBD::* modules, which most Driver modules use.
 
 SUPPORT
 

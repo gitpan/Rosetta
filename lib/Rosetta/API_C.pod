@@ -252,6 +252,6 @@ a type of documentation.  They will be improved.
 
 =head1 SEE ALSO
 
-perl(1), Rosetta::Framework.
+perl(1), Rosetta::Framework, Rosetta::DataDictionary.
 
 =cut

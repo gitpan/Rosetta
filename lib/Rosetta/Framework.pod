@@ -64,6 +64,8 @@ with Rosetta (but support can be added).  Rosetta does not automate
 installation of any separate database software or configure it (like a package
 manager); you will have to do that yourself.
 
+Note: the file DataDictionary.pod should be read next, after Framework.pod.
+
 =head1 COPYRIGHT AND LICENSE
 
 This file is part of the Rosetta database abstraction framework.
@@ -114,6 +116,19 @@ that you are willing to distribute, because that is a practical way of
 suggesting improvements to the standard version.
 
 =head1 DEPENDENCIES
+
+All of my modules require Perl 5.004 or newer, even though only some of them need
+it, in the interest of consistency.  That said, Perl 5.004 is more than 3 years 
+old, is available as a binary on practically every OS that supports Perl at all, 
+and is a very solid release, so I see no reason to support anything older.
+
+The Rosetta core modules, meaning all modules that are in the distribution that 
+you hold right now, don't require anything else.  
+
+However, other distributions which hold extensions to the Rosetta core, such as
+the almost always used Rosetta-Drivers distributions, do have other
+dependencies.  These are specified in said other distributions, and often
+include the popular DBI and DBD::* modules, which most Driver modules use.
 
 =head2 Perl Version
 
@@ -532,6 +547,8 @@ The modules composing the Rosetta framework are grouped into several main
 categories, which can be called: "Locale", "Schema", "Engine", "Driver",
 "Proxy" (Server/Client), "Validator", "Emulator", and others.
 
+Note: the file DataDictionary.pod should be read next, after Framework.pod.
+
 These classes do not export any functions or methods, so you need to call them
 using object notation.  This means using B<Class-E<gt>function()> for functions
 and B<$object-E<gt>method()> for methods.  If you are inheriting any class for
@@ -679,6 +696,23 @@ all of these exist yet, as they are being implemented over time.
 
 =head2 In distribution "Rosetta"
 
+Note that the core modules which are scheduled to be in the "Rosetta"
+distribution I<may> be split into more distributions in order to help fuel a
+public perception that they can indeed be used separately from each other, and
+the fact that users do get a high level of customization.  If this goes
+through, then we will probably split the core into 3 distributions: "Rosetta"
+will contain all the main documentation and it will only have documentation (as
+it mostly did as of release 0.09); "Rosetta-Schema" will have just the
+"Rosetta::Schema/::*" modules and can be used as a fully-parsed replacement for
+SQL strings; "Rosetta-Engine" will have the "Rosetta::Engine/::*" and the
+"Rosetta::Locale/::*" modules, and be sort of a runtime environment, which is a
+thin interface on top of the driver modules.  Whether or not this split will be 
+done is largely up to what would benefit the developer or user community more.  
+
+Note also that if this split happens then the placeholder "Rosetta" module
+won't even provide a shim interface for Rosetta::Engine->new().  Not that it is
+necessarily a good practice in any event.
+
 	Rosetta (a placeholder in the public eye for the whole framework; a shim)
 
 	Rosetta::Framework (POD only, holds main framework documentation)
@@ -709,7 +743,6 @@ all of these exist yet, as they are being implemented over time.
 	Rosetta::Engine::Cursor (result of a selection command; can be input to insert/update/delete)
 	Rosetta::Engine::* ... like DriverEngineGlobals or whatever
 
-	Rosetta::Driver (base class to provide common public interface)
 	Rosetta::Driver::Null (a driver with no functionality, for testing core)
 
 =head2 In distribution "Rosetta-Drivers" or a multiplicity of similarly named
@@ -719,8 +752,10 @@ all of these exist yet, as they are being implemented over time.
 	Rosetta::Driver::Sybase (interface to Sybase db)
 	Rosetta::Driver::PostgreSQL (interface to PostgreSQL db)
 	Rosetta::Driver::MySQL (interface/binding to MySQL cli-serv/embed db 3.23.x, 4.x, 5.x)
-	Rosetta::Driver::DB2 (interface to IBM DB2 db)
+	Rosetta::Driver::DB2 (interface to IBM's DB2 db and its DB2 Express db)
 	Rosetta::Driver::SQLServer (interface to MS SQLServer db)
+	Rosetta::Driver::Adabas (interface to Software AG's Adabas db)
+	Rosetta::Driver::SAPdb (interface to the SAP open source db; forked from Adabas apparently)
 	Rosetta::Driver::Unify (interface to Unify db)
 	Rosetta::Driver::Informix (interface to IBM Informix db)
 	Rosetta::Driver::Empress (interface to the Empress db)
@@ -960,7 +995,7 @@ before 8.x, like 7.3, will not be supported unless there is a great demand.
 =item 0
 
 B<Rosetta::Driver::MySQL> - This class implements a driver for talking to MySQL
-databases.  It is intended to be used only with MySQL versions 4.0.12 and
+databases.  It is intended to be used only with MySQL versions 4.0.13 and
 later, with version 4.1 or greater being strongly recommended.  That said,
 which version you should use depends on your stage of development; MySQL AB has
 declared the 4.1.x series to be alpha quality now (2003.04.10), and expects it
