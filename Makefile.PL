@@ -3,7 +3,7 @@ use ExtUtils::MakeMaker;
 # the contents of the Makefile that is written.
 WriteMakefile(
 	NAME	=> 'Rosetta',
-	VERSION_FROM => 'Rosetta.pm', # finds $VERSION
+	VERSION => 0.03, # for the distribution itself, not of individual modules
 	PREREQ_PM => {
 	},
 );

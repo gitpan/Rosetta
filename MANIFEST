@@ -1,6 +1,7 @@
 ChangeLog
+Documentation.pod
+lib/Rosetta.pm
 Makefile.PL
 MANIFEST
-Rosetta.pm
 ReadMe
-test.pl
+t/Rosetta.t

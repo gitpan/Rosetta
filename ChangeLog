@@ -1,3 +1,41 @@
+2003-02-09   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.03.
+	
+	* The most significant change in this release is that the file "Rosetta.pm"
+	has been split into itself and the new file "Documentation.pm".  The latter
+	file now has all of the main Rosetta framework POD documentation.  The
+	former now is very small and contains just module-specific documentation.
+	The new folders "lib" and "t" were also added to the distribution.  As of
+	this release, Rosetta still consists entirely of documentation.
+
+	* Note that, as soon as module code starts being written, Rosetta will be
+	released as multiple distributions.  This current distribution will contain
+	the framework core, mainly all of the Schema and Engine modules, and the
+	generic base class for Drivers, and continue under its existing name.  A
+	new distribution named "Rosetta-Drivers" will contain most of the Driver
+	modules, and this is the only distribution that would have DBI and DBD::*
+	as prerequisites.  Another distribution named "Rosetta-Emulators" will
+	contain the Emulator modules.  Sample and utility applications will be in
+	yet another distribution, such as "Rosetta-Applications".
+
+	* Updated several parts of ReadMe file, particularly the Preface.  
+
+	* Makefile.PL now hard-codes the distribution VERSION; this file now has 
+	the authoritative VERSION for the distribution or framework itself.
+
+	* These were the main Documentation.pod sections with updates other than 
+	from the file split (which removed PREFACE from both files):
+
+		- DEPENDENCIES - changed to "none" (from DBI) since core has no dependencies
+		- SCHEDULE FOR DEVELOPMENT - moved to later date stored Views and Pub Syn
+		- SYNTAX - removed section; content merged into STRUCTURE
+		- STRUCTURE - removed "Parser" from structure, made relationship graph complete
+		- BRIEF MODULE LIST - grouped modules by their distributions, added Driver::Null
+		- ROSETTA NATIVE DATA DICTIONARY STRUCTURE - separated Table, Select definitions
+
+	* Note that other POD sections are out of date and will need updating.
+
 2003-01-27   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.02.

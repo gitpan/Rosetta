@@ -1,5 +1,5 @@
 # Before `make install' is performed this script should be runnable with
-# `make test'. After `make install' it should work as `perl test.pl'
+# `make test'. After `make install' it should work as `perl Rosetta.t'
 
 ######################### We start with some black magic to print on failure.
 
@@ -8,7 +8,7 @@
 
 BEGIN { $| = 1; print "1..1\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use Rosetta 0.02;
+use Rosetta 0.03;
 $loaded = 1;
 print "ok 1\n";
 use strict;
@@ -19,7 +19,7 @@ use strict;
 # (correspondingly "not ok 13") depending on the success of chunk 13
 # of the test code):
 
-#	* Note that "test.pl" is incomplete; it only tests that this module will 
+#	* Note that "Rosetta.t" is incomplete; it only tests that this module will 
 #	compile but not that the methods work; it is included so that people can use 
 #	the Makefile in the standard way during installation.  This file will be 
 #	fleshed out when I have the chance.

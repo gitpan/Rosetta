@@ -15,10 +15,30 @@ CONTENTS
 
 PREFACE
 
-This distribution features the Perl 5 module named "Rosetta".
+The "Rosetta" distribution features mainly the Perl 5 modules named "Rosetta",
+"Rosetta::Schema/::*", and "Rosetta::Engine/::*", but also some related modules
+like "Rosetta::Driver" and "Rosetta::Driver::Null".  These constitute the
+"core" of the Rosetta framework, for RDBMS-generic apps and schemas.
 
-All of my modules have complete POD inside of them, so please refer to that for a
-description of the module itself.
+To get the most out of Rosetta, please also install the "Rosetta-Drivers"
+distribution, which includes RDBMS-specific glue that adapts Rosetta to work
+with various database products.  Alternately, third parties may have released
+Rosetta drivers (subclasses of Rosetta::Driver) in other distributions.
+
+An optional addition is the "Rosetta-Emulators" distribution, which is an extra
+layer on top of the Rosetta core that emulates the APIs of other database
+accessor modules so that existing apps can use Rosetta as a drop-in replacement
+for them.  Another option is "Rosetta-Applications", which constitutes
+stand-alone "example" or "utility" applications built on Rosetta.
+
+(Note that the previous two paragraphs are notes for the future; the other
+distributions don't exist yet.)
+
+All of my modules have complete POD inside of them, so please refer to that for
+a description of module-specific details such as their method APIs.  The file
+"Documentation.pod" contains the main POD documentation for the Rosetta
+framework taken as a whole, including the purpose and overall design structure
+of the distribution; it should be read first.
 
 This Read Me document concerns itself mainly with installation and support
 issues, and also includes any "To Do" lists.
@@ -43,9 +63,7 @@ it, in the interest of consistency.  That said, Perl 5.004 is already 3 years
 old, is available as a binary on practically every OS that supports Perl at all, 
 and is a very solid release, so I see no reason to support anything older.
 
-Modules in this distribution require modules in these following distributions:
-
-DBI and DBD::* are required by some of the Rosetta::PDBD::* modules.
+The Rosetta core modules don't require anything else.
 
 INSTALLATION
 
@@ -74,8 +92,8 @@ If you are on a Mac system that is older than Mac OS X (Mac OS 9 or earlier)
 and/or you are otherwise having problems with the Makefile, you can still
 install this module the old fashioned way, by copying.
 
-The file "Rosetta.pm" goes inside the "lib" folder that came with your Perl 5
-distribution.
+Every file in the "lib" folder of this distribution goes in its corresponding 
+location within the "lib" folder that came with your Perl 5 distribution.
 
 Or alternately, put them anywhere you want, but you will need to have that 
 location added to your include path by your main program using something like 
@@ -86,7 +104,7 @@ this:
 Then you would want to run the included test program to make sure the module is 
 installed correctly.  Call it with:
 
-        perl -w test.pl
+        perl -w t/Rosetta.t
 
 Any existing POD is embedded in the module itself.  The Makefile probably 
 extracted it for you in the usual manner, or you can run a POD extractor on it 

@@ -28,49 +28,6 @@ Add-on utilities are also available for the likes of copying or backing up a
 database, or editing one through a web interface (like PHPMyAdmin but for Perl
 and any RDBMS).
 
-=cut
-
-######################################################################
-
-package Rosetta;
-require 5.004;
-
-# Copyright (c) 1999-2003, Darren R. Duncan.  All rights reserved.  This module
-# is free software; you can redistribute it and/or modify it under the same terms
-# as Perl itself.  However, I do request that this copyright information and
-# credits remain attached to the file.  If you modify this module and
-# redistribute a changed version then please attach a note listing the
-# modifications.  This module is available "as-is" and the author can not be held
-# accountable for any problems resulting from its use.
-
-use strict;
-use vars qw($VERSION);
-$VERSION = '0.02';
-
-# Convenience method as if caller wanted Rosetta::Engine->new() instead.
-sub new {
-	require Rosetta::Engine;
-	return( Rosetta::Engine->new( @_[1..$#_] ) );
-}
-
-1;
-__END__
-
-######################################################################
-
-=head1 PREFACE
-
-The Rosetta class currently has little functionality of its own, but rather
-mainly contains the collective POD documentation for how to use the Rosetta::*
-modules as an integrated but extensible frameworks.  Any documentation in this
-file should be considered to always refer to the aforementioned framework as a
-single entity, unless explicitely stated otherwise.  While Rosetta can be
-'used' and it does have a new() class method, that simply is a convenient shim
-for Rosetta::Engine->new(); do not try to call any other methods or functions
-of Rosetta itself, but rather use the other modules as appropriate.  This class
-also declares the $VERSION global variable, that variable is only meant to
-indicate the version of the whole distribution.
-
 =head1 DEPENDENCIES
 
 =head2 Perl Version
@@ -83,8 +40,7 @@ indicate the version of the whole distribution.
 
 =head2 Nonstandard Modules
 
-	DBI (used by various Rosetta::Driver::* modules; minimum version unknown)
-	DBD::* (used by various Rosetta::Driver::* modules; minimum versions unknown)
+	I<none>
 
 =head1 SYNOPSIS
 
@@ -560,15 +516,6 @@ data, either with another database or a set of text files.
 
 =item 0
 
-Create views, which are select queries whose definitions are stored in a
-database for convenience and pre-processing speed, within the default schema
-context that you connected to, and alter or remove them; validating views 
-will at first only be possible if the same version of Rosetta created them, 
-because it is done by a simple string compare for databases that store 
-views as sql statements, so that the sql won't have to be parsed.
-
-=item 0
-
 Insert or update or delete against multiple related related tables at once, as
 if they were a single table; the Rosetta objects that define the multiple table
 selection will be used to know how to map said data changes against the correct
@@ -612,11 +559,6 @@ in Perl.
 
 =item 0
 
-Create or alter or remove "public synonyms" in Oracle or other RDBMS that 
-support the concept of this convenient aliasing system.
-
-=item 0
-
 Create new users in the current database or remove them or alter their
 privileges or validate any settings for user existence or privileges; note 
 that Rosetta will not enforce user privileges or lacks of them for any 
@@ -625,6 +567,20 @@ RDBMS products that don't do this internally.
 =item 0
 
 Create new database instances or remove them, if that can be done easily.
+
+=item 0
+
+Create or alter or remove "public synonyms" in Oracle or other RDBMS that 
+support the concept of this convenient aliasing system.
+
+=item 0
+
+Create views, which are select queries whose definitions are stored in a
+database for convenience and pre-processing speed, within the default schema
+context that you connected to, and alter or remove them; validating views 
+will at first only be possible if the same version of Rosetta created them, 
+because it is done by a simple string compare for databases that store 
+views as sql statements, so that the sql won't have to be parsed.
 
 =item 0
 
@@ -669,18 +625,16 @@ problems with reliability of the results if someone else is modifying the
 inputs for the temporary tables before they are all built; this may change
 later when proper read locks are used.
 
-=head1 SYNTAX
+=head1 STRUCTURE
+
+The modules composing the Rosetta framework are grouped into several main
+categories, which can be called: "Schema", "Engine", "Driver", "Emulator", and
+others.
 
 These classes do not export any functions or methods, so you need to call them
 using object notation.  This means using B<Class-E<gt>function()> for functions
 and B<$object-E<gt>method()> for methods.  If you are inheriting any class for
 your own modules, then that often means something like B<$self-E<gt>method()>. 
-
-=head1 STRUCTURE
-
-The modules composing the Rosetta framework are grouped into several main
-categories, which can be called: "Schema", "Engine", "Driver", "Parser",
-"Emulator", and others.
 
 The "Schema" and "Engine" modules are collectively referred to as the "Rosetta
 Native Interface" or "RNI", and they are the "Core" of the Rosetta framework to
@@ -697,65 +651,64 @@ and reusable database connections.  It is common for Engine objects to hold
 Schema objects as properties, to help them know how to do their actions, such
 as how to create a table or select from it.
 
-The "Driver" and "Parser" and "Emulator" modules are each different kinds of
-"Extensions" to Rosetta; each module in one of these groups is typically
-specific to an RDBMS product, so you likely won't use more than a few at once.
+The Driver modules are what enable Rosetta to use each type of database.  They
+are what handle (interface to or implement) all the details of using a specific
+RDBMS product; you need at least one for each unique RDBMS product you plan to
+run your application on; they are "action" modules.  They take Engine/Schema
+objects as input and convert them into the actual SQL or other method calls
+that the RDBMS products use, then they invoke the generated, and then interpret
+the results into other Engine/Schema objects to return as output.  The Driver
+modules also deal with extracting any existing schema stored in an RDBMS so
+they can generate an RNI data dictionary from it when desired.  Nothing talks
+to an RDBMS product except a Driver module, and nothing talks to a driver
+module except the Engine modules.
 
-The Driver modules are the most important since they are what handle (interface
-to or implement) all the details of using a specific RDBMS product; you need at
-least one for each unique RDBMS product you plan to run your application on;
-they are "action" modules.  They take Engine/Schema objects as input and
-convert them into the actual SQL or other method calls that the RDBMS products
-use, then they invoke the generated, and then interpret the results into other
-Engine/Schema objects to return as output.  The Driver modules also deal with
-extracting any existing schema stored in an RDBMS so they can generate an RNI
-data dictionary from it when desired.  Nothing talks to an RDBMS product except
-a Driver module, and nothing talks to a driver module except the Engine
-modules.  
-
-The Parser modules are self-contained and serve to convert SQL statements from
-known dialects into Engine/Schema objects; they may be used by Driver modules
-when generating data dictionaries, but they definately are used by some
-Emulator modules (those which take SQL input).
-
-The Emulator modules are purely optional for use, and they are intended to
-facilitate rapid adaption (hot-swapping) of Rosetta into an existing
-application that is already built around a different database interface (such
-as DBI or ODBC or OCI).  Each Emulator module is a higher-level layer which
-translates its input into pure RNI calls and translates the output
+The Emulator modules are extensions that are purely optional for use, and they
+are intended to facilitate rapid adaption (hot-swapping) of Rosetta into an
+existing application that is already built around a different database
+interface (such as DBI or ODBC or OCI).  Each Emulator module is a higher-level
+layer which translates its input into pure RNI calls and translates the output
 correspondingly; each should have an identical public interface to what it
 emulates.  So applications often won't need to be changed to use Rosetta, but
-they still just become more portable.
+they still just become more portable.  Many Emulator modules would include SQL
+parsing functionality (as SQL is their input), and would convert SQL statements
+from known dialects into Engine/Schema objects
 
-This briefly (incompletely) illustrates the relationship of the module groups:
+This briefly illustrates the relationship of the module groups:
 
 	        RDBMS
 	          |
 	          |
 	          |
-	        Driver
-	called by | 
-	          |
-	  invokes | 
+	        Driver--------------\
+	called by |   uses   used by \
+	          |                   \
+	  invokes |                    \
 	        Engine--------------Schema
-	called by |   uses   used by
-	          |
-	  invokes | 
-	        Emulator------------Parser
-	          |   uses   used by
-	          |
-	          |
-	        APPLICATION
+	called by | \ uses   used by /  |
+	          |  \              /   |
+	  invokes |   \            /   /
+	          | Emulator------/   /
+	          | | uses   used by /
+	          | |               /
+	          | |              /
+	        APPLICATION-------/
+	              uses   used by
 
-Note that "APPLICATION" would often be connected to "Engine" directly if an
-Emulator isn't being used, or some other module may be between them.  Note that
-"Schema" is often connected to everything else.  Other things were missing.
+Note that application specific "stored procedures" which are implemented in
+Perl, and that are RDBMS product specific, would sit beside "Driver" in the
+above diagram, since they would have direct access to the product-specific code
+that the Driver uses to talk to the RDBMS.  Those are not shown in the above
+diagram for simplicity.  That said, all calls to such "stored procedures" from 
+the main APPLICATION will still always go through Engine.
 
 =head1 BRIEF MODULE LIST
 
 Note that the exact module names and descriptions listed within each grouping
 are an older draft and are subject to near-future revisions or rewrites,
 including addition of more modules or removal of some existing ones.
+
+=head2 In distribution "Rosetta"
 
 	Rosetta (holds main framework documentation, for now)
 
@@ -776,6 +729,10 @@ including addition of more modules or removal of some existing ones.
 	Rosetta::Engine::* ... like DriverEngineGlobals or whatever
 
 	Rosetta::Driver (base class to provide common public interface)
+	Rosetta::Driver::Null (pretend driver to use like /dev/null or for testing core)
+
+=head2 In distribution "Rosetta-Drivers"
+
 	Rosetta::Driver::ANSI-SQL-99 (base class for common implementation, uses DBI/DBD::*)
 	Rosetta::Driver::MySQL-3-23 (generate and run SQL for MySQL 3.23.x)
 	Rosetta::Driver::MySQL-4-0 (generate and run SQL for MySQL 4.0.x)
@@ -784,20 +741,21 @@ including addition of more modules or removal of some existing ones.
 	Rosetta::Driver::Oracle-9 (generate and run SQL for Oracle 9)
 	Rosetta::Driver::* ... like Sybase, DB2, PostgreSQL, SQLServer, Informix, more
 
-	Rosetta::Parser::ANSI (base class for common implementation, uses ?)
-	Rosetta::Parser::MySQL (parse SQL for MySQL into Schema/Engine objects)
-	Rosetta::Parser::Oracle (parse SQL for Oracle into Schema/Engine objects)
-	Rosetta::Parser::* ... like above database list and more
-	
+=head2 In distribution "Rosetta-Emulators"
+
 	Rosetta::Emulator::DBI (emulates DBI/DBD::*, but result is more portable)
 	Rosetta::Emulator::ODBC (emulates an ODBC module, result more portable)
 	Rosetta::Emulator::OCI (emulates an OCI module, result more portable)
 	Rosetta::Emulator::* ... like some of the other abstraction modules
 	Rosetta::Emulator::*::* (helpers for emulated frameworks of several modules)
 
-	Rosetta::* ... who knows ...
+=head2 In distribution "Rosetta-Applications"
 
 	Rosetta::Util::* ... higher level functionality like: Backup, Restore, Copy, ...
+
+=head2 In unknown distributions
+
+	Rosetta::* ... who knows ...
 	
 	Rosetta::Adapter::* ... I like the name so it might be used for something
 	
@@ -1084,19 +1042,21 @@ Here are the component definitions, not quite complete:
 	
 	<entity-id> := ...  # scalar value: either an alphanumeric string or an integer
 	
-	<schema-object> := (<table>|<view>|<sequence>|<procedure>|<trigger>)
+	<schema-object> := (<table>|<sequence>|<view>|<procedure>|<trigger>)
 	
 	<table> := TABLE 
 		ID (<table-id>)
-		INTERFACE (<column-declaration>{1,})
-		CONSTRAINT (<column-constraint>{0,})  # refers to columns in same table only
-		DEFAULT (<column-default>{0,})  # refers to columns in same table only
+		COLUMNS (<table-column>{1,})
+		UNIQUE CONSTRAINT (<unique-key>{0,})  # refers to columns in same table only
+		FOREIGN CONSTRAINT (<foreign-key>{0,})  # refers to columns in same table only
 
 	<table-id> := <entity-id>
 
-	<column-declaration> := COLUMN 
+	<table-column> := 
 		ID (<column-id>) 
 		TYPE (<data-type>)
+		[IS REQUIRED (<boolean>)]  # results in NOT NULL if true; NULL if false
+		[DEFAULT (<column-default>)]
 	
 	<column-id> := <entity-id>
 
@@ -1109,33 +1069,39 @@ Here are the component definitions, not quite complete:
 
 	<data-size> := ...  # an integer; if not given, has default val based on <base-type>
 
-	<column-constraint> := (<is-req>|<unique-key>|<foreign-key>)
-	
-	<is-req> := REQUIRED (<column-id>)  # results in NOT NULL if set; NULL if not
-	
-	<unique-key> := UNIQUE 
-		ID (<entity-name>)
-		HAS (<column-id>{1,})
-	
-	<foreign-key> := FOREIGN 
-		ID (<entity-name>)
-		HAS (<column-id>{1,})
-		SOURCE TABLE (<table-name>)
-		SOURCE COLS (<column-id>{1,})
+	<boolean> := (false|true)  # alternately 0 = false; 1 = true
 	
 	<column-default> := ((LITERAL (<literal-value>))|(SEQUENCE (<sequence-value>)))
 	
 	<literal-value> :=  # any string or numerical value
 	
 	<sequence-value> := ...  # not defined yet
+
+	<unique-key> :=  
+		ID (<entity-name>)
+		HAS (<column-id>{1,})
 	
-	<view> := VIEW
-		ID (<entity-id>)
-		IS (<select>)
+	<foreign-key> :=  
+		ID (<entity-name>)
+		HAS (<column-id>{1,})
+		SOURCE TABLE (<table-name>)
+		SOURCE COLS (<column-id>{1,})
+	
+	<sequence> := ...  # not defined yet
+	
+	<view> := ...  # not defined yet
+	
+	<procedure> := ...  # not defined yet
+
+	<trigger> := ...  # not defined yet
 	
 	<select> := SELECT
 		INTERFACE (<column-declaration>{1,})
-		FROM (<select-from>)
+		FROM (<select-from>)  # does not select from Views, only tables and literals
+	
+	<column-declaration> := 
+		ID (<column-id>) 
+		TYPE (<data-type>)
 	
 	<select-from> := (<literal-row>|<source-union>|<source-table>|<source-join>)
 	
@@ -1181,12 +1147,6 @@ Here are the component definitions, not quite complete:
 		LHS COLUMN (<column-id>)  # to adjust to work with alias-specific column-ids
 		LHS TABLE (<alias-id>)
 		LHS COLUMN (<column-id>)  # to adjust to work with alias-specific column-ids
-	
-	<sequence> := ...  # not defined yet
-	
-	<procedure> := ...  # not defined yet
-
-	<trigger> := ...  # not defined yet
 
 =head1 A BASIC TABLE STRUCTURE FOR STORING ROSETTA SCHEMAS
 
@@ -1220,6 +1180,7 @@ This stuff is an older draft of the previous section, in a way.
 		data_type -> data_type
 		default_val (null by default, stored on unspec insert, ret in view when col not 'impemented')
 		seq_num (if necessary)
+
 	schema
 		schema_name
 	
