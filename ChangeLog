@@ -1,3 +1,26 @@
+2003-07-10   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.151.
+
+	* This release is largely a minor bugfix update; it is an attempt to get
+	the test suite to run correctly on CPAN's "sun4-solaris 2.8" testbed, where
+	it had failed SQL-ObjectModel.t test 3 (note that the tests all passed in
+	both Perl 5.6.0 on Mac OS X 10.2.6 and a CPAN Win32 testbed).  In suspician
+	that the problem may have to do with differences in newlines between
+	platforms, I made two changes.  First, the get_all_properties_as_str()
+	method in SQL::ObjectModel received a minor update so it doesn't try to
+	substitute the trailing comma with a semicolon.  Second, the test script
+	was updated so that the literal string which the result of the above
+	function is compared to now contains "\n" instead of literal (unix)
+	newlines (and there were a few other escapes done).  If this doesn't fix 
+	the problem on Solaris then I am open to suggestions.
+
+	* Also updated the version number in SQL::ObjectModel to 0.031.  The number
+	should have been 0.03 in release 0.15, but I had forgotten to change it
+	then.  The only change to this module since release 0.15, mentioned in the
+	above bullet point, accounts for the move from 0.03 to 0.031.  Also updated
+	SQL-ObjectModel.t to refer to the new version number 0.031.
+
 2003-07-07   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.15.

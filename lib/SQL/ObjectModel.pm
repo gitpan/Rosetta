@@ -11,7 +11,7 @@ require 5.004;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.02';
+$VERSION = '0.031';
 
 ######################################################################
 
@@ -1691,8 +1691,7 @@ which take up much less space than multiple spaces per indent level.)
 ######################################################################
 
 sub get_all_properties_as_str {
-	my $result = $_[0]->_serialize( $_[2], $_[0]->get_all_properties( $_[1] ) );
-	return( substr($result,0,length($result)-3) ); # remove trailing ','
+	return( $_[0]->_serialize( $_[2], $_[0]->get_all_properties( $_[1] ) ) );
 }
 
 sub _serialize {

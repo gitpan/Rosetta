@@ -8,7 +8,7 @@
 
 BEGIN { $| = 1; print "1..3\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use SQL::ObjectModel 0.02;
+use SQL::ObjectModel 0.031;
 $loaded = 1;
 print "ok 1\n";
 use strict;
@@ -367,1702 +367,482 @@ result( 1, "creation of all objects" );
 
 message( "Now see if the output is correct ..." );
 
-my $expected_output = "{ 
-'NODE_TYPE' => 'root', 
-'ATTRS' => { }, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_bytes' => '1000', 
-'basic_type' => 'bin', 
-'name' => 'bin1k', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_bytes' => '32000', 
-'basic_type' => 'bin', 
-'name' => 'bin32k', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'store_fixed' => '1', 
-'str_trim_pad' => '1', 
-'str_latin_case' => 'uc', 
-'size_in_chars' => '4', 
-'basic_type' => 'str', 
-'str_trim_white' => '1', 
-'str_pad_char' => ' ', 
-'str_encoding' => 'asc', 
-'name' => 'str4', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'store_fixed' => '1', 
-'str_trim_pad' => '1', 
-'str_latin_case' => 'pr', 
-'size_in_chars' => '10', 
-'basic_type' => 'str', 
-'str_trim_white' => '1', 
-'str_pad_char' => ' ', 
-'str_encoding' => 'asc', 
-'name' => 'str10', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_chars' => '30', 
-'basic_type' => 'str', 
-'str_trim_white' => '1', 
-'str_encoding' => 'asc', 
-'name' => 'str30', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_chars' => '2000', 
-'basic_type' => 'str', 
-'str_encoding' => 'u16', 
-'name' => 'str2k', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_bytes' => '1', 
-'basic_type' => 'num', 
-'num_precision' => '0', 
-'name' => 'byte', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_bytes' => '2', 
-'basic_type' => 'num', 
-'num_precision' => '0', 
-'name' => 'short', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_bytes' => '4', 
-'basic_type' => 'num', 
-'num_precision' => '0', 
-'name' => 'int', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_bytes' => '8', 
-'basic_type' => 'num', 
-'num_precision' => '0', 
-'name' => 'long', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_bytes' => '1', 
-'basic_type' => 'num', 
-'num_unsigned' => '1', 
-'num_precision' => '0', 
-'name' => 'ubyte', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_bytes' => '2', 
-'basic_type' => 'num', 
-'num_unsigned' => '1', 
-'num_precision' => '0', 
-'name' => 'ushort', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_bytes' => '4', 
-'basic_type' => 'num', 
-'num_unsigned' => '1', 
-'num_precision' => '0', 
-'name' => 'uint', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_bytes' => '8', 
-'basic_type' => 'num', 
-'num_unsigned' => '1', 
-'num_precision' => '0', 
-'name' => 'ulong', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_bytes' => '4', 
-'basic_type' => 'num', 
-'name' => 'float', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_bytes' => '8', 
-'basic_type' => 'num', 
-'name' => 'double', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'basic_type' => 'num', 
-'size_in_digits' => '10', 
-'num_precision' => '2', 
-'name' => 'dec10p2', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'basic_type' => 'num', 
-'size_in_digits' => '255', 
-'name' => 'dec255', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'basic_type' => 'bool', 
-'name' => 'boolean', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'basic_type' => 'datetime', 
-'datetime_calendar' => 'abs', 
-'name' => 'datetime', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'basic_type' => 'datetime', 
-'datetime_calendar' => 'chi', 
-'name' => 'dtchines', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_chars' => '1', 
-'basic_type' => 'str', 
-'name' => 'str1', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_chars' => '20', 
-'basic_type' => 'str', 
-'name' => 'str20', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_chars' => '100', 
-'basic_type' => 'str', 
-'name' => 'str100', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_chars' => '250', 
-'basic_type' => 'str', 
-'name' => 'str250', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_chars' => '30', 
-'basic_type' => 'str', 
-'name' => 'entitynm', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'data_type', 
-'ATTRS' => { 
-'size_in_chars' => '250', 
-'basic_type' => 'str', 
-'name' => 'generic', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'database', 
-'ATTRS' => { }, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'namespace', 
-'ATTRS' => { }, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table', 
-'ATTRS' => { 
-'storage_file' => 'person', 
-'id' => '1', 
-'public_syn' => 'person', 
-'name' => 'person', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '1', 
-'default_val' => '1', 
-'auto_inc' => '1', 
-'data_type' => 'int', 
-'name' => 'person_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '0', 
-'data_type' => 'str20', 
-'name' => 'alternate_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '1', 
-'data_type' => 'str100', 
-'name' => 'name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '0', 
-'data_type' => 'str1', 
-'name' => 'sex', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '0', 
-'data_type' => 'int', 
-'name' => 'father_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '0', 
-'data_type' => 'int', 
-'name' => 'mother_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_ind', 
-'ATTRS' => { 
-'ind_type' => 'unique', 
-'name' => 'primary', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table_ind_col', 
-'ATTRS' => { 
-'col' => 'person_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'table_ind', 
-'ATTRS' => { 
-'ind_type' => 'unique', 
-'name' => 'ak_alternate_id', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table_ind_col', 
-'ATTRS' => { 
-'col' => 'alternate_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'table_ind', 
-'ATTRS' => { 
-'f_table' => 'person', 
-'ind_type' => 'foreign', 
-'name' => 'fk_father', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table_ind_col', 
-'ATTRS' => { 
-'col' => 'father_id', 
-'f_col' => 'person_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'table_ind', 
-'ATTRS' => { 
-'f_table' => 'person', 
-'ind_type' => 'foreign', 
-'name' => 'fk_mother', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table_ind_col', 
-'ATTRS' => { 
-'col' => 'mother_id', 
-'f_col' => 'person_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'table', 
-'ATTRS' => { 
-'storage_file' => 'user', 
-'id' => '1', 
-'public_syn' => 'user_auth', 
-'name' => 'user_auth', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '1', 
-'default_val' => '1', 
-'auto_inc' => '1', 
-'data_type' => 'int', 
-'name' => 'user_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '1', 
-'data_type' => 'str20', 
-'name' => 'login_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '1', 
-'data_type' => 'str20', 
-'name' => 'login_pass', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '1', 
-'data_type' => 'str100', 
-'name' => 'private_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '1', 
-'data_type' => 'str100', 
-'name' => 'private_email', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '1', 
-'data_type' => 'boolean', 
-'name' => 'may_login', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '1', 
-'default_val' => '3', 
-'data_type' => 'byte', 
-'name' => 'max_sessions', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_ind', 
-'ATTRS' => { 
-'ind_type' => 'unique', 
-'name' => 'primary', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table_ind_col', 
-'ATTRS' => { 
-'col' => 'user_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'table_ind', 
-'ATTRS' => { 
-'ind_type' => 'unique', 
-'name' => 'ak_login_name', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table_ind_col', 
-'ATTRS' => { 
-'col' => 'login_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'table_ind', 
-'ATTRS' => { 
-'ind_type' => 'unique', 
-'name' => 'ak_private_email', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table_ind_col', 
-'ATTRS' => { 
-'col' => 'private_email', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'table', 
-'ATTRS' => { 
-'storage_file' => 'user', 
-'id' => '1', 
-'public_syn' => 'user_profile', 
-'name' => 'user_profile', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '1', 
-'data_type' => 'int', 
-'name' => 'user_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '1', 
-'data_type' => 'str250', 
-'name' => 'public_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '0', 
-'data_type' => 'str250', 
-'name' => 'public_email', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '0', 
-'data_type' => 'str250', 
-'name' => 'web_url', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '0', 
-'data_type' => 'str250', 
-'name' => 'contact_net', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '0', 
-'data_type' => 'str250', 
-'name' => 'contact_phy', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '0', 
-'data_type' => 'str250', 
-'name' => 'bio', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '0', 
-'data_type' => 'str250', 
-'name' => 'plan', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '0', 
-'data_type' => 'str250', 
-'name' => 'comments', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_ind', 
-'ATTRS' => { 
-'ind_type' => 'unique', 
-'name' => 'primary', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table_ind_col', 
-'ATTRS' => { 
-'col' => 'user_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'table_ind', 
-'ATTRS' => { 
-'ind_type' => 'unique', 
-'name' => 'ak_public_name', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table_ind_col', 
-'ATTRS' => { 
-'col' => 'public_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'table_ind', 
-'ATTRS' => { 
-'f_table' => 'user_auth', 
-'ind_type' => 'foreign', 
-'name' => 'fk_user', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table_ind_col', 
-'ATTRS' => { 
-'col' => 'user_id', 
-'f_col' => 'user_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'table', 
-'ATTRS' => { 
-'storage_file' => 'user', 
-'id' => '1', 
-'public_syn' => 'user_pref', 
-'name' => 'user_pref', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '1', 
-'data_type' => 'int', 
-'name' => 'user_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '1', 
-'data_type' => 'entitynm', 
-'name' => 'pref_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_col', 
-'ATTRS' => { 
-'required_val' => '0', 
-'data_type' => 'generic', 
-'name' => 'pref_value', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_ind', 
-'ATTRS' => { 
-'ind_type' => 'unique', 
-'name' => 'primary', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table_ind_col', 
-'ATTRS' => { 
-'col' => 'user_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'table_ind_col', 
-'ATTRS' => { 
-'col' => 'pref_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'table_ind', 
-'ATTRS' => { 
-'f_table' => 'user_auth', 
-'ind_type' => 'foreign', 
-'name' => 'fk_user', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'table_ind_col', 
-'ATTRS' => { 
-'col' => 'user_id', 
-'f_col' => 'user_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'view', 
-'ATTRS' => { 
-'id' => '1', 
-'view_type' => 'caller', 
-'match_table' => 'person', 
-'may_write' => '1', 
-'name' => 'person', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view', 
-'ATTRS' => { 
-'id' => '1', 
-'view_type' => 'caller', 
-'may_write' => '0', 
-'name' => 'person_with_parents', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'int', 
-'name' => 'self_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'str100', 
-'name' => 'self_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'int', 
-'name' => 'father_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'str100', 
-'name' => 'father_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'int', 
-'name' => 'mother_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'str100', 
-'name' => 'mother_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_rowset', 
-'ATTRS' => { }, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'self', 
-'expr_type' => 'col', 
-'src_col' => 'person_id', 
-'name' => 'self_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'self', 
-'expr_type' => 'col', 
-'src_col' => 'name', 
-'name' => 'self_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'father', 
-'expr_type' => 'col', 
-'src_col' => 'person_id', 
-'name' => 'father_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'father', 
-'expr_type' => 'col', 
-'src_col' => 'name', 
-'name' => 'father_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'mother', 
-'expr_type' => 'col', 
-'src_col' => 'person_id', 
-'name' => 'mother_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'mother', 
-'expr_type' => 'col', 
-'src_col' => 'name', 
-'name' => 'mother_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_join', 
-'ATTRS' => { 
-'rhs_src' => 'father', 
-'join_type' => 'left', 
-'lhs_src' => 'self', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_join_col', 
-'ATTRS' => { 
-'lhs_src_col' => { 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'father_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-'rhs_src_col' => 'person_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'view_join', 
-'ATTRS' => { 
-'rhs_src' => 'mother', 
-'join_type' => 'left', 
-'lhs_src' => 'self', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_join_col', 
-'ATTRS' => { 
-'lhs_src_col' => { 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'mother_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-'rhs_src_col' => 'person_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'expr_type' => 'sfunc', 
-'sfunc' => 'and', 
-'view_part' => 'where', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'expr_type' => 'sfunc', 
-'sfunc' => 'like', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'src' => 'father', 
-'expr_type' => 'col', 
-'src_col' => 'name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'var_name' => 'srchw_fa', 
-'expr_type' => 'var', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'expr_type' => 'sfunc', 
-'sfunc' => 'like', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'src' => 'mother', 
-'expr_type' => 'col', 
-'src_col' => 'name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'var_name' => 'srchw_mo', 
-'expr_type' => 'var', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src', 
-'ATTRS' => { 
-'match_table' => 'person', 
-'name' => 'self', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'person_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src', 
-'ATTRS' => { 
-'match_table' => 'person', 
-'name' => 'father', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'person_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src', 
-'ATTRS' => { 
-'match_table' => 'person', 
-'name' => 'mother', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'person_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'view', 
-'ATTRS' => { 
-'id' => '1', 
-'view_type' => 'caller', 
-'may_write' => '1', 
-'name' => 'user', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'int', 
-'name' => 'user_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'str20', 
-'name' => 'login_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'str20', 
-'name' => 'login_pass', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'str100', 
-'name' => 'private_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'str100', 
-'name' => 'private_email', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'boolean', 
-'name' => 'may_login', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'byte', 
-'name' => 'max_sessions', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'str250', 
-'name' => 'public_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'str250', 
-'name' => 'public_email', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'str250', 
-'name' => 'web_url', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'str250', 
-'name' => 'contact_net', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'str250', 
-'name' => 'contact_phy', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'str250', 
-'name' => 'bio', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'str250', 
-'name' => 'plan', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'str250', 
-'name' => 'comments', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_rowset', 
-'ATTRS' => { }, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_auth', 
-'expr_type' => 'col', 
-'src_col' => 'user_id', 
-'name' => 'user_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_auth', 
-'expr_type' => 'col', 
-'src_col' => 'login_name', 
-'name' => 'login_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_auth', 
-'expr_type' => 'col', 
-'src_col' => 'login_pass', 
-'name' => 'login_pass', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_auth', 
-'expr_type' => 'col', 
-'src_col' => 'private_name', 
-'name' => 'private_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_auth', 
-'expr_type' => 'col', 
-'src_col' => 'private_email', 
-'name' => 'private_email', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_auth', 
-'expr_type' => 'col', 
-'src_col' => 'may_login', 
-'name' => 'may_login', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_auth', 
-'expr_type' => 'col', 
-'src_col' => 'max_sessions', 
-'name' => 'max_sessions', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_profile', 
-'expr_type' => 'col', 
-'src_col' => 'public_name', 
-'name' => 'public_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_profile', 
-'expr_type' => 'col', 
-'src_col' => 'public_email', 
-'name' => 'public_email', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_profile', 
-'expr_type' => 'col', 
-'src_col' => 'web_url', 
-'name' => 'web_url', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_profile', 
-'expr_type' => 'col', 
-'src_col' => 'contact_net', 
-'name' => 'contact_net', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_profile', 
-'expr_type' => 'col', 
-'src_col' => 'contact_phy', 
-'name' => 'contact_phy', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_profile', 
-'expr_type' => 'col', 
-'src_col' => 'bio', 
-'name' => 'bio', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_profile', 
-'expr_type' => 'col', 
-'src_col' => 'plan', 
-'name' => 'plan', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_profile', 
-'expr_type' => 'col', 
-'src_col' => 'comments', 
-'name' => 'comments', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_join', 
-'ATTRS' => { 
-'rhs_src' => 'user_profile', 
-'join_type' => 'left', 
-'lhs_src' => 'user_auth', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_join_col', 
-'ATTRS' => { 
-'lhs_src_col' => 'user_id', 
-'rhs_src_col' => 'user_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'expr_type' => 'sfunc', 
-'sfunc' => 'eq', 
-'view_part' => 'where', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'src' => 'user_auth', 
-'expr_type' => 'col', 
-'src_col' => 'user_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'var_name' => 'curr_uid', 
-'expr_type' => 'var', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src', 
-'ATTRS' => { 
-'match_table' => 'user_auth', 
-'name' => 'user_auth', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'user_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'login_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'login_pass', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'private_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'private_email', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'may_login', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'max_sessions', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src', 
-'ATTRS' => { 
-'match_table' => 'user_profile', 
-'name' => 'user_profile', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'user_id', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'public_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'public_email', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'web_url', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'contact_net', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'contact_phy', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'bio', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'plan', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'comments', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'view', 
-'ATTRS' => { 
-'id' => '1', 
-'view_type' => 'caller', 
-'may_write' => '0', 
-'name' => 'user_theme', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'generic', 
-'name' => 'theme_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col', 
-'ATTRS' => { 
-'data_type' => 'int', 
-'name' => 'theme_count', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_rowset', 
-'ATTRS' => { }, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_pref', 
-'expr_type' => 'col', 
-'src_col' => 'pref_value', 
-'name' => 'theme_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'expr_type' => 'sfunc', 
-'sfunc' => 'gcount', 
-'name' => 'theme_count', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_col_def', 
-'ATTRS' => { 
-'src' => 'user_pref', 
-'expr_type' => 'col', 
-'src_col' => 'pref_value', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'expr_type' => 'sfunc', 
-'sfunc' => 'eq', 
-'view_part' => 'where', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'src' => 'user_pref', 
-'expr_type' => 'col', 
-'src_col' => 'pref_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'lit_val' => 'theme', 
-'expr_type' => 'lit', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'src' => 'user_pref', 
-'expr_type' => 'col', 
-'src_col' => 'pref_value', 
-'view_part' => 'group', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'expr_type' => 'sfunc', 
-'sfunc' => 'gt', 
-'view_part' => 'havin', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'expr_type' => 'sfunc', 
-'sfunc' => 'gcount', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_part_def', 
-'ATTRS' => { 
-'lit_val' => '1', 
-'expr_type' => 'lit', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src', 
-'ATTRS' => { 
-'match_table' => 'user_pref', 
-'name' => 'user_pref', 
-}, 
-'CHILDREN' => [ 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'pref_name', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-{ 
-'NODE_TYPE' => 'view_src_col', 
-'ATTRS' => { 
-'name' => 'pref_value', 
-}, 
-'CHILDREN' => [ ], 
-}, 
-], 
-}, 
-], 
-}, 
-], 
-}, 
-], 
-}, 
-], 
-}, 
-], 
-}";
+my $expected_output = 
+'{ \n\'NODE_TYPE\' => \'root\', \n\'ATTRS\' => { }, \n\'CHILDREN\' => [ '.
+'\n{ \n\'NODE_TYPE\' => \'data_type\', \n\'ATTRS\' => { '.
+'\n\'size_in_bytes\' => \'1000\', \n\'basic_type\' => \'bin\', \n\'name\' '.
+'=> \'bin1k\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'data_type\', \n\'ATTRS\' => { \n\'size_in_bytes\' => \'32000\', '.
+'\n\'basic_type\' => \'bin\', \n\'name\' => \'bin32k\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'data_type\', '.
+'\n\'ATTRS\' => { \n\'store_fixed\' => \'1\', \n\'str_trim_pad\' => '.
+'\'1\', \n\'str_latin_case\' => \'uc\', \n\'size_in_chars\' => \'4\', '.
+'\n\'basic_type\' => \'str\', \n\'str_trim_white\' => \'1\', '.
+'\n\'str_pad_char\' => \' \', \n\'str_encoding\' => \'asc\', \n\'name\' '.
+'=> \'str4\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'data_type\', \n\'ATTRS\' => { \n\'store_fixed\' => \'1\', '.
+'\n\'str_trim_pad\' => \'1\', \n\'str_latin_case\' => \'pr\', '.
+'\n\'size_in_chars\' => \'10\', \n\'basic_type\' => \'str\', '.
+'\n\'str_trim_white\' => \'1\', \n\'str_pad_char\' => \' \', '.
+'\n\'str_encoding\' => \'asc\', \n\'name\' => \'str10\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'data_type\', '.
+'\n\'ATTRS\' => { \n\'size_in_chars\' => \'30\', \n\'basic_type\' => '.
+'\'str\', \n\'str_trim_white\' => \'1\', \n\'str_encoding\' => \'asc\', '.
+'\n\'name\' => \'str30\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'data_type\', \n\'ATTRS\' => { \n\'size_in_chars\' '.
+'=> \'2000\', \n\'basic_type\' => \'str\', \n\'str_encoding\' => \'u16\', '.
+'\n\'name\' => \'str2k\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'data_type\', \n\'ATTRS\' => { \n\'size_in_bytes\' '.
+'=> \'1\', \n\'basic_type\' => \'num\', \n\'num_precision\' => \'0\', '.
+'\n\'name\' => \'byte\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'data_type\', \n\'ATTRS\' => { \n\'size_in_bytes\' '.
+'=> \'2\', \n\'basic_type\' => \'num\', \n\'num_precision\' => \'0\', '.
+'\n\'name\' => \'short\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'data_type\', \n\'ATTRS\' => { \n\'size_in_bytes\' '.
+'=> \'4\', \n\'basic_type\' => \'num\', \n\'num_precision\' => \'0\', '.
+'\n\'name\' => \'int\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'data_type\', \n\'ATTRS\' => { \n\'size_in_bytes\' '.
+'=> \'8\', \n\'basic_type\' => \'num\', \n\'num_precision\' => \'0\', '.
+'\n\'name\' => \'long\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'data_type\', \n\'ATTRS\' => { \n\'size_in_bytes\' '.
+'=> \'1\', \n\'basic_type\' => \'num\', \n\'num_unsigned\' => \'1\', '.
+'\n\'num_precision\' => \'0\', \n\'name\' => \'ubyte\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'data_type\', '.
+'\n\'ATTRS\' => { \n\'size_in_bytes\' => \'2\', \n\'basic_type\' => '.
+'\'num\', \n\'num_unsigned\' => \'1\', \n\'num_precision\' => \'0\', '.
+'\n\'name\' => \'ushort\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'data_type\', \n\'ATTRS\' => { \n\'size_in_bytes\' '.
+'=> \'4\', \n\'basic_type\' => \'num\', \n\'num_unsigned\' => \'1\', '.
+'\n\'num_precision\' => \'0\', \n\'name\' => \'uint\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'data_type\', '.
+'\n\'ATTRS\' => { \n\'size_in_bytes\' => \'8\', \n\'basic_type\' => '.
+'\'num\', \n\'num_unsigned\' => \'1\', \n\'num_precision\' => \'0\', '.
+'\n\'name\' => \'ulong\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'data_type\', \n\'ATTRS\' => { \n\'size_in_bytes\' '.
+'=> \'4\', \n\'basic_type\' => \'num\', \n\'name\' => \'float\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'data_type\', '.
+'\n\'ATTRS\' => { \n\'size_in_bytes\' => \'8\', \n\'basic_type\' => '.
+'\'num\', \n\'name\' => \'double\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'data_type\', \n\'ATTRS\' => { \n\'basic_type\' => '.
+'\'num\', \n\'size_in_digits\' => \'10\', \n\'num_precision\' => \'2\', '.
+'\n\'name\' => \'dec10p2\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'data_type\', \n\'ATTRS\' => { \n\'basic_type\' => '.
+'\'num\', \n\'size_in_digits\' => \'255\', \n\'name\' => \'dec255\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'data_type\', '.
+'\n\'ATTRS\' => { \n\'basic_type\' => \'bool\', \n\'name\' => '.
+'\'boolean\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'data_type\', \n\'ATTRS\' => { \n\'basic_type\' => \'datetime\', '.
+'\n\'datetime_calendar\' => \'abs\', \n\'name\' => \'datetime\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'data_type\', '.
+'\n\'ATTRS\' => { \n\'basic_type\' => \'datetime\', '.
+'\n\'datetime_calendar\' => \'chi\', \n\'name\' => \'dtchines\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'data_type\', '.
+'\n\'ATTRS\' => { \n\'size_in_chars\' => \'1\', \n\'basic_type\' => '.
+'\'str\', \n\'name\' => \'str1\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'data_type\', \n\'ATTRS\' => { \n\'size_in_chars\' '.
+'=> \'20\', \n\'basic_type\' => \'str\', \n\'name\' => \'str20\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'data_type\', '.
+'\n\'ATTRS\' => { \n\'size_in_chars\' => \'100\', \n\'basic_type\' => '.
+'\'str\', \n\'name\' => \'str100\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'data_type\', \n\'ATTRS\' => { \n\'size_in_chars\' '.
+'=> \'250\', \n\'basic_type\' => \'str\', \n\'name\' => \'str250\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'data_type\', '.
+'\n\'ATTRS\' => { \n\'size_in_chars\' => \'30\', \n\'basic_type\' => '.
+'\'str\', \n\'name\' => \'entitynm\', \n}, \n\'CHILDREN\' => [ ], \n}, '.
+'\n{ \n\'NODE_TYPE\' => \'data_type\', \n\'ATTRS\' => { '.
+'\n\'size_in_chars\' => \'250\', \n\'basic_type\' => \'str\', \n\'name\' '.
+'=> \'generic\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'database\', \n\'ATTRS\' => { }, \n\'CHILDREN\' => [ \n{ '.
+'\n\'NODE_TYPE\' => \'namespace\', \n\'ATTRS\' => { }, \n\'CHILDREN\' => '.
+'[ \n{ \n\'NODE_TYPE\' => \'table\', \n\'ATTRS\' => { \n\'storage_file\' '.
+'=> \'person\', \n\'id\' => \'1\', \n\'public_syn\' => \'person\', '.
+'\n\'name\' => \'person\', \n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' '.
+'=> \'table_col\', \n\'ATTRS\' => { \n\'required_val\' => \'1\', '.
+'\n\'default_val\' => \'1\', \n\'auto_inc\' => \'1\', \n\'data_type\' => '.
+'\'int\', \n\'name\' => \'person_id\', \n}, \n\'CHILDREN\' => [ ], \n}, '.
+'\n{ \n\'NODE_TYPE\' => \'table_col\', \n\'ATTRS\' => { '.
+'\n\'required_val\' => \'0\', \n\'data_type\' => \'str20\', \n\'name\' => '.
+'\'alternate_id\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' '.
+'=> \'table_col\', \n\'ATTRS\' => { \n\'required_val\' => \'1\', '.
+'\n\'data_type\' => \'str100\', \n\'name\' => \'name\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'table_col\', '.
+'\n\'ATTRS\' => { \n\'required_val\' => \'0\', \n\'data_type\' => '.
+'\'str1\', \n\'name\' => \'sex\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'table_col\', \n\'ATTRS\' => { \n\'required_val\' => '.
+'\'0\', \n\'data_type\' => \'int\', \n\'name\' => \'father_id\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'table_col\', '.
+'\n\'ATTRS\' => { \n\'required_val\' => \'0\', \n\'data_type\' => '.
+'\'int\', \n\'name\' => \'mother_id\', \n}, \n\'CHILDREN\' => [ ], \n}, '.
+'\n{ \n\'NODE_TYPE\' => \'table_ind\', \n\'ATTRS\' => { \n\'ind_type\' => '.
+'\'unique\', \n\'name\' => \'primary\', \n}, \n\'CHILDREN\' => [ \n{ '.
+'\n\'NODE_TYPE\' => \'table_ind_col\', \n\'ATTRS\' => { \n\'col\' => '.
+'\'person_id\', \n}, \n\'CHILDREN\' => [ ], \n}, \n], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'table_ind\', \n\'ATTRS\' => { \n\'ind_type\' => '.
+'\'unique\', \n\'name\' => \'ak_alternate_id\', \n}, \n\'CHILDREN\' => [ '.
+'\n{ \n\'NODE_TYPE\' => \'table_ind_col\', \n\'ATTRS\' => { \n\'col\' => '.
+'\'alternate_id\', \n}, \n\'CHILDREN\' => [ ], \n}, \n], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'table_ind\', \n\'ATTRS\' => { \n\'f_table\' => '.
+'\'person\', \n\'ind_type\' => \'foreign\', \n\'name\' => \'fk_father\', '.
+'\n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => \'table_ind_col\', '.
+'\n\'ATTRS\' => { \n\'col\' => \'father_id\', \n\'f_col\' => '.
+'\'person_id\', \n}, \n\'CHILDREN\' => [ ], \n}, \n], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'table_ind\', \n\'ATTRS\' => { \n\'f_table\' => '.
+'\'person\', \n\'ind_type\' => \'foreign\', \n\'name\' => \'fk_mother\', '.
+'\n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => \'table_ind_col\', '.
+'\n\'ATTRS\' => { \n\'col\' => \'mother_id\', \n\'f_col\' => '.
+'\'person_id\', \n}, \n\'CHILDREN\' => [ ], \n}, \n], \n}, \n], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'table\', \n\'ATTRS\' => { \n\'storage_file\' => '.
+'\'user\', \n\'id\' => \'1\', \n\'public_syn\' => \'user_auth\', '.
+'\n\'name\' => \'user_auth\', \n}, \n\'CHILDREN\' => [ \n{ '.
+'\n\'NODE_TYPE\' => \'table_col\', \n\'ATTRS\' => { \n\'required_val\' => '.
+'\'1\', \n\'default_val\' => \'1\', \n\'auto_inc\' => \'1\', '.
+'\n\'data_type\' => \'int\', \n\'name\' => \'user_id\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'table_col\', '.
+'\n\'ATTRS\' => { \n\'required_val\' => \'1\', \n\'data_type\' => '.
+'\'str20\', \n\'name\' => \'login_name\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n{ \n\'NODE_TYPE\' => \'table_col\', \n\'ATTRS\' => { '.
+'\n\'required_val\' => \'1\', \n\'data_type\' => \'str20\', \n\'name\' => '.
+'\'login_pass\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'table_col\', \n\'ATTRS\' => { \n\'required_val\' => \'1\', '.
+'\n\'data_type\' => \'str100\', \n\'name\' => \'private_name\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'table_col\', '.
+'\n\'ATTRS\' => { \n\'required_val\' => \'1\', \n\'data_type\' => '.
+'\'str100\', \n\'name\' => \'private_email\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n{ \n\'NODE_TYPE\' => \'table_col\', \n\'ATTRS\' => { '.
+'\n\'required_val\' => \'1\', \n\'data_type\' => \'boolean\', \n\'name\' '.
+'=> \'may_login\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' '.
+'=> \'table_col\', \n\'ATTRS\' => { \n\'required_val\' => \'1\', '.
+'\n\'default_val\' => \'3\', \n\'data_type\' => \'byte\', \n\'name\' => '.
+'\'max_sessions\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' '.
+'=> \'table_ind\', \n\'ATTRS\' => { \n\'ind_type\' => \'unique\', '.
+'\n\'name\' => \'primary\', \n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' '.
+'=> \'table_ind_col\', \n\'ATTRS\' => { \n\'col\' => \'user_id\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'table_ind\', \n\'ATTRS\' => { \n\'ind_type\' => \'unique\', \n\'name\' '.
+'=> \'ak_login_name\', \n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => '.
+'\'table_ind_col\', \n\'ATTRS\' => { \n\'col\' => \'login_name\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'table_ind\', \n\'ATTRS\' => { \n\'ind_type\' => \'unique\', \n\'name\' '.
+'=> \'ak_private_email\', \n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => '.
+'\'table_ind_col\', \n\'ATTRS\' => { \n\'col\' => \'private_email\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n], \n}, \n], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'table\', \n\'ATTRS\' => { \n\'storage_file\' => \'user\', \n\'id\' => '.
+'\'1\', \n\'public_syn\' => \'user_profile\', \n\'name\' => '.
+'\'user_profile\', \n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => '.
+'\'table_col\', \n\'ATTRS\' => { \n\'required_val\' => \'1\', '.
+'\n\'data_type\' => \'int\', \n\'name\' => \'user_id\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'table_col\', '.
+'\n\'ATTRS\' => { \n\'required_val\' => \'1\', \n\'data_type\' => '.
+'\'str250\', \n\'name\' => \'public_name\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n{ \n\'NODE_TYPE\' => \'table_col\', \n\'ATTRS\' => { '.
+'\n\'required_val\' => \'0\', \n\'data_type\' => \'str250\', \n\'name\' '.
+'=> \'public_email\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'table_col\', \n\'ATTRS\' => { \n\'required_val\' => '.
+'\'0\', \n\'data_type\' => \'str250\', \n\'name\' => \'web_url\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'table_col\', '.
+'\n\'ATTRS\' => { \n\'required_val\' => \'0\', \n\'data_type\' => '.
+'\'str250\', \n\'name\' => \'contact_net\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n{ \n\'NODE_TYPE\' => \'table_col\', \n\'ATTRS\' => { '.
+'\n\'required_val\' => \'0\', \n\'data_type\' => \'str250\', \n\'name\' '.
+'=> \'contact_phy\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' '.
+'=> \'table_col\', \n\'ATTRS\' => { \n\'required_val\' => \'0\', '.
+'\n\'data_type\' => \'str250\', \n\'name\' => \'bio\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'table_col\', '.
+'\n\'ATTRS\' => { \n\'required_val\' => \'0\', \n\'data_type\' => '.
+'\'str250\', \n\'name\' => \'plan\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'table_col\', \n\'ATTRS\' => { \n\'required_val\' => '.
+'\'0\', \n\'data_type\' => \'str250\', \n\'name\' => \'comments\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'table_ind\', '.
+'\n\'ATTRS\' => { \n\'ind_type\' => \'unique\', \n\'name\' => '.
+'\'primary\', \n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => '.
+'\'table_ind_col\', \n\'ATTRS\' => { \n\'col\' => \'user_id\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'table_ind\', \n\'ATTRS\' => { \n\'ind_type\' => \'unique\', \n\'name\' '.
+'=> \'ak_public_name\', \n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => '.
+'\'table_ind_col\', \n\'ATTRS\' => { \n\'col\' => \'public_name\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'table_ind\', \n\'ATTRS\' => { \n\'f_table\' => \'user_auth\', '.
+'\n\'ind_type\' => \'foreign\', \n\'name\' => \'fk_user\', \n}, '.
+'\n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => \'table_ind_col\', '.
+'\n\'ATTRS\' => { \n\'col\' => \'user_id\', \n\'f_col\' => \'user_id\', '.
+'\n}, \n\'CHILDREN\' => [ ], \n}, \n], \n}, \n], \n}, \n{ \n\'NODE_TYPE\' '.
+'=> \'table\', \n\'ATTRS\' => { \n\'storage_file\' => \'user\', \n\'id\' '.
+'=> \'1\', \n\'public_syn\' => \'user_pref\', \n\'name\' => '.
+'\'user_pref\', \n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => '.
+'\'table_col\', \n\'ATTRS\' => { \n\'required_val\' => \'1\', '.
+'\n\'data_type\' => \'int\', \n\'name\' => \'user_id\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'table_col\', '.
+'\n\'ATTRS\' => { \n\'required_val\' => \'1\', \n\'data_type\' => '.
+'\'entitynm\', \n\'name\' => \'pref_name\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n{ \n\'NODE_TYPE\' => \'table_col\', \n\'ATTRS\' => { '.
+'\n\'required_val\' => \'0\', \n\'data_type\' => \'generic\', \n\'name\' '.
+'=> \'pref_value\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' '.
+'=> \'table_ind\', \n\'ATTRS\' => { \n\'ind_type\' => \'unique\', '.
+'\n\'name\' => \'primary\', \n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' '.
+'=> \'table_ind_col\', \n\'ATTRS\' => { \n\'col\' => \'user_id\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'table_ind_col\', '.
+'\n\'ATTRS\' => { \n\'col\' => \'pref_name\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n], \n}, \n{ \n\'NODE_TYPE\' => \'table_ind\', \n\'ATTRS\' => { '.
+'\n\'f_table\' => \'user_auth\', \n\'ind_type\' => \'foreign\', '.
+'\n\'name\' => \'fk_user\', \n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' '.
+'=> \'table_ind_col\', \n\'ATTRS\' => { \n\'col\' => \'user_id\', '.
+'\n\'f_col\' => \'user_id\', \n}, \n\'CHILDREN\' => [ ], \n}, \n], \n}, '.
+'\n], \n}, \n{ \n\'NODE_TYPE\' => \'view\', \n\'ATTRS\' => { \n\'id\' => '.
+'\'1\', \n\'view_type\' => \'caller\', \n\'match_table\' => \'person\', '.
+'\n\'may_write\' => \'1\', \n\'name\' => \'person\', \n}, \n\'CHILDREN\' '.
+'=> [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view\', \n\'ATTRS\' => { \n\'id\' '.
+'=> \'1\', \n\'view_type\' => \'caller\', \n\'may_write\' => \'0\', '.
+'\n\'name\' => \'person_with_parents\', \n}, \n\'CHILDREN\' => [ \n{ '.
+'\n\'NODE_TYPE\' => \'view_col\', \n\'ATTRS\' => { \n\'data_type\' => '.
+'\'int\', \n\'name\' => \'self_id\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_col\', \n\'ATTRS\' => { \n\'data_type\' => '.
+'\'str100\', \n\'name\' => \'self_name\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n{ \n\'NODE_TYPE\' => \'view_col\', \n\'ATTRS\' => { '.
+'\n\'data_type\' => \'int\', \n\'name\' => \'father_id\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_col\', '.
+'\n\'ATTRS\' => { \n\'data_type\' => \'str100\', \n\'name\' => '.
+'\'father_name\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'view_col\', \n\'ATTRS\' => { \n\'data_type\' => \'int\', \n\'name\' => '.
+'\'mother_id\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'view_col\', \n\'ATTRS\' => { \n\'data_type\' => \'str100\', \n\'name\' '.
+'=> \'mother_name\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' '.
+'=> \'view_rowset\', \n\'ATTRS\' => { }, \n\'CHILDREN\' => [ \n{ '.
+'\n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { \n\'src\' => '.
+'\'self\', \n\'expr_type\' => \'col\', \n\'src_col\' => \'person_id\', '.
+'\n\'name\' => \'self_id\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { \n\'src\' => '.
+'\'self\', \n\'expr_type\' => \'col\', \n\'src_col\' => \'name\', '.
+'\n\'name\' => \'self_name\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { \n\'src\' => '.
+'\'father\', \n\'expr_type\' => \'col\', \n\'src_col\' => \'person_id\', '.
+'\n\'name\' => \'father_id\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { \n\'src\' => '.
+'\'father\', \n\'expr_type\' => \'col\', \n\'src_col\' => \'name\', '.
+'\n\'name\' => \'father_name\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { \n\'src\' => '.
+'\'mother\', \n\'expr_type\' => \'col\', \n\'src_col\' => \'person_id\', '.
+'\n\'name\' => \'mother_id\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { \n\'src\' => '.
+'\'mother\', \n\'expr_type\' => \'col\', \n\'src_col\' => \'name\', '.
+'\n\'name\' => \'mother_name\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_join\', \n\'ATTRS\' => { \n\'rhs_src\' => '.
+'\'father\', \n\'join_type\' => \'left\', \n\'lhs_src\' => \'self\', \n}, '.
+'\n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => \'view_join_col\', '.
+'\n\'ATTRS\' => { \n\'lhs_src_col\' => { \n\'NODE_TYPE\' => '.
+'\'view_src_col\', \n\'ATTRS\' => { \n\'name\' => \'father_id\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n\'rhs_src_col\' => \'person_id\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'view_join\', \n\'ATTRS\' => { \n\'rhs_src\' => \'mother\', '.
+'\n\'join_type\' => \'left\', \n\'lhs_src\' => \'self\', \n}, '.
+'\n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => \'view_join_col\', '.
+'\n\'ATTRS\' => { \n\'lhs_src_col\' => { \n\'NODE_TYPE\' => '.
+'\'view_src_col\', \n\'ATTRS\' => { \n\'name\' => \'mother_id\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n\'rhs_src_col\' => \'person_id\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'view_part_def\', \n\'ATTRS\' => { \n\'expr_type\' => \'sfunc\', '.
+'\n\'sfunc\' => \'and\', \n\'view_part\' => \'where\', \n}, '.
+'\n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => \'view_part_def\', '.
+'\n\'ATTRS\' => { \n\'expr_type\' => \'sfunc\', \n\'sfunc\' => \'like\', '.
+'\n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => \'view_part_def\', '.
+'\n\'ATTRS\' => { \n\'src\' => \'father\', \n\'expr_type\' => \'col\', '.
+'\n\'src_col\' => \'name\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_part_def\', \n\'ATTRS\' => { \n\'var_name\' => '.
+'\'srchw_fa\', \n\'expr_type\' => \'var\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n], \n}, \n{ \n\'NODE_TYPE\' => \'view_part_def\', \n\'ATTRS\' => '.
+'{ \n\'expr_type\' => \'sfunc\', \n\'sfunc\' => \'like\', \n}, '.
+'\n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => \'view_part_def\', '.
+'\n\'ATTRS\' => { \n\'src\' => \'mother\', \n\'expr_type\' => \'col\', '.
+'\n\'src_col\' => \'name\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_part_def\', \n\'ATTRS\' => { \n\'var_name\' => '.
+'\'srchw_mo\', \n\'expr_type\' => \'var\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n], \n}, \n], \n}, \n{ \n\'NODE_TYPE\' => \'view_src\', '.
+'\n\'ATTRS\' => { \n\'match_table\' => \'person\', \n\'name\' => '.
+'\'self\', \n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => '.
+'\'view_src_col\', \n\'ATTRS\' => { \n\'name\' => \'person_id\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_src_col\', '.
+'\n\'ATTRS\' => { \n\'name\' => \'name\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n], \n}, \n{ \n\'NODE_TYPE\' => \'view_src\', \n\'ATTRS\' => { '.
+'\n\'match_table\' => \'person\', \n\'name\' => \'father\', \n}, '.
+'\n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => \'view_src_col\', \n\'ATTRS\' '.
+'=> { \n\'name\' => \'person_id\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_src_col\', \n\'ATTRS\' => { \n\'name\' => '.
+'\'name\', \n}, \n\'CHILDREN\' => [ ], \n}, \n], \n}, \n{ \n\'NODE_TYPE\' '.
+'=> \'view_src\', \n\'ATTRS\' => { \n\'match_table\' => \'person\', '.
+'\n\'name\' => \'mother\', \n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' '.
+'=> \'view_src_col\', \n\'ATTRS\' => { \n\'name\' => \'person_id\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_src_col\', '.
+'\n\'ATTRS\' => { \n\'name\' => \'name\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n], \n}, \n], \n}, \n], \n}, \n{ \n\'NODE_TYPE\' => \'view\', '.
+'\n\'ATTRS\' => { \n\'id\' => \'1\', \n\'view_type\' => \'caller\', '.
+'\n\'may_write\' => \'1\', \n\'name\' => \'user\', \n}, \n\'CHILDREN\' => '.
+'[ \n{ \n\'NODE_TYPE\' => \'view_col\', \n\'ATTRS\' => { \n\'data_type\' '.
+'=> \'int\', \n\'name\' => \'user_id\', \n}, \n\'CHILDREN\' => [ ], \n}, '.
+'\n{ \n\'NODE_TYPE\' => \'view_col\', \n\'ATTRS\' => { \n\'data_type\' => '.
+'\'str20\', \n\'name\' => \'login_name\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n{ \n\'NODE_TYPE\' => \'view_col\', \n\'ATTRS\' => { '.
+'\n\'data_type\' => \'str20\', \n\'name\' => \'login_pass\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_col\', '.
+'\n\'ATTRS\' => { \n\'data_type\' => \'str100\', \n\'name\' => '.
+'\'private_name\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' '.
+'=> \'view_col\', \n\'ATTRS\' => { \n\'data_type\' => \'str100\', '.
+'\n\'name\' => \'private_email\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_col\', \n\'ATTRS\' => { \n\'data_type\' => '.
+'\'boolean\', \n\'name\' => \'may_login\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n{ \n\'NODE_TYPE\' => \'view_col\', \n\'ATTRS\' => { '.
+'\n\'data_type\' => \'byte\', \n\'name\' => \'max_sessions\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_col\', '.
+'\n\'ATTRS\' => { \n\'data_type\' => \'str250\', \n\'name\' => '.
+'\'public_name\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'view_col\', \n\'ATTRS\' => { \n\'data_type\' => \'str250\', \n\'name\' '.
+'=> \'public_email\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_col\', \n\'ATTRS\' => { \n\'data_type\' => '.
+'\'str250\', \n\'name\' => \'web_url\', \n}, \n\'CHILDREN\' => [ ], \n}, '.
+'\n{ \n\'NODE_TYPE\' => \'view_col\', \n\'ATTRS\' => { \n\'data_type\' => '.
+'\'str250\', \n\'name\' => \'contact_net\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n{ \n\'NODE_TYPE\' => \'view_col\', \n\'ATTRS\' => { '.
+'\n\'data_type\' => \'str250\', \n\'name\' => \'contact_phy\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_col\', '.
+'\n\'ATTRS\' => { \n\'data_type\' => \'str250\', \n\'name\' => \'bio\', '.
+'\n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_col\', '.
+'\n\'ATTRS\' => { \n\'data_type\' => \'str250\', \n\'name\' => \'plan\', '.
+'\n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_col\', '.
+'\n\'ATTRS\' => { \n\'data_type\' => \'str250\', \n\'name\' => '.
+'\'comments\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'view_rowset\', \n\'ATTRS\' => { }, \n\'CHILDREN\' => [ \n{ '.
+'\n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { \n\'src\' => '.
+'\'user_auth\', \n\'expr_type\' => \'col\', \n\'src_col\' => \'user_id\', '.
+'\n\'name\' => \'user_id\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { \n\'src\' => '.
+'\'user_auth\', \n\'expr_type\' => \'col\', \n\'src_col\' => '.
+'\'login_name\', \n\'name\' => \'login_name\', \n}, \n\'CHILDREN\' => [ '.
+'], \n}, \n{ \n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { '.
+'\n\'src\' => \'user_auth\', \n\'expr_type\' => \'col\', \n\'src_col\' => '.
+'\'login_pass\', \n\'name\' => \'login_pass\', \n}, \n\'CHILDREN\' => [ '.
+'], \n}, \n{ \n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { '.
+'\n\'src\' => \'user_auth\', \n\'expr_type\' => \'col\', \n\'src_col\' => '.
+'\'private_name\', \n\'name\' => \'private_name\', \n}, \n\'CHILDREN\' => '.
+'[ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { '.
+'\n\'src\' => \'user_auth\', \n\'expr_type\' => \'col\', \n\'src_col\' => '.
+'\'private_email\', \n\'name\' => \'private_email\', \n}, \n\'CHILDREN\' '.
+'=> [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { '.
+'\n\'src\' => \'user_auth\', \n\'expr_type\' => \'col\', \n\'src_col\' => '.
+'\'may_login\', \n\'name\' => \'may_login\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n{ \n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { \n\'src\' '.
+'=> \'user_auth\', \n\'expr_type\' => \'col\', \n\'src_col\' => '.
+'\'max_sessions\', \n\'name\' => \'max_sessions\', \n}, \n\'CHILDREN\' => '.
+'[ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { '.
+'\n\'src\' => \'user_profile\', \n\'expr_type\' => \'col\', \n\'src_col\' '.
+'=> \'public_name\', \n\'name\' => \'public_name\', \n}, \n\'CHILDREN\' '.
+'=> [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { '.
+'\n\'src\' => \'user_profile\', \n\'expr_type\' => \'col\', \n\'src_col\' '.
+'=> \'public_email\', \n\'name\' => \'public_email\', \n}, \n\'CHILDREN\' '.
+'=> [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { '.
+'\n\'src\' => \'user_profile\', \n\'expr_type\' => \'col\', \n\'src_col\' '.
+'=> \'web_url\', \n\'name\' => \'web_url\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n{ \n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { \n\'src\' '.
+'=> \'user_profile\', \n\'expr_type\' => \'col\', \n\'src_col\' => '.
+'\'contact_net\', \n\'name\' => \'contact_net\', \n}, \n\'CHILDREN\' => [ '.
+'], \n}, \n{ \n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { '.
+'\n\'src\' => \'user_profile\', \n\'expr_type\' => \'col\', \n\'src_col\' '.
+'=> \'contact_phy\', \n\'name\' => \'contact_phy\', \n}, \n\'CHILDREN\' '.
+'=> [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { '.
+'\n\'src\' => \'user_profile\', \n\'expr_type\' => \'col\', \n\'src_col\' '.
+'=> \'bio\', \n\'name\' => \'bio\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { \n\'src\' => '.
+'\'user_profile\', \n\'expr_type\' => \'col\', \n\'src_col\' => \'plan\', '.
+'\n\'name\' => \'plan\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { \n\'src\' => '.
+'\'user_profile\', \n\'expr_type\' => \'col\', \n\'src_col\' => '.
+'\'comments\', \n\'name\' => \'comments\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n{ \n\'NODE_TYPE\' => \'view_join\', \n\'ATTRS\' => { '.
+'\n\'rhs_src\' => \'user_profile\', \n\'join_type\' => \'left\', '.
+'\n\'lhs_src\' => \'user_auth\', \n}, \n\'CHILDREN\' => [ \n{ '.
+'\n\'NODE_TYPE\' => \'view_join_col\', \n\'ATTRS\' => { \n\'lhs_src_col\' '.
+'=> \'user_id\', \n\'rhs_src_col\' => \'user_id\', \n}, \n\'CHILDREN\' => '.
+'[ ], \n}, \n], \n}, \n{ \n\'NODE_TYPE\' => \'view_part_def\', '.
+'\n\'ATTRS\' => { \n\'expr_type\' => \'sfunc\', \n\'sfunc\' => \'eq\', '.
+'\n\'view_part\' => \'where\', \n}, \n\'CHILDREN\' => [ \n{ '.
+'\n\'NODE_TYPE\' => \'view_part_def\', \n\'ATTRS\' => { \n\'src\' => '.
+'\'user_auth\', \n\'expr_type\' => \'col\', \n\'src_col\' => \'user_id\', '.
+'\n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'view_part_def\', \n\'ATTRS\' => { \n\'var_name\' => \'curr_uid\', '.
+'\n\'expr_type\' => \'var\', \n}, \n\'CHILDREN\' => [ ], \n}, \n], \n}, '.
+'\n{ \n\'NODE_TYPE\' => \'view_src\', \n\'ATTRS\' => { \n\'match_table\' '.
+'=> \'user_auth\', \n\'name\' => \'user_auth\', \n}, \n\'CHILDREN\' => [ '.
+'\n{ \n\'NODE_TYPE\' => \'view_src_col\', \n\'ATTRS\' => { \n\'name\' => '.
+'\'user_id\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'view_src_col\', \n\'ATTRS\' => { \n\'name\' => \'login_name\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_src_col\', '.
+'\n\'ATTRS\' => { \n\'name\' => \'login_pass\', \n}, \n\'CHILDREN\' => [ '.
+'], \n}, \n{ \n\'NODE_TYPE\' => \'view_src_col\', \n\'ATTRS\' => { '.
+'\n\'name\' => \'private_name\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_src_col\', \n\'ATTRS\' => { \n\'name\' => '.
+'\'private_email\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' '.
+'=> \'view_src_col\', \n\'ATTRS\' => { \n\'name\' => \'may_login\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_src_col\', '.
+'\n\'ATTRS\' => { \n\'name\' => \'max_sessions\', \n}, \n\'CHILDREN\' => '.
+'[ ], \n}, \n], \n}, \n{ \n\'NODE_TYPE\' => \'view_src\', \n\'ATTRS\' => '.
+'{ \n\'match_table\' => \'user_profile\', \n\'name\' => \'user_profile\', '.
+'\n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => \'view_src_col\', '.
+'\n\'ATTRS\' => { \n\'name\' => \'user_id\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n{ \n\'NODE_TYPE\' => \'view_src_col\', \n\'ATTRS\' => { '.
+'\n\'name\' => \'public_name\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_src_col\', \n\'ATTRS\' => { \n\'name\' => '.
+'\'public_email\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' '.
+'=> \'view_src_col\', \n\'ATTRS\' => { \n\'name\' => \'web_url\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_src_col\', '.
+'\n\'ATTRS\' => { \n\'name\' => \'contact_net\', \n}, \n\'CHILDREN\' => [ '.
+'], \n}, \n{ \n\'NODE_TYPE\' => \'view_src_col\', \n\'ATTRS\' => { '.
+'\n\'name\' => \'contact_phy\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_src_col\', \n\'ATTRS\' => { \n\'name\' => '.
+'\'bio\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'view_src_col\', \n\'ATTRS\' => { \n\'name\' => \'plan\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_src_col\', '.
+'\n\'ATTRS\' => { \n\'name\' => \'comments\', \n}, \n\'CHILDREN\' => [ ], '.
+'\n}, \n], \n}, \n], \n}, \n], \n}, \n{ \n\'NODE_TYPE\' => \'view\', '.
+'\n\'ATTRS\' => { \n\'id\' => \'1\', \n\'view_type\' => \'caller\', '.
+'\n\'may_write\' => \'0\', \n\'name\' => \'user_theme\', \n}, '.
+'\n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => \'view_col\', \n\'ATTRS\' => '.
+'{ \n\'data_type\' => \'generic\', \n\'name\' => \'theme_name\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => \'view_col\', '.
+'\n\'ATTRS\' => { \n\'data_type\' => \'int\', \n\'name\' => '.
+'\'theme_count\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'view_rowset\', \n\'ATTRS\' => { }, \n\'CHILDREN\' => [ \n{ '.
+'\n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { \n\'src\' => '.
+'\'user_pref\', \n\'expr_type\' => \'col\', \n\'src_col\' => '.
+'\'pref_value\', \n\'name\' => \'theme_name\', \n}, \n\'CHILDREN\' => [ '.
+'], \n}, \n{ \n\'NODE_TYPE\' => \'view_col_def\', \n\'ATTRS\' => { '.
+'\n\'expr_type\' => \'sfunc\', \n\'sfunc\' => \'gcount\', \n\'name\' => '.
+'\'theme_count\', \n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => '.
+'\'view_col_def\', \n\'ATTRS\' => { \n\'src\' => \'user_pref\', '.
+'\n\'expr_type\' => \'col\', \n\'src_col\' => \'pref_value\', \n}, '.
+'\n\'CHILDREN\' => [ ], \n}, \n], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'view_part_def\', \n\'ATTRS\' => { \n\'expr_type\' => \'sfunc\', '.
+'\n\'sfunc\' => \'eq\', \n\'view_part\' => \'where\', \n}, \n\'CHILDREN\' '.
+'=> [ \n{ \n\'NODE_TYPE\' => \'view_part_def\', \n\'ATTRS\' => { '.
+'\n\'src\' => \'user_pref\', \n\'expr_type\' => \'col\', \n\'src_col\' => '.
+'\'pref_name\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ \n\'NODE_TYPE\' => '.
+'\'view_part_def\', \n\'ATTRS\' => { \n\'lit_val\' => \'theme\', '.
+'\n\'expr_type\' => \'lit\', \n}, \n\'CHILDREN\' => [ ], \n}, \n], \n}, '.
+'\n{ \n\'NODE_TYPE\' => \'view_part_def\', \n\'ATTRS\' => { \n\'src\' => '.
+'\'user_pref\', \n\'expr_type\' => \'col\', \n\'src_col\' => '.
+'\'pref_value\', \n\'view_part\' => \'group\', \n}, \n\'CHILDREN\' => [ '.
+'], \n}, \n{ \n\'NODE_TYPE\' => \'view_part_def\', \n\'ATTRS\' => { '.
+'\n\'expr_type\' => \'sfunc\', \n\'sfunc\' => \'gt\', \n\'view_part\' => '.
+'\'havin\', \n}, \n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => '.
+'\'view_part_def\', \n\'ATTRS\' => { \n\'expr_type\' => \'sfunc\', '.
+'\n\'sfunc\' => \'gcount\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_part_def\', \n\'ATTRS\' => { \n\'lit_val\' => '.
+'\'1\', \n\'expr_type\' => \'lit\', \n}, \n\'CHILDREN\' => [ ], \n}, \n], '.
+'\n}, \n{ \n\'NODE_TYPE\' => \'view_src\', \n\'ATTRS\' => { '.
+'\n\'match_table\' => \'user_pref\', \n\'name\' => \'user_pref\', \n}, '.
+'\n\'CHILDREN\' => [ \n{ \n\'NODE_TYPE\' => \'view_src_col\', \n\'ATTRS\' '.
+'=> { \n\'name\' => \'pref_name\', \n}, \n\'CHILDREN\' => [ ], \n}, \n{ '.
+'\n\'NODE_TYPE\' => \'view_src_col\', \n\'ATTRS\' => { \n\'name\' => '.
+'\'pref_value\', \n}, \n\'CHILDREN\' => [ ], \n}, \n], \n}, \n], \n}, '.
+'\n], \n}, \n], \n}, \n], \n}, \n], \n}, \n';
 
-my $actual_output = $object_model->get_all_properties_as_str( 1, 1 );
+my $actual_output = vis( $object_model->get_all_properties_as_str( 1, 1 ) );
 
 result( $actual_output eq $expected_output, "verify serialization of objects" );
 
