@@ -93,16 +93,15 @@ combined work based on Rosetta.  Thus, the terms and conditions of the GPL
 cover the whole combination.
 
 As a special exception, the copyright holders of Rosetta give you permission to
-link Rosetta with independent modules that communicate with Rosetta solely
-through the "Driver" interface (because they are interfaces to or
-implementations of databases), regardless of the license terms of these
-independent modules, and to copy and distribute the resulting combined work
-under terms of your choice, provided that every copy of the combined work is
-accompanied by a complete copy of the source code of Rosetta (the version of
-Rosetta used to produce the combined work), being distributed under the terms
-of the GPL plus this exception.  An independent module is a module which is not
-derived from or based on Rosetta, and which is fully useable when not linked to
-Rosetta in any form.
+link Rosetta with independent modules that are interfaces to or implementations
+of databases, regardless of the license terms of these independent modules, and
+to copy and distribute the resulting combined work under terms of your choice,
+provided that every copy of the combined work is accompanied by a complete copy
+of the source code of Rosetta (the version of Rosetta used to produce the
+combined work), being distributed under the terms of the GPL plus this
+exception.  An independent module is a module which is not derived from or
+based on Rosetta, and which is fully useable when not linked to Rosetta in any
+form.
 
 Note that people who make modified versions of Rosetta are not obligated to
 grant this special exception for their modified versions; it is their choice
@@ -129,6 +128,9 @@ However, other distributions which hold extensions to the Rosetta core, such as
 the almost always used Rosetta-Drivers distributions, do have other
 dependencies.  These are specified in said other distributions, and often
 include the popular DBI and DBD::* modules, which most Driver modules use.
+
+This distribution is getting split up soon.  When that happens, the "Rosetta" 
+distribution will be dependant on the new "SQL-ObjectModel" distribution.
 
 =head2 Perl Version
 
@@ -230,13 +232,13 @@ include the popular DBI and DBD::* modules, which most Driver modules use.
 		}
 
 		eval {
-			require Rosetta::Engine; # also compiles ...::* modules
+			require Rosetta; # also compiles SQL::ObjectModel
 		};
 		if( $@ ) {
-			return( "Error: can't compile Rosetta::Engine/::* modules: $@" );
+			return( "Error: can't compile Rosetta modules: $@" );
 		}
 
-		my $engine = Rosetta::Engine->new();
+		my $engine = Rosetta->new_engine();
 		$engine->throw_error( 0 ); # on error, ret result obj, do not throw exception
 
 		my $dbh = $engine->execute_command( {
@@ -268,7 +270,7 @@ include the popular DBI and DBD::* modules, which most Driver modules use.
 			return( "Error: no survey question list defined in prefs file" );
 		}
 
-		my $dd_table = Rosetta::Schema::Table->new( 'survey_data' );
+		my $dd_table = SQL::ObjectModel->new_table( 'survey_data' );
 
 		foreach my $question (@{$questions}) {
 			unless( ref( $question ) eq 'HASH' and $question->{visible_title} ) {
@@ -370,7 +372,7 @@ include the popular DBI and DBD::* modules, which most Driver modules use.
 
 		# user saw screen and clicked the 'OK' button, so try to destroy;
 		# the following makes a Command of type 'data_insert' and executes it
-		my $dd_view = Rosetta::Schema::View->new( $dd_table );
+		my $dd_view = SQL::ObjectModel->new_view( $dd_table );
 		my $rv = $dbh->execute_command( $dd_view->new_command_insert( $form_values ) );
 		if( $rv->is_error() ) {
 			return( "Error: can't save form values in database: ".$rv->get_error() );
@@ -383,7 +385,7 @@ include the popular DBI and DBD::* modules, which most Driver modules use.
 		my ($dbh, $dd_table, $questions, $form_values) = @_;
 
 		# the following makes a Command of type 'data_select' and executes it
-		my $dd_view = Rosetta::Schema::View->new( $dd_table );
+		my $dd_view = SQL::ObjectModel->new_view( $dd_table );
 		my $cursor = $dbh->execute_command( $dd_view->new_command_select() );
 		if( $cursor->is_error() ) {
 			return( "Error: can't fetch form values from database: ".$cursor->get_error() );
@@ -544,8 +546,9 @@ provide.
 =head1 STRUCTURE
 
 The modules composing the Rosetta framework are grouped into several main
-categories, which can be called: "Locale", "Schema", "Engine", "Driver",
-"Proxy" (Server/Client), "Validator", "Emulator", and others.
+categories, which can be called: "Locale", "Schema" (SQL::ObjectModel),
+"Engine", "Driver", "Proxy" (Server/Client), "Validator", "Emulator", and
+others.
 
 Note: the file DataDictionary.pod should be read next, after Framework.pod.
 
@@ -692,57 +695,55 @@ environments using a Java Bean.
 The following module names and descriptions are undergoing a state of
 transition, and several parts of what was the Rosetta core are planning to be
 split off into separate distributions which the remaining Rosetta core is
-dependant on but which are also useful by themselves.  Mainly this consists of
-the "Rosetta::Locale/::*" modules being renamed/reorganized to
-"Locale::KeyedText/::*" and the "Rosetta::Schema/::*" modules becoming
-"SQL::ObjectModel/::*".  Since the new names haven't been finalized yet, said
-modules are still being referred to here by their old names, and they still
-exist as part of the Rosetta core distribution.  Most of these modules don't
-exist yet, but are being planned to exist, as they are implemented over time.
+dependant on but which are also useful by themselves.  See below for details.
+The split will not be done immediately, although the modules have been renamed
+already.  Most of these modules don't exist yet, but are being planned to
+exist, as they are implemented over time.
+
+I<Any indented package names represent inner classes of what they are beneath.>
 
 =head2 In distribution "Rosetta"
 
 To become "Locale-KeyedText" or similar:
 
-	Rosetta::Locale (constant data resources, user-readable text base class, allows var subst)
+	Locale::KeyedText (Refer to user messages in programs by keys)
 
 To become "SQL-ObjectModel" or similar:
 
-	Rosetta::DataDictionary (POD only, describes a db suitable for storing Rosetta schemas)
-	Rosetta::API_C (POD only, describes the core C API for Rosetta)
+	SQL::ObjectModel (Unserialized SQL objects, use like XML DOM)
+		SQL::ObjectModel::Codes (declare base types or enums; meanings hard-coded in SQL::ObjectModel)
+		SQL::ObjectModel::DataType (metadata for individual atomic or scalar values)
+		SQL::ObjectModel::Table (details of table columns are part of this class)
+		SQL::ObjectModel::View (a parsed select, used for any DML like IUD, gen stored views)
+		SQL::ObjectModel::Sequence (a sequence generator)
+		SQL::ObjectModel::Block (a block of code to run in a db; part of a proc, function, trigger)
+		SQL::ObjectModel::Trigger (a code block assoc with a table, only auto-called by db on events)
+		SQL::ObjectModel::* ... like User, Privilege, PrivilegeType, whatever
 
-	Rosetta::Schema (represents one database schema; owned by one database user)
-	Rosetta::Schema::Codes (declare base types or enums; meanings hard-coded in Rosetta)
-	Rosetta::Schema::DataType (metadata for individual atomic or scalar values)
-	Rosetta::Schema::Table (details of table columns are part of this class)
-	Rosetta::Schema::View (a parsed select, used for any DML like IUD, gen stored views)
-	Rosetta::Schema::Sequence (a sequence generator)
-	Rosetta::Schema::Block (a block of code to run in a db; part of a proc, function, trigger)
-	Rosetta::Schema::Trigger (a code block assoc with a table, only auto-called by db on events)
-	Rosetta::Schema::* ... like User, Privilege, PrivilegeType, whatever
+	SQL::ObjectModel::Locale::en (English localization of input error messages)
+	SQL::ObjectModel::Locale::fr (French localization of input error messages)
+	SQL::ObjectModel::Locale::* ... like German, Spanish, Dutch, Chinese, etc
 
-	Rosetta::Schema::Locale::en (English localization of input error messages)
-	Rosetta::Schema::Locale::fr (French localization of input error messages)
-	Rosetta::Schema::Locale::* ... like German, Spanish, Dutch, Chinese, etc
+	SQL::ObjectModel::DataDictionary (POD only, describes a db suitable for storing SQL::ObjectModels)
+	SQL::ObjectModel::API_C (POD only, describes the core C API for SQL::ObjectModel)
 
 To stay "Rosetta":
 
-	Rosetta (a placeholder in the public eye for the whole framework; a shim)
+	Rosetta (Framework for RDBMS-generic apps and schemas)
+		Rosetta::Engine (base class to provide 'execute' function; calls Drivers)
+		Rosetta::Engine::Command (describes an action to do)
+		Rosetta::Engine::Result (result of action including errors)
+		Rosetta::Engine::Connection (represents a connection)
+		Rosetta::Engine::Transaction (represents context within connection)
+		Rosetta::Engine::Cursor (result of a selection command; can be input to insert/update/delete)
+		Rosetta::Engine::* ... like DriverEngineGlobals or whatever
+
+	Rosetta::Locale::en (English localization of execution/input error messages)
+	Rosetta::Locale::fr (French localization of execution/input error messages)
+	Rosetta::Locale::* ... like German, Spanish, Dutch, Chinese, etc
 
 	Rosetta::Framework (POD only, holds main framework documentation)
 	Rosetta::SimilarModules (POD only, compares and contrasts Rosetta with other modules)
-
-	Rosetta::Engine (base class to provide 'execute' function; calls Drivers)
-	Rosetta::Engine::Command (describes an action to do)
-	Rosetta::Engine::Result (result of action including errors)
-	Rosetta::Engine::Connection (represents a connection)
-	Rosetta::Engine::Transaction (represents context within connection)
-	Rosetta::Engine::Cursor (result of a selection command; can be input to insert/update/delete)
-	Rosetta::Engine::* ... like DriverEngineGlobals or whatever
-
-	Rosetta::Engine::Locale::en (English localization of execution/input error messages)
-	Rosetta::Engine::Locale::fr (French localization of execution/input error messages)
-	Rosetta::Engine::Locale::* ... like German, Spanish, Dutch, Chinese, etc
 
 	Rosetta::Driver::Null (a driver with no functionality, for testing core)
 
@@ -856,7 +857,7 @@ updated descriptions here are more accurate.
 
 =item 0
 
-B<Rosetta::Schema::DataType> - This Schema class describes a simple data type,
+B<SQL::ObjectModel::DataType> - This Schema class describes a simple data type,
 which serves as metadata for a single atomic or scalar unit of data, or a
 column whose members are all of the same data type, such as in a regular
 database table or in row sets read from or to be written to one.  This class
@@ -865,7 +866,7 @@ database data.
 
 =item 0
 
-B<Rosetta::Schema::Table> - This Schema class describes a single database
+B<SQL::ObjectModel::Table> - This Schema class describes a single database
 table, and would be used for such things as managing schema for the table (eg:
 create, alter, destroy), and describing the table's "public interface" so other
 functionality like views or various DML operations know how to use the table.
@@ -880,7 +881,7 @@ Rosetta::Engine::Command objects having types of: 'table_verify',
 
 =item 0
 
-B<Rosetta::Schema::View> - This Schema class describes a single database view,
+B<SQL::ObjectModel::View> - This Schema class describes a single database view,
 which conceptually looks like a table, but it is used differently.  Tables and
 views are similar in that they both represent or store a matrix of data, which
 has uniquely identifiable columns, and rows which can be uniquely identifiable
@@ -1092,7 +1093,7 @@ it.
 
 =head1 SEE ALSO
 
-perl(1), Rosetta::DataDictionary, Rosetta::API_C, Rosetta::SimilarModules, Rosetta, 
-Rosetta::Schema::DataType, Rosetta::Schema::Table, Rosetta::Schema::View.
+perl(1), Rosetta, Rosetta::SimilarModules, SQL::ObjectModel, 
+SQL::ObjectModel::DataDictionary, SQL::ObjectModel::API_C, DBI.
 
 =cut

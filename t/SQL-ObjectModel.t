@@ -1,14 +1,14 @@
 # Before `make install' is performed this script should be runnable with
-# `make test'. After `make install' it should work as `perl Rosetta-Schema-DataType.t'
+# `make test'. After `make install' it should work as `perl SQL-ObjectModel.t'
 
 ######################### We start with some black magic to print on failure.
 
 # Change 1..1 below to 1..last_test_to_print .
 # (It may become useful if the test is moved to ./t subdirectory.)
 
-BEGIN { $| = 1; print "1..68\n"; }
+BEGIN { $| = 1; print "1..70\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use Rosetta::Schema::DataType 0.021;
+use SQL::ObjectModel 0.01;
 $loaded = 1;
 print "ok 1\n";
 use strict;
@@ -67,7 +67,7 @@ sub serialize {
 
 ######################################################################
 
-message( "START TESTING Rosetta::Schema::DataType" );
+message( "START TESTING SQL::ObjectModel::DataType" );
 
 ######################################################################
 # testing new(), initialize(), clone(), and get_all_properties()
@@ -79,8 +79,8 @@ message( "START TESTING Rosetta::Schema::DataType" );
 
 	# make new with default values
 
-	my $rsdt1 = Rosetta::Schema::DataType->new();  
-	result( UNIVERSAL::isa( $rsdt1, "Rosetta::Schema::DataType" ), 
+	my $rsdt1 = SQL::ObjectModel::DataType->new();  
+	result( UNIVERSAL::isa( $rsdt1, "SQL::ObjectModel::DataType" ), 
 		"rsdt1 = new() ret rsdt obj" );
 
 	$did = serialize( $rsdt1->get_all_properties() );
@@ -89,13 +89,13 @@ message( "START TESTING Rosetta::Schema::DataType" );
 
 	# make new with provided values (in hash)
 
-	my $rsdt2 = Rosetta::Schema::DataType->new( {
+	my $rsdt2 = SQL::ObjectModel::DataType->new( {
 		'name' => 'product_code',
 		'base_type' => 'str',
 		'size' => 10,
 		'store_fixed' => 1,
 	} );  
-	result( UNIVERSAL::isa( $rsdt2, "Rosetta::Schema::DataType" ), 
+	result( UNIVERSAL::isa( $rsdt2, "SQL::ObjectModel::DataType" ), 
 		"rsdt2 = new( { 'name' => 'product_code', 'base_type' => 'str', ".
 		"'size' => 10, 'store_fixed' => 1, } ) ret rsdt obj" );
 
@@ -105,7 +105,7 @@ message( "START TESTING Rosetta::Schema::DataType" );
 	# now we test clone of default values
 
 	my $rsdt3 = $rsdt1->clone();  
-	result( UNIVERSAL::isa( $rsdt3, "Rosetta::Schema::DataType" ), 
+	result( UNIVERSAL::isa( $rsdt3, "SQL::ObjectModel::DataType" ), 
 		"rsdt3 = rsdt1->clone() ret rsdt obj" );
 
 	$did = serialize( $rsdt3->get_all_properties() );
@@ -114,7 +114,7 @@ message( "START TESTING Rosetta::Schema::DataType" );
 	# now we test clone of provided values (in hash)
 
 	my $rsdt4 = $rsdt2->clone();  
-	result( UNIVERSAL::isa( $rsdt4, "Rosetta::Schema::DataType" ), 
+	result( UNIVERSAL::isa( $rsdt4, "SQL::ObjectModel::DataType" ), 
 		"rsdt4 = rsdt2->clone() ret rsdt obj" );
 
 	$did = serialize( $rsdt4->get_all_properties() );
@@ -123,8 +123,8 @@ message( "START TESTING Rosetta::Schema::DataType" );
 
 	# make new with provided values (in DataType object)
 
-	my $rsdt5 = Rosetta::Schema::DataType->new( $rsdt4 );  
-	result( UNIVERSAL::isa( $rsdt5, "Rosetta::Schema::DataType" ), 
+	my $rsdt5 = SQL::ObjectModel::DataType->new( $rsdt4 );  
+	result( UNIVERSAL::isa( $rsdt5, "SQL::ObjectModel::DataType" ), 
 		"rsdt5 = new( rsdt4 ) ret rsdt obj" );
 
 	$did = serialize( $rsdt5->get_all_properties() );
@@ -133,8 +133,8 @@ message( "START TESTING Rosetta::Schema::DataType" );
 
 	# make new with provided values (a string)
 
-	my $rsdt6 = Rosetta::Schema::DataType->new( 'boolean' );  
-	result( UNIVERSAL::isa( $rsdt6, "Rosetta::Schema::DataType" ), 
+	my $rsdt6 = SQL::ObjectModel::DataType->new( 'boolean' );  
+	result( UNIVERSAL::isa( $rsdt6, "SQL::ObjectModel::DataType" ), 
 		"rsdt6 = new( 'boolean' ) ret rsdt obj" );
 
 	$did = serialize( $rsdt6->get_all_properties() );
@@ -143,8 +143,8 @@ message( "START TESTING Rosetta::Schema::DataType" );
 
 	# make new with provided values (an array ref)
 
-	my $rsdt7 = Rosetta::Schema::DataType->new( [1,2,3] );  
-	result( UNIVERSAL::isa( $rsdt7, "Rosetta::Schema::DataType" ), 
+	my $rsdt7 = SQL::ObjectModel::DataType->new( [1,2,3] );  
+	result( UNIVERSAL::isa( $rsdt7, "SQL::ObjectModel::DataType" ), 
 		"rsdt7 = new( [1,2,3] ) ret rsdt obj" );
 
 	$did = serialize( $rsdt7->get_all_properties() );
@@ -153,7 +153,7 @@ message( "START TESTING Rosetta::Schema::DataType" );
 	# now we test clone of provided values (string) into other existing object
 
 	my $rsdt8 = $rsdt6->clone( $rsdt7 );  # now 8 and 7 point to same obj, with prop of 6
-	result( UNIVERSAL::isa( $rsdt8, "Rosetta::Schema::DataType" ), 
+	result( UNIVERSAL::isa( $rsdt8, "SQL::ObjectModel::DataType" ), 
 		"rsdt8 = rsdt6->clone( rsdt7 ) ret rsdt obj" );
 
 	$did = serialize( $rsdt8->get_all_properties() );
@@ -177,7 +177,7 @@ message( "START TESTING Rosetta::Schema::DataType" );
 {
 	my ($rsdt, $did, $should);
 	# first initialize data we will be reading from
-	$rsdt = Rosetta::Schema::DataType->new(); 
+	$rsdt = SQL::ObjectModel::DataType->new(); 
 
 	message( "testing setter/getter methods on default object - get only" );
 
@@ -343,46 +343,112 @@ message( "START TESTING Rosetta::Schema::DataType" );
 	$should = "{ 'binary' => '250', 'boolean' => '0', 'datetime' => '0', 'float' => '4', 'int' => '4', 'str' => '250', }, ";
 	result( $did eq $should, "\$rsdt->valid_types() returns '$did'" );
 
-	$did = serialize( Rosetta::Schema::DataType->valid_types() );
+	$did = serialize( SQL::ObjectModel::DataType->valid_types() );
 	$should = "{ 'binary' => '250', 'boolean' => '0', 'datetime' => '0', 'float' => '4', 'int' => '4', 'str' => '250', }, ";
-	result( $did eq $should, "Rosetta::Schema::DataType->valid_types() returns '$did'" );
+	result( $did eq $should, "SQL::ObjectModel::DataType->valid_types() returns '$did'" );
 
 	$did = serialize( $rsdt->valid_types( 'float' ) );
 	$should = "'4', ";
 	result( $did eq $should, "\$rsdt->valid_types( 'float' ) returns '$did'" );
 
-	$did = serialize( Rosetta::Schema::DataType->valid_types( 'float' ) );
+	$did = serialize( SQL::ObjectModel::DataType->valid_types( 'float' ) );
 	$should = "'4', ";
-	result( $did eq $should, "Rosetta::Schema::DataType->valid_types( 'float' ) returns '$did'" );
+	result( $did eq $should, "SQL::ObjectModel::DataType->valid_types( 'float' ) returns '$did'" );
 
 	$did = serialize( $rsdt->valid_types( 'datetime' ) );
 	$should = "'0', ";
 	result( $did eq $should, "\$rsdt->valid_types( 'datetime' ) returns '$did'" );
 
-	$did = serialize( Rosetta::Schema::DataType->valid_types( 'datetime' ) );
+	$did = serialize( SQL::ObjectModel::DataType->valid_types( 'datetime' ) );
 	$should = "'0', ";
-	result( $did eq $should, "Rosetta::Schema::DataType->valid_types( 'datetime' ) returns '$did'" );
+	result( $did eq $should, "SQL::ObjectModel::DataType->valid_types( 'datetime' ) returns '$did'" );
 
 	$did = serialize( $rsdt->valid_types( 'chirp' ) );
 	$should = "undef, ";
 	result( $did eq $should, "\$rsdt->valid_types( 'chirp' ) returns '$did'" );
 
-	$did = serialize( Rosetta::Schema::DataType->valid_types( 'chirp' ) );
+	$did = serialize( SQL::ObjectModel::DataType->valid_types( 'chirp' ) );
 	$should = "undef, ";
-	result( $did eq $should, "Rosetta::Schema::DataType->valid_types( 'chirp' ) returns '$did'" );
+	result( $did eq $should, "SQL::ObjectModel::DataType->valid_types( 'chirp' ) returns '$did'" );
 
 	$did = serialize( $rsdt->valid_types( '' ) );
 	$should = "undef, ";
 	result( $did eq $should, "\$rsdt->valid_types( '' ) returns '$did'" );
 
-	$did = serialize( Rosetta::Schema::DataType->valid_types( '' ) );
+	$did = serialize( SQL::ObjectModel::DataType->valid_types( '' ) );
 	$should = "undef, ";
-	result( $did eq $should, "Rosetta::Schema::DataType->valid_types( '' ) returns '$did'" );
+	result( $did eq $should, "SQL::ObjectModel::DataType->valid_types( '' ) returns '$did'" );
 }
 
 ######################################################################
 
-message( "DONE TESTING Rosetta::Schema::DataType" );
+message( "DONE TESTING SQL::ObjectModel::DataType" );
+message( "START TESTING SQL::ObjectModel::Table" );
+
+######################################################################
+# testing new(), initialize(), clone(), and get_all_properties()
+
+{
+	message( "testing new(), initialize(), clone(), and get_all_properties()" );
+
+	my ($did, $should);
+
+	# make new with default values
+
+	my $rst1 = SQL::ObjectModel::Table->new();  
+	result( UNIVERSAL::isa( $rst1, "SQL::ObjectModel::Table" ), 
+		"rst1 = new() ret rst obj" );
+
+	message( "OTHER TESTS TO GO HERE" );
+}
+
+######################################################################
+# test the other methods
+
+{
+	my ($rst, $did, $should);
+	# first initialize data we will be reading from
+	$rst = SQL::ObjectModel::Table->new(); 
+
+	message( "OTHER TESTS TO GO HERE" );
+}
+
+######################################################################
+
+message( "DONE TESTING SQL::ObjectModel::Table" );
+message( "START TESTING SQL::ObjectModel::View" );
+
+######################################################################
+# testing new(), initialize(), clone(), and get_all_properties()
+
+{
+	message( "testing new(), initialize(), clone(), and get_all_properties()" );
+
+	my ($did, $should);
+
+	# make new with default values
+
+	my $rsv1 = SQL::ObjectModel::View->new();  
+	result( UNIVERSAL::isa( $rsv1, "SQL::ObjectModel::View" ), 
+		"rsv1 = new() ret rsv obj" );
+
+	message( "OTHER TESTS TO GO HERE" );
+}
+
+######################################################################
+# test the other methods
+
+{
+	my ($rsv, $did, $should);
+	# firsv initialize data we will be reading from
+	$rsv = SQL::ObjectModel::View->new(); 
+
+	message( "OTHER TESTS TO GO HERE" );
+}
+
+######################################################################
+
+message( "DONE TESTING SQL::ObjectModel::View" );
 
 ######################################################################
 

@@ -1,0 +1,253 @@
+=head1 NAME
+
+SQL::ObjectModel::API_C - Describe the core C API for SQL::ObjectModel
+
+=head1 COPYRIGHT AND LICENSE
+
+This file is part of the SQL::ObjectModel library (libSOM).
+
+SQL::ObjectModel is Copyright (c) 1999-2003, Darren R. Duncan.  All rights
+reserved.  Address comments, suggestions, and bug reports to
+B<perl@DarrenDuncan.net>, or visit "http://www.DarrenDuncan.net" for more
+information.
+
+SQL::ObjectModel is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License (GPL) version 2 as published
+by the Free Software Foundation (http://www.fsf.org/).  You should have
+received a copy of the GPL as part of the SQL::ObjectModel distribution, in the
+file named "LICENSE"; if not, write to the Free Software Foundation, Inc., 59
+Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+
+Any versions of SQL::ObjectModel that you modify and distribute must carry
+prominent notices stating that you changed the files and the date of any
+changes, in addition to preserving this original copyright notice and other
+credits. SQL::ObjectModel is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GPL for more details.
+
+Linking SQL::ObjectModel statically or dynamically with other modules is making
+a combined work based on SQL::ObjectModel.  Thus, the terms and conditions of
+the GPL cover the whole combination.
+
+As a special exception, the copyright holders of SQL::ObjectModel give you
+permission to link SQL::ObjectModel with independent modules that are
+interfaces to or implementations of databases, regardless of the license terms
+of these independent modules, and to copy and distribute the resulting combined
+work under terms of your choice, provided that every copy of the combined work
+is accompanied by a complete copy of the source code of SQL::ObjectModel (the
+version of SQL::ObjectModel used to produce the combined work), being
+distributed under the terms of the GPL plus this exception.  An independent
+module is a module which is not derived from or based on SQL::ObjectModel, and
+which is fully useable when not linked to SQL::ObjectModel in any form.
+
+Note that people who make modified versions of SQL::ObjectModel are not
+obligated to grant this special exception for their modified versions; it is
+their choice whether to do so.  The GPL gives permission to release a modified
+version without this exception; this exception also makes it possible to
+release a modified version which carries forward this exception.
+
+While it is by no means required, the copyright holders of SQL::ObjectModel
+would appreciate being informed any time you create a modified version of
+SQL::ObjectModel that you are willing to distribute, because that is a
+practical way of suggesting improvements to the standard version.
+
+=head1 DESCRIPTION
+
+The first releases of SQL::ObjectModel are being implemented in pure Perl 5 thanks
+mainly to the heritage of original intention for using it with Perl programs,
+and otherwise to the fact that Perl is great for rapid prototyping, and has a
+large existing support for talking to databases, via the mature DBI framework,
+upon which to build.  The longer term goal, however, is that SQL::ObjectModel will be a
+pure ANSI C library which has optional bindings for multiple other languages,
+such as C++, Objective-C, Perl 5 (most importantly), Parrot and Perl 6, Python,
+PHP 4+, Java, and whatever else users want.
+
+This has practical benefits such as compatability with databases for which
+there is no existing Perl support (all database drivers already have C
+support), and the ability to use it with any favorite programming language
+(which can bring in developers from those communities aka Parrot).  Moreover,
+and most easily guessed, C is a lot more efficient in both CPU and memory
+considering the huge amount of data processing that SQL::ObjectModel has to do.  There
+are good reasons for things like LIBXML, GD, and DBI to be written in C which
+are applicable to SQL::ObjectModel also.  To that end, SQL::ObjectModel is being designed from
+the ground up to be easily implemented in either Perl 5 or C, in both cases
+using an object-oriented conceptual process.
+
+This document is a reference for the SQL::ObjectModel C API that is being planned,
+consisting mainly of the C header files (struct definitions and function
+declarations) that the actual SQL::ObjectModel core will end up being.  After all,
+SQL::ObjectModel is actually more of an interface or protocol definition than an actual
+implementation (although it includes those parts too).  This is intended to
+give programmers an idea why the design is going the way that it is and why
+details that pure Perl programs don't necessarily have to know about are being
+considered.  While pure C is not object oriented at all, the SQL::ObjectModel API is
+designed to be as object-like as possible, such that each C struct for storing
+data will have a corresponding set of functions for interfacing with it, and
+the details for memory allocation and deallocation are handled by those also.
+
+Note that the core libraries are intended to not have any external
+dependencies, except for data type handling libraries such as for string or
+sparse list handling.  These classes do not do any I/O and they do not talk to
+the operating system, so they should be fully portable.  All such things are
+relegated to extensions like the drivers.
+
+Note also that the following should be considered almost-C rather than perfect
+C. The reasoning is that my experience in writing C is rusty at the moment and
+I haven't necessarily tried to compile these yet.  For the moment they are just
+a type of documentation.  They will be improved.
+
+=head1 CONTENT OF libSOM.h
+
+	#ifndef _libSOM_h
+	#define _libSOM_h
+
+	#include "libSOM_types.h"
+	#include "libSOM_datatype.h"
+
+	#endif /* _libSOM_h */
+
+=head1 CONTENT OF libSOM_types.h
+
+	#ifndef _libSOM_types_h
+	#define _libSOM_types_h
+
+	#ifdef __cplusplus
+	extern "C" {
+	#endif
+
+	/************************************************************************/
+	/* define some constant values here */
+
+	#define FALSE 0
+	#define TRUE  1
+
+	/************************************************************************/
+	/* define some simple data types here */
+
+	typedef unsigned char dt_lsom_boolean; /* stores only two values: 0 (false) or 1 (true) */
+
+	typedef unsigned char     dt_lsom_uint8 ; /* a precise integer between 0 and           +255 */
+	typedef unsigned short    dt_lsom_uint16; /* a precise integer between 0 and        +65,535 */
+	typedef unsigned int      dt_lsom_uint32; /* a precise integer between 0 and +4,294,967,295 */
+	typedef unsigned longlong dt_lsom_uint64; /* a precise integer between 0 and      +(2^64)-1 */
+
+	typedef char     dt_lsom_sint8 ; /* a precise integer between           -128 and           +127 */
+	typedef short    dt_lsom_sint16; /* a precise integer between        -32,768 and        +32,767 */
+	typedef int      dt_lsom_sint32; /* a precise integer between -2,147,483,648 and +2,147,483,647 */
+	typedef longlong dt_lsom_sint64; /* a precise integer between        -(2^63) and      +(2^63)-1 */
+
+	typedef float  dt_lsom_float32; /* a 32-bit imprecise fractional number */
+	typedef double dt_lsom_float64; /* a 64-bit imprecise fractional number */
+
+	/* a precise fractional number stored as a variable length string */
+	typedef struct {
+		char*          data       ;
+		dt_lsom_uint16 byte_length;
+	} dt_lsom_decimal; 
+
+	/* an arbitrary sized unit of binary data */
+	typedef struct {
+		char*          data       ;
+		dt_lsom_uint64 byte_length;
+	} dt_lsom_binary; 
+
+	/* enumeration of character encoding types */
+	typedef enum { 
+		LSOM_STR_ENC_U8 , /* 8-bit unicode  */
+		LSOM_STR_ENC_U16, /* 16-bit unicode */
+		LSOM_STR_ENC_U32, /* 32-bit unicode */
+		LSOM_STR_ENC_ASC, /* 8-bit ascii    */
+		LSOM_STR_ENC_EBS  /* 8-bit ebsdic   */
+	} en_lsom_str_enc_type; 
+
+	/* an arbitrary sized unit of text data that is not null terminated */
+	typedef struct {
+		char*                data          ; /* actual string data, which may contain nulls */
+		dt_lsom_uint64       byte_length   ; /* size of memory used by data in bytes */
+		en_lsom_str_enc_type enc_type      ; /* string encoding type that data is using */
+		dt_lsom_uint8        bytes_per_char; /* (see enc_type) how many bytes each char uses, default = 1 */
+	} dt_lsom_string; 
+
+	/* a date and time (whose representation isn't decided yet) */
+	typedef struct {
+		char*         data       ;
+		dt_lsom_uint8 byte_length;
+	} dt_lsom_datetime; 
+
+	/************************************************************************/
+	/* define some accessor functions here */
+
+	/************************************************************************/
+
+	#ifdef __cplusplus
+	}
+	#endif
+
+	#endif /* _libSOM_types_h */
+
+=head1 CONTENT OF libSOM_datatype.h
+
+	#ifndef _libSOM_datatype_h
+	#define _libSOM_datatype_h
+
+	#ifdef __cplusplus
+	extern "C" {
+	#endif
+
+	#include "libSOM_types.h"
+
+	/************************************************************************/
+	/* define some simple data types here */
+
+	/* enumeration of basic data types */
+	typedef enum { 
+		BOOL,    /* a boolean */
+		BIN,     /* binary data */
+		STR,     /* text data */
+		INT,     /* precise whole number */
+		FLOAT,   /* imprecise fractional number */
+		DEC,     /* precise fractional number */
+		DATETIME /* a date and time; this may be split into more types */
+		/* may add geographical types */
+		/* may add enumerated or set types */
+	} en_lsom_sch_datatype_base; 
+
+	/* enumeration of ways to handle latin character data */
+	typedef enum { 
+		PRESERVE, /* preserve existing case, upper and lower */
+		TOUPPER,  /* convert to upper case */
+		TOLOWER   /* convert to lower case */
+	} en_lsom_sch_datatype_case; 
+
+	/* meta-data for a scalar unit of data, such as a db table column */
+	typedef struct {
+		dt_lsom_string            name          ; /* unique user-readable data type */
+		en_lsom_sch_datatype_base base_type     ; /* basic underlying data type */
+		dt_lsom_uint64            size          ; /* in bytes for BIN, INT, FLOAT; in chars for STR, DEC */
+		dt_lsom_boolean           store_fixed   ; /* true = try to store fixed size; default is var size */
+		en_lsom_str_enc_type      str_encoding  ; /* string encoding type for STR data */
+		dt_lsom_boolean           str_trim_white; /* true = trim bounding whitespace on save */
+		en_lsom_sch_datatype_case str_latin_case; /* says how to handle latin text case on save */
+		dt_lsom_string            str_pad_char  ; /* if def, use char to pad fixed-width strs on save */
+		dt_lsom_boolean           str_trim_pad  ; /* true = trim padding of fixed-width strs on read */
+		dt_lsom_boolean           int_unsigned  ; /* true = only INTs >= 0 can be stored */
+		dt_lsom_uint16            dec_precision ; /* allowed max prec for DEC nums; must be < size */
+		/* others may be added such as min/max allowed num or date values or which calendar to use */
+	} st_lsom_sch_datatype; 
+
+	/************************************************************************/
+	/* define some accessor functions here */
+
+	/************************************************************************/
+
+	#ifdef __cplusplus
+	}
+	#endif
+
+	#endif /* _libSOM_datatype_h */
+
+=head1 SEE ALSO
+
+perl(1), SQL::ObjectModel::DataDictionary, Rosetta, Rosetta::Framework.
+
+=cut

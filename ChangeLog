@@ -1,3 +1,50 @@
+2003-06-11   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.13.
+
+	* A few small fixes were made to DataDictionary.pod that were discovered 
+	after release 0.12 went out.
+
+	* This release was mainly for reorganizaing and renaming the component
+	files of the Rosetta distribution in preparation for their being split into
+	3 distributions: Rosetta, SQL::ObjectModel, Locale::KeyedText.  The files
+	that are ending up in each distribution are having their documentation
+	changed to reflect their new status, but for the moment they still share a
+	common ReadMe and related files.  The file Framework.pod has also been
+	updated in its BRIEF MODULE LIST to reflect the changes.
+
+	* The new file lib/SQL/ObjectModel.pm replaces these previously existing 3
+	files: lib/Rosetta/Schema/[DataType,Table,View].pm.  The new file
+	t/SQL-ObjectModel.t replaces these previously existing 3 files
+	t/Rosetta-Schema-[DataType,Table,View].t.  The 2 files
+	lib/Rosetta/[DataDictionary,API_C].pod have been renamed to
+	lib/SQL/ObjectModel/[DataDictionary,API_C].pod.  Any other preexisting
+	files were not renamed or replaced.
+
+	* Small updates were made to the copyright in all files, to remove the 
+	reference to a "Driver" interface.  In addition, the copyright in the 
+	files that will be split off now refer to the SQL::ObjectModel library 
+	(libSOM) in place of referring to the Rosetta framework.  Small changes 
+	were also made in ReadMe and INSTALL.
+
+	* This is the current file manifest following the renames and merges:
+
+		- ChangeLog
+		- INSTALL
+		- lib/Rosetta.pm
+		- lib/Rosetta/Framework.pod
+		- lib/Rosetta/SimilarModules.pod
+		- lib/SQL/ObjectModel.pm
+		- lib/SQL/ObjectModel/API_C.pod
+		- lib/SQL/ObjectModel/DataDictionary.pod
+		- LICENSE
+		- Makefile.PL
+		- MANIFEST
+		- ReadMe
+		- t/Rosetta.t
+		- t/SQL-ObjectModel.t
+		- TODO
+
 2003-06-10   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.12.
@@ -6,7 +53,7 @@
 	increasing in size from 85K to 96K (added 11K).  Mainly this saw the
 	entirety of the "BLOCKS" main section being written, and the corresponding
 	sub section of "STRUCTURE" was also written.  The previously referenced
-	entities named [procedure, function, block] are now consolidated into
+	entities named [procedure, function, package] are now consolidated into
 	"block".  Added two new main sections "SEQUENCES" and "USERS" (and
 	corresponding STRUCTURE parts), but they are currently placeholders.  Made
 	several updates to CONSTANT CODE TABLES.  "NAME SPACES AND SCHEMA OBJECTS"

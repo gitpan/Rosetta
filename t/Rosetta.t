@@ -8,7 +8,7 @@
 
 BEGIN { $| = 1; print "1..1\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use Rosetta 0.062;
+use Rosetta 0.07;
 $loaded = 1;
 print "ok 1\n";
 use strict;
@@ -16,7 +16,6 @@ use warnings;
 
 ######################### End of black magic.
 
-# Note: Rosetta.pm is a shell and doesn't contain any functionality to test, 
-# so this test file simply checks that it compiles.
+# Note: No functional tests are written yet; they will come later.
 
 1;

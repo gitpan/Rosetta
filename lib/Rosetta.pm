@@ -15,7 +15,7 @@ require 5.004;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.062';
+$VERSION = '0.07';
 
 ######################################################################
 
@@ -46,16 +46,15 @@ combined work based on Rosetta.  Thus, the terms and conditions of the GPL
 cover the whole combination.
 
 As a special exception, the copyright holders of Rosetta give you permission to
-link Rosetta with independent modules that communicate with Rosetta solely
-through the "Driver" interface (because they are interfaces to or
-implementations of databases), regardless of the license terms of these
-independent modules, and to copy and distribute the resulting combined work
-under terms of your choice, provided that every copy of the combined work is
-accompanied by a complete copy of the source code of Rosetta (the version of
-Rosetta used to produce the combined work), being distributed under the terms
-of the GPL plus this exception.  An independent module is a module which is not
-derived from or based on Rosetta, and which is fully useable when not linked to
-Rosetta in any form.
+link Rosetta with independent modules that are interfaces to or implementations
+of databases, regardless of the license terms of these independent modules, and
+to copy and distribute the resulting combined work under terms of your choice,
+provided that every copy of the combined work is accompanied by a complete copy
+of the source code of Rosetta (the version of Rosetta used to produce the
+combined work), being distributed under the terms of the GPL plus this
+exception.  An independent module is a module which is not derived from or
+based on Rosetta, and which is fully useable when not linked to Rosetta in any
+form.
 
 Note that people who make modified versions of Rosetta are not obligated to
 grant this special exception for their modified versions; it is their choice
@@ -80,7 +79,7 @@ suggesting improvements to the standard version.
 
 =head2 Nonstandard Modules
 
-	Rosetta::Engine (only if "new" method used)
+	SQL::ObjectModel
 
 =head1 SYNOPSIS
 
@@ -88,13 +87,8 @@ I<Please see the file lib/Rosetta/Framework.pod for a SYNOPSIS.>
 
 =head1 DESCRIPTION
 
-The Rosetta class currently has little functionality of its own, but rather
-mainly exists to help the CPAN indexers and users find the actual main
-documentation for the Rosetta framework, which starts in the file
-"lib/Rosetta/Framework.pod".  Similarly, the CPAN indexers like to find a
-module with the same name as the distribution in order to extract the
-single-line module summary for the distribution, from the module's NAME
-section; that is provided here.  Please see "lib/Rosetta/Framework.pod" for the
+This module contains the implementations of the Rosetta::Engine::* classes, 
+or it will once they are done.  Please see "lib/Rosetta/Framework.pod" for the
 main Rosetta purpose and design documentation.
 
 =head1 SYNTAX
@@ -106,18 +100,19 @@ your own modules, then that often means something like B<$self-E<gt>method()>.
 
 =head1 FUNCTIONS AND METHODS
 
+I<Note: This list is wholly incomplete, and the items don't work yet.>
+
 =head2 new(...)
 
-This is a mere convenience function and it does the exact same thing as calling
-Rosetta::Engine->new(), which you should actually be using instead.  Please see
-the POD in the Rosetta::Engine module for details on its use.
+This function creates a new Rosetta::Engine (or subclass) object and
+returns it.  All of the method arguments are passed to initialize() as is; 
+please see the POD for that method for an explanation of them.
 
 =cut
 
 ######################################################################
 
 sub new {
-	require Rosetta::Engine;
 	return( Rosetta::Engine->new( @_[1..$#_] ) );
 }
 
@@ -128,6 +123,6 @@ __END__
 
 =head1 SEE ALSO
 
-perl(1), Rosetta::Framework, Rosetta::SimilarModules.
+perl(1), Rosetta::Framework, Rosetta::SimilarModules, SQL::ObjectModel.
 
 =cut
