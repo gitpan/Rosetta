@@ -10,7 +10,7 @@ package Rosetta::L::en;
 use 5.006;
 use strict;
 use warnings;
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 ######################################################################
 
@@ -93,7 +93,7 @@ my %text_strings = (
 		"$CI.new(): missing ROUTINE argument; it is mandatory for '{TYPE}' Interfaces",
 	'ROS_I_NEW_INTF_BAD_RTN' => 
 		"$CI.new(): invalid ROUTINE argument; a Routine may only be a ".
-		"Perl anonymous subroutine reference (or closure); you tried to set it to '{RTN}'",
+		"Perl anonymous subroutine / 'CODE' reference (or closure); you tried to set it to '{RTN}'",
 	'ROS_I_NEW_INTF_YES_RTN' => 
 		"$CI.new(): the ROUTINE argument must be undefined for '{TYPE}' Interfaces",
 
@@ -209,6 +209,30 @@ my %text_strings = (
 		"$CI.execute(): the '{CLASS}' Rosetta Engine that implements this '{ITYPE}' Interface ".
 		"did not return the correct type of Rosetta::Interface object ".
 		"(Err, Succ, Lit, Env, Conn, Curs); it instead returned a '{RET_ITYPE}' Interface",
+
+	'ROS_I_BUILD_CH_ENV_NO_ARG' =>
+		"$CI.build_child_environment(): missing ENGINE_NAME argument",
+
+	'ROS_I_V_CONN_SETUP_OPTS_NO_ARG' =>
+		"$CI.validate_connection_setup_options(): missing SETUP_OPTIONS argument",
+	'ROS_I_V_CONN_SETUP_OPTS_BAD_ARG' =>
+		"$CI.validate_connection_setup_options(): invalid SETUP_OPTIONS argument; ".
+		"it must be a hash ref, but you tried to set it to '{ARG}'",
+	'ROS_I_V_CONN_SETUP_OPTS_BAD_ARG_NTYPE' => 
+		"$CI.validate_connection_setup_options(): invalid SETUP_OPTIONS argument element; ".
+		"the settable Node types are '{ALLOWED}'; you gave '{GIVEN}'",
+	'ROS_I_V_CONN_SETUP_OPTS_NO_ARG_ELEM' =>
+		"$CI.validate_connection_setup_options(): invalid SETUP_OPTIONS argument element; the value ".
+		"with the '{NTYPE}' Node type key is missing",
+	'ROS_I_V_CONN_SETUP_OPTS_BAD_ARG_ELEM' =>
+		"$CI.validate_connection_setup_options(): invalid SETUP_OPTIONS argument element; the value ".
+		"with the '{NTYPE}' Node type key must be a hash ref, but you tried to set it to '{ARG}'",
+	'ROS_I_V_CONN_SETUP_OPTS_BAD_ARG_OPTNM' => 
+		"$CI.validate_connection_setup_options(): invalid SETUP_OPTIONS argument element; ".
+		"the settable options for '{NTYPE}' Nodes are '{ALLOWED}'; you gave '{GIVEN}'",
+	'ROS_I_V_CONN_SETUP_OPTS_NO_ENG_NM' => 
+		"$CI.validate_connection_setup_options(): missing SETUP_OPTIONS argument element; ".
+		"you must provide a 'data_link_product'.'product_code', which is a Rosetta Engine class name",
 
 	'ROS_I_METH_NOT_SUPP' =>
 		"$CI.{METH}(): you may not invoke this method on Rosetta '{ITYPE}' Interfaces",

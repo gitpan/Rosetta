@@ -10,10 +10,10 @@ package Rosetta;
 use 5.006;
 use strict;
 use warnings;
-our $VERSION = '0.38';
+our $VERSION = '0.39';
 
 use Locale::KeyedText '1.00';
-use SQL::Routine '0.48';
+use SQL::Routine '0.50';
 
 ######################################################################
 
@@ -26,7 +26,7 @@ Standard Modules: I<none>
 Nonstandard Modules: 
 
 	Locale::KeyedText 1.00 (for error messages)
-	SQL::Routine 0.48
+	SQL::Routine 0.50
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -184,10 +184,21 @@ my %POSSIBLE_FEATURES = map { ($_ => 1) } qw(
 	QUERY_SUBQUERY
 );
 
-# Names of SQL::Routine-recognized enumerated values such as Node types go here:
-my $SRTNTP_APPINST = 'application_instance';
-my $SRTNTP_LINKPRD = 'data_link_product';
-my $SRTNTP_ROUTINE = 'routine';
+# Names of SRT Node types and attributes that may be given in SETUP_OPTIONS for build_connection():
+my %BC_SETUP_NODE_TYPES = ();
+foreach my $_node_type (qw( 
+			data_storage_product data_link_product catalog_instance catalog_link_instance
+		)) {
+	my $attrs = $BC_SETUP_NODE_TYPES{$_node_type} = {}; # node type accepts only specific key names
+	foreach my $attr_name (keys %{SQL::Routine->valid_node_type_literal_attributes( $_node_type )}) {
+		$attr_name eq 'si_name' and next;
+		$attrs->{$attr_name} = 1;
+	}
+	# None of these types have enumerated attrs, but if they did, we would add them too.
+	# We don't get nref attrs in any case.
+}
+$BC_SETUP_NODE_TYPES{'catalog_instance_opt'} = 1; # node type accepts any key name
+$BC_SETUP_NODE_TYPES{'catalog_link_instance_opt'} = 1; # node type accepts any key name
 
 ######################################################################
 # This is a 'protected' method; only sub-classes should invoke it.
@@ -203,10 +214,113 @@ sub _throw_error_message {
 }
 
 ######################################################################
+# These are 'protected' methods; only sub-classes should invoke them.
+
+sub _build_node {
+	my ($self, $container, $node_type, $attrs) = @_;
+	my $node_id = $container->get_next_free_node_id( $node_type );
+	return( $container->build_node( $node_type, { 'id' => $node_id, %{$attrs || {}} } ) );
+}
+
+sub _build_node_auto_name {
+	my ($self, $container, $node_type, $attrs) = @_;
+	my $node_id = $container->get_next_free_node_id( $node_type );
+	my $si_name = 'Rosetta Default '.
+		join( ' ', map { ucfirst( $_ ) } split( '_', $node_type ) ).' '.$node_id;
+	return( $container->build_node( $node_type, 
+		{ 'id' => $node_id, 'si_name' => $si_name, %{$attrs || {}} } ) );
+}
+
+sub _build_child_node {
+	my ($self, $pp_node, $node_type, $attrs) = @_;
+	my $container = $pp_node->get_container();
+	my $node_id = $container->get_next_free_node_id( $node_type );
+	return( $pp_node->build_child_node( $node_type, { 'id' => $node_id, %{$attrs || {}} } ) );
+}
+
+sub _build_child_node_auto_name {
+	my ($self, $pp_node, $node_type, $attrs) = @_;
+	my $container = $pp_node->get_container();
+	my $node_id = $container->get_next_free_node_id( $node_type );
+	my $si_name = 'Rosetta Default '.
+		join( ' ', map { ucfirst( $_ ) } split( '_', $node_type ) ).' '.$node_id;
+	return( $pp_node->build_child_node( $node_type, 
+		{ 'id' => $node_id, 'si_name' => $si_name, %{$attrs || {}} } ) );
+}
+
+######################################################################
 # This is a convenience wrapper method; its sole argument is a SRT Node.
 
 sub new_application {
 	return( Rosetta::Interface->new( $INTFTP_APPLICATION, undef, undef, undef, $_[1] ) );
+}
+
+######################################################################
+
+sub build_application {
+	my ($self) = @_;
+	my $container = SQL::Routine->new_container();
+	my $app_bp_node = $self->_build_node_auto_name( $container, 'application' );
+	my $app_inst_node = $self->_build_node_auto_name( $container, 'application_instance', 
+		{ 'blueprint' => $app_bp_node } );
+	my $app_intf = Rosetta->new_application( $app_inst_node );
+	return( $app_intf );
+}
+
+sub build_application_with_node_trees {
+	my ($self, @args) = @_;
+	my $container = SQL::Routine->build_container( @args );
+	my $app_inst_node = @{$container->get_child_nodes( 'application_instance' )}[0];
+	my $app_intf = Rosetta->new_application( $app_inst_node );
+	return( $app_intf );
+}
+
+sub build_environment {
+	my ($self, @args) = @_;
+	my $app_intf = $self->build_application();
+	my $env_intf = $app_intf->build_child_environment( @args );
+	return( $env_intf );
+}
+
+sub build_connection {
+	my ($self, @args) = @_;
+	my $app_intf = $self->build_application();
+	my $conn_intf = $app_intf->build_child_connection( @args );
+	return( $conn_intf );
+}
+
+######################################################################
+
+sub validate_connection_setup_options {
+	my ($self, $setup_options) = @_;
+	defined( $setup_options ) or $self->_throw_error_message( 'ROS_I_V_CONN_SETUP_OPTS_NO_ARG' );
+	unless( ref($setup_options) eq 'HASH' ) {
+		$self->_throw_error_message( 'ROS_I_V_CONN_SETUP_OPTS_BAD_ARG', { 'ARG' => $setup_options } );
+	}
+	while( my ($node_type, $rh_attrs) = each %{$setup_options} ) {
+		unless( $BC_SETUP_NODE_TYPES{$node_type} ) {
+			$self->_throw_error_message( 'ROS_I_V_CONN_SETUP_OPTS_BAD_ARG_NTYPE', 
+			{ 'GIVEN' => $node_type, 'ALLOWED' => "@{[keys %BC_SETUP_NODE_TYPES]}" } );
+		}
+		defined( $rh_attrs ) or $self->_throw_error_message( 
+			'ROS_I_V_CONN_SETUP_OPTS_NO_ARG_ELEM', { 'NTYPE' => $node_type } );
+		unless( ref($rh_attrs) eq 'HASH' ) {
+			$self->_throw_error_message( 'ROS_I_V_CONN_SETUP_OPTS_BAD_ARG_ELEM', 
+				{ 'NTYPE' => $node_type, 'ARG' => $rh_attrs } );
+		}
+		ref($BC_SETUP_NODE_TYPES{$node_type}) eq 'HASH' or next; # all opt names accepted
+		while( my ($option_name, $option_value) = each %{$rh_attrs} ) {
+			unless( $BC_SETUP_NODE_TYPES{$node_type}->{$option_name} ) {
+				$self->_throw_error_message( 'ROS_I_V_CONN_SETUP_OPTS_BAD_ARG_OPTNM', 
+					{ 'NTYPE' => $node_type, 'GIVEN' => $option_name, 
+					'ALLOWED' => "@{[keys %{$BC_SETUP_NODE_TYPES{$node_type}}]}" } );
+			}
+		}
+	}
+	unless( $setup_options->{'data_link_product'} and 
+			$setup_options->{'data_link_product'}->{'product_code'} ) {
+		$self->_throw_error_message( 'ROS_I_V_CONN_SETUP_OPTS_NO_ENG_NM' );
+	}
 }
 
 ######################################################################
@@ -396,7 +510,7 @@ sub _validate_srt_node {
 	my $node_type = $srt_node->get_node_type();
 
 	if( $intf_type eq $INTFTP_APPLICATION ) {
-		unless( $node_type eq $SRTNTP_APPINST ) {
+		unless( $node_type eq 'application_instance' ) {
 			$interface->_throw_error_message( $error_key_pfx.'_NODE_TYPE_NOT_SUPP', 
 				{ 'NTYPE' => $node_type, 'ITYPE' => $intf_type } );
 		}
@@ -406,14 +520,14 @@ sub _validate_srt_node {
 
 	# If we get here, we have a PREPARATION.
 
-	if( $node_type eq $SRTNTP_LINKPRD ) {
+	if( $node_type eq 'data_link_product' ) {
 		my $p_intf_type = $parent_intf->{$IPROP_INTF_TYPE};
 		unless( $p_intf_type eq $INTFTP_APPLICATION ) {
 			$interface->_throw_error_message( $error_key_pfx.'_NODE_TYPE_NOT_SUPP_UNDER_P', 
 				{ 'NTYPE' => $node_type, 'ITYPE' => $intf_type, 'PITYPE' => $p_intf_type } );
 		}
 	} else {
-		unless( $node_type eq $SRTNTP_ROUTINE ) {
+		unless( $node_type eq 'routine' ) {
 			$interface->_throw_error_message( $error_key_pfx.'_NODE_TYPE_NOT_SUPP', 
 				{ 'NTYPE' => $node_type, 'ITYPE' => $intf_type } );
 		}
@@ -521,6 +635,13 @@ sub get_engine {
 sub get_srt_node {
 	# This method returns the Node object by reference.
 	return( $_[0]->{$IPROP_SRT_NODE} );
+}
+
+sub get_srt_container {
+	if( my $app_intf = $_[0]->{$IPROP_ROOT_INTF} ) {
+		return( $app_intf->{$IPROP_SRT_NODE}->get_container() );
+	}
+	return( undef );
 }
 
 ######################################################################
@@ -634,7 +755,7 @@ sub prepare {
 		# actually, return slightly differently worded errors, show different method name.
 		$interface->_validate_srt_node( 'ROS_I_PREPARE', $INTFTP_PREPARATION, $routine_defn, $interface );
 		# Now we get to doing the real work we were called for.
-		if( $routine_defn->get_node_type() eq $SRTNTP_LINKPRD ) {
+		if( $routine_defn->get_node_type() eq 'data_link_product' ) {
 			# We only get here if $interface is a APPLICATION.
 			return( $interface->_prepare_lpn( $routine_defn ) );
 		} else { # the Node type is a $SRTNTP_ROUTINE
@@ -808,6 +929,23 @@ sub execute {
 
 ######################################################################
 
+sub do {
+	my ($interface, $routine_defn, $routine_args) = @_;
+	my $preparation = $interface->prepare( $routine_defn ); # prepare-time exceptions not caught
+	my $result = eval {
+		return( $preparation->execute( $routine_args ) );
+	};
+	my $exception = $@;
+	if( $exception or $result->{$IPROP_INTF_TYPE} eq $INTFTP_SUCCESS ) {
+		# The $result is not connected to the $preparation, or there is no $result.
+		$preparation->destroy(); # The $preparation has no child, the caller has no handle to it.
+	}
+	$exception and die $exception; # Re-throw any execute-time exception object or Perl error.
+	return( $result );
+}
+
+######################################################################
+
 sub payload {
 	my ($lit_intf) = @_;
 	# First check that this method may be called on an Interface of this type.
@@ -854,6 +992,252 @@ sub routine_source_code {
 		}
 	}
 	return( $result );
+}
+
+######################################################################
+
+sub build_child_environment {
+	my ($app_intf, $engine_name) = @_;
+	my $intf_type = $app_intf->{$IPROP_INTF_TYPE};
+	unless( $intf_type eq $INTFTP_APPLICATION ) {
+		$app_intf->_throw_error_message( 'ROS_I_METH_NOT_SUPP', 
+			{ 'METH' => 'build_child_environment', 'ITYPE' => $intf_type } );
+	}
+	defined( $engine_name ) or $app_intf->_throw_error_message( 'ROS_I_BUILD_CH_ENV_NO_ARG' );
+	my $container = $app_intf->get_srt_container();
+	my $env_intf = undef;
+	foreach my $ch_env_prep_intf (@{$app_intf->{$IPROP_CHILD_INTFS}}) {
+		if( $ch_env_prep_intf->{$IPROP_SRT_NODE}->get_literal_attribute( 'product_code' ) eq $engine_name ) {
+			$env_intf = $ch_env_prep_intf->execute(); # may or may not have executed before; ret same Env if did
+			last;
+		}
+	}
+	unless( $env_intf ) {
+		my $dlp_node = $app_intf->_build_node( $container, 'data_link_product', 
+			{ 'si_name' => $engine_name, 'product_code' => $engine_name } );
+		$env_intf = $app_intf->do( $dlp_node ); # dies if bad Engine
+	}
+	return( $env_intf );
+}
+
+######################################################################
+
+sub build_child_connection {
+	my ($interface, $setup_options, $rt_si_name, $rt_id) = @_;
+	my $intf_type = $interface->{$IPROP_INTF_TYPE};
+	unless( $intf_type eq $INTFTP_APPLICATION or $intf_type eq $INTFTP_ENVIRONMENT ) {
+		$interface->_throw_error_message( 'ROS_I_METH_NOT_SUPP', 
+			{ 'METH' => 'build_child_connection', 'ITYPE' => $intf_type } );
+	}
+
+	$interface->validate_connection_setup_options( $setup_options ); # dies on input errors
+
+	my $env_intf = undef;
+	if( $intf_type eq $INTFTP_ENVIRONMENT ) {
+		$env_intf = $interface;
+	} else { # $intf_type eq $INTFTP_APPLICATION
+		my %dlp_setup = %{$setup_options->{'data_link_product'} || {}};
+		$env_intf = $interface->build_child_environment( $dlp_setup{'product_code'} );
+	}
+	my $dlp_node = $env_intf->get_srt_node();
+
+	my $container = $interface->get_srt_container();
+	my $app_inst_node = $interface->get_root_interface()->get_srt_node();
+	my $app_bp_node = $app_inst_node->get_node_ref_attribute( 'blueprint' );
+
+	my $cat_bp_node = $interface->_build_node_auto_name( $container, 'catalog' );
+
+	my $cat_link_bp_node = $interface->_build_child_node_auto_name( $app_bp_node, 'catalog_link', 
+		{ 'target' => $cat_bp_node } );
+
+	my $routine_node = $interface->_build_child_node_auto_name( $app_bp_node, 'routine', 
+		{ 'routine_type' => 'FUNCTION', 'return_cont_type' => 'CONN' } );
+	defined( $rt_si_name ) and $routine_node->set_literal_attribute( 'si_name', $rt_si_name );
+	defined( $rt_id ) and $routine_node->set_node_id( $rt_id );
+	{
+		my $rtv_conn_cx_node = $routine_node->build_child_node( 'routine_var', 
+			{ 'id' => $container->get_next_free_node_id( 'routine_var' ),
+			'si_name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => $cat_link_bp_node } );
+		$routine_node->build_child_node_tree( 'routine_stmt', 
+			{ 'id' => $container->get_next_free_node_id( 'routine_stmt' ), 'call_sroutine' => 'RETURN' }, 
+			[
+				[ 'routine_expr', { 'id' => $container->get_next_free_node_id( 'routine_expr' ),
+					'call_sroutine_arg' => 'RETURN_VALUE', 'cont_type' => 'CONN', 'valf_p_routine_var' => $rtv_conn_cx_node } ],
+			],
+		);
+	}
+
+	my $dsp_node = $interface->_build_node_auto_name( $container, 'data_storage_product', 
+		$setup_options->{'data_storage_product'} );
+
+	my $cat_inst_node = $interface->_build_node_auto_name( $container, 'catalog_instance', 
+		{ 'product' => $dsp_node, 'blueprint' => $cat_bp_node, %{$setup_options->{'catalog_instance'} || {}} } );
+	while( my ($opt_key, $opt_value) = each %{$setup_options->{'catalog_instance_opt'} || {}} ) {
+		$interface->_build_child_node( $cat_inst_node, 'catalog_instance_opt', 
+			{ 'si_key' => $opt_key, 'value' => $opt_value } );
+	}
+
+	my $cat_link_inst_node = $interface->_build_child_node( $app_inst_node, 'catalog_link_instance', 
+		{ 'product' => $dlp_node, 'blueprint' => $cat_link_bp_node, 'target' => $cat_inst_node, 
+		%{$setup_options->{'catalog_link_instance'} || {}} } );
+	while( my ($opt_key, $opt_value) = each %{$setup_options->{'catalog_link_instance_opt'} || {}} ) {
+		$interface->_build_child_node( $cat_link_inst_node, 'catalog_link_instance_opt', 
+			{ 'si_key' => $opt_key, 'value' => $opt_value } );
+	}
+
+	my $conn_intf = $env_intf->do( $routine_node );
+	return( $conn_intf );
+}
+
+######################################################################
+
+sub destroy_interface_tree {
+	my ($interface) = @_;
+	my $container = $interface->get_srt_container();
+	my $app_intf = $interface->get_root_interface();
+	$app_intf->_destroy_interface_tree();
+	return( $container );
+}
+
+sub _destroy_interface_tree {
+	my ($interface) = @_;
+	foreach my $child (@{$interface->get_child_interfaces()}) {
+		$child->_destroy_interface_tree();
+	}
+	$interface->destroy();
+}
+
+sub destroy_interface_tree_and_srt_container {
+	my ($interface) = @_;
+	my $container = $interface->destroy_interface_tree();
+	$container->destroy();
+}
+
+######################################################################
+
+sub sroutine_catalog_list {
+	my ($interface, $rt_si_name, $rt_id) = @_;
+	my $intf_type = $interface->{$IPROP_INTF_TYPE};
+	unless( $intf_type eq $INTFTP_APPLICATION or $intf_type eq $INTFTP_ENVIRONMENT ) {
+		$interface->_throw_error_message( 'ROS_I_METH_NOT_SUPP', 
+			{ 'METH' => 'sroutine_catalog_list', 'ITYPE' => $intf_type } );
+	}
+
+	my $container = $interface->get_srt_container();
+	my $app_inst_node = $interface->get_root_interface()->get_srt_node();
+	my $app_bp_node = $app_inst_node->get_node_ref_attribute( 'blueprint' );
+
+	my $routine_node = $interface->_build_child_node_auto_name( $app_bp_node, 'routine', 
+		{ 'routine_type' => 'FUNCTION', 'return_cont_type' => 'SRT_NODE_LIST' } );
+	defined( $rt_si_name ) and $routine_node->set_literal_attribute( 'si_name', $rt_si_name );
+	defined( $rt_id ) and $routine_node->set_node_id( $rt_id );
+	{
+		$routine_node->build_child_node_tree( 'routine_stmt', 
+			{ 'id' => $container->get_next_free_node_id( 'routine_stmt' ), 'call_sroutine' => 'RETURN' }, 
+			[
+				[ 'routine_expr', { 'id' => $container->get_next_free_node_id( 'routine_expr' ),
+					'call_sroutine_arg' => 'RETURN_VALUE', 'cont_type' => 'SRT_NODE_LIST', 'valf_call_sroutine' => 'CATALOG_LIST' } ],
+			],
+		);
+	}
+
+	my $prep_intf = $interface->prepare( $routine_node );
+	return( $prep_intf );
+}
+
+######################################################################
+
+sub sroutine_catalog_open {
+	my ($conn_intf, $rt_si_name, $rt_id) = @_;
+	my $intf_type = $conn_intf->{$IPROP_INTF_TYPE};
+	unless( $intf_type eq $INTFTP_CONNECTION ) {
+		$conn_intf->_throw_error_message( 'ROS_I_METH_NOT_SUPP', 
+			{ 'METH' => 'sroutine_catalog_open', 'ITYPE' => $intf_type } );
+	}
+
+	my $container = $conn_intf->get_srt_container();
+	my $app_inst_node = $conn_intf->get_root_interface()->get_srt_node();
+	my $app_bp_node = $app_inst_node->get_node_ref_attribute( 'blueprint' );
+
+	my $conn_routine_node = $conn_intf->get_srt_node();
+	my $cat_link_bp_node = (
+		grep { $_->get_enumerated_attribute( 'cont_type' ) eq 'CONN' } 
+		@{$conn_routine_node->get_child_nodes( 'routine_var' )}
+		)[0]->get_node_ref_attribute( 'conn_link' );
+
+	my $sdt_auth_node = $conn_intf->_build_node_auto_name( $container, 'scalar_data_type', 
+		{ 'base_type' => 'STR_CHAR', 'max_chars' => 20, 'char_enc' => 'UTF8' } );
+
+	my $routine_node = $conn_intf->_build_child_node_auto_name( $app_bp_node, 'routine', 
+		{ 'routine_type' => 'PROCEDURE' } );
+	defined( $rt_si_name ) and $routine_node->set_literal_attribute( 'si_name', $rt_si_name );
+	defined( $rt_id ) and $routine_node->set_node_id( $rt_id );
+	{
+		my $rtc_conn_cx_node = $routine_node->build_child_node( 'routine_context', 
+			{ 'id' => $container->get_next_free_node_id( 'routine_context' ),
+			'si_name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => $cat_link_bp_node } );
+		my $rta_user_node = $routine_node->build_child_node( 'routine_arg', 
+			{ 'id' => $container->get_next_free_node_id( 'routine_arg' ),
+			'si_name' => 'login_name', 'cont_type' => 'SCALAR', 'scalar_data_type' => $sdt_auth_node } );
+		my $rta_pass_node = $routine_node->build_child_node( 'routine_arg', 
+			{ 'id' => $container->get_next_free_node_id( 'routine_arg' ),
+			'si_name' => 'login_pass', 'cont_type' => 'SCALAR', 'scalar_data_type' => $sdt_auth_node } );
+		$routine_node->build_child_node_tree( 'routine_stmt', 
+			{ 'id' => $container->get_next_free_node_id( 'routine_stmt' ), 'call_sroutine' => 'CATALOG_OPEN' }, 
+			[
+				[ 'routine_expr', { 'id' => $container->get_next_free_node_id( 'routine_expr' ),
+					'call_sroutine_cxt' => 'CONN_CX', 'cont_type' => 'CONN', 'valf_p_routine_cxt' => $rtc_conn_cx_node } ],
+				[ 'routine_expr', { 'id' => $container->get_next_free_node_id( 'routine_expr' ) + 1,
+					'call_sroutine_arg' => 'LOGIN_NAME', 'cont_type' => 'SCALAR', 'valf_p_routine_arg' => $rta_user_node } ],
+				[ 'routine_expr', { 'id' => $container->get_next_free_node_id( 'routine_expr' ) + 2,
+					'call_sroutine_arg' => 'LOGIN_PASS', 'cont_type' => 'SCALAR', 'valf_p_routine_arg' => $rta_pass_node } ],
+			],
+		);
+	}
+
+	my $prep_intf = $conn_intf->prepare( $routine_node );
+	return( $prep_intf );
+}
+
+######################################################################
+
+sub sroutine_catalog_close {
+	my ($conn_intf, $rt_si_name, $rt_id) = @_;
+	my $intf_type = $conn_intf->{$IPROP_INTF_TYPE};
+	unless( $intf_type eq $INTFTP_CONNECTION ) {
+		$conn_intf->_throw_error_message( 'ROS_I_METH_NOT_SUPP', 
+			{ 'METH' => 'sroutine_catalog_close', 'ITYPE' => $intf_type } );
+	}
+
+	my $container = $conn_intf->get_srt_container();
+	my $app_inst_node = $conn_intf->get_root_interface()->get_srt_node();
+	my $app_bp_node = $app_inst_node->get_node_ref_attribute( 'blueprint' );
+
+	my $conn_routine_node = $conn_intf->get_srt_node();
+	my $cat_link_bp_node = (
+		grep { $_->get_enumerated_attribute( 'cont_type' ) eq 'CONN' } 
+		@{$conn_routine_node->get_child_nodes( 'routine_var' )}
+		)[0]->get_node_ref_attribute( 'conn_link' );
+
+	my $routine_node = $conn_intf->_build_child_node_auto_name( $app_bp_node, 'routine', 
+		{ 'routine_type' => 'PROCEDURE' } );
+	defined( $rt_si_name ) and $routine_node->set_literal_attribute( 'si_name', $rt_si_name );
+	defined( $rt_id ) and $routine_node->set_node_id( $rt_id );
+	{
+		my $rtc_conn_cx_node = $routine_node->build_child_node( 'routine_context', 
+			{ 'id' => $container->get_next_free_node_id( 'routine_context' ),
+			'si_name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => $cat_link_bp_node } );
+		$routine_node->build_child_node_tree( 'routine_stmt', 
+			{ 'id' => $container->get_next_free_node_id( 'routine_stmt' ), 'call_sroutine' => 'CATALOG_CLOSE' }, 
+			[
+				[ 'routine_expr', { 'id' => $container->get_next_free_node_id( 'routine_expr' ),
+					'call_sroutine_cxt' => 'CONN_CX', 'cont_type' => 'CONN', 'valf_p_routine_cxt' => $rtc_conn_cx_node } ],
+			],
+		);
+	}
+
+	my $prep_intf = $conn_intf->prepare( $routine_node );
+	return( $prep_intf );
 }
 
 ######################################################################
@@ -930,10 +1314,9 @@ sub features {
 
 	# First gather the feature results from each available Engine.
 	my @results = ();
-	my $container = $app_intf->get_srt_node()->get_container();
+	my $container = $app_intf->get_srt_container();
 	foreach my $link_prod_node (@{$container->get_child_nodes( 'data_link_product' )}) {
-		my $env_prep_intf = $app_intf->prepare( $link_prod_node );
-		my $env_intf = $env_prep_intf->execute();
+		my $env_intf = $app_intf->do( $link_prod_node );
 		my $result = $env_intf->features( $feature_name );
 		push( @results, $result );
 	}
@@ -1044,8 +1427,7 @@ sub _prepare__srtn_cat_list {
 	my @lit_prep_intfs = ();
 	my $container = $routine_node->get_container();
 	foreach my $link_prod_node (@{$container->get_child_nodes( 'data_link_product' )}) {
-		my $env_prep_intf = $app_intf->prepare( $link_prod_node );
-		my $env_intf = $env_prep_intf->execute();
+		my $env_intf = $app_intf->do( $link_prod_node );
 		my $lit_prep_intf = $env_intf->prepare( $routine_node );
 		push( @lit_prep_intfs, $lit_prep_intf );
 	}
@@ -1084,7 +1466,7 @@ sub _prepare__call_engine {
 	my $app_inst_node = $app_intf->get_srt_node();
 	my $cat_link_inst_node = undef;
 	foreach my $link (@{$app_inst_node->get_child_nodes( 'catalog_link_instance' )}) {
-		if( $link->get_node_ref_attribute( 'unrealized' ) eq $cat_link_bp_node ) {
+		if( $link->get_node_ref_attribute( 'blueprint' ) eq $cat_link_bp_node ) {
 			$cat_link_inst_node = $link;
 			last;
 		}
@@ -1092,8 +1474,7 @@ sub _prepare__call_engine {
 	my $link_prod_node = $cat_link_inst_node->get_node_ref_attribute( 'product' );
 
 	# Now make sure that the Engine we need is loaded.
-	my $env_prep_intf = $app_intf->prepare( $link_prod_node );
-	my $env_intf = $env_prep_intf->execute();
+	my $env_intf = $app_intf->do( $link_prod_node );
 	# Now repeat the command we ourselves were given against a specific Environment Interface.
 	my $prep_intf = $env_intf->prepare( $routine_node );
 	return( $prep_intf );
@@ -1114,327 +1495,134 @@ __END__
 
 =head1 SYNOPSIS
 
-I<Note: This SYNOPSIS is already out of date.  It will be fixed later.>
-
-I<Note: Look at the SQL::Routine (SRT) documentation for examples of how to
-construct the various SQL commands / Node groups used in this SYNOPSIS. 
-Furthermore, you should look at the SYNOPSIS for Rosetta::Engine::Generic,
-which fleshes out a number of details just relegated to "figure it out" below.>
-
-	use Rosetta; # Module also 'uses' SQL::Routine and Locale::KeyedText.
-
-	eval {
-		my $schema_model = SQL::Routine->new_container(); # global for a simpler illustration, not reality
-
-		main();
-
-		$schema_model->destroy(); # so we don't leak memory
-	};
-	if( $@ ) {
-		print "miscellaneous internal error: ".error_to_string( $@ );
-	}
-
-	sub error_to_string {
-		my ($message) = @_; # Accepts either a Message or Interface or a string.
-		if( ref($message) and UNIVERSAL::isa( $message, 'Rosetta::Interface' ) ) {
-			$message = $message->get_error_message();
-		}
-		my $translator = Locale::KeyedText->new_translator( 
-			['Rosetta::L::', 'SQL::Routine::L::'], ['en'] );
-		my $user_text = $translator->translate_message( $message );
-		unless( $user_text ) {
-			return( ref($message) ? "internal error: can't find user text for a message: ".
-				$message->as_string()." ".$translator->as_string() : $message );
-		}
-		return( $user_text );
-	}
-
-	sub main {
-		# ... Next create and stuff Nodes in $schema_model that represent the application 
-		# blueprint and instance thereof that we are.  Then put a 'application_instance' 
-		# Node for said instance in $application_instance.
-
-		my $application = Rosetta->new_application( $application_instance );
-
-		do_connection( $application );
-
-		$application->destroy(); # so we don't leak memory
-	}
-
-	sub do_connection {
-		my ($application) = @_;
-
-		# ... Next create and stuff Nodes in $schema_model that represent the database we want 
-		# to use (including what data storage product it is) and how we want to link/connect 
-		# to it (including what Rosetta "Engine" plug-in and DSN to use).  Then put a 'routine_stmt' 
-		# Node which instructs to open a connection with said database in $open_db_command.
-
-		my $prepared_open_cmd = eval { 
-			return( $application->prepare( $open_db_command ) );
-		};
-		if( $@ ) {
-			print "internal error: a command is invalid: ".error_to_string( $@ );
-			return( 0 );
-		}
-
-		my $db_conn = undef;
-		while( 1 ) {
-			# ... Next, assuming they are gotten dynamically such as from the user, gather the db 
-			# authentication credentials, username and password, and put them in $user and $pass.
-
-			$db_conn = eval { 
-				return( $prepared_open_cmd->execute( { 'login_name' => $user, 'login_pass' => $pass } ) );
-			}
-			unless( $@ ) {
-				last; # Connection was successful.
-			}
-
-			# If we get here, something went wrong when trying to open the database; eg: the requested 
-			# Engine plug-in doesn't exist, or the DSN doesn't exist, or the user/pass are incorrect.  
-
-			my $error_message = $@->get_error_message();
-
-			# ... Next examine $error_message (a machine-readable Locale::KeyedText::Message 
-			# object) to see if the problem is our fault or the user's fault.
-
-			if( ... user is at fault ... ) {
-				print "sorry, you entered the wrong user/pass, please try again";
-				next;
-			}
-
-			print "sorry, problem opening db, we gotta quit: ".error_to_string( $@ );
-			return( 0 );
-		}
-
-		# Now do the work we connected to the db for.  To simplify this example, it is 
-		# fully non-interactive, such as with a test script.
-		OUTER: {
-			do_install( $db_conn ) or last OUTER;
-			INNER: {
-				do_populate( $db_conn ) or last INNER;
-				do_select( $db_conn );
-			}
-			do_remove( $db_conn );
-		}
-
-		# ... Next make a SRT 'command' to close the db and put it in $close_db_command.
-
-		eval {
-			$db_conn->prepare( $close_db_command )->execute();
-		}; # ignore the result this time
-
-		return( 1 );
-	}
-
-	sub do_install {
-		my ($db_conn) = @_;
-
-		# ... Next create and stuff Nodes in $schema_model that represent a table 
-		# we want to create in our database; let's pretend it is named 'stoff' and 
-		# has 3 columns named 'foo', 'bar', 'baz'.  Then put a 'command' Node which 
-		# instructs to create said table in $create_stoff_command.
-
-		my $result = eval { 
-			return( $db_conn->prepare( $create_stoff_command )->execute() );
-		};
-		if( $@ ) {
-			print "sorry, problem making stoff table: ".error_to_string( $@ );
-			return( 0 );
-		}
-
-		# If we get here, the table was made successfully.
-		return( 1 );
-	}
-
-	sub do_remove {
-		my ($db_conn) = @_;
-
-		# ... Next make a SRT 'command' to drop the table and put it in $drop_stoff_command.
-
-		my $result = eval { 
-			return( $db_conn->prepare( $drop_stoff_command )->execute() );
-		};
-		if( $@ ) {
-			print "sorry, problem removing table: ".error_to_string( $@ );
-			return( 0 );
-		}
-
-		# If we get here, the table was removed successfully.
-		return( 1 );
-	}
-
-	sub do_populate {
-		my ($db_conn) = @_;
-
-		# ... Next create and stuff Nodes in $schema_model that represent a routine which 
-		# inserts a row into the 'stoff' table; it takes 3 arguments named 'a_foo', 
-		# 'a_bar', 'a_baz'.  Then put this 'routine' Node in $insert_stoff_cmd.
-
-		my $prepared_insert_cmd = $db_conn->prepare( $insert_stoff_cmd );
-
-		my @data = (
-			{ 'a_foo' => 'windy', 'a_bar' => 'carrots' , 'a_baz' => 'dirt'  , },
-			{ 'a_foo' => 'rainy', 'a_bar' => 'peas'    , 'a_baz' => 'mud'   , },
-			{ 'a_foo' => 'snowy', 'a_bar' => 'tomatoes', 'a_baz' => 'cement', },
-			{ 'a_foo' => 'sunny', 'a_bar' => 'broccoli', 'a_baz' => 'moss'  , },
-			{ 'a_foo' => 'haily', 'a_bar' => 'onions'  , 'a_baz' => 'stones', },
-		)
-
-		foreach my $data_item (@data) {
-			my $result = eval { 
-				return( $prepared_insert_cmd->execute( $data_item ) );
-			};
-			if( $@ ) {
-				print "sorry, problem stuffing stoff: ".error_to_string( $@ );
-				return( 0 );
-			}
-		}
-
-		# If we get here, the table was populated successfully.
-		return( 1 );
-	}
-
-	sub do_select {
-		my ($db_conn) = @_;
-
-		# ... Next create and stuff Nodes in $schema_model that represent a routine which 
-		# selects a row from the 'stoff' table, where the column 'foo' matches the sole 
-		# routine arg 'a_foo'.  Then put this 'routine' Node in $get_one_stoff_cmd.
-
-		my $get_one_cmd = eval { 
-			return( $db_conn->prepare( $get_one_stoff_cmd ) );
-		}
-		if( $@ ) {
-			print "internal error: a command is invalid: ".error_to_string( $@ );
-			return( 0 );
-		}
-		my $row = eval { 
-			return( $get_one_cmd->execute( { 'a_foo' => 'snowy' } ) );
-		}
-		if( $@ ) ) {
-			print "sorry, problem getting snowy: ".error_to_string( $@ );
-			return( 0 );
-		}
-		my $data = $row->row_data(); # $data is a hash-ref of tbl col name/val pairs.
-
-		# ... Next create and stuff Nodes in $schema_model that represent a routine which 
-		# selects all rows from 'stoff'.  Then put this 'routine' Node in $get_all_stoff_cmd.
-
-		my $get_all_cmd = eval { 
-			return( $db_conn->prepare( $get_all_stoff_cmd ) );
-		}
-		if( $@ ) ) {
-			print "internal error: a command is invalid: ".error_to_string( $@ );
-			return( 0 );
-		}
-		my $cursor = eval { 
-			return( $get_all_cmd->execute() );
-		}
-		if( $@ ) ) {
-			print "sorry, problem getting all stoff: ".error_to_string( $@ );
-			return( 0 );
-		}
-		my @data = ();
-		while( $cursor->has_more_rows() ) {
-			push( @data, $cursor->fetch_row() );
-		}
-		$cursor->finalize();
-		# Each @data element is a hash-ref of tbl col name/val pairs.
-
-		# If we get here, the table was fetched from successfully.
-		return( 1 );
-	}
+I<The previous SYNOPSIS was removed; a new one will be written later.>
 
 =head1 DESCRIPTION
 
-The Rosetta Perl 5 module implements the core of the Rosetta database
-portability framework.  Rosetta defines a complete and rigorous API, having a
-"Command" design pattern, for applications to query and manipulate databases
-with; it handles all common functionality that is representable by SQL or that
-database products implement, both data manipulation and schema manipulation. 
-This Rosetta core does not implement that interface (or most of it), however;
-you use it with your choice of separate "Engine" plug-ins that each understand
-how to talk to particular data storage products or data link products, and
-implement the Rosetta Native Interface (or "RNI") on top of those products.
+The Rosetta Perl 5 module defines a complete and rigorous API for database
+access that provides hassle-free portability between many dozens of database
+products for database-using applications of any size and complexity, that
+leverage all sorts of advanced database product features.  The Rosetta Native
+Interface (RNI) allows you to create specifications for any type of database
+task or activity (eg: queries, DML, DDL, connection management) that look like
+ordinary routines (procedures or functions) to your programs, and execute them
+as such; all routine arguments are named.
 
-The level of abstraction that Rosetta provides is similar to a virtual machine,
-such that applications written to do their database communications through it
-should "just work", without changes, when moved between databases.  This should
-happen with applications of nearly any complexity level, including those that
-use all (most) manner of advanced database features.  It is as if every
-database product out there has full ANSI/ISO SQL:2003 (or 1999 or 1992)
-compliance, so you write in standard SQL that just works anywhere.  Supported
-advanced features include generation and invocation of database stored
-routines, select queries (or views or cursors) of any complexity, [ins,upd,del]
-against views, multiple column keys, nesting, multiple schemas, separation of
-global from site-specific details, host parameters, unicode, binary data,
-triggers, transactions, locking, constraints, data domains, localization,
-proxies, and database to database links.  At the same time, Rosetta is designed
-to be fast and efficient.  Rosetta is designed to work equally well with both
-embedded and client-server databases.
+Rosetta is trivially easy to install, since it is written in pure Perl and its
+whole dependency chain consists of just 2 other pure Perl modules.
 
-The separately released SQL::Routine Perl 5 module is used by Rosetta
-as a core part of its API.  Applications pass SQL::Routine objects in place
-of SQL strings when they want to invoke a database, both for DML and DDL
-activity, and a Rosetta Engine translates those objects into the native SQL (or
-non-SQL) dialect of the database.  Similarly, when a database returns a schema
-dump of some sort, it is passed to the application as SQL::Routine objects
-in place of either SQL strings or "information schema" rows.  You should look
-at SQL::Routine::Language as a general reference on how to construct
-queries or schemas, and also to know what features are or are not supported.
+One of the main goals of Rosetta is similar to that of the Java platform,
+namely "write once, run anywhere".  Code written against the RNI will run in an
+identical fashion with zero changes regardless of what underlying database
+product is in use.  Rosetta is intended to help free users and developers from
+database vendor lock-in, such as that caused by the investment in large
+quantities of vendor-specific code.  It also comes with a comprehensive
+validation suite that proves it is providing identical behaviour no matter what
+the underlying database vendor is.
+
+This module has a multi-layered API that lets you choose between writing fairly
+verbose code that performs faster, or fairly terse code that performs slower.
+
+The RNI is structured in a loosely similar fashion to the DBI module's API, and
+it should be possible to adapt applications written to use the DBI or one of
+its many wrapper modules without too much trouble, if not directly then by way
+of an emulation layer.  One aspect of this similarity is the hierarchy of
+interface objects; you start with a root, which spawns objects that represent
+database connections, each of which spawns objects representing queries or
+statements run against a database through said connections.  Another
+similarity, which is more specific to DBI itself, is that the API definition is
+uncoupled from any particular implementation, such that many specialized
+implementations can exist and be distributed separately.  Also, a multiplicity
+of implementations can be used in parallel by the same application through a
+common interface.  Where DBI gives the name 'driver' to each implementation,
+Rosetta gives the name 'Engine', which may be more descriptive as they sit
+"beneath" the interface; in some cases, an Engine can even be fully
+self-contained, rather than mediating with an external database.  Another
+similarity is that the preparation and execution (with place-holder
+substitution) of database instructions are distinct activities, and you can
+reuse a prepared instruction for multiple executions to get performance gains.
+
+The Rosetta module does not talk to or implement any databases by itself; it 
+is up to separately distributed Engine modules to do this.  You can see a 
+reference implementation of one in the Rosetta::Engine::Generic module.
+
+The main difference between Rosetta and the DBI is that Rosetta takes its input
+primarily as SQL::Routine (SRT) objects, where DBI takes SQL strings.  See the
+documentation for SQL::Routine (distributed separately) for details on how to
+define those objects.  Also, when Rosetta dumps a scanned database schema, it
+does so as SRT objects, while DBI dumps as either SQL strings or simple Perl
+arrays, depending on the schema object type.  Each 'routine' that Rosetta takes
+as input is equivalent to one or more SQL statements, where later statements
+can use the results of earlier ones as their input.  The named argument list of
+a 'routine' is analagous to the bind var list of DBI; each one defines what
+values can be given to the statements at "execute" time.
+
+Unlike SQL strings, SRT objects have very little redundancy, and the parts are
+linked by references rather than by name; the spelling of each SQL identifier
+(such as a table or column name) is stored exactly once; if you change the
+single copy, then all code that refers to the entity updates at once.  SRT
+objects can also store meta-data that SQL strings can't accomodate, and you
+define database actions with the objects in exactly the same way regardless of
+the database product in use; you do not write slightly different versions for
+each as you do with SQL strings.  Developers don't have to restrict their
+conceptual processes into the limits or dialect of a single product, or spend
+time worrying about how to express the same idea against different products.
 
 Rosetta is especially suited for data-driven applications, since the composite
 scalar values in their data dictionaries can often be copied directly to RNI
 structures, saving applications the tedious work of generating SQL themselves.
 
-Depending on what kind of application you are writing, you may be better off to
-not use Rosetta directly as a database interface.  The RNI is quite verbose,
-and using it directly (especially SQL::Routine) can be akin to writing
-assembly language like IMC for Parrot, at least as far as how much work each
-instruction does.  Rosetta is designed this way on purpose so that it can serve
-as a foundation for other database interface modules, such as object
-persistence solutions, or query generators, or application tool kits, or
-emulators, or "simple database interfaces".  Many such modules exist on CPAN
-and all suffer from the same "background problem", which is getting them to
-work with more than one or three databases; for example, many only work with
-MySQL, or just that and PostgreSQL, and a handful do maybe five products. Also,
-there is a frequent lack of support for desirable features like multiple column
-keys.  I hope that such modules can see value in using Rosetta as they now use
-DBI directly; by doing so, they can focus on their added value and not worry
-about the database portability aspect of the equation, which for many was only
-a secondary concern to begin with.  Correspondingly, application writers that
-wish to use Rosetta would be best off having their own set of "summarizing"
-wrapper functions to keep your code down to size, or use another CPAN module
-such as one of the above that does the wrapping for you.
+Rosetta is conceptually a DBI wrapper, whose strongest addition is SQL
+generation, but it also works without the DBI, and with non-SQL databases; it
+is up to each Engine to use or not use DBI, though most will use it because the
+DBI is a high quality and mature platform to build upon.
 
-The Rosetta framework is conceptually similar to the mature and popular Perl
-DBI framework created by Tim Bunce, and loosely resembles that structurally as
-well; in fact, many initial Rosetta Engines are each implemented as a
-value-added wrapper for a DBI DBD module.  But they have significant
-differences as well, so Rosetta should not be considered a mere wrapper of DBI
-(moreover, on the implementation side, the Rosetta core does not require DBI at
-all, and any of its Engines can do their work without it also if they so
-choose).  I see DBI by itself as a generic communications pipe between a
-database and an application, that shuttles mostly opaque boxes back and forth;
-it is a courier that does its transport job very well, while it knows little
-about what it is carrying.  More specifically, it knows a fair amount about
-what it shuttles *from* the database, but considerably less about what is
-shuttled *to* the database (opaque SQL strings, save host parameters).  It is up
-to the application to know and speak the same language as the database, meaning
-the SQL dialect that is in the boxes, so that the database understands what it
-is given.  I see Rosetta by itself as a communications pipe that *does*
-understand the contents of the boxes, and it can translate or reorganize the
-contents of the boxes while moving them, such that an application can always
-speak in the same language regardless of what database it is talking to.  Now,
-you could say that this sounds like Rosetta is a query generator on top of DBI,
-and in many respects you are correct; that is its largest function.  However,
-it can also translate results coming *from* a database, such as massaging
-returned data into a single format for the application, while different
-databases may not return in the same format.  One decision that I made with
-Rosetta, unlike other query generation type modules, is that it will never
-expose any underlying DBI object to the application.  I<Note that I may have
-mis-interpreted DBI's capabilities, so this paragraph stands to be changed as I
-get better educated.>
+The choice between using DBI and using Rosetta seems to be analagous to the
+choice between the C and Java programming languages, respectively, where each
+database product is analagous to a hardware CPU architecture or wider hardware
+platform.  The DBI is great for people who like working as close to the metal
+as possible, with direct access to each database product's native way of doing
+things, those who *want* to talk to their database in its native SQL dialect,
+and those who want the absolute highest performance.  Rosetta is more high
+level, for those who want the write-once run-anywhere experience, less of a
+burden on their creativity, more development time saving features, and are
+willing to sacrifice a modicum of performance for the privilege.
+
+There exist on CPAN many dozens of other modules or frameworks whose modus
+operandi is to wrap the DBI or be used together with it for various reasons,
+such as to provide automated object persistence functionality, or a
+cross-database portability solution, or to provide part of a wider scoped
+application tool kit, or to generate SQL, or to clone databases, or generate
+reports, or provide a web interface, or to provide a "simpler" or "easier to
+use" interface.  So, outside the DBI question, a choice exists between using
+Rosetta and one of these other CPAN modules.  Going into detail on that matter
+is outside the scope of this documentation, but a few salient points are
+offered.  For one thing, Rosetta allows you to do a lot more than the
+alternatives in an elegant fashion; with other modules, you would often have to
+inject fragments of raw SQL into their objects (such as "select" query
+conditionals) to accomplish what you want; with Rosetta, you should never need
+to do any SQL injection.  For another point, Rosetta has a strong emphasis on
+portability between many database products; only a handful of other modules
+support more than 2-3 database products, and many only claim to support one
+(usually MySQL).  Also, more than half of the other modules look like they had
+only 5-20 hours of effort at most put into them, while Rosetta and its related
+modules have likely had over 1000 hours of full time effort put into them.  For
+another point, there is a frequent lack of support for commonly desired
+database features in other modules, such as multiple column keys.  Also, most
+modules have a common structural deficiency such that they are designed to
+support a very specific set of database concepts, and adding more is a lot of
+work; by contrast, Rosetta is internally designed in a heavily data-driven
+fashion, allowing the addition or alternation of many features with little cost
+in effort or complexity.
+
+Perhaps a number of other CPAN modules' authors will see value in adding
+back-end support for Rosetta and/or SQL::Routine to their offerings, either as
+a supplement to their DBI-using native database SQL back-ends, or as a single
+replacement for the lot of them.  Particularly in the latter case, the authors
+will be more freed up to focus on their added value, such as object persistence
+or web interfaces, rather than worrying about portability issues.  As quid quo
+pro, perhaps some of the other CPAN modules (or parts of them) can be used by a
+Rosetta Engine to help it do its work.
 
 Please see the Rosetta::Framework documentation file for more information on
 the Rosetta framework at large.  It shows this current module in the context of
@@ -1761,6 +1949,13 @@ Interface, if it has one.  I<This method may be removed later.>
 This "getter" method returns by reference the SQL::Routine::Node object
 property of this Interface, if it has one.
 
+=head2 get_srt_container()
+
+	my $container = $interface->get_srt_container();
+
+This "getter" method returns by reference the SQL::Routine::Container object
+that is shared by this Interface tree, if there is one.
+
 =head2 get_routine()
 
 	my $routine = $preparation->get_routine();
@@ -1852,9 +2047,25 @@ for the previously "compiled" routine, if it takes any.  Unlike prepare(),
 which usually calls an Engine module's prepare() to do the actual work,
 execute() will not call an Engine directly at all.  Rather, execute() simply
 executes the Perl anonymous subroutine property of the "Preparation" Interface.
- Said routine is created by an Engine's prepare() method and is usually a
+Said routine is created by an Engine's prepare() method and is usually a
 closure, containing within it all the context necessary for work as if the
 Engine was doing it.  Said routine returns new non-prep Interfaces.
+
+=head2 do( ROUTINE_DEFN[, ROUTINE_ARGS] )
+
+This is a simple convenience method that wraps a single prepare/execute
+operation; it cuts in half the number of method calls you have to make, if you
+are only going to execute the same prepared routine once.  You can invoke do()
+in any situation that you can invoke a prepare( ROUTINE_DEFN ) with the same
+first argument; the Preparation object returned by the prepare() has execute([
+ROUTINE_ARGS ]) invoked on it; the Interface object returned by the execute()
+is what do() returns.  Any exceptions thrown by the wrapped methods will
+propagate unchanged to the code that invoked do().  If the execute() phase
+either throws an exception of any kind, usually an 'Error' Interface, or it
+returns a 'Success' Interface, the do() method will destroy() the Preparation
+object that it just made before returning or re-throwing the execute() result;
+if execute() returns any other kind of Interface, the Preparation will not get
+destroyed, as the caller will have a handle on it via the returned result.
 
 =head2 payload()
 
@@ -1893,6 +2104,235 @@ for the new Engine.
 Rosetta::Dispatcher should never be either invoked or sub-classed by you, so
 its method list will remain undocumented and private.
 
+=head1 INTERFACE FUNCTIONS AND METHODS FOR RAPID DEVELOPMENT
+
+The following 9 "setter" functions and methods should assist more rapid
+development of code that uses Rosetta, at the cost of some flexability.  They
+differ from the other Interface functions and methods in that they also create
+or alter the SQL::Routine model associated with a Rosetta Interface tree. 
+These methods are implemented as wrappers over other Rosetta and SQL::Routine
+methods, and allow you to accomplish with one method call what otherwise
+requires at least 4-40 function or method calls, meaning your code base is
+significantly smaller (unless you implement your own simplifying wrapper
+functions, which is recommended in some situations).
+
+Note that when a subroutine is referred to as a "function", it is stateless and
+can be invoked off of either a class name or class object; when a subroutine is
+called a "method", it can only be invoked off of Interface objects.
+
+=head2 build_application()
+
+	my $app_intf = Rosetta->build_application();
+
+This function is like new_application() in that it will create and return a new
+Application Interface object.  This function differs in that it will also
+create a new SQL::Routine model by itself and associate the new Interface with
+it, rather than requiring you to separately make the SRT model.  The created
+model is as close to empty as possible; it contains only 2 SRT Nodes, which are
+1 'application' and 1 related 'application_instance'; the latter becomes the
+SRT_NODE argument for new_application().  The "id" and "si_name" of each new
+Node is given a default generated value.  You can invoke get_srt_node() or
+get_srt_container() on the new Application Interface to access the SRT Nodes
+and model for further additions or changes.
+
+=head2 build_application_with_node_trees( SRT_NODE_DEFN_LIST[, AUTO_ASSERT[, AUTO_IDS[, USE_ABSTRACT]]] )
+
+	my $app_intf = Rosetta->build_application_with_node_trees( [...] );
+
+This function is like build_application() except that it lets you define the
+entire SRT Node hierarchy for the new model yourself; that definition is
+provided in the SRT_NODE_DEFN_LIST argument.  This function expects you to
+define the 'application' and 'application_instance' Nodes yourself, in
+SRT_NODE_DEFN_LIST, and it will link the new Application Interface to the first
+'application_instance' Node that it finds in the newly created SRT model.  This
+method invokes SQL::Routine->build_container( SRT_NODE_DEFN_LIST, AUTO_ASSERT,
+AUTO_IDS, USE_ABSTRACT ) to do most of the work.
+
+=head2 build_environment( ENGINE_NAME )
+
+	my $env_intf = Rosetta->build_environment( 'Rosetta::Engine::Generic' );
+
+This function is like build_application() except that it will also create a new
+'data_link_product' Node, using ENGINE_NAME as the 'product_code' attribute,
+and it will create a new associated Environment Interface object, that fronts a
+newly instantiated Engine object of the ENGINE_NAME class; the Environment
+Interface is returned.
+
+=head2 build_child_environment( ENGINE_NAME )
+
+	my $env_intf = $app_intf->build_child_environment( 'Rosetta::Engine::Generic' );
+
+This method may only be invoked off of an Application Interface.  This method
+is like build_environment( ENGINE_NAME ) except that it will reuse the
+Application Interface that it is invoked off of, and associated Nodes, rather
+than making new ones.  Moreover, if an Environment Interface with the same
+'product_code' already exists under the current Application Interface, then
+build_child_environment() will not create or change anything, but simply return
+the existing Environment Interface object instead of a new one.
+
+=head2 build_connection( SETUP_OPTIONS[, RT_SI_NAME[, RT_ID]] )
+
+	my $conn_intf_sqlite = Rosetta->build_connection( {
+		'data_storage_product' => {
+			'product_code' => 'SQLite',
+			'is_file_based' => 1,
+		},
+		'data_link_product' => {
+			'product_code' => 'Rosetta::Engine::Generic',
+		},
+		'catalog_instance' => {
+			'file_path' => 'test',
+		},
+	} );
+	my $conn_intf_mysql = Rosetta->build_connection( {
+		'data_storage_product' => {
+			'product_code' => 'MySQL',
+			'is_network_svc' => 1,
+		},
+		'data_link_product' => {
+			'product_code' => 'Rosetta::Engine::Generic',
+		},
+		'catalog_link_instance' => {
+			'local_dsn' => 'test',
+			'login_name' => 'jane',
+			'login_pass' => 'pwd',
+		},
+	}, 'declare_conn_to_mysql', 3 );
+
+This function will create and return a new Connection Interface object plus the
+prerequisite SQL::Routine model and Interface and Engine objects.  The
+SETUP_OPTIONS argument is a two-dimensional hash, where each outer hash element
+corresponds to a Node type and each inner hash element corresponds to an
+attribute name and value for that Node type.  There are 6 allowed Node types:
+data_storage_product, data_link_product, catalog_instance,
+catalog_link_instance, catalog_instance_opt, catalog_link_instance_opt; the
+first 4 have a specific set of actual scalar or enumerated attributes that may
+be set; with the latter 2, you can set any number of virtual attributes that
+you choose.  The "setup options" say what Rosetta Engine to test and how to
+configure it to work in your customized environment.  The actual attributes of
+the first 4 Node types should be recognized by all Engines and have the same
+meaning to them; you can set any or all of them (see the SQL::Routine
+documentation for the list) except for "id" and "si_name", which are given
+default generated values.  The build_connection() function requires that, at
+the very least, you provide a 'data_link_product'.'product_code' SETUP_OPTIONS
+value, since that specifies the class name of the Rosetta Engine that
+implements the Connection.  The virtual attributes of the last 2 Node types are
+specific to each Engine (see the Engine's documentation for a list), though an
+Engine may not define any at all.  This function will generate 1 Node each of
+the first 4 Node types, and zero or more each of the last 2 Node types, all of
+which are cross-associated, plus the same Nodes that build_application() does,
+plus 1 each of: 'catalog', catalog_link, 'routine', plus several child Nodes of
+the 'routine'.  The new 'routine' that this function creates is what declares
+the new Connection Interface, and becomes its SRT Node.  Since you are likely
+to declare many routines subsequently in the same SRT model (but unlikely to
+declare more of any of the other aforementioned Node types), this function lets
+you provide explicit "si_name" and "id" attributes for the new 'routine' Node
+only, in the optional arguments RT_SI_NAME and RT_ID respectively.
+
+=head2 build_child_connection( SETUP_OPTIONS[, RT_SI_NAME[, RT_ID]] )
+
+	my $conn_intf_postgres = $env_intf->build_child_connection( {
+		'data_storage_product' => {
+			'product_code' => 'PostgreSQL',
+			'is_network_svc' => 1,
+		},
+		'catalog_link_instance' => {
+			'local_dsn' => 'test',
+			'login_name' => 'jane',
+			'login_pass' => 'pwd',
+		},
+	} );
+
+This method may only be invoked off of an Application or Environment Interface.
+This method is like build_connection( SETUP_OPTIONS, RT_SI_NAME, RT_ID ) except
+that it will reuse the Application and/or Environment Interface that it is
+invoked off of, and associated Nodes, rather than making new ones.  If invoked
+off of an Environment Interface, then any 'data_link_product' info that might
+be provided in SETUP_OPTIONS is ignored.  If invoked off of an Application
+Interface, this method will try to reuse an existing child Environment
+Interface, that matches the given 'data_link_product'.'product_code', before
+making a new one, just as build_child_environment() does.  This method will not
+attempt to reuse any other types of Nodes, so if that's what you want, you
+can't use this method to do it.
+
+=head2 validate_connection_setup_options( SETUP_OPTIONS )
+
+This function is used internally by build_connection() and
+build_child_connection() to confirm that its SETUP_OPTIONS argument is valid,
+prior to it changing the state of anything.  This function is public so that
+external code can use it to perform advance validation on an identical
+configuration structure without side-effects.  Note that this function is not
+thorough; except for the 'data_link_product'.'product_code' (Rosetta Engine
+class name), it does not test that Node attribute entries in SETUP_OPTIONS have
+defined values, and even that single attribute isn't tested beyond that it is
+defined.  Testing for defined and mandatory option values is left to the
+SQL::Routine methods, which are only invoked by build_[child_]_connection().
+
+=head2 destroy_interface_tree()
+
+	my $container = $app_intf->destroy_interface_tree();
+
+This method can be invoked on any Rosetta Interface object and will recursively
+destroy an entire Rosetta Interface tree, starting with the child-most
+Interface objects and working down to the root Interface.  This method does not
+destroy the SQL::Routine model used by the Interfaces, and returns a reference
+to it upon completion, so that you have the option to re-use the model later,
+such as with a new Interface tree.  Note that it is pointless to invoke this on
+an 'Error' or 'Success' Interface object because those types do not live in
+Interface trees, and lack the circular refs to prevent them being
+auto-destroyed when references to them are gone.
+
+=head2 destroy_interface_tree_and_srt_container()
+
+	$app_intf->destroy_interface_tree_and_srt_container();
+
+This function is like destroy_interface_tree() except that it will also destroy
+the SQL::Routine model that the invoked-on Interface tree is using.
+
+=head1 CONNECTION INTERFACE METHODS FOR RAPID DEVELOPMENT
+
+These methods provide a simplified interface to many commonly performed
+database activities, and should should assist more rapid development of code
+that uses Rosetta; they are all implemented as wrappers over other, more
+generic Rosetta and SQL::Routine methods.  All of these methods can only be 
+invoked off of a Connection Interface, because they only make sense within the 
+context of a database connection.  Each of these methods will generate a new 
+SRT 'routine' whose 'routine_context' is the 'CONN' that the invoked-on 
+Connection Interface represents.
+
+I<WARNING: These methods are early prototypes and will be replaced within 1-2
+subsequent Rosetta releases with other methods that behave differently.  The
+current versions will prepare() the new SRT routines and return the Preparation
+Interface to you to execute().  For each method, optional RT_SI_NAME and RT_ID
+arguments are provided; you can give explicit "si_name" and "id" attributes to
+the new 'routine' Node, or such values will be generated.>
+
+=head2 sroutine_catalog_list([ RT_SI_NAME[, RT_ID] ])
+
+This method will build and return a prepared wrapper function for the
+CATALOG_LIST built-in SRT standard routine, which when executed, will return a
+Literal Interface whose payload is an array ref having zero or more newly
+generated 'catalog_link' SRT Nodes, each of which represents an auto-detected
+database catalog instance.
+
+=head2 sroutine_catalog_open([ RT_SI_NAME[, RT_ID] ])
+
+This method will build and return a prepared wrapper procedure for the
+CATALOG_OPEN built-in SRT standard routine, which when executed, will change
+the invoked on Connection from a closed state to an opened state, and will
+return a Success Interface.  The prepared procedure will take 2 optional
+arguments at execute() time, which are 'login_name' and 'login_pass'; these
+values will be used if and only if a 'login_name' and 'login_pass' were not
+provided by the 'catalog_link' SRT Node that was used to make the invoked from
+Connection Interface.
+
+=head2 sroutine_catalog_close([ RT_SI_NAME[, RT_ID] ])
+
+This method will build and return a prepared wrapper procedure for the
+CATALOG_CLOSE built-in SRT standard routine, which when executed, will change
+the invoked on Connection from an opened state to a closed state, and will
+return a Success Interface.
+
 =head1 BUGS
 
 This module is currently in pre-alpha development status, meaning that some
@@ -1906,10 +2346,10 @@ releases, once I start using it in a production environment myself.
 
 =head1 SEE ALSO
 
-perl(1), Rosetta::L::en, Rosetta::Features, Rosetta::Framework, SQL::Routine,
-Locale::KeyedText, Rosetta::Engine::Generic, DBI, Alzabo, SPOPS, Class::DBI,
-Tangram, HDB, DBIx::RecordSet, DBIx::SearchBuilder, SQL::Schema,
-DBIx::Abstract, DBIx::AnyDBD, DBIx::Browse, DBIx::SQLEngine, MKDoc::SQL, and
-various other modules.
+perl(1), Rosetta::L::en, Rosetta::Features, Rosetta::Framework,
+Locale::KeyedText, SQL::Routine, Rosetta::Engine::Generic, DBI, Alzabo, SPOPS,
+Class::DBI, Tangram, HDB, DBIx::RecordSet, DBIx::SearchBuilder, SQL::Schema,
+DBIx::Abstract, DBIx::AnyDBD, DBIx::Browse, DBIx::SQLEngine, MKDoc::SQL,
+Data::Transactional, DBIx::ModelUpdate, and various other modules.
 
 =cut

@@ -10,9 +10,9 @@ package Rosetta::Validator;
 use 5.006;
 use strict;
 use warnings;
-our $VERSION = '0.38';
+our $VERSION = '0.39';
 
-use Rosetta '0.38';
+use Rosetta '0.39';
 
 ######################################################################
 
@@ -24,7 +24,7 @@ Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	Rosetta 0.38
+	Rosetta 0.39
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -73,11 +73,13 @@ suggesting improvements to the standard version.
 # Names of properties for objects of the Rosetta::Validator class are declared here:
 # These are static configuration properties:
 my $PROP_TRACE_FH = 'trace_fh'; # ref to writeable Perl file handle
-my $PROP_ENGINE_NAME = 'engine_name'; # str - Name of the Rosetta Engine module to test.
-my $PROP_ENGINE_ECO = 'engine_eco'; # hash(str,str) - Engine Config Options for module to test.
+my $PROP_SETUP_OPTS = 'setup_opts'; # hash(str,hash(str,str)) - 
+	# Says what Engine to test and how to configure it to work in the tester's environment.
+	# Outer hash has a SRT Node name as a key and a hash of attribute name/value pairs as the value.
 # These are just used internally for holding state:
-my $PROP_ENG_ENV_FEAT = 'eng_env_feat'; # The Engine's declared feature support at Env level.
 my $PROP_TEST_RESULTS = 'test_results'; # Accumulate test results while tests being run.
+my $PROP_ENG_ENV_FEAT = 'eng_env_feat'; # The Engine's declared feature support at Env level.
+my $PROP_ENG_CONN_FEAT = 'eng_conn_feat'; # The Engine's declared feature support at Conn level.
 
 # Names of $PROP_TEST_RESULTS list elements go here:
 my $TR_FEATURE_KEY = 'FEATURE_KEY';
@@ -105,17 +107,26 @@ sub total_possible_tests {
 }
 
 ######################################################################
-# These are private utility functions.
 
-sub _throw_error_message {
-	my ($self, $error_code, $args) = @_;
-	die Locale::KeyedText->new_message( $error_code, $args );
+sub main {
+	my ($class, $setup_options, $trace_fh) = @_;
+	my $validator = bless( {}, ref($class) || $class );
+
+	Rosetta->validate_connection_setup_options( $setup_options ); # dies on problem
+
+	$validator->{$PROP_TRACE_FH} = $trace_fh; # may be undef
+	$validator->{$PROP_SETUP_OPTS} = $setup_options;
+	$validator->{$PROP_TEST_RESULTS} = [];
+	$validator->{$PROP_ENG_ENV_FEAT} = {};
+
+	$validator->main_dispatch(); # any errors generated here go in TEST_RESULTS, presumably
+
+	return( $validator->{$PROP_TEST_RESULTS} ); # by ref not a problem, orig ref is now gone
 }
 
 ######################################################################
-# These are private utility functions.
 
-sub _new_result {
+sub new_result {
 	my ($validator, $feature_key) = @_;
 	my $result = {
 		$TR_FEATURE_KEY => $feature_key,
@@ -126,12 +137,12 @@ sub _new_result {
 	return( $result );
 }
 
-sub _pass_result {
+sub pass_result {
 	my ($validator, $result) = @_;
 	$result->{$TR_FEATURE_STATUS} = $TRS_PASS;
 }
 
-sub _fail_result {
+sub fail_result {
 	my ($validator, $result, $error_code, $args, $eng_message) = @_;
 	$result->{$TR_FEATURE_STATUS} = $TRS_FAIL;
 	$result->{$TR_VAL_ERROR_MSG} = Locale::KeyedText->new_message( $error_code, $args );
@@ -143,240 +154,125 @@ sub _fail_result {
 	}
 }
 
-sub _misc_result {
+sub misc_result {
 	my ($validator, $result, $exception) = @_;
 	if( $exception ) {
 		if( ref($exception) ) {
-			$validator->_fail_result( $result, 'ROSVAL_FAIL_MISC_OBJ', undef, $exception );
+			$validator->fail_result( $result, 'ROSVAL_FAIL_MISC_OBJ', undef, $exception );
 		} else {
-			$validator->_fail_result( $result, 'ROSVAL_FAIL_MISC_STR', { 'VALUE' => $exception } );
+			$validator->fail_result( $result, 'ROSVAL_FAIL_MISC_STR', { 'VALUE' => $exception } );
 		}
 	} else {
-		$validator->_pass_result( $result );
+		$validator->pass_result( $result );
 	}
 }
 
 ######################################################################
-# These are private utility functions.
 
-sub _setup_test {
+sub setup_app {
 	my ($validator) = @_;
-	my $engine_name = $validator->{$PROP_ENGINE_NAME};
-
-	my $model = SQL::Routine->new_container();
-	$model->auto_assert_deferrable_constraints( 1 );
-	$model->auto_set_node_ids( 1 );
-
-	my $dlp_node = $model->build_node( 'data_link_product', 
-		{ 'name' => $engine_name, 'product_code' => $engine_name, } );
-
-	my $app_bp_node = $model->build_node( 'application', 
-		{ 'name' => 'Validator Application Blueprint' } );
-	my $app_inst_node = $model->build_node( 'application_instance', 
-		{ 'name' => 'Validator Application Instance', 'blueprint' => $app_bp_node } );
-
-	my $app_intf = Rosetta->new_application( $app_inst_node );
+	my $app_intf = Rosetta->build_application();
 	$app_intf->set_trace_fh( $validator->{$PROP_TRACE_FH} );
-
-	$model->assert_deferrable_constraints();
-
+	my $container = $app_intf->get_srt_container();
+	$container->auto_assert_deferrable_constraints( 1 );
+	$container->auto_set_node_ids( 1 );
 	return( $app_intf );
 }
 
-sub _takedown_test {
-	my ($validator, $app_intf) = @_;
-	my $model = $app_intf->get_srt_node()->get_container();
-	$validator->_takedown_test_destroy_intf_tree( $app_intf );
-	$model->destroy();
-}
-
-sub _takedown_test_destroy_intf_tree {
-	my ($validator, $intf) = @_;
-	foreach my $child_intf (@{$intf->get_child_interfaces()}) {
-		$validator->_takedown_test_destroy_intf_tree( $child_intf );
+sub setup_env {
+	my ($validator) = @_;
+	my $app_intf = $validator->setup_app();
+	my $env_intf = eval {
+		my $engine_name = $validator->{$PROP_SETUP_OPTS}->{'data_link_product'}->{'product_code'};
+		return( $app_intf->build_child_environment( $engine_name ) );
+	};
+	if( my $exception = $@ ) {
+		$app_intf->destroy_interface_tree_and_srt_container(); # avoid memory leaks
+		die $exception;
 	}
-	$intf->destroy();
+	return( $env_intf );
 }
 
-######################################################################
-
-sub new {
-	my ($class) = @_;
-	my $validator = bless( {}, ref($class) || $class );
-
-	$validator->{$PROP_TRACE_FH} = undef;
-	$validator->{$PROP_ENGINE_NAME} = undef;
-	$validator->{$PROP_ENGINE_ECO} = {};
-	$validator->{$PROP_ENG_ENV_FEAT} = {};
-	$validator->{$PROP_TEST_RESULTS} = [];
-
-	return( $validator );
-}
-
-######################################################################
-
-sub get_trace_fh {
-	my ($validator) = @_;
-	return( $validator->{$PROP_TRACE_FH} );
-}
-
-sub clear_trace_fh {
-	my ($validator) = @_;
-	$validator->{$PROP_TRACE_FH} = undef;
-}
-
-sub set_trace_fh {
-	my ($validator, $new_fh) = @_;
-	$validator->{$PROP_TRACE_FH} = $new_fh;
-}
-
-######################################################################
-
-sub get_engine_name {
-	my ($validator) = @_;
-	return( $validator->{$PROP_ENGINE_NAME} );
-}
-
-sub clear_engine_name {
-	my ($validator) = @_;
-	$validator->{$PROP_ENGINE_NAME} = undef;
-}
-
-sub set_engine_name {
-	my ($validator, $engine_name) = @_;
-	defined( $engine_name ) or $validator->_throw_error_message( 'ROSVAL_SET_ENG_NO_ARG' );
-	$validator->{$PROP_ENGINE_NAME} = $engine_name;
-}
-
-######################################################################
-
-sub get_engine_config_option {
-	my ($validator, $eco_name) = @_;
-	defined( $eco_name ) or $validator->_throw_error_message( 'ROSVAL_GET_ECO_NO_ARG' );
-	return( $validator->{$PROP_ENGINE_ECO}->{$eco_name} );
-}
-
-sub get_engine_config_options {
-	my ($validator) = @_;
-	return( {%{$validator->{$PROP_ENGINE_ECO}}} );
-}
-
-sub clear_engine_config_option {
-	my ($validator, $eco_name) = @_;
-	defined( $eco_name ) or $validator->_throw_error_message( 'ROSVAL_CLEAR_ECO_NO_ARG' );
-	$validator->{$PROP_ENGINE_ECO}->{$eco_name} = undef;
-}
-
-sub clear_engine_config_options {
-	my ($validator) = @_;
-	%{$validator->{$PROP_ENGINE_ECO}} = ();
-}
-
-sub set_engine_config_option {
-	my ($validator, $eco_name, $eco_value) = @_;
-	defined( $eco_name ) or $validator->_throw_error_message( 'ROSVAL_SET_ECO_NO_NAME' );
-	defined( $eco_value ) or $validator->_throw_error_message( 'ROSVAL_SET_ECO_NO_VALUE' );
-	$validator->{$PROP_ENGINE_ECO}->{$eco_name} = $eco_value;
-}
-
-sub set_engine_config_options {
-	my ($validator, $ec_opts) = @_;
-	defined( $ec_opts ) or $validator->_throw_error_message( 'ROSVAL_SET_ECOS_NO_ARGS' );
-	unless( ref($ec_opts) eq 'HASH' ) {
-		$validator->_throw_error_message( 'ROSVAL_SET_ECOS_BAD_ARGS', { 'ARG' => $ec_opts } );
+sub setup_conn {
+	my ($validator, $rt_si_name) = @_;
+	my $app_intf = $validator->setup_app();
+	my $conn_intf = eval {
+		return( $app_intf->build_child_connection( 
+			$validator->{$PROP_SETUP_OPTS}, $rt_si_name ) );
+	};
+	if( my $exception = $@ ) {
+		$app_intf->destroy_interface_tree_and_srt_container(); # avoid memory leaks
+		die $exception;
 	}
-	%{$validator->{$PROP_ENGINE_ECO}} = (%{$validator->{$PROP_ENGINE_ECO}}, %{$ec_opts});
+	return( $conn_intf );
 }
 
 ######################################################################
 
-sub get_test_results {
+sub main_dispatch {
 	my ($validator) = @_;
-	return( [@{$validator->{$PROP_TEST_RESULTS}}] );
-}
-
-sub clear_test_results {
-	my ($validator) = @_;
-	@{$validator->{$PROP_TEST_RESULTS}} = ();
-}
-
-######################################################################
-
-sub perform_tests {
-	my ($validator) = @_;
-	defined( $validator->{$PROP_ENGINE_NAME} ) or 
-		$validator->_throw_error_message( 'ROSVAL_PER_TESTS_NO_ENG_NM' );
-	$validator->perform_tests_load();
-	$validator->perform_tests_catalog_list();
-	$validator->perform_tests_catalog_info();
-	$validator->perform_tests_conn_basic();
-	$validator->perform_tests_tran_basic();
+	$validator->test_load();
+	$validator->test_catalog_list();
+	$validator->test_catalog_info();
+	$validator->test_conn_basic();
+	$validator->test_tran_basic();
 }
 
 ######################################################################
 
-sub perform_tests_load {
+sub test_load {
 	my ($validator) = @_;
-	my $result = $validator->_new_result( 'LOAD' );
-	$validator->{$PROP_ENGINE_NAME} or return( 1 ); # all tests skipped
-
-	my $app_intf = $validator->_setup_test();
-	my $model = $app_intf->get_srt_node()->get_container();
-	my $dlp_node = $model->get_node( 'data_link_product', 1 );
+	my $result = $validator->new_result( 'LOAD' );
 
 	SWITCH: {
 		my $env_intf = eval {
-			my $prep_intf = $app_intf->prepare( $dlp_node );
-			return( $prep_intf->execute() );
+			return( $validator->setup_env() );
 		};
-		$validator->_misc_result( $result, $@ ); $@ and last SWITCH;
+		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 
 		$validator->{$PROP_ENG_ENV_FEAT} = eval {
 			return( $env_intf->features() );
 		};
-		$validator->_misc_result( $result, $@ ); $@ and last SWITCH;
-	}
+		$env_intf->destroy_interface_tree_and_srt_container();
+		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 
-	$validator->_takedown_test( $app_intf );
+		my $conn_intf = eval {
+			return( $validator->setup_conn( 'declare_db_conn' ) );
+		};
+		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
+
+		$validator->{$PROP_ENG_CONN_FEAT} = eval {
+			return( $conn_intf->features() );
+		};
+		$conn_intf->destroy_interface_tree_and_srt_container();
+
+		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
+	}
 }
 
 ######################################################################
 
-sub perform_tests_catalog_list {
+sub test_catalog_list {
 	my ($validator) = @_;
-	my $result = $validator->_new_result( 'CATALOG_LIST' );
+	my $result = $validator->new_result( 'CATALOG_LIST' );
 
 	$validator->{$PROP_ENG_ENV_FEAT}->{'CATALOG_LIST'} or return;
 
-	my $app_intf = $validator->_setup_test();
-	my $model = $app_intf->get_srt_node()->get_container();
-	my $app_bp_node = $app_intf->get_srt_node()->get_node_ref_attribute( 'blueprint' );
-
-	my $routine_node = $app_bp_node->build_child_node_tree( 'routine', 
-		{ 'name' => 'catalog_list', 'routine_type' => 'FUNCTION', 'return_cont_type' => 'SRT_NODE_LIST' }, 
-		[
-			[ 'routine_stmt', { 'call_sroutine' => 'RETURN' }, 
-				[
-					[ 'routine_expr', { 'call_sroutine_arg' => 'RETURN_VALUE', 
-						'cont_type' => 'SRT_NODE_LIST', 'valf_call_sroutine' => 'CATALOG_LIST' } ],
-				],
-			],
-		],
-	);
-	$model->assert_deferrable_constraints();
+	my $env_intf = $validator->setup_env();
+	my $container = $env_intf->get_srt_container();
 
 	SWITCH: {
 		my $payload = eval {
-			my $prep_intf = $app_intf->prepare( $routine_node );
+			my $prep_intf = $env_intf->sroutine_catalog_list( 'catalog_list' );
 			my $lit_intf = $prep_intf->execute();
 			my $payload = $lit_intf->payload();
-			$model->assert_deferrable_constraints();
+			$container->assert_deferrable_constraints();
 			return( $payload );
 		};
-		$validator->_misc_result( $result, $@ ); $@ and last SWITCH;
+		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 
 		if( my $trace_fh = $validator->{$PROP_TRACE_FH} ) {
-			my $engine_name = $validator->{$PROP_ENGINE_NAME};
+			my $engine_name = $validator->{$PROP_SETUP_OPTS}->{'data_link_product'}->{'product_code'};
 			print $trace_fh "$engine_name returned a Literal Interface having this payload:".
 				"\n----------\n".
 				join( "", map { $_->get_all_properties_as_xml_str() } @{$payload} ).
@@ -384,14 +280,14 @@ sub perform_tests_catalog_list {
 		}
 	}
 
-	$validator->_takedown_test( $app_intf );
+	$env_intf->destroy_interface_tree_and_srt_container();
 }
 
 ######################################################################
 
-sub perform_tests_catalog_info {
+sub test_catalog_info {
 	my ($validator) = @_;
-	my $result = $validator->_new_result( 'CATALOG_INFO' );
+	my $result = $validator->new_result( 'CATALOG_INFO' );
 
 	$validator->{$PROP_ENG_ENV_FEAT}->{'CATALOG_INFO'} or return;
 
@@ -400,118 +296,36 @@ sub perform_tests_catalog_info {
 
 ######################################################################
 
-sub perform_tests_conn_basic {
+sub test_conn_basic {
 	my ($validator) = @_;
-	my $result = $validator->_new_result( 'CONN_BASIC' );
+	my $result = $validator->new_result( 'CONN_BASIC' );
 
 	$validator->{$PROP_ENG_ENV_FEAT}->{'CONN_BASIC'} or return;
 
-	my $rh_config = $validator->{$PROP_ENGINE_ECO};
-
-	my $app_intf = $validator->_setup_test();
-	my $app_inst_node = $app_intf->get_srt_node();
-	my $app_bp_node = $app_inst_node->get_node_ref_attribute( 'blueprint' );
-	my $model = $app_inst_node->get_container();
-	my $dlp_node = $model->get_node( 'data_link_product', 1 );
-
-	my $sdt_auth_node = $model->build_node( 'scalar_data_type', 
-		{ 'name' => 'loginauth', 'base_type' => 'STR_CHAR', 'max_chars' => 20, 'char_enc' => 'UTF8' } );
-
-	my $cat_bp_node = $model->build_node( 'catalog', 
-		{ 'name' => 'Validator Catalog Blueprint' } );
-	my $cat_link_bp_node = $app_bp_node->build_child_node( 'catalog_link', 
-		{ 'name' => 'da_link', 'target' => $cat_bp_node } );
-
-	my $rt_decl_node = $app_bp_node->build_child_node( 'routine', 
-		{ 'name' => 'declare_db_conn', 'routine_type' => 'FUNCTION', 'return_cont_type' => 'CONN' } );
-	my $rtv_decl_conn_cx_node = $rt_decl_node->build_child_node( 'routine_var', 
-		{ 'name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => $cat_link_bp_node } );
-	my $rts_decl_return_node = $rt_decl_node->build_child_node_tree( 'routine_stmt', 
-		{ 'call_sroutine' => 'RETURN' }, 
-		[
-			[ 'routine_expr', { 'call_sroutine_arg' => 'RETURN_VALUE', 
-				'cont_type' => 'CONN', 'valf_p_routine_var' => $rtv_decl_conn_cx_node } ],
-		],
-	);
-
-	my $rt_open_node = $app_bp_node->build_child_node( 'routine', 
-		{ 'name' => 'open_db_conn', 'routine_type' => 'PROCEDURE' } );
-	my $rtc_open_conn_cx_node = $rt_open_node->build_child_node( 'routine_context', 
-		{ 'name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => $cat_link_bp_node } );
-	my $rta_open_user_node = $rt_open_node->build_child_node( 'routine_arg', 
-		{ 'name' => 'login_name', 'cont_type' => 'SCALAR', 'scalar_data_type' => $sdt_auth_node } );
-	my $rta_open_pass_node = $rt_open_node->build_child_node( 'routine_arg', 
-		{ 'name' => 'login_pass', 'cont_type' => 'SCALAR', 'scalar_data_type' => $sdt_auth_node } );
-	my $rts_open_node = $rt_open_node->build_child_node_tree( 'routine_stmt', 
-		{ 'call_sroutine' => 'CATALOG_OPEN' }, 
-		[
-			[ 'routine_expr', { 'call_sroutine_cxt' => 'CONN_CX', 
-				'cont_type' => 'CONN', 'valf_p_routine_cxt' => $rtc_open_conn_cx_node } ],
-			[ 'routine_expr', { 'call_sroutine_arg' => 'LOGIN_NAME', 
-				'cont_type' => 'SCALAR', 'valf_p_routine_arg' => $rta_open_user_node } ],
-			[ 'routine_expr', { 'call_sroutine_arg' => 'LOGIN_PASS', 
-				'cont_type' => 'SCALAR', 'valf_p_routine_arg' => $rta_open_pass_node } ],
-		],
-	);
-
-	my $rt_close_node = $app_bp_node->build_child_node( 'routine', 
-		{ 'name' => 'close_db_conn', 'routine_type' => 'PROCEDURE' } );
-	my $rtc_close_conn_cx_node = $rt_close_node->build_child_node( 'routine_context', 
-		{ 'name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => $cat_link_bp_node } );
-	my $rts_close_node = $rt_close_node->build_child_node_tree( 'routine_stmt', 
-		{ 'call_sroutine' => 'CATALOG_CLOSE' }, 
-		[
-			[ 'routine_expr', { 'call_sroutine_cxt' => 'CONN_CX', 
-				'cont_type' => 'CONN', 'valf_p_routine_cxt' => $rtc_close_conn_cx_node } ],
-		],
-	);
-
-	my $dsp_node = $model->build_node( 'data_storage_product', 
-		{ 'name' => 'The Data Storage Product', 
-		'product_code' => ($rh_config->{'product_code'} || 'ExampleP'),
-		'is_local_proc' => 0 } );
-
-	my $cat_inst_node = $model->build_node( 'catalog_instance', 
-		{ 'name' => 'Validator Catalog Instance', 'product' => $dsp_node, 'blueprint' => $cat_bp_node } );
-	my $cat_link_inst_node = $app_inst_node->build_child_node( 'catalog_link_instance', 
-		{ 'product' => $dlp_node, 'unrealized' => $cat_link_bp_node, 'target' => $cat_inst_node } );
-
-	foreach my $opt_key (keys %{$rh_config}) {
-		my $opt_value = $rh_config->{$opt_key};
-		$cat_link_inst_node->build_child_node( 'catalog_link_instance_opt', 
-			{ 'key' => $opt_key, 'value' => $opt_value } );
-	}
-
-	$model->assert_deferrable_constraints();
+	my $conn_intf = $validator->setup_conn( 'declare_db_conn' );
 
 	SWITCH: {
-		my $conn_intf = eval {
-			my $prep_intf = $app_intf->prepare( $rt_decl_node );
-			return( $prep_intf->execute() );
-		};
-		$validator->_misc_result( $result, $@ ); $@ and last SWITCH;
-
 		eval {
-			my $prep_intf = $conn_intf->prepare( $rt_open_node );
+			my $prep_intf = $conn_intf->sroutine_catalog_open( 'open_db_conn' );
 			$prep_intf->execute();
 		};
-		$validator->_misc_result( $result, $@ ); $@ and last SWITCH;
+		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 
 		eval {
-			my $prep_intf = $conn_intf->prepare( $rt_close_node );
+			my $prep_intf = $conn_intf->sroutine_catalog_close( 'close_db_conn' );
 			$prep_intf->execute();
 		};
-		$validator->_misc_result( $result, $@ ); $@ and last SWITCH;
+		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 	}
 
-	$validator->_takedown_test( $app_intf );
+	$conn_intf->destroy_interface_tree_and_srt_container();
 }
 
 ######################################################################
 
-sub perform_tests_tran_basic {
+sub test_tran_basic {
 	my ($validator) = @_;
-	my $result = $validator->_new_result( 'TRAN_BASIC' );
+	my $result = $validator->new_result( 'TRAN_BASIC' );
 
 	$validator->{$PROP_ENG_ENV_FEAT}->{'TRAN_BASIC'} or return;
 
@@ -530,12 +344,46 @@ This example demonstrates how Rosetta::Validator could be used in the standard
 test suite for an Engine module; in fact, this example is a simplified version
 of the actual t/*.t file for the Rosetta::Engine::Generic module.
 
-	#!/usr/bin/perl
+This is the content of a t_setup.pl, for a SQLite database:
+
+	my $setup_options = {
+		'data_storage_product' => {
+			'product_code' => 'SQLite',
+			'is_file_based' => 1,
+		},
+		'data_link_product' => {
+			'product_code' => 'Rosetta::Engine::Generic',
+		},
+		'catalog_instance' => {
+			'file_path' => 'test',
+		},
+	};
+
+This is the content of a t_setup.pl, for a MySQL database:
+
+	my $setup_options = {
+		'data_storage_product' => {
+			'product_code' => 'MySQL',
+			'is_network_svc' => 1,
+		},
+		'data_link_product' => {
+			'product_code' => 'Rosetta::Engine::Generic',
+		},
+		'catalog_link_instance' => {
+			'local_dsn' => 'test',
+			'login_name' => 'jane',
+			'login_pass' => 'pwd',
+		},
+	};
+
+This is a generalized version of Rosetta_Extensions.t:
+
+	#!perl
 
 	use strict; use warnings;
-	use Rosetta::Validator;
-
 	BEGIN { $| = 1; }
+	use Rosetta::Validator;
+	BEGIN { print "1..".Rosetta::Validator->total_possible_tests()."\n"; }
 
 	my $test_num = 0;
 
@@ -572,42 +420,39 @@ of the actual t/*.t file for the Rosetta::Engine::Generic module.
 		return( $message ); # if this isn't the right kind of object
 	}
 
-	eval {
-		my $total_tests_per_invoke = Rosetta::Validator->total_possible_tests();
-		print "1..$total_tests_per_invoke\n";
-
-		my $config_filepath = shift( @ARGV ); # set from first command line arg; '0' means none
-		my $rh_config = {};
-		if( $config_filepath ) {
-			$rh_config = do $config_filepath;
+	sub import_setup_options {
+		my ($setup_filepath) = @_;
+		my $setup_options = do $setup_filepath;
+		unless( ref($setup_options) eq 'HASH' ) {
+			my $err_str = "can't obtain test setup specs from Perl file '".$setup_filepath."'; ";
+			if( defined( $setup_options ) ) {
+				$err_str .= "result is not a hash ref, but '$setup_options'";
+			} elsif( $@ ) {
+				$err_str .= "compilation or runtime error of '$@'";
+			} else {
+				$err_str .= "file system error of '$!.'";
+			}
+			die "$err_str\n";
 		}
+		return( $setup_options );
+	}
 
+	eval {
+		my $setup_filepath = shift( @ARGV ) || 't_setup.pl'; # set from first command line arg; '0' means use default name
 		my $trace_to_stdout = shift( @ARGV ) ? 1 : 0; # set from second command line arg
 
-		my $validator = Rosetta::Validator->new();
-		$trace_to_stdout and $validator->set_trace_fh( \*STDOUT );
-		$validator->set_engine_name( 'Rosetta::Engine::Generic' );
-		$validator->set_engine_config_options( $rh_config );
+		my $setup_options = import_setup_options( $setup_filepath );
+		my $trace_fh = $trace_to_stdout ? \*STDOUT : undef;
 
-		$validator->perform_tests();
+		my $test_results = Rosetta::Validator->main( $setup_options, $trace_fh );
 
-		foreach my $result (@{$validator->get_test_results()}) {
+		foreach my $result (@{$test_results}) {
 			print_result( $result );
 		}
 	};
-	$@ and print "TESTS ABORTED: ".object_to_string( $@ ); # errors in test suite itself, or core modules
+	$@ and print "TESTS ABORTED: ".object_to_string( $@ )."\n"; # errors in test suite itself, or core modules
 
 	1;
-
-Here is the content of an example configuration file that one can use with said
-test script:
-
-	my $rh_config = {
-		'product_code' => 'MySQL',
-		'local_dsn' => 'test',
-		'login_name' => 'jane',
-		'login_pass' => 'pwd',
-	};
 
 =head1 DESCRIPTION
 
@@ -640,168 +485,54 @@ finished, given the seemingly infinite size of the task.  You are welcome and
 encouraged to submit more tests to be included in this suite at any time, as
 holes in coverage are discovered.
 
-=head1 CONSTRUCTOR FUNCTIONS AND METHODS
+=head1 SYNTAX
 
-This function/method is stateless and can be invoked off of either this
-module's name or an existing module object, with the same result.
+This class does not export any functions or methods, so you need to call them
+using object notation.  This means using B<Class-E<gt>function()> for functions
+and B<$object-E<gt>method()> for methods.  If you are inheriting this class for
+your own modules, then that often means something like B<$self-E<gt>method()>. 
 
-=head2 new()
+=head1 PUBLIC FUNCTIONS
 
-	my $validator = Rosetta::Validator->new();
-	my $validator2 = $validator->new();
-
-This "getter" function/method will create and return a single
-Rosetta::Validator (or subclass) object.  All of this object's properties are
-set to default undefined values; you will at the very least have to set
-engine_name() afterwards.
-
-=head1 STATIC CONFIGURATION PROPERTY ACCESSOR METHODS
-
-These methods are stateful and can only be invoked from this module's objects.
-This set of properties are generally set once at the start of a Validator
-object's life and aren't changed later (though they can be), since they are
-generally static configuration data.
-
-=head2 get_trace_fh()
-
-	my $fh = $validator->get_trace_fh();
-
-This "getter" method returns by reference the writeable Perl trace file handle
-property of of this object, if it is set.  When set, details of what
-Rosetta::Validator and the Engines that it tests are doing will be written to
-the file handle; to turn off the tracing, just clear the property.  This class
-does not open or close the file; your external code must do that.
-
-=head2 clear_trace_fh()
-
-	$validator->clear_trace_fh();
-
-This "setter" method clears the trace file handle property of this object, if
-it was set, thereby turning off any tracing output.
-
-=head2 set_trace_fh( NEW_FH )
-
-	$validator->set_trace_fh( \*STDOUT );
-
-This "setter" method sets or replaces the trace file handle property of this
-object to a new writeable Perl file handle, provided in NEW_FH, so any
-subsequent tracing output is sent there.
-
-=head2 get_engine_name()
-
-	my $engine_name = $validator->get_engine_name();
-
-This "getter" method returns this object's "engine name" character string
-property.  This property defines the name of the Rosetta Engine module that you
-want this Validator object to test.
-
-=head2 clear_engine_name()
-
-	$validator->clear_engine_name();
-
-This "setter" method clears the "engine name" property.
-
-=head2 set_engine_name( ENGINE_NAME )
-
-	$validator->set_engine_name( 'Rosetta::Engine::Generic' );
-
-This "setter" method sets or replaces the "engine name" property.
-
-=head2 get_engine_config_option( ECO_NAME )
-
-This "getter" method will return one value for this object's "engine
-configuration options" property, which matches the ECO_NAME argument.  This
-property sets up operational parameters for the Rosetta Engine module, where it
-takes options; examples being the name of the data source name or the
-authorization identifier to use.
-
-=head2 get_engine_config_options()
-
-This "getter" method will fetch all of this object's "engine configuration
-options", returning them in a Hash ref.
-
-=head2 clear_engine_config_option( ECO_NAME )
-
-This "setter" method will clear one "engine configuration options" value, which
-matches the ECO_NAME argument.
-
-=head2 clear_engine_config_options()
-
-This "setter" method will clear all of the "engine configuration options".
-
-=head2 set_engine_config_option( ECO_NAME, ECO_VALUE )
-
-	$validator->set_engine_config_option( 'local_dsn', 'test' );
-	$validator->set_engine_config_option( 'dbi_driver', 'mysql' );
-
-This "setter" method will set or replace one "engine configuration options"
-value, which matches the ECO_NAME argument, giving it the new value specified
-in ECO_VALUE.
-
-=head2 set_engine_config_options( EC_OPTS )
-
-	$validator->set_engine_config_options( { 'login_name' => 'jane', 'login_pass' => 'pawd' } );
-
-This "setter" method will set or replace multiple "engine configuration
-options" values, whose names and values are specified by keys and values of the
-EC_OPTS hash ref argument.
-
-=head1 DYNAMIC STATE MAINTENANCE PROPERTY ACCESSOR METHODS
-
-These methods are stateful and can only be invoked from this module's objects.
-Each of these contains the results of a test performing method call.
-
-=head2 get_test_results()
-
-This "getter" method returns a new array ref having a copy of this object's
-"test results" array property.  This property is explicitely emptied by
-external code, by invoking the clear_test_results() method, prior to that code
-requesting that we perform one or more tests.  As soon as said tests are
-performed, external code reads this array's values using the get_test_results()
-method.  Each element of the "test results" array is a hash ref containing
-these 5 elements:  1. 'FEATURE_KEY'.  2. 'FEATURE_STATUS'; one of 'SKIP' (test
-was not run at all), 'PASS' (test was run and passed), 'FAIL' (test was run and
-failed); for the first 2, the Engine said it had support for the feature, and
-for the third it said that it did not.  3. 'FEATURE_DESC_MSG'; a
-Locale::KeyedText::Message (LKT) object that is the Validator module's
-description of what DBMS/Engine feature is being tested.  4. 'VAL_ERROR_MSG'; a
-LKT object that is set when 'FEATURE_STATUS' is 'FAIL'; this is the Validator
-module's own Error Message, if a test failed; this is made for a failure
-regardless of whether the Engine threw its own exception.  5. 'ENG_ERROR_MSG';
-a LKT object that is the Error Message that the Rosetta Interface or Engine
-threw, if any.
-
-=head2 clear_test_results()
-
-This "setter" method empties this object's "positional host param map array"
-array property.  See the previous method's documentation for when to use it.
-
-=head1 TEST PERFORMING METHODS
-
-These methods are stateful and can only be invoked from this module's objects.
-These methods comprise the core of the Rosetta::Validator module, and are what 
-actually perform the tests on the Rosetta Engines.
-
-=head2 perform_tests()
-
-This method will instantiate a new Rosetta Interface tree, and a SQL::Routine
-Container, populate the latter, invoke the former, saying to use the Engine
-specified in the "engine name" property, try all sorts of database actions, and
-record the results in the "test results" property, and then destroy the Rosetta
-and SQL::Routine objects.
-
-=head1 INFORMATION FUNCTIONS AND METHODS
-
-These "getter" functions/methods return Rosetta::Validator constant information
-which is useful when interpreting or using other aspects of the class.
+You invoke all of these functions off of the class name.  No Rosetta::Validator 
+objects are ever returned, so you can not invoke methods off of them.
 
 =head2 total_possible_tests()
 
 This method returns an integer that says how many elements are supposed to be
-in the "test results" array after perform_tests() is run; it should be equal to
-the number of skips + passes + fails.  You can use this number at the start of
-your test script when declaring the 1..N total number of tests that will be
+in the "test results" array returned by main(); it should be equal to the
+number of skips + passes + fails.  You can use this number at the start of your
+test script when declaring the 1..N total number of tests that will be
 considered, and you can compare that to the actual results.
+
+=head2 main( SETUP_OPTIONS[, TRACE_FH] )
+
+This function comprises the core of the Rosetta::Validator module, and is what
+actually performs the tests on the Rosetta Engines.  This method will
+instantiate a new Rosetta Interface tree, and a SQL::Routine Container,
+populate the latter, invoke the former, saying to use the Engine and related
+configuration settings in SETUP_OPTIONS, try all sorts of database actions, and
+record the results in the "test results" property, and then destroy the Rosetta
+and SQL::Routine objects.  The two function arguments, SETUP_OPTIONS (a hash
+ref), and TRACE_FH (an open file handle, optional), are input to these Rosetta
+functions for use and validation, respectively: build_connection(),
+set_trace_fh(); either may throw an exception which propagates out of main(). 
+This function returns a new array ref having the details of the test results.
+
+=head1 INTERPRETING THE TEST RESULTS
+
+Each element of the test results array that main() returns is a hash ref
+containing these 5 elements:  1. 'FEATURE_KEY'.  2. 'FEATURE_STATUS'; one of
+'SKIP' (test was not run at all), 'PASS' (test was run and passed), 'FAIL'
+(test was run and failed); for the first one, the Engine said it did not have
+support for the feature, and for the last two, it said that it did.  3.
+'FEATURE_DESC_MSG'; a Locale::KeyedText::Message (LKT) object that is the
+Validator module's description of what DBMS/Engine feature is being tested.  4.
+'VAL_ERROR_MSG'; a LKT object that is set when 'FEATURE_STATUS' is 'FAIL'; this
+is the Validator module's own Error Message, if a test failed; this is made for
+a failure regardless of whether the Engine threw its own exception.  5.
+'ENG_ERROR_MSG'; a LKT object that is the Error Message that the Rosetta
+Interface or Engine threw, if any.
 
 =head1 BUGS
 

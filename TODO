@@ -1,4 +1,12 @@
-The primary initial development of the Rosetta core (that which is in the
+- Add a /demos folder, starting with a trivial cmd-line genealogy app.
+
+- Perhaps split prepare() into compile() and prepare(); the first produces
+anything that can be done after a Connection is defined but while it is not
+open, such as *generating* Perl and SQL; the latter can only be done when the
+connection is open, such as DBI->prepare() stuff.  Consider changing things so 
+the current concept of a Preparation Interface goes away.
+
+- The primary initial development of the Rosetta core (that which is in the
 'Rosetta' distribution) is done.  While further improvements are planned, they
 will be implemented over time as they are needed.  See the separately released
 "Rosetta-Extensions" distribution for a clue as it is the initial main

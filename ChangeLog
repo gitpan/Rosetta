@@ -1,3 +1,84 @@
+2004-11-23   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.39.
+
+	* New code file versions are: Rosetta.pm and Validator.pm v0.39,
+	Rosetta/L/en.pm v0.13, and Validator/L/en.pm v0.07.  There were zero changes 
+	in Features.pod and Framework.pod.
+
+	* Updated external dependencies on SQL::Routine to v0.50.
+
+	* This release primarily consists of moving a large block of functionality
+	from Validator.pm to Rosetta.pm, further improving it in the process.  The
+	changes are described below in terms of additions and removals.
+
+	* In Rosetta.pm, rewrote the DESCRIPTION documentation; now it better
+	describes the purpose, features, strengths, and distinctiveness of this
+	module, than the old documentation did.  Also deleted the out-dated
+	SYNOPSIS, which will be rewritten later.
+
+	* Removed the 3 SRTNTP_[APPINST|LINKPRD|ROUTINE] named constants in
+	Rosetta.pm; the code that used them now just uses string literals instead.
+
+	* Added new Interface method get_srt_container(), which complements
+	get_srt_node(); you can get an Interface tree's container with just one
+	method call.  Added new Interface method do(), which wraps an associated
+	prepare() and execute(); this is like the relationship of DBI's 3
+	same-named	methods.  Updated the Dispatcher class methods to make use of
+	these 2 new methods.  Also updated Dispatcher._prepare__call_engine() to 
+	account for a SRT Node attribute nename to 'blueprint' from 'unrealized'.
+
+	* Added a set of new Interface functions and methods to assist in rapid
+	user code development; they are wrappers around other Rosetta and
+	SQL::Routine methods.  These 9 public ones are documented under INTERFACE
+	FUNCTIONS AND METHODS FOR RAPID DEVELOPMENT: build_application(),
+	build_application_with_node_trees(), build_environment(),
+	build_child_environment(), build_connection(), build_child_connection(),
+	validate_connection_setup_options(), destroy_interface_tree(),
+	destroy_interface_tree_and_srt_container().  These 3 public ones are
+	documented under CONNECTION INTERFACE METHODS FOR RAPID DEVELOPMENT:
+	sroutine_catalog_list(), sroutine_catalog_open(), sroutine_catalog_close().
+	These 5 private ones are used by the previous 2 groups: _build_node(),
+	_build_node_auto_name(), _build_child_node(),
+	_build_child_node_auto_name(), _destroy_interface_tree().  Added global
+	dictionary structure %BC_SETUP_NODE_TYPES which is used by
+	validate_connection_setup_options().  Added 8 new messages to
+	Rosetta/L/en.pm, 1 ROS_I_BUILD_CH_ENV_NO_ARG for build_child_environment()
+	and 7 ROS_I_V_CONN_SETUP_OPTS_* for validate_connection_setup_options().
+
+	* Most of Validator.pm was rewritten in some manner or other, though its
+	net feature set is identical to the previous release; that is, what it
+	tests and how it tests that is the same.  While Rosetta::Validator is still
+	technically an object, you no longer invoke it as such; you no longer
+	invoke a constructor and then object methods.  Rather, you now simply
+	invoke the main() class function, which takes all config options as its
+	arguments, and returns the test results itself upon completion.  Any
+	objects are created and destroyed during the execution of main().  Added
+	these 5 functions/methods: main(), setup_app(), setup_env(), setup_conn(),
+	main_dispatch().  Removed these 20 functions/methods:
+	_throw_error_message(), _setup_test(), _takedown_test(),
+	_takedown_test_destroy_intf_tree(), new(), [get|clear|set]_trace_fh(),
+	[get|clear|set]_engine_name(), [get|clear|set]__engine_config_option[s](),
+	[get|clear]_test_results(), perform_tests().  Renamed the 4
+	_[new|pass|fail|misc]_result() methods to [new|pass|fail|misc]_result().
+	Renamed the 5 perform_tests_*() methods to test_*(); also, of the 3 that
+	were implemented, they are a lot shorter now, since most of the code was
+	moved into Rosetta.pm.  Added these 3 main documentation sections: SYNTAX,
+	PUBLIC FUNCTIONS, INTERPRETING THE TEST RESULTS; the only public functions
+	listed are total_possible_tests(), main().  Removed these 5 main sections:
+	CONSTRUCTOR FUNCTIONS AND METHODS, STATIC CONFIGURATION PROPERTY ACCESSOR
+	METHODS, DYNAMIC STATE MAINTENANCE PROPERTY ACCESSOR METHODS, TEST
+	PERFORMING METHODS, INFORMATION FUNCTIONS AND METHODS.  Removed all 8
+	messages from Validator/L/en.pm that were associated with exceptions that
+	Validator.pm would throw; Validator.pm no longer throws any exceptions, and
+	the removed messages were replaced by new ones in Rosetta/L/en.pm.
+
+	* Rewrote the Validator.pm SYNOPSIS to account for the updates and be more 
+	robust, plus provide better input data examples.
+
+	* Following all of the above changes, Validator.pm is about half the file
+	size that it used to be, and Rosetta.pm is about a quarter larger.
+
 2004-11-06   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.38.
