@@ -70,7 +70,7 @@ Note: the file DataDictionary.pod should be read next, after Framework.pod.
 
 This file is part of the Rosetta database abstraction framework.
 
-Rosetta is Copyright (c) 1999-2003, Darren R. Duncan.  All rights reserved. 
+Rosetta is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved. 
 Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
 visit "http://www.DarrenDuncan.net" for more information.
 
@@ -702,35 +702,34 @@ exist, as they are implemented over time.
 
 I<Any indented package names represent inner classes of what they are beneath.>
 
-=head2 In distribution "Rosetta"
-
-To become "Locale-KeyedText" or similar:
+=head2 In distribution "Locale-KeyedText"
 
 	Locale::KeyedText (Refer to user messages in programs by keys)
 
+=head2 In distribution "Rosetta"
+
 To become "SQL-SyntaxModel" or similar:
 
-	SQL::SyntaxModel (Unserialized SQL objects, use like XML DOM)
-		SQL::SyntaxModel::_::Codes (declare base types or enums; meanings hard-coded in SQL::SyntaxModel)
-		SQL::SyntaxModel::_::Command (describes an action to do and what bind vars should be prompted for)
-		SQL::SyntaxModel::_::DataType (metadata for individual atomic or scalar values)
-		SQL::SyntaxModel::_::Database (describes a database, that which you connect to)
-		SQL::SyntaxModel::_::Namespace (a namespace in a database for schema objects)
-		SQL::SyntaxModel::_::Table (details of table columns are part of this class)
-		SQL::SyntaxModel::_::View (a parsed select, used for any DML like IUD, gen stored views)
-		SQL::SyntaxModel::_::Sequence (a sequence generator)
-		SQL::SyntaxModel::_::Block (a block of code to run in a db; part of a proc, function, trigger)
-		SQL::SyntaxModel::_::Trigger (a code block assoc with a table, only auto-called by db on events)
-		SQL::SyntaxModel::_::User (an entity who may connect to a database and order it around)
-		SQL::SyntaxModel::_::* ... like Privilege, PrivilegeType, whatever
-
-	SQL::SyntaxModel::Locale::en (English localization of input error messages)
-	SQL::SyntaxModel::Locale::fr (French localization of input error messages)
-	SQL::SyntaxModel::Locale::* ... like German, Spanish, Dutch, Chinese, etc
+	SQL::SyntaxModel (An abstract syntax tree for all types of SQL)
+		SQL::SyntaxModel::_::Container (a context for Nodes, one of these per parent)
+		SQL::SyntaxModel::_::Node (a semi-atomic model component)
+	SQL::SyntaxModel::L::en (English localization of input error messages)
+	SQL::SyntaxModel::L::fr (French localization of input error messages)
+	SQL::SyntaxModel::L::* ... like German, Spanish, Dutch, Chinese, etc
 
 	SQL::SyntaxModel::DataDictionary (POD only, describes a db suitable for storing SQL::SyntaxModels)
 	SQL::SyntaxModel::XMLSchema (POD only, describes an XML schema suitable for storing SQL::SyntaxModels)
 	SQL::SyntaxModel::API_C (POD only, describes the core C API for SQL::SyntaxModel)
+
+To become "SQL-SyntaxModel-ByTree" or similar:
+
+	SQL::SyntaxModel::ByTree (Build SQL::SyntaxModels from multi-dimensional Perl hashes and arrays)
+	SQL::SyntaxModel::ByTree::L::en (English localization of input error messages)
+
+To become "SQL-SyntaxModel-SkipID" or similar:
+
+	SQL::SyntaxModel::SkipID (Use SQL::SyntaxModels without inputting Node IDs)
+	SQL::SyntaxModel::SkipID::L::en (English localization of input error messages)
 
 To stay "Rosetta":
 
@@ -742,10 +741,9 @@ To stay "Rosetta":
 		Rosetta::_::Transaction (represents context within connection)
 		Rosetta::_::Cursor (result of a selection command; can be input to insert/update/delete)
 		Rosetta::_::* ... like DriverEngineGlobals or whatever
-
-	Rosetta::Locale::en (English localization of execution/input error messages)
-	Rosetta::Locale::fr (French localization of execution/input error messages)
-	Rosetta::Locale::* ... like German, Spanish, Dutch, Chinese, etc
+	Rosetta::L::en (English localization of execution/input error messages)
+	Rosetta::L::fr (French localization of execution/input error messages)
+	Rosetta::L::* ... like German, Spanish, Dutch, Chinese, etc
 
 	Rosetta::Framework (POD only, holds main framework documentation)
 	Rosetta::SimilarModules (POD only, compares and contrasts Rosetta with other modules)
@@ -757,11 +755,11 @@ To stay "Rosetta":
 I<Note: more databases (and data access protocols) can be found listed at 
 "http://freshmeat.net/articles/view/305/" and "http://freshmeat.net/articles/view/307/">
 
-	Rosetta::Driver::Native (a fully functional small RDBMS for when normal db not needed)
+	Rosetta::Driver::SQLite (binding to public domain SQLite embedded db; default RDBMS for Rosetta)
 	Rosetta::Driver::Oracle (interface to Oracle db 8, 9)
 	Rosetta::Driver::Sybase (interface to Sybase db)
-	Rosetta::Driver::PostgreSQL (interface to PostgreSQL db)
-	Rosetta::Driver::MySQL (interface/binding to MySQL cli-serv/embed db 3.23.x, 4.x, 5.x)
+	Rosetta::Driver::PostgreSQL (interface to PostgreSQL db 7.4.x, 7.3.x)
+	Rosetta::Driver::MySQL (interface/binding to MySQL cli-serv/embed db 4.x, 5.x, 3.23.x)
 	Rosetta::Driver::Informix (interface to IBM Informix db)
 	Rosetta::Driver::DB2 (interface to IBM's DB/2 db and its DB/2 Express db)
 	Rosetta::Driver::SQLServer (interface to MS SQLServer db)
@@ -788,7 +786,6 @@ I<Note: more databases (and data access protocols) can be found listed at
 	Rosetta::Driver::PointBase (interface to PointBase db, if linking to Java is possible)
 	Rosetta::Driver::FileMaker (interface to FileMaker Pro db)
 	Rosetta::Driver::FoxPro (interface to FoxPro db)
-	Rosetta::Driver::SQLite (binding to public domain SQLite embedded db)
 	Rosetta::Driver::Access (interface to MS Access db)
 	Rosetta::Driver::Paradox (interface to Borland Paradox db)
 	Rosetta::Driver::dBase (interface to dBase db)
@@ -988,17 +985,12 @@ order, and row limiting or paging.
 
 =item 0
 
-B<Rosetta::Driver::Native> - This class implements a fully-functional
-stand-alone embedded RDBMS; it will implement all database features that the
-RNI can interface to, even if some standard databases can't.  This includes
-transactions, locking, foreign keys, stored procedures, multiple 'users', and
-more.  That said, it is intended mainly as a proof of concept and won't scale
-well beyond small data sets.  The entire database, both schema and data will be
-loaded into RAM at once, so your use of it is limited by what will fit in RAM.
-Persistence is achieved by dumping all data structures used by the database to
-disk at once, into a single disk file, at appropriate times, and loading it
-from disk all at once.  So it will probably work best for data sets that don't
-exceed a few megabytes.
+B<Rosetta::Driver::SQLite> - This class embeds the public domain SQLite RDBMS,
+and will serve as a default (though separately distributed) driver for Rosetta.
+It is small, powerful, easy to install and use, and implements the most
+important parts of the RNI, including Unicode, portability, transactions, and
+subselects.  This driver is intended mainly for programs that are used by one
+person at a time, as locks will grab the whole database.
 
 =item 0
 
@@ -1006,12 +998,18 @@ B<Rosetta::Driver::Oracle> - This class implements a driver for talking to
 Oracle 8.x and 9.x databases.  Note that Oracle 9 is the first version of the
 Oracle database that runs under Mac OS X (10.2 and later).  Oracle versions 
 before 8.x, like 7.3, will not be supported unless there is a great demand.
+=item 0
+
+B<Rosetta::Driver::PostgreSQL> - This class implements a driver for talking to 
+PostgreSQL 7.4 and 7.3 databases, with 7.4 being strongly recommended.  Support 
+for 7.3 will probably be deprecated, or moved to a separate driver if there is 
+a long-term demand.  Versions 7.2 and earlier won't be supported without demand.
 
 =item 0
 
 B<Rosetta::Driver::MySQL> - This class implements a driver for talking to MySQL
-databases.  It is intended to be used only with MySQL versions 4.0.13 and
-later, with version 4.1 or greater being strongly recommended.  That said,
+databases.  It is intended to be used only with MySQL versions 4.0.17 and
+later, with version 4.1.1 or greater being strongly recommended.  That said,
 which version you should use depends on your stage of development; MySQL AB has
 declared the 4.1.x series to be alpha quality now (2003.04.10), and expects it
 to be production ready in eight months (and 5.x six months after that), whereas
@@ -1052,7 +1050,7 @@ functionality for DBI that makes it easier for Rosetta drivers to use it.
 
 =back
 
-All other databases in common use should be supported as well; the ones in the
+All other databases in common use should be supported as well; some in the
 above module list are products that I have used personally; I need to research
 others to know what versions exist or are stable or are in common use.  Other
 RDBMS products include: Sybase, PostgreSQL, DB2, SQL-Server, OpenBase,

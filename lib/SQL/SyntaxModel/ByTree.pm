@@ -11,9 +11,9 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.08';
+$VERSION = '0.09';
 
-use SQL::SyntaxModel 0.08;
+use SQL::SyntaxModel 0.09;
 
 ######################################################################
 
@@ -31,7 +31,7 @@ Nonstandard Modules:
 
 This file is an optional part of the SQL::SyntaxModel library (libSQLSM).
 
-SQL::SyntaxModel is Copyright (c) 1999-2003, Darren R. Duncan.  All rights
+SQL::SyntaxModel is Copyright (c) 1999-2004, Darren R. Duncan.  All rights
 reserved.  Address comments, suggestions, and bug reports to
 B<perl@DarrenDuncan.net>, or visit "http://www.DarrenDuncan.net" for more
 information.
@@ -149,14 +149,12 @@ use vars qw( @ISA );
 
 sub expected_attribute_major_type {
 	my ($node, $attr_name) = @_;
-	defined( $attr_name ) or $node->_throw_error_message( 'SSM_N_EXP_AT_MT_NO_ARGS' );
+	defined( $attr_name ) or $node->_throw_error_message( 'SSMBTR_N_EXP_AT_MT_NO_ARGS' );
 	my $node_type = $node->get_node_type();
 	my $namt = $node->major_type_of_node_type_attribute( $node_type, $attr_name );
 	unless( $namt ) {
-		$node->_throw_error_message( 'SSM_N_EXP_AT_MT_INVAL_NM', 
+		$node->_throw_error_message( 'SSMBTR_N_EXP_AT_MT_INVAL_NM', 
 			{ 'NAME' => $attr_name, 'HOSTTYPE' => $node_type } );
-		# expected_attribute_major_type(): invalid ATTR_NAME argument; 
-		# there is no attribute named '$NAME' in '$HOSTTYPE' Nodes
 	}
 	return( $namt );
 }
@@ -211,11 +209,9 @@ sub set_attribute {
 
 sub set_attributes {
 	my ($node, $attrs) = @_;
-	defined( $attrs ) or $node->_throw_error_message( 'SSM_N_SET_AT_NO_ARGS' );
+	defined( $attrs ) or $node->_throw_error_message( 'SSMBTR_N_SET_ATS_NO_ARGS' );
 	unless( ref($attrs) eq 'HASH' ) {
-		$node->_throw_error_message( 'SSM_N_SET_AT_BAD_ARGS', { 'ARG' => $attrs } );
-		# set_attributes(): invalid ATTRS argument; 
-		# it is not a hash ref, but rather is '$ARG'
+		$node->_throw_error_message( 'SSMBTR_N_SET_ATS_BAD_ARGS', { 'ARG' => $attrs } );
 	}
 	foreach my $attr_name (sort keys %{$attrs}) {
 		my $attr_value = $attrs->{$attr_name};
@@ -277,11 +273,10 @@ sub collect_inherited_attributes {
 
 sub create_child_node_tree {
 	my ($node, $args) = @_;
-	defined( $args ) or $node->_throw_error_message( 'SSM_N_CR_NODE_TREE_NO_ARGS' );
+	defined( $args ) or $node->_throw_error_message( 'SSMBTR_N_CR_NODE_TREE_NO_ARGS' );
 
 	unless( ref($args) eq 'HASH' ) {
-		$node->_throw_error_message( 'SSM_N_CR_NODE_TREE_BAD_ARGS', { 'ARG' => $args } );
-		# create_child_node_tree(): invalid argument; it is not a hash ref, but rather is '$ARG'
+		$node->_throw_error_message( 'SSMBTR_N_CR_NODE_TREE_BAD_ARGS', { 'ARG' => $args } );
 	}
 
 	my $new_child = $node->create_empty_node( $args->{$ARG_NODE_TYPE} );
@@ -326,11 +321,10 @@ use vars qw( @ISA );
 
 sub create_node_tree {
 	my ($container, $args) = @_;
-	defined( $args ) or $container->_throw_error_message( 'SSM_C_CR_NODE_TREE_NO_ARGS' );
+	defined( $args ) or $container->_throw_error_message( 'SSMBTR_C_CR_NODE_TREE_NO_ARGS' );
 
 	unless( ref($args) eq 'HASH' ) {
-		$container->_throw_error_message( 'SSM_C_CR_NODE_TREE_BAD_ARGS', { 'ARG' => $args } );
-		# create_node_tree(): invalid argument; it is not a hash ref, but rather is '$ARG'
+		$container->_throw_error_message( 'SSMBTR_C_CR_NODE_TREE_BAD_ARGS', { 'ARG' => $args } );
 	}
 
 	my $node = $container->create_empty_node( $args->{$ARG_NODE_TYPE} );
@@ -552,7 +546,8 @@ class methods not being seen; I had to use the analagous "use vars @ISA; @ISA =
 
 =head1 SEE ALSO
 
-SQL::SyntaxModel, and other items in its SEE ALSO documentation.
+SQL::SyntaxModel::ByTree::L::*, SQL::SyntaxModel, and other items in its SEE
+ALSO documentation.
 
 =head1 CONTRIVED EXAMPLE
 

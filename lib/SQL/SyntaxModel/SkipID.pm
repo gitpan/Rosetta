@@ -11,9 +11,9 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.08';
+$VERSION = '0.09';
 
-use SQL::SyntaxModel::ByTree 0.08;
+use SQL::SyntaxModel::ByTree 0.09;
 
 ######################################################################
 
@@ -31,7 +31,7 @@ Nonstandard Modules:
 
 This file is an optional part of the SQL::SyntaxModel library (libSQLSM).
 
-SQL::SyntaxModel is Copyright (c) 1999-2003, Darren R. Duncan.  All rights
+SQL::SyntaxModel is Copyright (c) 1999-2004, Darren R. Duncan.  All rights
 reserved.  Address comments, suggestions, and bug reports to
 B<perl@DarrenDuncan.net>, or visit "http://www.DarrenDuncan.net" for more
 information.
@@ -312,7 +312,7 @@ sub set_node_attribute {
 		$node->SUPER::set_node_attribute( $attr_name, $attr_value );
 	};
 	if( my $exception = $@ ) {
-		if( $exception =~ m/SSM_N_SET_NODE_AT_BAD_ARG_VAL/ ) {
+		if( $exception->get_message_key() eq 'SSM_N_SET_NODE_AT_BAD_ARG_VAL' ) {
 			# We were given a non-Node and non-Id $attr_value.
 			# Now look for something we can actually use for a value.
 			$attr_value = $node->_set_node_attribute__do_when_no_id_match( $attr_name, $attr_value );
@@ -359,10 +359,6 @@ sub _set_node_attribute__do_when_no_id_match {
 		$self->_throw_error_message( 'SSMSID_N_SET_AT_NODE_NO_ID_MATCH', 
 			{ 'ATNM' => $attr_name, 'HOSTTYPE' => $node_type, 
 			'ARG' => $attr_value, 'EXPTYPE' => $exp_node_type } );
-		# set_node_attribute(): invalid ATTRS argument element; 
-		# when trying to set '$ATNM' attribute of a '$HOSTTYPE' Node; 
-		# '$ARG' is not a Node ref and it does not 
-		# match the id of any existing '$EXPTYPE' Node
 	}
 }
 
@@ -477,12 +473,8 @@ sub set_attributes {
 	unless( ref($attrs) eq 'HASH' ) {
 		my $def_attr = $node_info_extras->{'def_attr'};
 		unless( $def_attr ) {
-			$node->_throw_error_message( 'SSMSID_N_SET_AT_BAD_ARGS', 
+			$node->_throw_error_message( 'SSMSID_N_SET_ATS_BAD_ARGS', 
 				{ 'ARG' => $attrs, 'HOSTTYPE' => $node_type } );
-			# set_attributes(): invalid ATTRS argument; 
-			# it is not a hash ref, but rather is '$ARG'; ".
-			# also, nodes of type '$HOSTTYPE' have no default ".
-			# attribute to associate the given value with
 		}
 		$attrs = { $def_attr => $attrs };
 	}
@@ -522,7 +514,7 @@ sub set_attributes {
 sub create_child_node_tree {
 	# this function is deprecated, probably
 	my ($node, $args) = @_;
-	defined( $args ) or $node->_throw_error_message( 'SSM_N_CR_NODE_TREE_NO_ARGS' ); # same er as p
+	defined( $args ) or $node->_throw_error_message( 'SSMBTR_N_CR_NODE_TREE_NO_ARGS' ); # same er as p
 
 	unless( ref( $args ) eq 'HASH' ) {
 		$args = { $ARG_NODE_TYPE => $args };
@@ -570,7 +562,7 @@ use vars qw( @ISA );
 
 sub create_node_tree {
 	my ($container, $args) = @_;
-	defined( $args ) or $container->_throw_error_message( 'SSM_C_CR_NODE_TREE_NO_ARGS' ); # same er as p
+	defined( $args ) or $container->_throw_error_message( 'SSMBTR_C_CR_NODE_TREE_NO_ARGS' ); # same er as p
 
 	unless( ref( $args ) eq 'HASH' ) {
 		$args = { $ARG_NODE_TYPE => $args };
@@ -621,9 +613,6 @@ sub _create_node_tree__do_when_parent_not_set {
 	unless( $node->get_parent_node() ) {
 		$container->_throw_error_message( 'SSMSID_C_CR_NODE_TREE_NO_PRIMARY_P', 
 			{ 'TYPE' => $node_type, 'ID' => $node->get_node_id() } );
-		# create_node_tree(): invalid argument list; 
-		# the Node you are trying to create, of type '$TYPE' and id 
-		# '$ID', has no primary parent Node, and one is required
 	}
 }
 
@@ -752,8 +741,8 @@ easy).
 
 =head1 SEE ALSO
 
-SQL::SyntaxModel, and other items in its SEE ALSO documentation; also
-SQL::SyntaxModel::ByTree.
+SQL::SyntaxModel::SkipID::L::*, SQL::SyntaxModel, and other items in its SEE
+ALSO documentation; also SQL::SyntaxModel::ByTree.
 
 =head1 CONTRIVED EXAMPLE
 

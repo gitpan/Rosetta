@@ -1,3 +1,53 @@
+2004-01-18   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.21.
+
+	* This release corresponds to the first releases of the independant
+	Locale-KeyedText distribution (0.01 and 0.02).  The Rosetta distribution
+	now has an external dependency in the form of Locale::KeyedText v0.02.
+
+	* All 3 SQL::SyntaxModel/::* modules (now at version 0.09) have been
+	updated to throw their error exceptions as machine-readable
+	Locale::KeyedText Message objects rather than as strings.  Aside from this
+	fact, the modules' API is identical to the 0.08 versions.
+
+	* One line of SkipID->set_node_attribute(), which caught a parent-thrown
+	exception and tried to gracefully recover from it, was updated to account
+	for the exception being an object rather than a string.
+
+	* Added 3 new user text localization data modules, one per existing
+	SQL::SyntaxModel/::* module; each is named "[code module name]::L::en", and
+	each has its own complete POD.  The user text data that populates these,
+	aside from minor edits, originally existed in the 0.07 versions of the code
+	modules, in the form of comments beside the spots where the then-string
+	exceptions were thrown; these comments have been removed from the code
+	modules.  A few of the exception keys had slight changes to their names.
+
+	* As a result of the above changes, Rosetta is now fully multi-lingual as 
+	far as users of your programs are concerned; support for any number of new 
+	languages can be added simply by adding a localization data file for each.
+
+	* Updated the debugging methods get_all_properties_as_perl_str() and
+	get_all_properties_as_xml_str() in SyntaxModel.pm to escape any literal
+	values that they output, so that the resulting Perl or XML string is well
+	formed.  In the case of the Perl, if any Node literal attribute values
+	contained either an "'" or an "\" then the output Perl code used to have
+	syntax errors or was otherwise wrong, but now it doesn't.  Likewise for the
+	XML, any ['&','"','<','>'] characters in literals are now escaped.  This
+	makes the methods slower, but the output is now "correct".
+
+	* Made some minor POD updates in SyntaxModel.pm, ByTree.pm, SkipID.pm.
+
+	* Updated the 3 "...SyntaxModel..." test files to account for the version 
+	changes and to also test the locale modules for each code module.
+
+	* Multiple updates to Framework.pod to that bring it up to date with
+	corresponding external changes in the last few Rosetta distributions. 
+	Mainly it was the BRIEF MODULE LIST and EXPANDED MODULE LIST documentation
+	sections that were updated.
+
+	* These files saw small updates: Makefile.PL, ReadMe, and MANIFEST.
+
 2003-12-21   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.20.

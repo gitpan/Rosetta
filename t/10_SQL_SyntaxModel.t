@@ -5,7 +5,8 @@
 
 BEGIN { $| = 1; print "1..2\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use SQL::SyntaxModel 0.08;
+use SQL::SyntaxModel 0.09;
+use SQL::SyntaxModel::L::en 0.01;
 $loaded = 1;
 print "ok 1\n";
 use strict;

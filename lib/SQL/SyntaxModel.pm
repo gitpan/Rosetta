@@ -11,9 +11,9 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.08';
+$VERSION = '0.09';
 
-#use Locale::KeyedText;
+use Locale::KeyedText 0.02;
 
 ######################################################################
 
@@ -25,13 +25,13 @@ Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	SOON BUT NOT YET: Locale::KeyedText (for error messages)
+	Locale::KeyedText 0.02 (for error messages)
 
 =head1 COPYRIGHT AND LICENSE
 
 This file is part of the SQL::SyntaxModel library (libSQLSM).
 
-SQL::SyntaxModel is Copyright (c) 1999-2003, Darren R. Duncan.  All rights
+SQL::SyntaxModel is Copyright (c) 1999-2004, Darren R. Duncan.  All rights
 reserved.  Address comments, suggestions, and bug reports to
 B<perl@DarrenDuncan.net>, or visit "http://www.DarrenDuncan.net" for more
 information.
@@ -780,9 +780,16 @@ sub _serialize_as_perl {
 				( $self->_serialize_as_perl( $ind,$_,$padc ) ) 
 			} @{$input} ), (@{$input}?$pad:'').'], '."\n" ) 
 		: defined($input) ?
-			($is_val ? '' : $pad)."'$input'".($is_key ? ' => ' : ', '."\n")
+			($is_val ? '' : $pad)."'".$self->_s_a_p_esc($input)."'".($is_key ? ' => ' : ', '."\n")
 		: ($is_val ? '' : $pad)."undef".($is_key ? ' => ' : ', '."\n")
 	) );
+}
+
+sub _s_a_p_esc {
+	my ($self, $text) = @_;
+	$text =~ s/\\/\\\\/g;
+	$text =~ s/'/\\'/g;
+	return( $text );
 }
 
 ######################################################################
@@ -795,7 +802,7 @@ sub _serialize_as_xml {
 	my $attrs = $node->{$DBG_GAP_ATTRS};
 	return( join( '', 
 		$pad.'<'.$node->{$DBG_GAP_NODE_TYPE},
-		(map { ' '.$_.'="'.$attrs->{$_}.'"' } sort { 
+		(map { ' '.$_.'="'.$self->_s_a_x_esc($attrs->{$_}).'"' } sort { 
 				# sort 'id' first and others follow alphabetically
 				($a eq $DBG_GAP_ATTR_ID) ? -1 : ($b eq $DBG_GAP_ATTR_ID) ? 1 : ($a cmp $b) 
 			} keys %{$attrs}),
@@ -807,6 +814,15 @@ sub _serialize_as_xml {
 	) );
 }
 
+sub _s_a_x_esc {
+	my ($self, $text) = @_;
+	$text =~ s/&/&amp;/g;
+	$text =~ s/\"/&quot;/g;
+	$text =~ s/>/&gt;/g;
+	$text =~ s/</&lt;/g;
+	return( $text );
+}
+
 ######################################################################
 # This is a 'protected' method; only sub-classes should invoke it.
 
@@ -815,8 +831,7 @@ sub _throw_error_message {
 	# Throws an exception consisting of an object.  A Container property is not 
 	# used to store object so things work properly in multi-threaded environment; 
 	# an exception is only supposed to affect the thread that calls it.
-#	die Locale::KeyedText->new_message( $error_code, $args );
-	die "$error_code: @{[$args?%{$args}:()]}\n";
+	die Locale::KeyedText->new_message( $error_code, $args );
 }
 
 ######################################################################
@@ -828,7 +843,6 @@ sub create_empty_node {
 	my $type_info = $NODE_TYPES{$node_type};
 	unless( $type_info ) {
 		$self->_throw_error_message( 'SSM_S_CR_EMP_NODE_BAD_TYPE', { 'TYPE' => $node_type } );
-		# create_empty_node(): invalid NODE_TYPE argument; there is no Node Type named '$TYPE'
 	}
 
 	my $node = bless( {}, $self->_get_static_const_node_class_name() );
@@ -860,8 +874,6 @@ sub delete_node {
 
 	if( $node->{$NPROP_CONTAINER} ) {
 		$node->_throw_error_message( 'SSM_N_DEL_NODE_IN_CONT' );
-		# delete_node(): this Node can not be deleted because it is 
-		# still in a Container; you must take it from there first
 	}
 
 	# Ultimately the pure-Perl version of this method is a no-op because once 
@@ -888,8 +900,6 @@ sub clear_node_id {
 	if( $node->{$NPROP_CONTAINER} ) {
 		$node->_throw_error_message( 'SSM_N_CLEAR_NODE_ID_IN_CONT', 
 			{ 'ID' => $node->{$NPROP_NODE_ID}, 'TYPE' => $node->{$NPROP_NODE_TYPE} } );
-		# clear_node_id(): you can not clear the Node Id (value '$ID') of this 
-		# '$TYPE' Node because the Node is in a Container
 	}
 	$node->{$NPROP_NODE_ID} = undef;
 }
@@ -901,8 +911,6 @@ sub set_node_id {
 	if( $new_id =~ /\D/ or $new_id < 1 or int($new_id) ne $new_id ) {
 		# The regexp above should suppress warnings about non-numerical arguments to '<'
 		$node->_throw_error_message( 'SSM_N_SET_NODE_ID_BAD_ARG', { 'ARG' => $new_id } );
-		# set_node_id(): invalid NEW_ID argument; a Node Id may only be a positive integer; 
-		# you tried to set it to '$ARG'
 	}
 
 	if( !$node->{$NPROP_CONTAINER} ) {
@@ -922,9 +930,9 @@ sub set_node_id {
 	if( $rh_cnl_ft->{$new_id} ) {
 		$node->_throw_error_message( 'SSM_N_SET_NODE_ID_DUPL_ID', 
 			{ 'ID' => $new_id, 'TYPE' => $node_type } );
-		# set_node_id(): invalid NEW_ID argument; the Node Id value of '$ID' you tried to set 
-		# is already in use by another '$TYPE' Node in the same Container; it must be unique
-	}	# The following seq should leave state consistant or recoverable if the thread dies
+	}
+
+	# The following seq should leave state consistant or recoverable if the thread dies
 	$rh_cnl_ft->{$new_id} = $node; # temp reserve new+old
 	$node->{$NPROP_NODE_ID} = $new_id; # change self from old to new
 	delete( $rh_cnl_ft->{$old_id} ); # now only new reserved
@@ -941,8 +949,6 @@ sub expected_literal_attribute_type {
 	unless( $exp_lit_type ) {
 		$node->_throw_error_message( 'SSM_N_EXP_LIT_AT_INVAL_NM', 
 			{ 'NAME' => $attr_name, 'HOSTTYPE' => $node_type } );
-		# expected_literal_attribute_type(): invalid ATTR_NAME argument; 
-		# there is no literal attribute named '$NAME' in '$HOSTTYPE' Nodes
 	}
 	return( $exp_lit_type );
 }
@@ -978,9 +984,6 @@ sub set_literal_attribute {
 		if( $attr_value ne '0' and $attr_value ne '1' ) {
 			$node->_throw_error_message( 'SSM_N_SET_LIT_AT_INVAL_V_BOOL', 
 				{ 'NAME' => $attr_name, 'HOSTTYPE' => $node_type, 'VAL' => $attr_value } );
-			# set_literal_attribute(): invalid ATTR_VALUE argument; 
-			# the literal attribute named '$NAME' in '$HOSTTYPE' Nodes may only be a 
-			# boolean value, as expressed by '0' or '1'; you tried to set it to '$VAL'
 		}
 
 	} elsif( $exp_lit_type eq 'uint' ) {
@@ -988,9 +991,6 @@ sub set_literal_attribute {
 			# The regexp above should suppress warnings about non-numerical arguments to '<'
 			$node->_throw_error_message( 'SSM_N_SET_LIT_AT_INVAL_V_INT', 
 				{ 'NAME' => $attr_name, 'HOSTTYPE' => $node_type, 'VAL' => $attr_value } );
-			# set_literal_attribute(): invalid ATTR_VALUE argument; 
-			# the literal attribute named '$NAME' in '$HOSTTYPE' Nodes may only be a 
-			# non-negative integer; you tried to set it to '$VAL'
 		}
 
 	} else {} # $exp_lit_type eq 'str'; no change to value needed
@@ -1000,11 +1000,9 @@ sub set_literal_attribute {
 
 sub set_literal_attributes {
 	my ($node, $attrs) = @_;
-	defined( $attrs ) or $node->_throw_error_message( 'SSM_N_SET_LIT_AT_NO_ARGS' );
+	defined( $attrs ) or $node->_throw_error_message( 'SSM_N_SET_LIT_ATS_NO_ARGS' );
 	unless( ref($attrs) eq 'HASH' ) {
-		$node->_throw_error_message( 'SSM_N_SET_LIT_AT_BAD_ARGS', { 'ARG' => $attrs } );
-		# set_literal_attributes(): invalid ATTRS argument; 
-		# it is not a hash ref, but rather is '$ARG'
+		$node->_throw_error_message( 'SSM_N_SET_LIT_ATS_BAD_ARGS', { 'ARG' => $attrs } );
 	}
 	foreach my $attr_name (keys %{$attrs}) {
 		$node->set_literal_attribute( $attr_name, $attrs->{$attr_name} );
@@ -1017,10 +1015,8 @@ sub test_mandatory_literal_attributes {
 	my $mand_attrs = $NODE_TYPES{$node_type}->{$TPI_MA_LITERALS} or return( 1 ); # no-op if no mand
 	foreach my $attr_name (keys %{$mand_attrs}) {
 		unless( defined( $node->{$NPROP_AT_LITERALS}->{$attr_name} ) ) {
-			$node->_throw_error_message( 'SSM_N_TEMA_LIT_AT_NO_VAL_SET', 
+			$node->_throw_error_message( 'SSM_N_TEMA_LIT_ATS_NO_VAL_SET', 
 				{ 'NAME' => $attr_name, 'HOSTTYPE' => $node_type } );
-			# test_mandatory_literal_attributes(): this '$HOSTTYPE' Node has failed a test; 
-			# the literal attribute named '$attr_name' must be given a value
 		}
 	}
 }
@@ -1036,8 +1032,6 @@ sub expected_enumerated_attribute_type {
 	unless( $exp_enum_type ) {
 		$node->_throw_error_message( 'SSM_N_EXP_ENUM_AT_INVAL_NM', 
 			{ 'NAME' => $attr_name, 'HOSTTYPE' => $node_type } );
-		# expected_enumerated_attribute_type(): invalid ATTR_NAME argument; 
-		# there is no enumerated attribute named '$NAME' in '$HOSTTYPE' Nodes
 	}
 	return( $exp_enum_type );
 }
@@ -1071,9 +1065,6 @@ sub set_enumerated_attribute {
 		$node->_throw_error_message( 'SSM_N_SET_ENUM_AT_INVAL_V', 
 			{ 'NAME' => $attr_name, 'HOSTTYPE' => $node->{$NPROP_NODE_TYPE}, 
 			'ENUMTYPE' => $exp_enum_type, 'VAL' => $attr_value } );
-		# set_enumerated_attribute(): invalid ATTR_VALUE argument; 
-		# the enumerated attribute named '$NAME' in '$HOSTTYPE' Nodes may only be a 
-		# '$ENUMTYPE' value; you tried to set it to '$VAL'
 	}
 
 	$node->{$NPROP_AT_ENUMS}->{$attr_name} = $attr_value;
@@ -1081,11 +1072,9 @@ sub set_enumerated_attribute {
 
 sub set_enumerated_attributes {
 	my ($node, $attrs) = @_;
-	defined( $attrs ) or $node->_throw_error_message( 'SSM_N_SET_ENUM_AT_NO_ARGS' );
+	defined( $attrs ) or $node->_throw_error_message( 'SSM_N_SET_ENUM_ATS_NO_ARGS' );
 	unless( ref($attrs) eq 'HASH' ) {
-		$node->_throw_error_message( 'SSM_N_SET_ENUM_AT_BAD_ARGS', { 'ARG' => $attrs } );
-		# set_enumerated_attributes(): invalid ATTRS argument; 
-		# it is not a hash ref, but rather is '$ARG'
+		$node->_throw_error_message( 'SSM_N_SET_ENUM_ATS_BAD_ARGS', { 'ARG' => $attrs } );
 	}
 	foreach my $attr_name (keys %{$attrs}) {
 		$node->set_enumerated_attribute( $attr_name, $attrs->{$attr_name} );
@@ -1098,10 +1087,8 @@ sub test_mandatory_enumerated_attributes {
 	my $mand_attrs = $NODE_TYPES{$node_type}->{$TPI_MA_ENUMS} or return( 1 ); # no-op if no mand
 	foreach my $attr_name (keys %{$mand_attrs}) {
 		unless( defined( $node->{$NPROP_AT_ENUMS}->{$attr_name} ) ) {
-			$node->_throw_error_message( 'SSM_N_TEMA_ENUM_AT_NO_VAL_SET', 
+			$node->_throw_error_message( 'SSM_N_TEMA_ENUM_ATS_NO_VAL_SET', 
 				{ 'NAME' => $attr_name, 'HOSTTYPE' => $node_type } );
-			# test_mandatory_enumerated_attributes(): this '$HOSTTYPE' Node has failed a test; 
-			# the enumerated attribute named '$attr_name' must be given a value
 		}
 	}
 }
@@ -1117,8 +1104,6 @@ sub expected_node_attribute_type {
 	unless( $exp_node_type ) {
 		$node->_throw_error_message( 'SSM_N_EXP_NODE_AT_INVAL_NM', 
 			{ 'NAME' => $attr_name, 'HOSTTYPE' => $node_type } );
-		# expected_node_attribute_type(): invalid ATTR_NAME argument; 
-		# there is no Node attribute named '$NAME' in '$HOSTTYPE' Nodes
 	}
 	return( $exp_node_type );
 }
@@ -1175,29 +1160,19 @@ sub set_node_attribute {
 			$node->_throw_error_message( 'SSM_N_SET_NODE_AT_WRONG_NODE_TYPE', 
 				{ 'NAME' => $attr_name, 'HOSTTYPE' => $node->{$NPROP_NODE_TYPE}, 
 				'EXPTYPE' => $exp_node_type, 'GIVEN' => $attr_value->{$NPROP_NODE_TYPE} } );
-			# set_node_attribute(): invalid ATTR_VALUE argument; the attribute named 
-			# '$NAME' in '$HOSTTYPE' Nodes may only reference a '$EXPTYPE' Node, but 
-			# you tried to set it to a '$GIVEN' Node
 		}
 
 		if( $attr_value->{$NPROP_CONTAINER} and $node->{$NPROP_CONTAINER} ) {
 			unless( $attr_value->{$NPROP_CONTAINER} eq $node->{$NPROP_CONTAINER} ) {
 				$node->_throw_error_message( 'SSM_N_SET_NODE_AT_DIFF_CONT' );
-				# set_node_attribute(): invalid ATTR_VALUE argument; that Node is not in 
-				# the same Container as the current Node, so they can not be linked
 			}
 			# If we get here, both Nodes are in the same Container and can link
-			} elsif( $attr_value->{$NPROP_CONTAINER} or $node->{$NPROP_CONTAINER} ) {
+		} elsif( $attr_value->{$NPROP_CONTAINER} or $node->{$NPROP_CONTAINER} ) {
 			$node->_throw_error_message( 'SSM_N_SET_NODE_AT_ONE_CONT' );
-			# set_node_attribute(): invalid ATTR_VALUE argument; a Node that is in a 
-			# Container can not be linked to one that is not
-
 		} elsif( !$attr_value->{$NPROP_NODE_ID} ) {
 			# both Nodes are not in Containers, and $attr_value has no Node Id
 			$node->_throw_error_message( 'SSM_N_SET_NODE_AT_MISS_NID' );
-			# set_node_attribute(): invalid ATTR_VALUE argument; the given Node 
-			# lacks a Node Id, and one is required to link to it from this one
-			} else {
+		} else {
 			# both Nodes are not in Containers, and $attr_value has Node Id, so can link
 			$attr_value = $attr_value->{$NPROP_NODE_ID};
 		} 
@@ -1207,8 +1182,6 @@ sub set_node_attribute {
 		if( $attr_value =~ /\D/ or $attr_value < 1 or int($attr_value) ne $attr_value ) {
 			# The regexp above should suppress warnings about non-numerical arguments to '<'
 			$node->_throw_error_message( 'SSM_N_SET_NODE_AT_BAD_ARG_VAL', { 'ARG' => $attr_value } );
-			# set_node_attribute(): invalid ATTR_VALUE argument; '$ARG' is not a Node ref,  
-			# and a Node Id may only be a positive integer
 		}
 
 		if( my $container = $node->{$NPROP_CONTAINER} ) {
@@ -1216,16 +1189,12 @@ sub set_node_attribute {
 			unless( $attr_value ) {
 				$node->_throw_error_message( 'SSM_N_SET_NODE_AT_NONEX_NID', 
 					{ 'ARG' => $attr_value, 'EXPTYPE' => $exp_node_type } );
-				# set_node_attribute(): invalid ATTR_VALUE argument; '$ARG' is not a Node ref,  
-				# and it does not match the Id of any 'EXPTYPE' Node in this Container.
 			}
 		}
 	}
 
 	if( ref($attr_value) eq ref($node) and !$attr_value->{$NPROP_LINKS_RECIP} ) {
 		$node->_throw_error_message( 'SSM_N_SET_NODE_AT_RECIP_LINKS' );
-		# set_node_attribute(): invalid ATTR_VALUE argument; the given Node is not yet 
-		# in reciprocating status, so the current Node can not yet become a child of it
 	}
 
 	if( defined( $node->{$NPROP_AT_NODES}->{$attr_name} ) and
@@ -1243,11 +1212,9 @@ sub set_node_attribute {
 
 sub set_node_attributes {
 	my ($node, $attrs) = @_;
-	defined( $attrs ) or $node->_throw_error_message( 'SSM_N_SET_NODE_AT_NO_ARGS' );
+	defined( $attrs ) or $node->_throw_error_message( 'SSM_N_SET_NODE_ATS_NO_ARGS' );
 	unless( ref($attrs) eq 'HASH' ) {
-		$node->_throw_error_message( 'SSM_N_SET_NODE_AT_BAD_ARGS', { 'ARG' => $attrs } );
-		# set_node_attributes(): invalid ATTRS argument; 
-		# it is not a hash ref, but rather is '$ARG'
+		$node->_throw_error_message( 'SSM_N_SET_NODE_ATS_BAD_ARGS', { 'ARG' => $attrs } );
 	}
 	foreach my $attr_name (sort keys %{$attrs}) {
 		$node->set_node_attribute( $attr_name, $attrs->{$attr_name} );
@@ -1260,10 +1227,8 @@ sub test_mandatory_node_attributes {
 	my $mand_attrs = $NODE_TYPES{$node_type}->{$TPI_MA_NODES} or return( 1 ); # no-op if no mand
 	foreach my $attr_name (keys %{$mand_attrs}) {
 		unless( defined( $node->{$NPROP_AT_NODES}->{$attr_name} ) ) {
-			$node->_throw_error_message( 'SSM_N_TEMA_NODE_AT_NO_VAL_SET', 
+			$node->_throw_error_message( 'SSM_N_TEMA_NODE_ATS_NO_VAL_SET', 
 				{ 'NAME' => $attr_name, 'HOSTTYPE' => $node_type } );
-			# test_mandatory_node_attributes(): this '$HOSTTYPE' Node has failed a test; 
-			# the node attribute named '$attr_name' must be given a value
 		}
 	}
 }
@@ -1295,9 +1260,6 @@ sub set_parent_node_attribute_name {
 			grep { $_ eq $attr_name } @{$NODE_TYPES{$node_type}->{$TPI_P_NODE_ATNMS}} ) {
 		$node->_throw_error_message( 'SSM_N_SET_P_NODE_ATNM_INVAL_NM', 
 			{ 'NAME' => $attr_name, 'HOSTTYPE' => $node_type } );
-		# set_parent_node_attribute_name(): invalid ATTR_NAME argument; 
-		# either there is no Node attribute named '$NAME' in '$HOSTTYPE' Nodes, 
-		# or that attribute can not be used as the primary parent Node
 	}
 	$node->{$NPROP_P_NODE_ATNM} = $attr_name;
 }
@@ -1312,8 +1274,6 @@ sub estimate_parent_node_attribute_name {
 	defined( $new_parent ) or $node->_throw_error_message( 'SSM_N_EST_P_NODE_ATNM_NO_ARGS' );
 	unless( ref($new_parent) eq ref($node) ) {
 		$node->_throw_error_message( 'SSM_N_EST_P_NODE_ATNM_BAD_ARG', { 'ARG' => $new_parent } );
-		# estimate_parent_node_attribute_name(): invalid NEW_PARENT argument; 
-		# it is not a Node object, but rather is '$ARG'
 	}
 	my $parent_node_type = $new_parent->{$NPROP_NODE_TYPE};
 	my $node_type = $node->{$NPROP_NODE_TYPE};
@@ -1339,19 +1299,15 @@ sub get_container {
 
 sub put_in_container {
 	my ($node, $new_container) = @_;
-	defined( $new_container ) or $node->_throw_error_message( 'SSM_N_SET_NODE_ID_NO_ARGS' );
+	defined( $new_container ) or $node->_throw_error_message( 'SSM_N_PI_CONT_NO_ARGS' );
 
 	unless( UNIVERSAL::isa( $new_container, 'SQL::SyntaxModel::_::Container' ) ) {
 		$node->_throw_error_message( 'SSM_N_PI_CONT_BAD_ARG', { 'ARG' => $new_container } );
-		# put_in_container(): invalid NEW_CONTAINER argument; 
-		# it is not a Container object, but rather is '$ARG'
 	}
 
 	my $node_id = $node->{$NPROP_NODE_ID};
 	unless( $node_id ) {
 		$node->_throw_error_message( 'SSM_N_PI_CONT_NO_NODE_ID' );
-		# put_in_container(): this Node can not be put in a Container yet 
-		# as this Node has no NODE_ID defined
 	}
 
 	if( $node->{$NPROP_CONTAINER} ) {
@@ -1359,8 +1315,6 @@ sub put_in_container {
 			return( 1 ); # no-op; new container same as old
 		}
 		$node->_throw_error_message( 'SSM_N_PI_CONT_HAVE_ALREADY' );
-		# put_in_container(): this Node already lives in a Container; you 
-		# must take this Node from there before putting it in a different one
 	}
 	my $node_type = $node->{$NPROP_NODE_TYPE};
 	my $tpi_at_nodes = $NODE_TYPES{$node_type}->{$TPI_AT_NODES};
@@ -1377,10 +1331,8 @@ sub put_in_container {
 		unless( $at_nodes_ref ) {
 			$node->_throw_error_message( 'SSM_N_PI_CONT_NONEX_AT_NODE', 
 				{ 'ATNM' => $at_nodes_atnm, 'TYPE' => $at_node_type, 'ID' => $at_nodes_nid } );
-			# put_in_container(): this Node can not be put into the given Container 
-			# because the Node attribute named '$ATNM' expects to link to a '$TYPE' Node 
-			# with a Node Id of '$ID', but no such Node exists in the given Container
-		}		$at_nodes_refs{$at_nodes_atnm} = $at_nodes_ref;
+		}
+		$at_nodes_refs{$at_nodes_atnm} = $at_nodes_ref;
 	}
 	$node->{$NPROP_CONTAINER} = $new_container;
 	$node->{$NPROP_AT_NODES} = \%at_nodes_refs;
@@ -1398,8 +1350,6 @@ sub take_from_container {
 
 	if( $node->{$NPROP_LINKS_RECIP} ) {
 		$node->_throw_error_message( 'SSM_N_TF_CONT_RECIP_LINKS' );
-		# take_from_container(): this Node can not be taken from its Container yet 
-		# as other Nodes that this Node refers to in its attributes have reciprocal links to it
 	}
 
 	my $node_id = $node->{$NPROP_NODE_ID};
@@ -1436,8 +1386,6 @@ sub add_reciprocal_links {
 	my $container = $node->{$NPROP_CONTAINER};
 	unless( $container ) {
 		$node->_throw_error_message( 'SSM_N_ADD_RL_NO_NODE_ID' );
-		# add_reciprocal_links(): this Node is not in a Container, 
-		# so no other Nodes can link to it as a child
 	}
 
 	foreach my $attr_value (values %{$node->{$NPROP_AT_NODES}}) {
@@ -1452,8 +1400,6 @@ sub remove_reciprocal_links {
 
 	if( @{$node->{$NPROP_CHILD_NODES}} > 0 ) {
 		$node->_throw_error_message( 'SSM_N_REM_RL_HAS_CHILD' );
-		# remove_reciprocal_links(): this Node has child Nodes of its 
-		# own, so it can not be removed from reciprocating status
 	}
 
 	foreach my $attr_value (@{$node->{$NPROP_AT_NODES}}) {
@@ -1486,13 +1432,10 @@ sub add_child_node {
 	defined( $new_child ) or $node->_throw_error_message( 'SSM_N_ADD_CH_NODE_NO_ARGS' );
 	unless( ref($new_child) eq ref($node) ) {
 		$node->_throw_error_message( 'SSM_N_ADD_CH_NODE_BAD_ARG', { 'ARG' => $new_child } );
-		# add_child_node(): invalid NEW_CHILD argument; 
-		# it is not a Node object, but rather is '$ARG'
 	}
 	my $est_attr_name = $new_child->estimate_parent_node_attribute_name( $node );
 	unless( $est_attr_name ) {
 		$node->_throw_error_message( 'SSM_N_ADD_CH_NODE_NO_EST' );
-		# add_child_node(): the current Node can not be the primary parent of the given Node
 	}
 	$new_child->set_node_attribute( $est_attr_name, $node ); # will die if not same Container
 	$new_child->set_parent_node_attribute_name( $est_attr_name );
@@ -1573,7 +1516,6 @@ sub get_node {
 	defined( $node_id ) or $container->_throw_error_message( 'SSM_C_GET_NODE_NO_ARG_ID' );
 	unless( $NODE_TYPES{$node_type} ) {
 		$container->_throw_error_message( 'SSM_C_GET_NODE_BAD_TYPE', { 'TYPE' => $node_type } );
-		# get_node(): invalid NODE_TYPE argument; there is no Node Type named '$TYPE'
 	}
 	return( $container->{$CPROP_ALL_NODES}->{$node_type}->{$node_id} );
 }
@@ -2136,8 +2078,7 @@ These functions/methods are for creating new Container or Node objects.
 	my $model = SQL::SyntaxModel->new();
 
 This function creates a new SQL::SyntaxModel (or subclass) Model/Container
-object and returns it.  This Container has contains a set of pseudo-nodes, and
-nothing else.
+object and returns it.
 
 =head2 create_empty_node( NODE_TYPE )
 
@@ -2168,8 +2109,7 @@ These methods are stateful and may only be invoked off of Container objects.
 	my $model->initialize();
 
 This "setter" method resets the Container to the state it was in when it was
-returned by new().  All of its member Nodes are destroyed, and new pseudo-nodes
-are created.
+returned by new().  All of its member Nodes are destroyed.
 
 =head2 get_node( NODE_TYPE, NODE_ID )
 
@@ -2660,11 +2600,11 @@ A"; however, only a few types of Nodes (such as 'view' and 'block' and
 
 =head1 SEE ALSO
 
-perl(1), SQL::SyntaxModel::DataDictionary, SQL::SyntaxModel::XMLSchema,
-SQL::SyntaxModel::API_C, SQL::SyntaxModel::ByTree, SQL::SyntaxModel::SkipID,
-Rosetta, Rosetta::Framework, DBI, SQL::Statement, SQL::Translator, SQL::YASP,
-SQL::Generator, SQL::Schema, SQL::Abstract, SQL::Snippet, SQL::Catalog,
-DB::Ent, DBIx::Abstract, DBIx::AnyDBD, DBIx::DBSchema, DBIx::Namespace,
-DBIx::SearchBuilder, TripleStore.
+perl(1), SQL::SyntaxModel::L::*, SQL::SyntaxModel::DataDictionary,
+SQL::SyntaxModel::XMLSchema, SQL::SyntaxModel::API_C, SQL::SyntaxModel::ByTree,
+SQL::SyntaxModel::SkipID, Rosetta, Rosetta::Framework, DBI, SQL::Statement,
+SQL::Translator, SQL::YASP, SQL::Generator, SQL::Schema, SQL::Abstract,
+SQL::Snippet, SQL::Catalog, DB::Ent, DBIx::Abstract, DBIx::AnyDBD,
+DBIx::DBSchema, DBIx::Namespace, DBIx::SearchBuilder, TripleStore.
 
 =cut
