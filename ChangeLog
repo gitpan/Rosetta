@@ -1,7 +1,37 @@
+2003-02-10   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.04.
+	
+	* The file Documentation.pod was renamed to Framework.pod; that file's
+	internal name as declared in the POD is Rosetta::Framework; the file was
+	also moved into lib/Rosetta/; any references to this file in other files
+	were updated accordingly.
+
+	* In Framework.pod, updated BRIEF MODULE LIST to replace
+	Rosetta::Driver::Null with Rosetta::Driver::Native.  The plan is that this
+	will be a fully-functional RDBMS implementation, and 100% Perl code; it
+	will implement all database features that the Rosetta core can interface
+	to, even if some real databases can't.  This includes transactions,
+	locking, foreign keys, stored procedures, multiple 'users', and more.  That
+	said, it is intended mainly for testing the Rosetta core, and will be
+	developed simultaneously with the latter.  While Rosetta::Driver::Native is
+	fully functional, it is completely RAM-based for simplicity (nothing is
+	stored on disk, except perhaps by means of explicit freeze/thaw or the
+	like), and probably won't scale to more than a few thousand records
+	(namely, it will hold just whatever can all fit in RAM at once).  It also
+	won't be designed with multi-threaded environments in mind, due to its
+	intent for testing (usually done by one person at a time); if you plan to
+	use it for more, you will need to serialize access yourself.  Also, the 
+	EXPANDED MODULE LIST :: DRIVER MODULES now describes the new module.
+
+	* In Framework.pod, moved section SCHEDULE FOR DEVELOPMENT down below BRIEF
+	MODULE LIST (leaving STRUCTURE right after DESCRIPTION).  Some list items
+	in the moved section were also moved to be handled earlier.
+
 2003-02-09   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.03.
-	
+
 	* The most significant change in this release is that the file "Rosetta.pm"
 	has been split into itself and the new file "Documentation.pm".  The latter
 	file now has all of the main Rosetta framework POD documentation.  The

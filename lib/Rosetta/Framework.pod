@@ -1,6 +1,6 @@
 =head1 NAME
 
-Rosetta - Framework for RDBMS-generic apps and schemas
+Rosetta::Framework - Main Rosetta purpose and design documentation
 
 =head1 ABSTRACT
 
@@ -439,192 +439,6 @@ code porting utilities could also be available, to help makers of old
 applications migrate to RNI, for better control and performance than an
 emulator would provide.
 
-=head1 SCHEDULE FOR DEVELOPMENT
-
-In an effort to keep things simpler for development, the first few releases of
-this distribution will contain some of the intended features, while others will
-be left out for now, but be dealt with later at an appropriate time.  
-
-This is the approximate order that I plan to support particular features:
-
-=over 4
-
-=item 0
-
-Connect to (or open) an existing database as a registered or anonymous user,
-which establishes a current working context for doing anything else, and close
-it; multiple simultaneous connections should be supported; the database and
-users must already exist.
-
-=item 0
-
-Create tables (including temporary) within the default schema context that you
-connected to (eg: an Oracle "user/schema" in an "instance"), with nullability
-or unique key (including primary key) or foreign key constraints or indexes
-that are not constraints or default column values, and alter or remove or
-validate them, assuming the connected user has said privileges; the same
-operations will also be supported against neighbouring contexts (if any) for
-which said user is permitted; note that Rosetta will not enforce any
-constraints on tables as that is up to the RDBMS product, although it may try
-to enforce some constraints in a far-away release for RDBMS products that don't
-do it themselves, but that would be slower and less reliable.
-
-=item 0
-
-Start a transaction, which is an operating context within which all table data
-changes must succeed or none will be saved, and end it either with a commit
-(keep changes) or rollback (discard changes); this type of data integrity will
-not work unless the RDBMS product being used supports transactions; far-off
-releases of Rosetta may implement transactional data integrity at the Perl
-level for non-supporting RDBMS products, but using a supporting RDBMS is
-better; multiple simultaneous transactions within a single database connection
-should be supported.
-
-=item 0
-
-Select data from single or related multiple tables, including the use of equal
-or left outer joins, full and unique unions (similar to full outer joins),
-derived tables (in sql-from), sub-selects (in sql-where), hierarchical queries
-(eg: an Oracle start-with and connect-by), and including the use of
-calculations or formulas (including logicals like choose-when) in the returned
-column list or in the row filter or grouping conditions; the select results can
-be accessed either with row cursors (memory efficient) or all at once with an
-array (for small result sets only); also, insert or update or delete against
-single tables.
-
-=item 0
-
-Obtain locks on table data for when you want atomic selects and updates, and
-release them; the same caveats that apply to transaction support in the RDBMS
-product being used also applies here.
-
-=item 0
-
-Create or alter or remove sequences within the default schema context, and use
-them in table definitions or data modifying operations.
-
-=item 0
-
-Scan an existing database and create a data dictionary (as Perl objects) that
-describes its tables and sequences, including any constraints that the database
-knows about.
-
-=item 0
-
-Utilities for backing up or restoring the tables in a database, both schema and
-data, either with another database or a set of text files.
-
-=item 0
-
-Insert or update or delete against multiple related related tables at once, as
-if they were a single table; the Rosetta objects that define the multiple table
-selection will be used to know how to map said data changes against the correct
-tables; it may not be possible for Rosetta to issue changes against some
-selects, since some required mapping information may be lacking; in that case, 
-the application logic will have to handle it against single tables.
-
-=item 0
-
-Create stored procedures and functions within the default schema context that
-you connected to, and alter or remove them, and invoke them directly; initially
-this feature will require you to define a separate version of a stored
-procedure or function for each RDBMS product you are going to use, because it
-is too difficult to implement an abstracted definition and generation of such
-things for earlier Rosetta releases; there are two ways to do this, one of
-which involves writing the functionality in pure Perl (which can be done once
-for all RDBMS products, particularly those that don't support stored procedures
-at all, but is slower), and the other way involves a hand-crafted SQL string
-implementing the procedure plus a shim Perl function that calls it; your main
-application is still RDBMS generic because any multiplicity of stored procedure
-implementations will be keyed to a Rosetta driver, so the right one is used at
-the right time; in any event, the standard RNI means of calling a stored
-procedure is calling something that looks externally like a Perl function,
-which won't change, so you will still have to make at least the interface in
-Perl; also modify or delete them, or validate those added through Rosetta.
-
-=item 0
-
-Call stored functions within select queries and so forth; this would likely
-only work when the stored item is actually in the database, and is not a pure 
-Perl implementation.
-
-=item 0
-
-Create stored triggers, with the same caveats as stored procedures and
-functions regarding multiplicity of implementations, or update or remove them,
-or validate those added through Rosetta; initially this feature will not work
-at all unless the underlying RDBMS supports triggers, since early Rosetta
-releases will not interrupt or scan data UID operations to implement triggers
-in Perl.
-
-=item 0
-
-Create new users in the current database or remove them or alter their
-privileges or validate any settings for user existence or privileges; note 
-that Rosetta will not enforce user privileges or lacks of them for any 
-RDBMS products that don't do this internally.
-
-=item 0
-
-Create new database instances or remove them, if that can be done easily.
-
-=item 0
-
-Create or alter or remove "public synonyms" in Oracle or other RDBMS that 
-support the concept of this convenient aliasing system.
-
-=item 0
-
-Create views, which are select queries whose definitions are stored in a
-database for convenience and pre-processing speed, within the default schema
-context that you connected to, and alter or remove them; validating views 
-will at first only be possible if the same version of Rosetta created them, 
-because it is done by a simple string compare for databases that store 
-views as sql statements, so that the sql won't have to be parsed.
-
-=item 0
-
-Also scan the views in an existing database and parse their definition sql so
-that generated data dictionaries can describe both tables, views, and seqs.
-
-=item 0
-
-Also extract the stored procedures and functions and triggers and so forth 
-in their raw form, unparsed, for backup or restore to the same kind of 
-RDBMS that they came from.
-
-=item 0
-
-Emulate other database interfaces (like DBI or ODBC or OCI or whatever) on top
-of Rosetta; this would require being able to parse SQL like for data selection
-or modification, or table and view creation, and so forth, as well as pass
-through unparsed the creation sql of stored procedures and functions and
-triggers for use as is (latter not portable).
-
-=item 0
-
-Get around to parsing or generating sql for stored procedures or functions or 
-triggers, and representing them abstractly for a data dictionary.
-
-=item 0
-
-Whatever else is needed.
-
-=back
-
-On databases that don't support sub-selects (eg: MySQL before 4.1.x) or unions
-(eg: MySQL before 4.0.x) natively, Rosetta::Driver::* will try to
-emulate complex select commands by creating temporary tables in the database to
-hold results of inner selects.  This would keep all the implementation work
-inside the RDBMS product where it should be, with only the final resulting
-row-set being returned to the Perl application.  However, it is possible that
-this will only work if the database user being connected as has the privileges
-to create tables, which isn't always the case for DML-only users; on the other
-hand, temporary tables may not require said permissions.  There may also be
-problems with reliability of the results if someone else is modifying the
-inputs for the temporary tables before they are all built; this may change
-later when proper read locks are used.
-
 =head1 STRUCTURE
 
 The modules composing the Rosetta framework are grouped into several main
@@ -710,7 +524,9 @@ including addition of more modules or removal of some existing ones.
 
 =head2 In distribution "Rosetta"
 
-	Rosetta (holds main framework documentation, for now)
+	Rosetta (a placeholder in the public eye for the whole framework; a shim)
+
+	Rosetta::Framework (POD only, holds main framework documentation)
 
 	Rosetta::Schema (represents one database schema; owned by one database user)
 	Rosetta::Schema::DataType (metadata for individual atomic or scalar values)
@@ -729,7 +545,7 @@ including addition of more modules or removal of some existing ones.
 	Rosetta::Engine::* ... like DriverEngineGlobals or whatever
 
 	Rosetta::Driver (base class to provide common public interface)
-	Rosetta::Driver::Null (pretend driver to use like /dev/null or for testing core)
+	Rosetta::Driver::Native (a fully functional RAM-based RDBMS impl in Perl, for testing core)
 
 =head2 In distribution "Rosetta-Drivers"
 
@@ -760,6 +576,192 @@ including addition of more modules or removal of some existing ones.
 	Rosetta::Adapter::* ... I like the name so it might be used for something
 	
 	RosettaX::* ... unofficial extensions or wrappers to Rosetta are allowed here ...
+
+=head1 SCHEDULE FOR DEVELOPMENT
+
+In an effort to keep things simpler for development, the first few releases of
+this distribution will contain some of the intended features, while others will
+be left out for now, but be dealt with later at an appropriate time.  
+
+This is the approximate order that I plan to support particular features:
+
+=over 4
+
+=item 0
+
+Connect to (or open) an existing database as a registered or anonymous user,
+which establishes a current working context for doing anything else, and close
+it; multiple simultaneous connections should be supported; the database and
+users must already exist.
+
+=item 0
+
+Create new database instances or remove them, if that can be done easily.
+
+=item 0
+
+Create new users in the current database or remove them or alter their
+privileges or validate any settings for user existence or privileges; note 
+that Rosetta will not enforce user privileges or lacks of them for any 
+RDBMS products that don't do this internally.
+
+=item 0
+
+Create tables (including temporary) within the default schema context that you
+connected to (eg: an Oracle "user/schema" in an "instance"), with nullability
+or unique key (including primary key) or foreign key constraints or indexes
+that are not constraints or default column values, and alter or remove or
+validate them, assuming the connected user has said privileges; the same
+operations will also be supported against neighbouring contexts (if any) for
+which said user is permitted; note that Rosetta will not enforce any
+constraints on tables as that is up to the RDBMS product, although it may try
+to enforce some constraints in a far-away release for RDBMS products that don't
+do it themselves, but that would be slower and less reliable.
+
+=item 0
+
+Create or alter or remove sequences within the default schema context, and use
+them in table definitions or data modifying operations.
+
+=item 0
+
+Scan an existing database and create a data dictionary (as Perl objects) that
+describes its tables and sequences, including any constraints that the database
+knows about.
+
+=item 0
+
+Start a transaction, which is an operating context within which all table data
+changes must succeed or none will be saved, and end it either with a commit
+(keep changes) or rollback (discard changes); this type of data integrity will
+not work unless the RDBMS product being used supports transactions; far-off
+releases of Rosetta may implement transactional data integrity at the Perl
+level for non-supporting RDBMS products, but using a supporting RDBMS is
+better; multiple simultaneous transactions within a single database connection
+should be supported.
+
+=item 0
+
+Select data from single or related multiple tables, including the use of equal
+or left outer joins, full and unique unions (similar to full outer joins),
+derived tables (in sql-from), sub-selects (in sql-where), hierarchical queries
+(eg: an Oracle start-with and connect-by), and including the use of
+calculations or formulas (including logicals like choose-when) in the returned
+column list or in the row filter or grouping conditions; the select results can
+be accessed either with row cursors (memory efficient) or all at once with an
+array (for small result sets only); also, insert or update or delete against
+single tables.
+
+=item 0
+
+Obtain locks on table data for when you want atomic selects and updates, and
+release them; the same caveats that apply to transaction support in the RDBMS
+product being used also applies here.
+
+=item 0
+
+Utilities for backing up or restoring the tables in a database, both schema and
+data, either with another database or a set of text files.
+
+=item 0
+
+Insert or update or delete against multiple related related tables at once, as
+if they were a single table; the Rosetta objects that define the multiple table
+selection will be used to know how to map said data changes against the correct
+tables; it may not be possible for Rosetta to issue changes against some
+selects, since some required mapping information may be lacking; in that case, 
+the application logic will have to handle it against single tables.
+
+=item 0
+
+Create stored procedures and functions within the default schema context that
+you connected to, and alter or remove them, and invoke them directly; initially
+this feature will require you to define a separate version of a stored
+procedure or function for each RDBMS product you are going to use, because it
+is too difficult to implement an abstracted definition and generation of such
+things for earlier Rosetta releases; there are two ways to do this, one of
+which involves writing the functionality in pure Perl (which can be done once
+for all RDBMS products, particularly those that don't support stored procedures
+at all, but is slower), and the other way involves a hand-crafted SQL string
+implementing the procedure plus a shim Perl function that calls it; your main
+application is still RDBMS generic because any multiplicity of stored procedure
+implementations will be keyed to a Rosetta driver, so the right one is used at
+the right time; in any event, the standard RNI means of calling a stored
+procedure is calling something that looks externally like a Perl function,
+which won't change, so you will still have to make at least the interface in
+Perl; also modify or delete them, or validate those added through Rosetta.
+
+=item 0
+
+Call stored functions within select queries and so forth; this would likely
+only work when the stored item is actually in the database, and is not a pure 
+Perl implementation.
+
+=item 0
+
+Create stored triggers, with the same caveats as stored procedures and
+functions regarding multiplicity of implementations, or update or remove them,
+or validate those added through Rosetta; initially this feature will not work
+at all unless the underlying RDBMS supports triggers, since early Rosetta
+releases will not interrupt or scan data UID operations to implement triggers
+in Perl.
+
+=item 0
+
+Create or alter or remove "public synonyms" in Oracle or other RDBMS that 
+support the concept of this convenient aliasing system.
+
+=item 0
+
+Create views, which are select queries whose definitions are stored in a
+database for convenience and pre-processing speed, within the default schema
+context that you connected to, and alter or remove them; validating views 
+will at first only be possible if the same version of Rosetta created them, 
+because it is done by a simple string compare for databases that store 
+views as sql statements, so that the sql won't have to be parsed.
+
+=item 0
+
+Also scan the views in an existing database and parse their definition sql so
+that generated data dictionaries can describe both tables, views, and seqs.
+
+=item 0
+
+Also extract the stored procedures and functions and triggers and so forth 
+in their raw form, unparsed, for backup or restore to the same kind of 
+RDBMS that they came from.
+
+=item 0
+
+Emulate other database interfaces (like DBI or ODBC or OCI or whatever) on top
+of Rosetta; this would require being able to parse SQL like for data selection
+or modification, or table and view creation, and so forth, as well as pass
+through unparsed the creation sql of stored procedures and functions and
+triggers for use as is (latter not portable).
+
+=item 0
+
+Get around to parsing or generating sql for stored procedures or functions or 
+triggers, and representing them abstractly for a data dictionary.
+
+=item 0
+
+Whatever else is needed.
+
+=back
+
+On databases that don't support sub-selects (eg: MySQL before 4.1.x) or unions
+(eg: MySQL before 4.0.x) natively, Rosetta::Driver::* will try to
+emulate complex select commands by creating temporary tables in the database to
+hold results of inner selects.  This would keep all the implementation work
+inside the RDBMS product where it should be, with only the final resulting
+row-set being returned to the Perl application.  However, it is possible that
+this will only work if the database user being connected as has the privileges
+to create tables, which isn't always the case for DML-only users; on the other
+hand, temporary tables may not require said permissions.  There may also be
+problems with reliability of the results if someone else is modifying the
+inputs for the temporary tables before they are all built; this may change
+later when proper read locks are used.
 
 =head1 EXPANDED MODULE LIST
 
@@ -901,6 +903,22 @@ Driver classes must have, which is what the appropriate Engine classes will call
 them with; it is an error condition if you pass a module as a driver and that
 module doesn't subclass this one; also, do not instantiate this class directly,
 as it doesn't implement the methods it declares.
+
+=item 0
+
+B<Rosetta::Driver::Native> - This class implements a fully-functional
+stand-alone RDBMS, using 100% Perl code; it will implement all database
+features that the Rosetta core can interface to, even if some real databases
+can't.  This includes transactions, locking, foreign keys, stored procedures,
+multiple 'users', and more.  That said, it is intended mainly for testing the
+Rosetta core, and will be developed simultaneously with the latter.  While
+Rosetta::Driver::Native is fully functional, it is completely RAM-based for
+simplicity (nothing is stored on disk, except perhaps by means of explicit
+freeze/thaw or the like), and probably won't scale to more than a few thousand
+records (namely, it will hold just whatever can all fit in RAM at once).  It
+also won't be designed with multi-threaded environments in mind, due to its
+intent for testing (usually done by one person at a time); if you plan to use
+it for more, you will need to serialize access yourself.
 
 =item 0
 

@@ -17,7 +17,7 @@ PREFACE
 
 The "Rosetta" distribution features mainly the Perl 5 modules named "Rosetta",
 "Rosetta::Schema/::*", and "Rosetta::Engine/::*", but also some related modules
-like "Rosetta::Driver" and "Rosetta::Driver::Null".  These constitute the
+like "Rosetta::Driver" and "Rosetta::Driver::Native".  These constitute the
 "core" of the Rosetta framework, for RDBMS-generic apps and schemas.
 
 To get the most out of Rosetta, please also install the "Rosetta-Drivers"
@@ -36,7 +36,7 @@ distributions don't exist yet.)
 
 All of my modules have complete POD inside of them, so please refer to that for
 a description of module-specific details such as their method APIs.  The file
-"Documentation.pod" contains the main POD documentation for the Rosetta
+"Rosetta::Framework.pod" contains the main POD documentation for the Rosetta
 framework taken as a whole, including the purpose and overall design structure
 of the distribution; it should be read first.
 

@@ -1,6 +1,6 @@
 ChangeLog
-Documentation.pod
 lib/Rosetta.pm
+lib/Rosetta/Framework.pod
 Makefile.PL
 MANIFEST
 ReadMe

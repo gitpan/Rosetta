@@ -19,7 +19,7 @@ require 5.004;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 ######################################################################
 
@@ -39,17 +39,18 @@ $VERSION = '0.03';
 
 =head1 SYNOPSIS
 
-I<Please see the file Documentation.pod for a SYNOPSIS.>
+I<Please see the file Rosetta::Framework.pod for a SYNOPSIS.>
 
 =head1 DESCRIPTION
 
 The Rosetta class currently has little functionality of its own, but rather
 mainly exists to help the CPAN indexers and users find the actual main
 documentation for the Rosetta framework, which starts in the file
-"Documentation.pod".  Similarly, the CPAN indexers like to find a module with
-the same name as the distribution in order to extract the single-line module
-summary for the distribution, from the module's NAME section; that is provided
-here.  Please see the file "Documentation.pod" for the main documentation.
+"Rosetta::Framework.pod".  Similarly, the CPAN indexers like to find a module
+with the same name as the distribution in order to extract the single-line
+module summary for the distribution, from the module's NAME section; that is
+provided here.  Please see the file "Rosetta::Framework.pod" for the main
+Rosetta purpose and design documentation.
 
 =head1 SYNTAX
 
