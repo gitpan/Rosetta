@@ -63,7 +63,7 @@ be added).  Rosetta does not automate installation of any separate database
 software or configure it (like a package manager); you will have to do that
 yourself.
 
-Note: see also the SQL::SyntaxModel library, which is the foundation for the
+Note: see also the SQL::Routine library, which is the foundation for the
 Rosetta API; see the Language.pod file in particular.
 
 =head1 COPYRIGHT AND LICENSE
@@ -241,7 +241,7 @@ provide.
 
 The modules composing the Rosetta framework are grouped into several main
 categories, which can be called: "Locale" (Locale::KeyedText), "Model"
-(SQL::SyntaxModel), "Interface", "Engine", "Proxy" (Server/Client), "Validator",
+(SQL::Routine), "Interface", "Engine", "Proxy" (Server/Client), "Validator",
 "Emulator", and others.
 
 Note: the file Language.pod should be read next, after Framework.pod.
@@ -374,7 +374,7 @@ speed and memory efficiency but also compatability; it will allow Rosetta (and
 through it Perl) to use databases which previously had no Perl bindings or DBI
 Engines before.  Moreover, the potential user base would increase sharply
 because users of other languages like PHP or Python would be able to use it.
-The C version of Rosetta will probably have the "Model" (SQL::SyntaxModel) and
+The C version of Rosetta will probably have the "Model" (SQL::Routine) and
 "Interface" modules being mostly reduced to struct definitions, macros for
 manipulating the structs, header files, and a small amount of implementation
 code.  Most of the normal implementation C code would be derived from the other
@@ -409,17 +409,17 @@ I<Any indented package names represent inner classes of what they are beneath.>
 		Locale::KeyedText::Message (stores details of a machine-readable message)
 		Locale::KeyedText::Translator (converts a m-r message to a human readable form)
 
-=head2 In distribution "SQL-SyntaxModel"
+=head2 In distribution "SQL-Routine"
 
-	SQL::SyntaxModel (An abstract syntax tree for all types of SQL)
-		SQL::SyntaxModel::Container (a context for Nodes, one of these per parent)
-		SQL::SyntaxModel::Node (a semi-atomic model component)
-	SQL::SyntaxModel::L::en (Localization of SQL::SyntaxModel for English)
-	SQL::SyntaxModel::L::fr (Localization of SQL::SyntaxModel for French)
-	SQL::SyntaxModel::L::* ... like German, Spanish, Dutch, Chinese, etc
+	SQL::Routine (Specify all database tasks with SQL routines)
+		SQL::Routine::Container (a context for Nodes, one of these per parent)
+		SQL::Routine::Node (a semi-atomic model component)
+	SQL::Routine::L::en (Localization of SQL::Routine for English)
+	SQL::Routine::L::fr (Localization of SQL::Routine for French)
+	SQL::Routine::L::* ... like German, Spanish, Dutch, Chinese, etc
 
-	SQL::SyntaxModel::Language (What language or grammar SQL::SyntaxModel speaks)
-	SQL::SyntaxModel::API_C (Describe the core C API for SQL::SyntaxModel)
+	SQL::Routine::Language (What language or grammar SQL::Routine speaks)
+	SQL::Routine::API_C (Describe the API for a C version of SQL::Routine)
 
 =head2 In distribution "Rosetta"
 
@@ -481,11 +481,11 @@ something not DBI based like Win32::ODBC.
 I<Note: more databases (and data access protocols) can be found listed at 
 "http://freshmeat.net/articles/view/305/" and "http://freshmeat.net/articles/view/307/">
 
-	Rosetta::Engine::SQLite (binding to public domain SQLite embedded db; default RDBMS for Rosetta)
-	Rosetta::Engine::Oracle (interface to Oracle db 8, 9)
+	Rosetta::Engine::SQLite (binding to public domain SQLite embedded db 3.0.7, 2.8.15)
+	Rosetta::Engine::MySQL (interface/binding to MySQL cli-serv/embed db 5.x, 4.1.x, 4.0.x, 3.23.x)
+	Rosetta::Engine::PostgreSQL (interface to PostgreSQL db 8.0.x, 7.4.x, 7.3.x, 7.2.x)
+	Rosetta::Engine::Oracle (interface to Oracle db 10.x, 9.x, 8.x)
 	Rosetta::Engine::Sybase (interface to Sybase db)
-	Rosetta::Engine::PostgreSQL (interface to PostgreSQL db 8.0.x, 7.4.x, 7.3.x)
-	Rosetta::Engine::MySQL (interface/binding to MySQL cli-serv/embed db 4.x, 5.x, 3.23.x)
 	Rosetta::Engine::Informix (interface to IBM Informix db)
 	Rosetta::Engine::DB2 (interface to IBM's DB/2 db and its DB/2 Express db)
 	Rosetta::Engine::SQLServer (interface to MS SQLServer db)
@@ -548,15 +548,14 @@ I<Some terms seen here are out of date.>
 
 	RosettaX::* ... unofficial extensions or wrappers to Rosetta are allowed here ...
 
-=head2 In historical posterity distribution "SQL-SyntaxModel-ByTree"
+=head2 In historical posterity distribution "SQL-Routine-Castaways"
 
-	SQL::SyntaxModel::ByTree (Build SQL::SyntaxModels from multi-dimensional Perl hashes and arrays)
-	SQL::SyntaxModel::ByTree::L::en (Localization of SQL::SyntaxModel::ByTree for English)
-
-=head2 In historical posterity distribution "SQL-SyntaxModel-SkipID"
-
-	SQL::SyntaxModel::SkipID (Use SQL::SyntaxModels without inputting Node IDs)
-	SQL::SyntaxModel::SkipID::L::en (Localization of SQL::SyntaxModel::SkipID for English)
+	SQL::Routine::Castaways (Archaic functionality that was stripped from SQL::Routine)
+		(File is a small place-holder POD file to represent the distribution on CPAN)
+	SQL::Routine::ByTree (Build SQL::Routines from multi-dimensional Perl hashes and arrays)
+	SQL::Routine::ByTree::L::en (Localization of SQL::Routine::ByTree for English)
+	SQL::Routine::SkipID (Use SQL::Routines without inputting Node IDs)
+	SQL::Routine::SkipID::L::en (Localization of SQL::Routine::SkipID for English)
 
 =head1 OLDER DOCUMENTATION
 
@@ -588,10 +587,10 @@ Engines or connections.  Subclasses include: Result, Connection.
 
 B<Rosetta::Command> - This Interface class describes an action that needs
 to be done against a database; its objects encapsulate
-SQL::SyntaxModel::Command objects and also encapsulates the resolved host params,
+SQL::Routine::Command objects and also encapsulates the resolved host params,
 or live objects like 'Cursor'.  Code using these objects should be doing
 something like both calling DBI->prepare() and DBI->execute().  I<See also
-SQL::SyntaxModel::Command.>
+SQL::Routine::Command.>
 
 =item
 
@@ -680,45 +679,32 @@ available at the time of each Engine update, so mention of version ranges being
 supported or not is not applicable.  That said, given that SQLite recently went
 through a major revision that involves a file format change, where the current
 version can't read files of the older version, this class will temporarily
-embed both main versions, v2.8.15 and v3.0.6, with the 2.x support deprecated.
-
-=item
-
-B<Rosetta::Engine::Oracle> - This class implements an Engine for talking to
-Oracle 8.x, 9.x, 10.x databases.  Note that Oracle 9 is the first version of the
-Oracle database that runs under Mac OS X (10.2 and later).  Oracle versions 
-before 8.x, like 7.3, will not be supported unless there is a great demand.
-
-=item
-
-B<Rosetta::Engine::PostgreSQL> - This class implements an Engine for talking to
-PostgreSQL databases.  It is intended to be used only with PostgreSQL versions
-7.4.5 and later, with version 8.0.0 or greater being strongly recommended. That
-said, which version you should use depends on your stage of development.
-PostgreSQL 8.0.0 reached 2nd-beta on 2004.09.08, while the officially
-stable 7.4.5 was released on 2004.08.23.  Support for 7.3.x in this module will
-be present in the short term, but it is deprecated.  7.2.x and earlier will not
-be supported at all, without great demand.
+embed both main versions, v3.0.7 and v2.8.15 (both of which are declared
+stable); the 2.x support is deprecated.
 
 =item
 
 B<Rosetta::Engine::MySQL> - This class implements an Engine for talking to
-MySQL databases.  It is intended to be used only with MySQL versions 4.0.21 and
-later, with version 4.1.4 or greater being strongly recommended; you can also
-consider 5.0.1 or greater.  That said, which version you should use depends on
-your stage of development.  MySQL AB had declared the 4.0.x series to be
-production quality at v4.0.12 (2003.03.15), and since then this line had over a
-year's worth of bug-fix improvements.  MySQL AB had declared the 4.1.x series
-to be gamma quality at v4.1.4 (2004.08.26), and previously was at beta quality
-at v4.1.3 (2004.06.28), and previously was at alpha quality at v4.1.0
-(2003.04.10); they initially said the 4.1.x line would be production ready 8
-months after its alpha release.  MySQL AB provided a preview release of the
-5.0.x line on 2003.12.22, which is v5.0.0; at the same time that the 4.1.x line
-was declared beta, the 5.0.x line was declared alpha, without a version
-increment; they initially said 5.0.x would be production ready 6 months after
-4.1.x was.  Support for 3.23.x in this module will be present in the short term,
-but it is deprecated.  3.22.x and earlier will not be supported at all, without
-great demand.
+MySQL databases.  It is recommended for use only with MySQL versions 4.1.5 and
+greater, including v5.0.x and v5.1.x.  Support for MySQL versions 4.0.21 and
+3.23.58 is present but deprecated.  v3.22.x and earlier will not be supported at
+all, without great demand.
+
+=item
+
+B<Rosetta::Engine::PostgreSQL> - This class implements an Engine for talking to
+PostgreSQL databases.  It is recommended for use only with PostgreSQL versions
+8.0.0 and greater.  Support for PostgreSQL versions 7.4.5 and 7.3.7 and 7.2.5
+is present but deprecated.  v7.1.x and earlier will not be supported at all,
+without great demand.
+
+=item
+
+B<Rosetta::Engine::Oracle> - This class implements an Engine for talking to
+Oracle databases.  It is recommended for use only with Oracle versions 9.x and
+greater, including v10.x.  Support for Oracle versions 8.x is present but
+deprecated.  v7.3 and earlier will not be supported at all, without great
+demand.
 
 =item
 
@@ -873,7 +859,7 @@ loosely derived from this, and that is up to date.
 		}
 
 		eval {
-			require Rosetta; # also compiles SQL::SyntaxModel
+			require Rosetta; # also compiles SQL::Routine
 		};
 		if( $@ ) {
 			return( "Error: can't compile Rosetta modules: $@" );
@@ -911,7 +897,7 @@ loosely derived from this, and that is up to date.
 			return( "Error: no survey question list defined in prefs file" );
 		}
 
-		my $dd_table = SQL::SyntaxModel->new_table( 'survey_data' );
+		my $dd_table = SQL::Routine->new_table( 'survey_data' );
 
 		foreach my $question (@{$questions}) {
 			unless( ref( $question ) eq 'HASH' and $question->{visible_title} ) {
@@ -1013,7 +999,7 @@ loosely derived from this, and that is up to date.
 
 		# user saw screen and clicked the 'OK' button, so try to fillin;
 		# the following makes a Command of type 'data_insert' and executes it
-		my $dd_view = SQL::SyntaxModel->new_view( $dd_table );
+		my $dd_view = SQL::Routine->new_view( $dd_table );
 		my $rv = $dbh->execute_command( $dd_view->new_command_insert( $form_values ) );
 		if( $rv->is_error() ) {
 			return( "Error: can't save form values in database: ".$rv->get_error() );
@@ -1026,7 +1012,7 @@ loosely derived from this, and that is up to date.
 		my ($dbh, $dd_table, $questions, $form_values) = @_;
 
 		# the following makes a Command of type 'data_select' and executes it
-		my $dd_view = SQL::SyntaxModel->new_view( $dd_table );
+		my $dd_view = SQL::Routine->new_view( $dd_table );
 		my $cursor = $dbh->execute_command( $dd_view->new_command_select() );
 		if( $cursor->is_error() ) {
 			return( "Error: can't fetch form values from database: ".$cursor->get_error() );

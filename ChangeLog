@@ -1,3 +1,30 @@
+2004-10-04   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.36.
+
+	* New code file versions are: Rosetta.pm v0.36, Rosetta/L/en.pm v0.11, 
+	Validator.pm v0.06, and Validator/L/en.pm v0.05.
+
+	* Updated external dependencies on Locale::KeyedText to v1.00 and on
+	SQL::Routine to v0.43.  SQL::Routine was renamed from SQL::SyntaxModel.
+
+	* Renamed all references on SQL::SyntaxModel in code and documentation to
+	SQL::Routine.  All name-related strings, both in code and documentation,
+	were updated as follows: "SyntaxModel" -> "Routine", "SSM" -> "SRT", "ssm"
+	-> "srt".  Most renaming was done in Rosetta.pm and Framework.pod.
+
+	* Updated the _validate_srt_node() private method of Rosetta.pm to remove
+	the assertion using are_reciprocal_links(), that method no longer exists in
+	SQL::Routine (it isn't needed); removed 2 corresponding *NOT_RECIP_LINKS
+	user text messages in Rosetta/L/en.pm.
+
+	* Updated the SYNOPSIS and BUGS documentation in Rosetta.pm.  Fixed a bug
+	in the new_application() method documentation regarding the invocant.
+
+	* Updated Framework.pod: Rewrote a chunk of the OLDER DOCUMENTATION in
+	regards to Engine modules.  Updated the BRIEF MODULE LIST to account for
+	the SQL-Routine and SQL-Routine-Castaways distros, and the Engines.
+
 2004-09-09   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.35.

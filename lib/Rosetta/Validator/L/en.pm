@@ -10,7 +10,7 @@ package Rosetta::Validator::L::en;
 use 5.006;
 use strict;
 use warnings;
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 ######################################################################
 
@@ -92,7 +92,7 @@ __END__
 	# do work ...
 
 	my $translator = Locale::KeyedText->new_translator( ['Rosetta::Validator::L::', 
-		'Rosetta::L::', 'SQL::SyntaxModel::L::'], ['en'] );
+		'Rosetta::L::', 'SQL::Routine::L::'], ['en'] );
 
 	# do work ...
 

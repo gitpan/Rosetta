@@ -46,8 +46,8 @@ Standard Modules: none
 
 Nonstandard Modules: 
 
-	Locale::KeyedText 0.07 (for error messages)
-	SQL::SyntaxModel 0.41
+	Locale::KeyedText 1.00 (for error messages)
+	SQL::Routine 0.43
 
 This module doesn't require anything else.
 

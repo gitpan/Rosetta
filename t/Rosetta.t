@@ -5,10 +5,10 @@
 
 BEGIN { $| = 1; print "1..1\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use Rosetta 0.35;
-use Rosetta::L::en 0.10;
-use Rosetta::Validator 0.05;
-use Rosetta::Validator::L::en 0.04;
+use Rosetta 0.36;
+use Rosetta::L::en 0.11;
+use Rosetta::Validator 0.06;
+use Rosetta::Validator::L::en 0.05;
 $loaded = 1;
 print "ok 1\n";
 use strict;
@@ -41,7 +41,7 @@ sub error_to_string {
 	my ($message) = @_;
 	ref($message) or return( $message ); # if this isn't an object
 	my $translator = Locale::KeyedText->new_translator( 
-		['Rosetta::L::', 'SQL::SyntaxModel::L::'], ['en'] );
+		['Rosetta::L::', 'SQL::Routine::L::'], ['en'] );
 	my $user_text = $translator->translate_message( $message );
 	unless( $user_text ) {
 		return( "internal error: can't find user text for a message: ".

@@ -10,9 +10,9 @@ package Rosetta::Validator;
 use 5.006;
 use strict;
 use warnings;
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
-use Rosetta 0.35;
+use Rosetta 0.36;
 
 ######################################################################
 
@@ -24,7 +24,7 @@ Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	Rosetta 0.35
+	Rosetta 0.36
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -206,6 +206,6 @@ parts of it will be changed in the near future, perhaps in incompatible ways.
 
 =head1 SEE ALSO
 
-perl(1), Rosetta, SQL::SyntaxModel, Locale::KeyedText, Rosetta::Engine::Generic.
+perl(1), Rosetta, SQL::Routine, Locale::KeyedText, Rosetta::Engine::Generic.
 
 =cut

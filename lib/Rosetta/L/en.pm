@@ -10,7 +10,7 @@ package Rosetta::L::en;
 use 5.006;
 use strict;
 use warnings;
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 ######################################################################
 
@@ -111,22 +111,20 @@ my %text_strings = (
 		"'{PPTYPE}' Interface as its grand-parent (but its '{PTYPE}' parent type is okay)",
 
 	'ROS_I_NEW_INTF_YES_NODE' => 
-		"$CI.new(): the SSM_NODE argument must be undefined for '{TYPE}' Interfaces; ".
+		"$CI.new(): the SRT_NODE argument must be undefined for '{TYPE}' Interfaces; ".
 		"this Interface property would be set for you by using its parent Preparation",
 	'ROS_I_NEW_INTF_NO_NODE' => 
-		"$CI.new(): missing SSM_NODE argument; it is mandatory for '{TYPE}' Interfaces",
+		"$CI.new(): missing SRT_NODE argument; it is mandatory for '{TYPE}' Interfaces",
 	'ROS_I_NEW_INTF_BAD_NODE' => 
-		"$CI.new(): invalid SSM_NODE argument; it may only be a ".
-		"SQL::SyntaxModel::Node object; you tried to set it to '{SSM}'",
+		"$CI.new(): invalid SRT_NODE argument; it may only be a ".
+		"SQL::Routine::Node object; you tried to set it to '{SRT}'",
 	'ROS_I_NEW_INTF_NODE_NOT_IN_CONT' =>
-		"$CI.new(): invalid SSM_NODE argument; that Node is not in a Container",
-	'ROS_I_NEW_INTF_NODE_NOT_RECIP_LINKS' =>
-		"$CI.new(): invalid SSM_NODE argument; that Node does not have reciprocal links",
+		"$CI.new(): invalid SRT_NODE argument; that Node is not in a Container",
 	'ROS_I_NEW_INTF_NODE_NOT_SAME_CONT' =>
-		"$CI.new(): invalid SSM_NODE argument; that Node is not in the same Container ".
+		"$CI.new(): invalid SRT_NODE argument; that Node is not in the same Container ".
 		"as the Node associated with PARENT_INTF, so it can not be used",
 	'ROS_I_NEW_INTF_NODE_TYPE_NOT_SUPP' =>
-		"$CI.new(): the given SSM_NODE argument, having a Node Type of '{NTYPE}', ".
+		"$CI.new(): the given SRT_NODE argument, having a Node Type of '{NTYPE}', ".
 		"can not be associated with a '{ITYPE}' Interface",
 
 	'ROS_I_DESTROY_HAS_CHILD' => 
@@ -171,11 +169,9 @@ my %text_strings = (
 		"$CI.prepare(): missing ROUTINE_DEFN argument; it is mandatory for '{TYPE}' Interfaces",
 	'ROS_I_PREPARE_BAD_NODE' => 
 		"$CI.prepare(): invalid ROUTINE_DEFN argument; it may only be a ".
-		"SQL::SyntaxModel::Node object; you tried to set it to '{SSM}'",
+		"SQL::Routine::Node object; you tried to set it to '{SRT}'",
 	'ROS_I_PREPARE_NODE_NOT_IN_CONT' =>
 		"$CI.prepare(): invalid ROUTINE_DEFN argument; that Node is not in a Container",
-	'ROS_I_PREPARE_NODE_NOT_RECIP_LINKS' =>
-		"$CI.prepare(): invalid SSM_NODE argument; that Node does not have reciprocal links",
 	'ROS_I_PREPARE_NODE_NOT_SAME_CONT' =>
 		"$CI.prepare(): invalid ROUTINE_DEFN argument; that Node is not in the same Container ".
 		"as the Node associated with PARENT_INTF, so it can not be used",
@@ -218,8 +214,8 @@ my %text_strings = (
 		"$GEN 00001 - {CLASS} - can't prepare any type of generic routine on a '{ITYPE}' Interface",
 	'ROS_G_PREPARE_INTF_NSUP_THIS_CMD' =>
 		"$GEN 00002 - {CLASS} - can't prepare a '{CTYPE}' command-routine on a '{ITYPE}' Interface",
-	'ROS_G_PREPARE_INTF_NSUP_SSM_NODE' =>
-		"$GEN 00003 - {CLASS} - can't prepare a '{NTYPE}' SSM Node as a routine on a '{ITYPE}' Interface",
+	'ROS_G_PREPARE_INTF_NSUP_SRT_NODE' =>
+		"$GEN 00003 - {CLASS} - can't prepare a '{NTYPE}' SRT Node as a routine on a '{ITYPE}' Interface",
 
 	'ROS_G_CMD_DB_CLOSE_CONN_IN_USE' =>
 		"$GEN 00004 - {CLASS} - can't close database connection since it has active transaction ".
@@ -245,7 +241,7 @@ __END__
 	# do work ...
 
 	my $translator = Locale::KeyedText->new_translator( 
-		['Rosetta::L::', 'SQL::SyntaxModel::L::'], ['en'] );
+		['Rosetta::L::', 'SQL::Routine::L::'], ['en'] );
 
 	# do work ...
 
