@@ -1,3 +1,22 @@
+2003-06-03   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.11.
+
+	* The DataDictionary.pod documentation file saw some more large changes,
+	increasing in size from 71K to 85K (added 14K).  Mainly this saw the
+	completion of the "VIEWS" main section, with any undone table descriptions
+	being fleshed out and others updated; 2 tables added and 4 removed; 2
+	related tables were added to the CONSTANT CODE TABLES section as well.
+	Smaller updates were made to "STRUCTURE". Other bug fixes or small changes
+	were made.  At this point all significant parts of the deprecated sections
+	that were removed in release 0.10 have been replaced.  The main sections
+	"BLOCKS" and "COMMANDS AND RESULTS" still need to be written.
+
+	* Updated BRIEF MODULE LIST in Framework.pod to illustrate how the core
+	Rosetta distribution may get split up, with new modules having names like
+	"Locale::KeyedText" and "SQL::ObjectModel".  Also updated formatting of
+	some level 2 headings in the document.
+
 2003-05-28   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.10.

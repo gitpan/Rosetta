@@ -93,7 +93,7 @@ most are optional, but for simplicity all lines are solid below.
 	               |        | 
 	               |        |
 	namespace--<=object-----+-<=procedure;function;package
-	               |        |
+	              \|/       |
 	               |        | 
 	   cct_object_type     view
 	                      (named)
@@ -115,15 +115,15 @@ most are optional, but for simplicity all lines are solid below.
 
 	 data_type   cct_view_type
 	     |           |
-	    /|\         /|\                     cct_basic_expr_type;user_func;
-	 view_col=>----view  cct_rs_merge_type  cct_standard_func;(t;v_col via src)
+	    /|\         /|\                     cct_basic_expr_type;view;
+	 view_col=>----view  cct_rs_merge_type  user_func;cct_standard_func
 	     |           |     |                    |
 	    /|\         /|\   /|\                  /|\
-	view_col_src=>--view_rowset---<=view_src_filter;view_hierarchy;view_grp;view_grp_filter;view_order
-	    \|/             \|/
-	     |               |
-	     +------------view_src----<=view_join(/_col)
-	(t;v_col via src)   \|/           |(2)
+	view_col_def=>--view_rowset---<=view_part_expr;=>---view_src_col
+	    \|/             \|/         view_hierarchy         |(2)
+	     |               |                                /|\
+	view_src_col=>----view_src----<=view_join---<=view_join_col
+	                    \|/   (2)     |
 	                     |           /|\
 	                 table;view  cct_rs_join_type
 
@@ -288,7 +288,7 @@ Record List:
 	|gre| - the Gregorian calendar
 	|jul| - the Julian/Roman calendar
 	|chi| - the Chinese calendar
-	|heb| - the Jewesh calendar
+	|heb| - the Hebrew calendar
 	|isl| - the Islamic calendar
 	|jpn| - the Japanese calendar
 
@@ -454,6 +454,28 @@ Record List:
 	A right-join may also be added, but its value is dubious at the moment.
 	Also, there is no concept of a "natural" join at this level of activity.
 
+=head2 cct_view_part
+
+This table enumerates the standard parts of a view definition which exist in 
+the SQL following the "from" part.  See "view_part_expr" for an explanation.
+
+Column List:
+
+	code - str,req - name of the view part
+
+Index List:
+
+	primary - unique - [code]
+
+Record List:
+
+	|code |
+	|-----|
+	|where| - the SQL "where" part
+	|group| - the SQL "group by" part
+	|havin| - the SQL "having" part
+	|order| - the SQL "order by" part
+
 =head2 cct_basic_expr_type
 
 This table enumerates the basic expression types that views or blocks can contain.  An 
@@ -563,11 +585,14 @@ Record List:
 	|gsum   |1 | 1|  |0 | 1|1 |0 |0 |numeric | - sum of values in all records in one view col
 	|gavg   |1 | 1|  |0 | 1|1 |0 |0 |numeric | - average of values in all records in one view col
 	|gconcat|1 | 1|  |0 | 1|1 |0 |0 |str     | - str concat of values in all records in one view col
+	|crowid |0 | 0|  |0 | 0|1 |0 |0 |str     | - unique database-generated row id of returned row (=rowid?)
+	|crownum|0 | 0|  |0 | 0|1 |0 |0 |int     | - row number of returned row, before sorting (eg:Oracle)
+	|clevel |0 | 0|  |0 | 0|1 |0 |0 |int     | - when using st-wi-cn-by, what hierarchy level row is in (eg:Oracle)
 
 	Note that the function list is incomplete and will grow over time.  It does not currently 
 	mention functions for working with view/cursor subqueries, such as "in" (field in subquery), 
 	and also doesn't include any list operators, such as for comparing a list of field names to 
-	a subquery that returns multiple columns (as I suspect MySQL supports).
+	a subquery that returns multiple columns (as I suspect MySQL 4.1 supports).
 
 =head2 cct_basic_stmt_type
 
@@ -845,6 +870,10 @@ in front of all the schema objects (the namespace name), to simulate the
 lacking functionality.  That said, it is better for you to design your schemas 
 so different namespaces don't contain same-named objects anyway, if practical.
 
+Because all of the records in these tables are user defined, the provided 
+record list is simply some example or "synopsis" data; none of it corresponds 
+to anything in the Rosetta code.
+
 Column List:
 
 	namespace_id - int,req - unique identifier for this namespace
@@ -923,6 +952,10 @@ table name that is stored in the database schema; the actual name in the schema
 may change depending on what the implementing database is.  See the section
 NAME SPACES AND SCHEMA OBJECTS for the mapping.
 
+Because all of the records in these tables are user defined, the provided 
+record list is simply some example or "synopsis" data; none of it corresponds 
+to anything in the Rosetta code.
+
 =head2 table
 
 Each record in this table uniquely corresponds to one database table, and has
@@ -937,6 +970,8 @@ Column List:
 Undecided Possible Extra Column:
 
 	is_temporary - bool - does table even go in the schema, or just a connection-specific place
+	max_rows - int - says what the maximum number of rows to return is (like MySQL's "limit" clause)
+	skip_rows - int - says what the index of the first row to return is
 
 Index List:
 
@@ -966,12 +1001,20 @@ Column List:
 	default_val - str - an optional default value for the column, or starting val for auto_inc
 	auto_inc - bool - when true, col val defaults from a special auto-incrementing sequence
 
+Undecided Possible Extra Columns:
+
+	default_seq - int - when set, the column defaults to a value from this user defined sequence
+
 Index List:
 
 	primary - unique - [table_id,col_name]
 	ak_order - unique - [table_id,col_order]
 	fk_table - foreign - [table_id]->[table]:[table_id]
 	fk_data_type - foreign - [data_type]->[data_type]:[name]
+
+Undecided Possible Extra Indexes:
+
+	fk_sequence - foreign - [default_seq]->[sequence]:[sequence_id]
 
 Example Record List:
 
@@ -1089,9 +1132,6 @@ Example Record List:
 	|  4|fk_father       |father_id    |  1|   4|person_id| - link child to father
 	|  4|fk_mother       |mother_id    |  1|   4|person_id| - link child to mother
 
-Note that while triggers are always joined to specific tables, they will be 
-described in their own section, below.  Sequences will also be separate.
-
 =head1 VIEWS
 
 These tables are for storing user definitions of database views, which are
@@ -1105,6 +1145,10 @@ All views are uniquely identified here by an "id", which is different from the
 view name that is stored in the database schema (where applicable); the actual
 name in the schema may change depending on what the implementing database is. 
 See the section NAME SPACES AND SCHEMA OBJECTS for the mapping.
+
+Because all of the records in these tables are user defined, the provided 
+record list is simply some example or "synopsis" data; none of it corresponds 
+to anything in the Rosetta code.
 
 =head2 view
 
@@ -1148,7 +1192,8 @@ Example Record List:
 	|--|------|--|-----|
 	| 1|caller| 1|     | - user - joins the "user_auth" and "user_profile" tables
 	| 2|caller| 0|     | - person_with_parents - joins the "person" table with itself twice
-	| 3|caller| 1|    3| - v_user_pref - simply the "user_pref" table
+	| 3|caller| 0|     | - user_theme - shows how many users use each theme pref value
+	| 4|caller| 1|    4| - person - simply the "person" table
 
 =head2 view_col
 
@@ -1162,6 +1207,7 @@ Column List:
 	col_name - str,req - unique identifier for column within view
 	col_order - int,req - what order columns are declared in (and by default returned in)
 	data_type - str,req - the user-customized data type for this column
+	sort_priority - int - if valued, priority for final result rows (after rs merges) to be sorted by this column
 
 Undecided Possible Extra Columns:
 
@@ -1178,29 +1224,31 @@ Index List:
 
 Example Record List:
 
-	|vw|col_name     |ord|type   |
-	|--|-------------|---|-------|
-	| 1|user_id      |  1|int    | - unique internal id for user, not changeable
-	| 1|login_name   |  2|str20  | - who user authenticates into app as
-	| 1|login_pass   |  3|str20  | - also used with authentication
-	| 1|private_name |  4|str100 | - real name that app service provider can know
-	| 1|private_email|  5|str100 | - email that service provider can contact user with
-	| 1|may_login    |  6|boolean| - true when user may use app at all
-	| 1|max_sessions |  7|byte   | - max concurrent app logins user may have
-	| 1|public_name  |  8|str250 | - public name or pen name or public alias
-	| 1|public_email |  9|str250 | - email address the public may use for contact
-	| 1|web_url      | 10|str250 | - personal/business website address of user
-	| 1|contact_net  | 11|str250 | - info like ICQ number or other internet handles
-	| 1|contact_phy  | 12|str250 | - physical address or city or telephone number
-	| 1|bio          | 13|str250 | - brief description of the person
-	| 1|plan         | 14|str250 | - what the person plans to do next
-	| 1|comments     | 15|str250 | - other comments
-	| 2|self_id      |  1|int    | - unique actual id for person, not changeable
-	| 2|self_name    |  2|str100 | - actual name of the person they are called by
-	| 2|father_id    |  3|int    | - person_id of this person's father, if known
-	| 2|father_name  |  4|str100 | - actual name of the person's father
-	| 2|mother_id    |  5|int    | - person_id of this person's mother, if known
-	| 2|mother_name  |  6|str100 | - actual name of the person's mother
+	|vw|col_name     |ord|type   |so|
+	|--|-------------|---|-------|--|
+	| 1|user_id      |  1|int    |  | - unique internal id for user, not changeable
+	| 1|login_name   |  2|str20  | 1| - who user authenticates into app as
+	| 1|login_pass   |  3|str20  |  | - also used with authentication
+	| 1|private_name |  4|str100 |  | - real name that app service provider can know
+	| 1|private_email|  5|str100 |  | - email that service provider can contact user with
+	| 1|may_login    |  6|boolean|  | - true when user may use app at all
+	| 1|max_sessions |  7|byte   |  | - max concurrent app logins user may have
+	| 1|public_name  |  8|str250 |  | - public name or pen name or public alias
+	| 1|public_email |  9|str250 |  | - email address the public may use for contact
+	| 1|web_url      | 10|str250 |  | - personal/business website address of user
+	| 1|contact_net  | 11|str250 |  | - info like ICQ number or other internet handles
+	| 1|contact_phy  | 12|str250 |  | - physical address or city or telephone number
+	| 1|bio          | 13|str250 |  | - brief description of the person
+	| 1|plan         | 14|str250 |  | - what the person plans to do next
+	| 1|comments     | 15|str250 |  | - other comments
+	| 2|self_id      |  1|int    |  | - unique actual id for person, not changeable
+	| 2|self_name    |  2|str100 | 1| - actual name of the person they are called by
+	| 2|father_id    |  3|int    |  | - person_id of this person's father, if known
+	| 2|father_name  |  4|str100 | 2| - actual name of the person's father
+	| 2|mother_id    |  5|int    |  | - person_id of this person's mother, if known
+	| 2|mother_name  |  6|str100 | 3| - actual name of the person's mother
+	| 3|theme_name   |  2|generic| 2| - name of a user theme
+	| 3|theme_count  |  3|int    | 1| - count of users that use this theme
 
 =head2 view_rowset
 
@@ -1225,12 +1273,9 @@ Column List:
 Index List:
 
 	primary - unique - [view_id,rowset_num]
+	ak_order - unique - [view_id,p_rowset_num,p_rowset_order]
 	fk_view - foreign - [view_id]->[view]:[view_id]
 	fk_merge_type - foreign - [c_merge_type]->[cct_rs_merge_type]:[code]
-
-Undecided Possible Extra Indexes:
-
-	ak_order - unique - [view_id,p_rowset_num,p_rowset_order]
 
 Example Record List:
 
@@ -1238,6 +1283,7 @@ Example Record List:
 	|--|--|---|---|---|
 	| 1| 1|   |  1|   | - user
 	| 2| 1|   |  1|   | - person_with_parents
+	| 3| 1|   |  1|   | - user_theme
 
 =head2 view_src
 
@@ -1271,6 +1317,68 @@ Example Record List:
 	| 2| 1|self        |  1|  4|   | - match "person" table
 	| 2| 1|father      |  2|  4|   | - match "person" table
 	| 2| 1|mother      |  3|  4|   | - match "person" table
+	| 3| 1|user_pref   |  1|  3|   | - match "user_pref" table
+
+=head2 view_src_col
+
+Each record in this table uniquely represents a column in a source table or
+view that is used by this view, as specified in the view_src table.
+
+Note that the "Virtual Index List" describes a constraint that is complicated 
+enough such that it can only be enforced with a trigger or some other means 
+that supports multiple levels of indirection (constraints with subqueries?).
+
+Column List:
+
+	view_id - int,req - unique identifier for this view
+	rowset_num - int,req - unique identifier for rowset within view
+	src_name - str,req - which view source this column is associated with
+	src_col - str,req - which column from the source table or view is represented
+
+Index List:
+
+	primary - unique - [view_id,rowset_num,src_name,src_col]
+	fk_view_src - foreign - [view_id,rowset_num,src_name]->[view_src]:[view_id,rowset_num,src_name]
+
+Virtual Index List:
+
+	given $src_table = fk_view_src:[match_table]
+	given $src_view = fk_view_src:[match_view]
+	if $src_table is set then
+		fk_src_col - foreign - [$src_table,src_col]->[table]:[table_id,col_name]
+	end if
+	if $src_view is set then
+		fk_src_col - foreign - [$src_view,src_col]->[view]:[view_id,col_name]
+	end if
+
+Example Record List:
+
+	|vw|rn|src_name    |src_col      |
+	|--|--|------------|-------------|
+	| 1| 1|user_auth   |user_id      |
+	| 1| 1|user_auth   |login_name   |
+	| 1| 1|user_auth   |login_pass   |
+	| 1| 1|user_auth   |private_name |
+	| 1| 1|user_auth   |private_email|
+	| 1| 1|user_auth   |may_login    |
+	| 1| 1|user_auth   |max_sessions |
+	| 1| 1|user_profile|user_id      |
+	| 1| 1|user_profile|public_name  |
+	| 1| 1|user_profile|public_email |
+	| 1| 1|user_profile|web_url      |
+	| 1| 1|user_profile|contact_net  |
+	| 1| 1|user_profile|contact_phy  |
+	| 1| 1|user_profile|bio          |
+	| 1| 1|user_profile|plan         |
+	| 1| 1|user_profile|comments     |
+	| 2| 1|self        |person_id    |
+	| 2| 1|self        |name         |
+	| 2| 1|father      |person_id    |
+	| 2| 1|father      |name         |
+	| 2| 1|mother      |person_id    |
+	| 2| 1|mother      |name         |
+	| 3| 1|user_pref   |pref_name    |
+	| 3| 1|user_pref   |pref_value   |
 
 =head2 view_join
 
@@ -1296,8 +1404,8 @@ Index List:
 
 	primary - unique - [view_id,rowset_num,lhs_src_name,rhs_src_name]
 	ak_limit_one - unique - [view_id,rowset_num,rhs_src_name]
-	fk_lhs_src - foreign - [view_id,rowset_num,lhs_src_name]->[view_src]:[view_id,rowset_num,lhs_src_name]
-	fk_rhs_src - foreign - [view_id,rowset_num,rhs_src_name]->[view_src]:[view_id,rowset_num,rhs_src_name]
+	fk_lhs_src - foreign - [view_id,rowset_num,lhs_src_name]->[view_src]:[view_id,rowset_num,src_name]
+	fk_rhs_src - foreign - [view_id,rowset_num,rhs_src_name]->[view_src]:[view_id,rowset_num,src_name]
 	fk_join_type - foreign - [join_type]->[cct_rs_join_type]:[code]
 
 Example Record List:
@@ -1310,14 +1418,13 @@ Example Record List:
 
 =head2 view_join_col
 
+This is an intersection table between view_join and either table_col or
+view_col; it says which table or view columns are involved in each view join.
+
 Each record in this table uniquely corresponds to part of a join operation
 being done between two sources (each a table or a view), both in the same view
 rowset.  There is one record for each pair of source columns (one from each
 source) that are being matched.
-
-Note that the "Virtual Index List" describes a constraint that is complicated 
-enough such that it can only be enforced with a trigger or some other means 
-that supports multiple levels of indirection (constraints with subqueries?).
 
 Column List:
 
@@ -1325,18 +1432,15 @@ Column List:
 	rowset_num - int,req - unique identifier for rowset within view
 	lhs_src_name - str,req - which view source is on the left side of the join
 	rhs_src_name - str,req - which view source is on the right side of the join
-	lhs_col_name - str,req - which column from the left source is being matched on
-	rhs_col_name - str,req - which column from the right source is being matched on
+	lhs_src_col - str,req - which column from the left source is being matched on
+	rhs_src_col - str,req - which column from the right source is being matched on
 
 Index List:
 
-	primary - unique - [view_id,rowset_num,lhs_src_name,rhs_src_name,lhs_col_name]
+	primary - unique - [view_id,rowset_num,lhs_src_name,rhs_src_name,lhs_src_col]
 	fk_view_join - foreign - [view_id,rowset_num,lhs_src_name,rhs_src_name]->[view_join]:[view_id,rowset_num,lhs_src_name,rhs_src_name]
-
-Virtual Index List:
-
-	fk_lhs_src_col - foreign - [[[view_id,rowset_num,lhs_src_name]->[view_src]:[*][match_table/match_view]],lhs_col_name]->[table_col/view_col]:[table_id/view_id,col_name]
-	fk_rhs_src_col - foreign - [[[view_id,rowset_num,rhs_src_name]->[view_src]:[*][match_table/match_view]],rhs_col_name]->[table_col/view_col]:[table_id/view_id,col_name]
+	fk_lhs_src_col - foreign - [view_id,rowset_num,lhs_src_name,rhs_src_col]->[view_src_col]:[view_id,rowset_num,src_name,src_col]
+	fk_rhs_src_col - foreign - [view_id,rowset_num,rhs_src_name,rhs_src_col]->[view_src_col]:[view_id,rowset_num,src_name,src_col]
 
 Example Record List:
 
@@ -1346,108 +1450,248 @@ Example Record List:
 	| 2| 1|self     |father      |father_id|person_id| - on "father"."person_id" = "self"."father_id"
 	| 2| 1|self     |mother      |mother_id|person_id| - on "mother"."person_id" = "self"."mother_id"
 
-=head2 view_src_filter
+=head2 view_hierarchy
 
-Each record in this table uniquely corresponds to a sub-expression that is part
-of a filter definition in a view rowset.  This filter definition is run against
-the rows in the view sources just after or while they are being joined, and it
-is supposed to eliminate most or all of the source rows that we don't want to
-keep.  In other words, the whole expression becomes the "where" clause in the 
-generated SQL, where applicable (it runs prior to the SQL "group by").  All of 
-these sub-expressions form a hierarchy where children are "arguments" to their 
-parent expressions; the root expression is supposed to return a boolean value.
+Each record in this table can define an n-level hierarchical self-join-union to
+be part of a view rowset definition (similar to Oracle's start-with-connect-by
+feature).  Only one is allowed per view rowset, and it is probably evaluated
+between the SQL "where" and "group by", where applicable.
 
 Column List:
 
 	view_id - int,req - unique identifier for this view
 	rowset_num - int,req - unique identifier for rowset within view
-	expr_num - int,req - unique identifier for sub-expression within view rowset
-	p_expr_num - int - parent expression of this one, if any; empty if this is the root rowset
+	src_name - str,req - which view source is being hierarchically joined to itself
+	start_src_col - str,req - which source column is checked against to determine the root of the hierarchy
+	start_lit_val - str - if start_src_col is being compared to a literal, then store the literal value here
+	start_var_name - str - if start_src_col is being compared to a variable, then put the caller bind variable (?) name here
+	conn_src_col - str,req - which source column contains a record's own identifier against which children match
+	p_conn_src_col - str,req - which source column contains the value of a parent identifier
+
+Index List:
+
+	primary - unique - [view_id,rowset_num]
+	fk_start_src_col - foreign - [view_id,rowset_num,src_name,start_src_col]->[view_src_col]:[view_id,rowset_num,src_name,src_col]
+	fk_conn_src_col - foreign - [view_id,rowset_num,src_name,conn_src_col]->[view_src_col]:[view_id,rowset_num,src_name,src_col]
+	fk_p_conn_src_col - foreign - [view_id,rowset_num,src_name,p_conn_src_col]->[view_src_col]:[view_id,rowset_num,src_name,src_col]
+
+Note that the current structure only allows queries like "... start with
+[start_src_col] = [start_lit_val/src_name] connect by prior [conn_src_col] =
+[p_conn_src_col] ...", but this probably isn't adequate for all uses, and will
+be improved.  We may eliminate this table in favor of view_part_expr.
+
+=head2 view_col_def
+
+Each record in this table uniquely corresponds to a sub-expression that is part
+of an interface/output column definition in a view; this is an intersection 
+table between view_col and view_rowset; there needs to be one full
+expression for every view_col/view_rowset record combination in a view.  These
+expressions are used in the first part of the SQL "where" clause, before
+"from"; these are not intended to affect how many columns or rows the view
+returns, but only what the exact content of each column is.  All of these
+sub-expressions form a hierarchy where children are "arguments" to their parent
+expressions; the root expression is supposed to return the same type of value
+as the data_type specified in the view_col record.
+
+Column List:
+
+	view_id - int,req - unique identifier for this view
+	col_name - str,req - unique identifier for interface/output column within view
+	rowset_num - int,req - unique identifier for rowset within view
+	expr_num - int,req - unique identifier for sub-expression within view column def
+	p_expr_num - int - parent expression of this one, if any; empty if this is the root expression
 	p_expr_order - int,req - order of this expression among its siblings; 1 if no siblings
 	expr_type - str,req - what type of expression this is; eg: literal, variable, column, view, function
 	lit_val - str - if expr_type is 'lit', then store the literal value here
 	var_name - str - if expr_type is 'var', then put the caller bind variable (?) name here
 	src_name - str - if expr_type is 'col', then put the column source/alias name here
-	col_name - str - if expr_type is 'col', then put the source table/view column name here
+	src_col - str - if expr_type is 'col', then put the source table/view column name here
 	f_view_id - int - if expr_type is 'view', then put the view/subquery id here
 	sfunc_code - str - if expr_type is 'sfunc', then put the standard built-in function name/code here
 	ufunc_id - int - if expr_type is 'ufunc', then put the user-defined stored function id here
 
 Index List:
 
-	primary - unique - [view_id,rowset_num,expr_num]
+	primary - unique - [view_id,col_name,rowset_num,expr_num]
+	ak_order - unique - [view_id,col_name,rowset_num,p_expr_num,p_expr_order]
+	fk_view_col - foreign - [view_id,col_name]->[view_col]:[view_id,col_name]
 	fk_rowset - foreign - [view_id,rowset_num]->[view_rowset]:[view_id,rowset_num]
+	fk_src_col - foreign - [view_id,rowset_num,src_name,src_col]->[view_src_col]:[view_id,rowset_num,src_name,col_name]
 	fk_f_view - foreign - [f_view_id]->[view]:[view_id]
 	fk_expr_type - foreign - [c_expr_type]->[cct_basic_expr_type]:[code]
 	fk_sfunc_code - foreign - [sfunc_code]->[cct_standard_func]:[code]
 	fk_ufunc - foreign - [ufunc_id]->[function]:[function_id]
 
-Undecided Possible Extra Indexes:
+Example Record List:
 
-	ak_order - unique - [view_id,rowset_num,p_expr_num,p_expr_order]
+	|vw|col_name     |rn|en|pen|peo|type |lit|var|src_name    |src_col      |fvw|sf    |uf|
+	|--|-------------|--|--|---|---|-----|---|---|------------|-------------|---|------|--|
+	| 1|user_id      | 1| 1|   |  1|col  |   |   |user_auth   |user_id      |   |      |  |
+	| 1|login_name   | 1| 1|   |  1|col  |   |   |user_auth   |login_name   |   |      |  |
+	| 1|login_pass   | 1| 1|   |  1|col  |   |   |user_auth   |login_pass   |   |      |  |
+	| 1|private_name | 1| 1|   |  1|col  |   |   |user_auth   |private_name |   |      |  |
+	| 1|private_email| 1| 1|   |  1|col  |   |   |user_auth   |private_email|   |      |  |
+	| 1|may_login    | 1| 1|   |  1|col  |   |   |user_auth   |may_login    |   |      |  |
+	| 1|max_sessions | 1| 1|   |  1|col  |   |   |user_auth   |max_sessions |   |      |  |
+	| 1|public_name  | 1| 1|   |  1|col  |   |   |user_profile|public_name  |   |      |  |
+	| 1|public_email | 1| 1|   |  1|col  |   |   |user_profile|public_email |   |      |  |
+	| 1|web_url      | 1| 1|   |  1|col  |   |   |user_profile|web_url      |   |      |  |
+	| 1|contact_net  | 1| 1|   |  1|col  |   |   |user_profile|contact_net  |   |      |  |
+	| 1|contact_phy  | 1| 1|   |  1|col  |   |   |user_profile|contact_phy  |   |      |  |
+	| 1|bio          | 1| 1|   |  1|col  |   |   |user_profile|bio          |   |      |  |
+	| 1|plan         | 1| 1|   |  1|col  |   |   |user_profile|plan         |   |      |  |
+	| 1|comments     | 1| 1|   |  1|col  |   |   |user_profile|comments     |   |      |  |
+	| 2|self_id      | 1| 1|   |  1|col  |   |   |self        |person_id    |   |      |  |
+	| 2|self_name    | 1| 1|   |  1|col  |   |   |self        |name         |   |      |  |
+	| 2|father_id    | 1| 1|   |  1|col  |   |   |father      |person_id    |   |      |  |
+	| 2|father_name  | 1| 1|   |  1|col  |   |   |father      |name         |   |      |  |
+	| 2|mother_id    | 1| 1|   |  1|col  |   |   |mother      |person_id    |   |      |  |
+	| 2|mother_name  | 1| 1|   |  1|col  |   |   |mother      |name         |   |      |  |
+	| 3|theme_name   | 1| 1|   |  1|col  |   |   |user_pref   |pref_value   |   |      |  |
+	| 3|theme_count  | 1| 1|   |  1|sfunc|   |   |            |             |   |gcount|  |
+	| 3|theme_count  | 1| 2|  1|  1|col  |   |   |user_pref   |pref_value   |   |      |  |
 
-Virtual Index List:
+=head2 view_part_expr
 
-	fk_src_col - foreign - [[[view_id,rowset_num,src_name]->[view_src]:[*][match_table/match_view]],col_name]->[table_col/view_col]:[table_id/view_id,col_name]
+The records in this table are intended to describe most of the parts of a SQL
+"select" which is the basis for a view rowset definition.  The parts described
+here correspond to these SQL terms: "where", "group by", "having", "order by".
+All of these parts are optional, and often mutually exclusive.  However,
+"having" can only be used with "group by".
+
+The main parts that are not described here are the column list definitions that
+start a "select", and the "from" (includes join definitions), and any "union"
+or similar operations.  See the other view_* tables for those.  
+
+The "order by" described by this table is applied prior to any rowset merge
+operations; since those operations tend to change the order of rows, it would
+only make sense to use this when your view only has one source rowset.  If you
+have multiple rowsets, or you only want to sort by output columns, then use the
+sort_priority field in view_col to sort instead, which has much simpler syntax, 
+and is evaluated after all rowset merging is done.
+
+Each record in this table uniquely corresponds to a sub-expression that is part
+of one of several optional main/root expressions in a view rowset definition. 
+All of these sub-expressions form a hierarchy where children are "arguments" to
+their parent expressions.  There can only be one root expression for a "where"
+and a "having" part, and that is expected to return a boolean value.  The
+"group by" and "order by" parts can each have multiple root expressions, each
+of which is part of an ordered list of "columns" arranged in the priority that
+they are applied.  The "start with" and "connect by" can only have one root
+expression each.
+
+Column List:
+
+	view_id - int,req - unique identifier for this view
+	rowset_num - int,req - unique identifier for rowset within view
+	view_part - str,req - what "part" of a view definition this is defining
+	expr_num - int,req - unique identifier for sub-expression within view rowset
+	p_expr_num - int - parent expression of this one, if any; empty if this is the root expression
+	p_expr_order - int,req - order of this expression among its siblings; 1 if no siblings
+	expr_type - str,req - what type of expression this is; eg: literal, variable, column, view, function
+	lit_val - str - if expr_type is 'lit', then store the literal value here
+	var_name - str - if expr_type is 'var', then put the caller bind variable (?) name here
+	src_name - str - if expr_type is 'col', then put the column source/alias name here
+	src_col - str - if expr_type is 'col', then put the source table/view column name here
+	f_view_id - int - if expr_type is 'view', then put the view/subquery id here
+	sfunc_code - str - if expr_type is 'sfunc', then put the standard built-in function name/code here
+	ufunc_id - int - if expr_type is 'ufunc', then put the user-defined stored function id here
+
+Index List:
+
+	primary - unique - [view_id,rowset_num,view_part,expr_num]
+	ak_order - unique - [view_id,rowset_num,view_part,p_expr_num,p_expr_order]
+	fk_rowset - foreign - [view_id,rowset_num]->[view_rowset]:[view_id,rowset_num]
+	fk_view_part - foreign - [view_part]->[cct_view_part]:[code]
+	fk_src_col - foreign - [view_id,rowset_num,src_name,src_col]->[view_src_col]:[view_id,rowset_num,src_name,src_col]
+	fk_f_view - foreign - [f_view_id]->[view]:[view_id]
+	fk_expr_type - foreign - [c_expr_type]->[cct_basic_expr_type]:[code]
+	fk_sfunc_code - foreign - [sfunc_code]->[cct_standard_func]:[code]
+	fk_ufunc - foreign - [ufunc_id]->[function]:[function_id]
 
 Example Record List:
 
-	|vw|rn|en|pen|peo|type |lit  |var     |src      |col      |fvw|sf  |uf|
-	|--|--|--|---|---|-----|-----|--------|---------|---------|---|----|--|
-	| 1| 1| 1|   |  1|sfunc|     |        |         |         |   |eq  |  | - standard function of "eq(a,b)"
-	| 1| 1| 2|  1|  1|col  |     |        |user_auth|user_id  |   |    |  | - match column "user_auth"."user_id"
-	| 1| 1| 3|  1|  2|var  |     |curr_uid|         |         |   |    |  | - value of bind var "curr_uid"
-	| 2| 1| 1|   |  1|sfunc|     |        |         |         |   |and |  | - standard function of "and(a,b)"
-	| 2| 1| 2|  1|  1|sfunc|     |        |         |         |   |like|  | - standard function of "like(a,b)"
-	| 2| 1| 3|  2|  1|col  |     |        |father   |name     |   |    |  | - match column "father"."name"
-	| 2| 1| 4|  2|  2|var  |     |srchw_fa|         |         |   |    |  | - value of bind var "srchw_fa"
-	| 2| 1| 5|  1|  1|sfunc|     |        |         |         |   |like|  | - standard function of "like(a,b)"
-	| 2| 1| 6|  5|  1|col  |     |        |mother   |name     |   |    |  | - match column "mother"."name"
-	| 2| 1| 7|  5|  2|var  |     |srchw_mo|         |         |   |    |  | - value of bind var "srchw_mo"
-	| 3| 1| 1|   |  1|sfunc|     |        |         |         |   |eq  |  | - standard function of "eq(a,b)"
-	| 3| 1| 2|  1|  1|col  |     |        |user_pref|pref_name|   |    |  | - match column "user_pref"."pref_name"
-	| 3| 1| 3|  1|  2|lit  |theme|        |         |         |   |    |  | - match literal value of "theme"
+	|vw|rn|part |en|pen|peo|type |lit  |var     |src_name |src_col   |fvw|sf    |uf|
+	|--|--|-----|--|---|---|-----|-----|--------|---------|----------|---|------|--|
+	| 1| 1|where| 1|   |  1|sfunc|     |        |         |          |   |eq    |  | - standard function of "eq(a,b)"
+	| 1| 1|where| 2|  1|  1|col  |     |        |user_auth|user_id   |   |      |  | - match column "user_auth"."user_id"
+	| 1| 1|where| 3|  1|  2|var  |     |curr_uid|         |          |   |      |  | - value of bind var "curr_uid"
+	| 2| 1|where| 1|   |  1|sfunc|     |        |         |          |   |and   |  | - standard function of "and(a,b)"
+	| 2| 1|where| 2|  1|  1|sfunc|     |        |         |          |   |like  |  | - standard function of "like(a,b)"
+	| 2| 1|where| 3|  2|  1|col  |     |        |father   |name      |   |      |  | - match column "father"."name"
+	| 2| 1|where| 4|  2|  2|var  |     |srchw_fa|         |          |   |      |  | - value of bind var "srchw_fa"
+	| 2| 1|where| 5|  1|  1|sfunc|     |        |         |          |   |like  |  | - standard function of "like(a,b)"
+	| 2| 1|where| 6|  5|  1|col  |     |        |mother   |name      |   |      |  | - match column "mother"."name"
+	| 2| 1|where| 7|  5|  2|var  |     |srchw_mo|         |          |   |      |  | - value of bind var "srchw_mo"
+	| 3| 1|where| 1|   |  1|sfunc|     |        |         |          |   |eq    |  | - standard function of "eq(a,b)"
+	| 3| 1|where| 2|  1|  1|col  |     |        |user_pref|pref_name |   |      |  | - match column "user_pref"."pref_name"
+	| 3| 1|where| 3|  1|  2|lit  |theme|        |         |          |   |      |  | - match literal value of "theme"
+	| 3| 1|group| 1|   |  1|col  |     |        |user_pref|pref_value|   |      |  | - group by "user_pref"."pref_value"
+	| 3| 1|havin| 1|   |  1|sfunc|     |        |         |          |   |gt    |  | - standard function of "gt(a,b)"
+	| 3| 1|havin| 2|  1|  1|sfunc|     |        |         |          |   |gcount|  | - standard function of "gcount(col)"
+	| 3| 1|havin| 4|  1|  2|lit  |    1|        |         |          |   |      |  | - match literal value of "theme"
 
 	Notes: In Oracle notation: the first view says match where
 	"user_auth.user_id = :curr_uid", the second says match where "father.name
 	like '%'||:srchw_fa||'%' and mother.name like '%'||:srchw_mo||'%'", the
 	third says match where "user_pref.pref_name = 'theme'".
 
-=head2 view_hierarchy
+	Notes: In Oracle notation: the third view says match having "count(*) > 1" ("gcount" has no args).
 
-Each record in this table can define an n-level hierarchical self-join-union to
-be part of a view rowset definition (similar to Oracle's start-with-connect-by 
-feature).  Only one is allowed per view rowset, and it is probably evaluated 
-between the SQL "where" and "group by", where applicable.
+=head2 Had there been separate tables for the above, here are their descriptions
 
-Note: this section still needs to be completed.
+view_src_filter: Each record in this table uniquely corresponds to a
+sub-expression that is part of a filter definition in a view rowset.  This
+filter definition is run against the rows in the view sources just after or
+while they are being joined, and it is supposed to eliminate most or all of the
+source rows that we don't want to keep.  In other words, the whole expression
+becomes the "where" clause in the generated SQL, where applicable (it runs
+prior to the SQL "group by").  All of these sub-expressions form a hierarchy
+where children are "arguments" to their parent expressions; the root expression
+is supposed to return a boolean value.
 
-=head2 view_grp
+view_grp: When any records in this table exist for a particular view rowset,
+each one matches a source column, and the rows returned by the view rowset will
+be grouped (self-merged) so that each row has a unique permutation of values in
+the columns being grouped on.  Also, when any view_grp records are used, that
+view rowset may only use the columns being grouped on in its output column
+definition.  Certain standard functions can only be used when grouping.
 
-This section still needs to be written.  (Evaluates to the "group by" SQL.)
+view_grp_filter: Each record in this table uniquely corresponds to a
+sub-expression that is part of a filter definition in a view rowset.  This
+filter definition is run against the rows after they have been grouped; it is
+supposed to do additional filtering that could only be done after grouping,
+such as when the sub-expression uses standard functions that only work in a
+grouping SQL select. This whole expression becomes the "having" clause in the
+generated SQL, where applicable.  All of these sub-expressions form a hierarchy
+where children are "arguments" to their parent expressions; the root expression
+is supposed to return a boolean value.
 
-=head2 view_grp_filter
-
-This section still needs to be written.  (Evaluates to the "having" SQL.)
-
-=head2 view_col_src
-
-This section still needs to be written.  (Definitions of view_col.)
-
-=head2 view_order
-
-This section still needs to be written.  (Evaluates to the "order by" SQL.)
+view_order: The records in this table say what order to return the rows for a
+view rowset or entire view in; there is one record for each solumn that is
+being sorted by. They correspond to the SQL "order by".  Also, when any
+view_grp records are used, that view rowset may only use the columns being
+grouped on in its output column definition.  Certain standard functions can
+only be used when grouping.
 
 =head1 BLOCKS
 
 This section still needs to be written.
 
+Because all of the records in these tables are user defined, the provided 
+record list is simply some example or "synopsis" data; none of it corresponds 
+to anything in the Rosetta code.
+
 To be added: blocks, functions, procedures, triggers, sequences, etc.
 Also include: cct_basic_stmt_type, cct_standard_proc.
 
-=head2 COMMANDS AND RESULTS
+=head1 COMMANDS AND RESULTS
 
 This section still needs to be written.
+
+Because all of the records in these tables are user defined, the provided 
+record list is simply some example or "synopsis" data; none of it corresponds 
+to anything in the Rosetta code.
 
 To be added: command, result.
 

@@ -689,41 +689,26 @@ environments using a Java Bean.
 
 =head1 BRIEF MODULE LIST
 
-Note that the exact module names and descriptions listed within each grouping
-are an older draft and are subject to near-future revisions or rewrites,
-including addition of more modules or removal of some existing ones.  Also, not 
-all of these exist yet, as they are being implemented over time.
+The following module names and descriptions are undergoing a state of
+transition, and several parts of what was the Rosetta core are planning to be
+split off into separate distributions which the remaining Rosetta core is
+dependant on but which are also useful by themselves.  Mainly this consists of
+the "Rosetta::Locale/::*" modules being renamed/reorganized to
+"Locale::KeyedText/::*" and the "Rosetta::Schema/::*" modules becoming
+"SQL::ObjectModel/::*".  Since the new names haven't been finalized yet, said
+modules are still being referred to here by their old names, and they still
+exist as part of the Rosetta core distribution.  Most of these modules don't
+exist yet, but are being planned to exist, as they are implemented over time.
 
 =head2 In distribution "Rosetta"
 
-Note that the core modules which are scheduled to be in the "Rosetta"
-distribution I<may> be split into more distributions in order to help fuel a
-public perception that they can indeed be used separately from each other, and
-the fact that users do get a high level of customization.  If this goes
-through, then we will probably split the core into 3 distributions: "Rosetta"
-will contain all the main documentation and it will only have documentation (as
-it mostly did as of release 0.09); "Rosetta-Schema" will have just the
-"Rosetta::Schema/::*" modules and can be used as a fully-parsed replacement for
-SQL strings; "Rosetta-Engine" will have the "Rosetta::Engine/::*" and the
-"Rosetta::Locale/::*" modules, and be sort of a runtime environment, which is a
-thin interface on top of the driver modules.  Whether or not this split will be 
-done is largely up to what would benefit the developer or user community more.  
-
-Note also that if this split happens then the placeholder "Rosetta" module
-won't even provide a shim interface for Rosetta::Engine->new().  Not that it is
-necessarily a good practice in any event.
-
-	Rosetta (a placeholder in the public eye for the whole framework; a shim)
-
-	Rosetta::Framework (POD only, holds main framework documentation)
-	Rosetta::DataDictionary (POD only, describes a db suitable for storing Rosetta schemas)
-	Rosetta::API_C (POD only, describes the core C API for Rosetta)
-	Rosetta::SimilarModules (POD only, compares and contrasts Rosetta with other modules)
+To become "Locale-KeyedText" or similar:
 
 	Rosetta::Locale (constant data resources, user-readable text base class, allows var subst)
-	Rosetta::Locale::en (English localization)
-	Rosetta::Locale::fr (French localization)
-	Rosetta::Locale::* ... like German, Spanish, Dutch, Chinese, etc
+
+To become "SQL-ObjectModel" or similar:
+
+	Rosetta::DataDictionary (POD only, describes a db suitable for storing Rosetta schemas)
 
 	Rosetta::Schema (represents one database schema; owned by one database user)
 	Rosetta::Schema::Codes (declare base types or enums; meanings hard-coded in Rosetta)
@@ -735,6 +720,18 @@ necessarily a good practice in any event.
 	Rosetta::Schema::Trigger (a code block assoc with a table, only auto-called by db on events)
 	Rosetta::Schema::* ... like Sequence, Package, User, Privilege, PrivilegeType, whatever
 
+	Rosetta::Schema::Locale::en (English localization of input error messages)
+	Rosetta::Schema::Locale::fr (French localization of input error messages)
+	Rosetta::Schema::Locale::* ... like German, Spanish, Dutch, Chinese, etc
+
+To stay "Rosetta":
+
+	Rosetta (a placeholder in the public eye for the whole framework; a shim)
+
+	Rosetta::Framework (POD only, holds main framework documentation)
+	Rosetta::API_C (POD only, describes the core C API for Rosetta)
+	Rosetta::SimilarModules (POD only, compares and contrasts Rosetta with other modules)
+
 	Rosetta::Engine (base class to provide 'execute' function; calls Drivers)
 	Rosetta::Engine::Command (describes an action to do)
 	Rosetta::Engine::Result (result of action including errors)
@@ -742,6 +739,10 @@ necessarily a good practice in any event.
 	Rosetta::Engine::Transaction (represents context within connection)
 	Rosetta::Engine::Cursor (result of a selection command; can be input to insert/update/delete)
 	Rosetta::Engine::* ... like DriverEngineGlobals or whatever
+
+	Rosetta::Engine::Locale::en (English localization of execution/input error messages)
+	Rosetta::Engine::Locale::fr (French localization of execution/input error messages)
+	Rosetta::Engine::Locale::* ... like German, Spanish, Dutch, Chinese, etc
 
 	Rosetta::Driver::Null (a driver with no functionality, for testing core)
 
@@ -849,7 +850,7 @@ Note also that a bunch of summary documentation was dropped between release
 Note the third: now that some of these modules have been implemented, their 
 updated descriptions here are more accurate.
 
-=head2 SCHEMA MODULES
+=head2 Schema Modules
 
 =over 4
 
@@ -899,7 +900,7 @@ Rosetta::Engine::Command objects having types of: 'data_select', 'data_insert',
 
 =back
 
-=head2 ENGINE MODULES
+=head2 Engine Modules
 
 =over 4
 
@@ -959,7 +960,7 @@ order, and row limiting or paging.
 
 =back
 
-=head2 DRIVER MODULES
+=head2 Driver Modules
 
 =over 4
 
@@ -1043,7 +1044,7 @@ others to know what versions exist or are stable or are in common use.  Other
 RDBMS products include: Sybase, PostgreSQL, DB2, SQL-Server, OpenBase,
 FrontBase, Valentina, Informix, and others.
 
-=head2 MISCELLANEOUS MODULES FROM AFAR
+=head2 Miscellaneous Modules From Afar
 
 In this context, "Wrapper" is a type of Rosetta extension that sits between 
 the application and the RNI, such as Emulators.  But Wrappers take many forms, 

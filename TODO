@@ -1,20 +1,22 @@
 ONE DEVELOPMENT TRACK
 
-r0.11 - Update Rosetta::DataDictionary to finish describing views, and then add 
-descriptions for procedures, functions, other blocks, sequences, packages.
+r0.12 - Update Rosetta::DataDictionary to add descriptions for procedures,
+functions, other blocks, sequences, packages.
 
-r0.12 - Create the Rosetta::Locale/::en/::fr modules, which might be used in
-any of the other code modules.  The french module will only contain mock text
-(to be replaced later) since I'm not fluent in non-english languages.
+r0.13 - Create the modules that are being renamed from
+Rosetta::Locale/::en/::fr.  These will be needed by the other code modules. 
+The french module will only contain mock text (to be replaced later) since I'm
+not fluent in non-english languages.  Also rename the Rosetta::Schema/::*
+modules.  Both of these renames are in preparation for splitting the core.
 
-r0.13 - Create module Rosetta::Schema::Codes, bringing it up to DataDictionary
+r0.14 - Create module [Rosetta::Schema::Codes], bringing it up to DataDictionary
 state.
 
-r0.14 - Update module Rosetta::Schema::DataType to spec.
+r0.15 - Update module [Rosetta::Schema::DataType] to spec.
 
-r0.15 - Complete module Rosetta::Schema::Table to spec.
+r0.16 - Complete module [Rosetta::Schema::Table] to spec.
 
-r0.16 - Create modules Rosetta::Schema, Rosetta::Engine, Rosetta::Connection,
+r0.17 - Create modules [Rosetta::Schema], Rosetta::Engine, Rosetta::Connection,
 as well as Rosetta::Driver::Null.
 
 * Start Rosetta-Drivers distribution, having just module ::Native.  This driver
@@ -33,7 +35,7 @@ keys are enforceable or not.  Also make support modules like ::DBIWrapper and
 * Add to Rosetta-Drivers the ::Oracle module, which I know how to use, but
 don't have a database install to test against yet.
 
-* Complete module Rosetta::Schema::View to spec.
+* Complete module [Rosetta::Schema::View] to spec.
 
 * Update other modules to support working with table records.  Add
 ::Transaction and ::Cursor modules.
