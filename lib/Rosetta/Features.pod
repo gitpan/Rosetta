@@ -1,0 +1,469 @@
+=head1 NAME
+
+Rosetta::Features - What RNI features a Rosetta Engine can possibly implement
+
+=head1 COPYRIGHT AND LICENSE
+
+This file is part of the Rosetta database abstraction framework.
+
+Rosetta is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved.
+Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
+visit "http://www.DarrenDuncan.net" for more information.
+
+Rosetta is free software; you can redistribute it and/or modify it under the
+terms of the GNU General Public License (GPL) version 2 as published by the
+Free Software Foundation (http://www.fsf.org/).  You should have received a
+copy of the GPL as part of the Rosetta distribution, in the file named
+"LICENSE"; if not, write to the Free Software Foundation, Inc., 59 Temple
+Place, Suite 330, Boston, MA 02111-1307 USA.
+
+Linking Rosetta statically or dynamically with other modules is making a
+combined work based on Rosetta.  Thus, the terms and conditions of the GPL
+cover the whole combination.  As a special exception, the copyright holders of
+Rosetta give you permission to link Rosetta with independent modules,
+regardless of the license terms of these independent modules, and to copy and
+distribute the resulting combined work under terms of your choice, provided
+that every copy of the combined work is accompanied by a complete copy of the
+source code of Rosetta (the version of Rosetta used to produce the combined
+work), being distributed under the terms of the GPL plus this exception.  An
+independent module is a module which is not derived from or based on Rosetta,
+and which is fully useable when not linked to Rosetta in any form.
+
+Any versions of Rosetta that you modify and distribute must carry prominent
+notices stating that you changed the files and the date of any changes, in
+addition to preserving this original copyright notice and other credits.
+Rosetta is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
+
+While it is by no means required, the copyright holders of Rosetta would
+appreciate being informed any time you create a modified version of Rosetta
+that you are willing to distribute, because that is a practical way of
+suggesting improvements to the standard version.
+
+=head1 DESCRIPTION
+
+For reference and context, please see the FEATURE SUPPORT VALIDATION
+documentation section in the core "Rosetta" module.
+
+This documentation file, Rosetta::Features, shows all of the individual Rosetta
+Native Interface (RNI) features that a Rosetta Engine can possibly implement;
+all of them are technically optional, though the Engine would be useless
+without support for a basic subset.  Most of the level-2 headings correspond
+exactly to the spelling of a single FEATURE_NAME that get_supported_features()
+can work with.  An Engine declares its support for each feature on a yes/no
+basis; the features should be finely grained enough that each can be supported
+either in full or not at all.
+
+Considering that support for some features is dependant on support for other
+features (eg: SELECT support requires OPEN support), and such dependencies are
+usually hierarchical, the description for each RNI feature will say what other
+RNI features it is directly dependent on.  Any dependant features are assumed
+to be not supported if a feature they depend on is not supported.  For
+simplicity, only direct dependencies shown here.
+
+Note that implementation of a supported RNI feature does not depend on native
+database product support for it.  The support can be provided by either the
+database product or the Rosetta Engine interfacing to it or both.  All that
+matters is that it appears to the user like the database product supports it.  
+Interpret any "the Engine" as meaning "the Engine and database product".
+
+I<THE LISTS BELOW ARE NOT YET COMPLETE, AND MOST OF THE FEATURES THAT WILL BE
+POSSIBLE AREN'T LISTED YET.  THEY WILL BE ADDED OVER TIME.>
+
+=head1 FEATURES FOR DATABASE CATALOGS
+
+=head2 DB_LIST
+
+The Engine can automatically detect existing instances of database catalogs
+that are available to be opened.  The means by which these databases are
+detected, as well as the scope of possible locations where they may reside, is
+implementation-specific to the Engine.  (For example, the databases may
+broadcast their presence as a network service using such protocols as Zeroconf
+or perhaps ODBC.  Or, they may be a listening network service or local server
+process such as ODBC or SQL*Net.  Or, they may be a local embedded or disk file
+based solution.)  This feature has no RNI feature dependencies.
+
+=head2 DB_INFO
+
+The Engine can gather some basic information about a single specified database 
+catalog instance.  This feature has no RNI feature dependencies.
+
+=head1 FEATURES FOR CONNECTIONS AND TRANSACTIONS
+
+=head2 CONN_BASIC
+
+The Engine can open at least one new connection or line of two-way
+communication to a single specified database instance.  Also, the Engine can
+close any database connection that it previously opened.  If the Engine also
+supports transactions, then a newly opened database connection will also
+represent a single active transaction context (more may possibly be added
+later).  When a transaction-supporting database connection is closed, then any
+active transactions on it will be immediately rolled back (explicit commits
+prior to this must be made to preserve any database changes).  This feature has
+no RNI feature dependencies.
+
+=head2 CONN_MULTI_SAME
+
+The Engine can open at least one new and independent connection to a database
+instance while it simultaneously already has one or more open connections to
+the same database instance.  The use of any open connection will not interfere
+with any of the other connections, except that blocking due to resource
+contention (such as write locks or transactions) is okay.  Also, the Engine can
+close any of these independent connections without affecting the other ones. 
+This RNI feature depends on: CONN_BASIC.
+
+=head2 CONN_MULTI_DIFF
+
+The Engine can open at least one new connection to a database instance while it
+simultaneously already has one or more open connections to different database
+instances.  The use of or closing of any connection will not interfere with any
+of the other connections.  This RNI feature depends on: CONN_BASIC.
+
+=head2 CONN_PING
+
+The Engine can test whether a database connection that it expects to be still
+open (because it wasn't explicitly closed) is in fact still open; the service 
+is still responsive.  This RNI feature depends on: CONN_BASIC.
+
+=head2 TRAN_BASIC
+
+The Engine has full basic support for transactions, which allows for
+accumulations of multiple otherwise separate actions against the database to be
+atomic.  Consecutive transactions are separated by a commit or roll-back
+action; said action will end one transaction and start another.  A commit will
+preserve the just-ended action set, and a roll-back will discard it.  When an
+Engine supports transactions, they will always be used; Rosetta intentionally
+does not support the concept of "auto commit mode" for transaction-supporting
+databases (perform explicit commits where you want them); "auto commit" only
+happens when a database doesn't support transactions anyway.  Basic transaction
+support means that at least one independent transaction can operate at a time
+on each open database connection; support for multiple parallel transactions
+within one connection, whether nested or not, is not implied to be supported. 
+This RNI feature depends on: CONN_BASIC.
+
+=head2 TRAN_MULTI_SIB
+
+The Engine can support multiple lightweight connections or transaction contexts
+which operate over a single actual connection to a database.  The database
+actions performed on each lightweight connection are completely isolated from
+any others, and commit or roll-back actions only affect one transaction context
+at once.  The closure of a lightweight connection will roll-back actions made
+on it, and not affect other transaction contexts.  For all intents and
+purposes, each lightweight connection behaves identically to a normal
+connection, except they use fewer resources and don't require their own
+authentications.  This RNI feature depends on: TRAN_BASIC.
+
+=head2 TRAN_MULTI_CHILD
+
+The Engine can support multiple nested (and possibly parallel ?) transactions
+where one transaction is started by another and the child transaction's actions
+can commit or roll-back independently from the parent transaction.  Useful when
+you want a sub-action to commit even if the main action doesn't.  This RNI
+feature depends on: TRAN_BASIC.
+
+=head1 FEATURES FOR USERS AND SCHEMAS
+
+=head2 USER_LIST
+
+The Engine can automatically detect all (or some) existing users or
+authorization identifiers present in or associated with a database catalog
+instance.  Each user may possibly be used to authorize a connection to the
+database catalog, or it may own one or more schema in the database catalog, or
+it may have other statuses.  This RNI feature depends on: CONN_BASIC.
+
+=head2 USER_INFO
+
+The Engine can gather some basic information about a single specified database 
+user.  This RNI feature depends on: CONN_BASIC.
+
+=head2 SCHEMA_LIST
+
+The Engine can automatically detect all (or some) existing schemas or
+name-spaces present in a database catalog instance, each of which may or may
+not contain any schema objects.  This RNI feature depends on: CONN_BASIC.
+
+=head2 SCHEMA_INFO
+
+The Engine can gather some basic information about a single specified database 
+schema.  This RNI feature depends on: CONN_BASIC.
+
+=head1 FEATURES FOR DOMAIN SCHEMA OBJECTS
+
+=head2 DOMAIN_LIST
+
+The Engine can automatically detect all existing domain schema objects that
+exist within a specified database schema.  This RNI feature depends on:
+CONN_BASIC.
+
+=head2 DOMAIN_INFO
+
+The Engine can gather some basic information about a single specified domain
+schema object.  This RNI feature depends on: CONN_BASIC.
+
+=head2 DOMAIN_DEFN_VERIFY
+
+The Engine can take a complete specification of a single specified domain
+schema object, which is supposed to exist within a certain database schema, and
+it will validate that not only does the object exist where it should, but that
+all of the object's details match the given specification.  This RNI feature
+depends on: CONN_BASIC.
+
+=head2 DOMAIN_DEFN_BASIC
+
+The Engine can take a complete specification of a single specified domain
+schema object, and it can both create the object within a schema and delete the
+object from the schema.  Support for updating or altering the definition of a
+domain in place is not implied (a delete+create may be required for
+alterations).  This RNI feature depends on: CONN_BASIC.
+
+=head1 FEATURES FOR TABLE SCHEMA OBJECTS
+
+=head2 TABLE_LIST
+
+The Engine can automatically detect all existing table schema objects that
+exist within a specified database schema.  This RNI feature depends on:
+CONN_BASIC.
+
+=head2 TABLE_INFO
+
+The Engine can gather some basic information about a single specified table
+schema object.  This RNI feature depends on: CONN_BASIC, DOMAIN_INFO.
+
+=head2 TABLE_DEFN_VERIFY
+
+The Engine can take a complete specification of a single specified table
+schema object, which is supposed to exist within a certain database schema, and
+it will validate that not only does the object exist where it should, but that
+all of the object's details match the given specification.  This RNI feature
+depends on: CONN_BASIC, DOMAIN_DEFN_VERIFY.
+
+=head2 TABLE_DEFN_BASIC
+
+The Engine can take a complete specification of a single specified table schema
+object, and it can both create the object within a schema and delete the object
+from the schema.  Basic table definition support means that a table can be
+created that has multiple columns, each of which has a domain-defined data type
+and enforces that data stored in the column is valid for the domain; it also
+means that required-value or not-null constraints for each column can be
+defined and enforced; support for any other kind of data constraint, such as
+unique or primary key or foreign key, or "check", is not implied to be
+supported; support for non-constraint indexes, including full-text indexes, is
+not implied; support for triggers is also not implied; support for updating or
+altering the definition of a table or its columns or constraints in place is
+not implied (a delete+create may be required for alterations).  This RNI
+feature depends on: CONN_BASIC, DOMAIN_DEFN_BASIC.
+
+=head2 TABLE_UKEY_BASIC
+
+The Engine can create a table schema object which includes unique and primary
+key constraints where each constraint encompasses exactly one table column;
+support for multiple column keys is not implied.  Any definable unique key
+constraints are enforced.  (The primary key of a table is defined to be the
+first unique key definition whose columns all have required-value constraints;
+if none do, then there is no primary key.)  This RNI feature depends on:
+TABLE_DEFN_BASIC.
+
+=head2 TABLE_UKEY_MULTI
+
+The Engine can create a table schema object which includes unique and primary
+key constraints where each constraint encompasses any number of table columns,
+one or greater.  This RNI feature depends on: TABLE_UKEY_BASIC.
+
+=head2 TABLE_FKEY_BASIC
+
+The Engine can create a table schema object which includes foreign key
+constraints where each constraint encompasses exactly one table column (in the
+table being constrained); support for multiple column keys is not implied.  Any
+definable foreign key constraints are enforced.  This RNI feature depends on:
+TABLE_DEFN_BASIC.
+
+=head2 TABLE_FKEY_MULTI
+
+The Engine can create a table schema object which includes foreign key
+constraints where each constraint encompasses any number of table columns, one
+or greater.  This RNI feature depends on: TABLE_FKEY_BASIC.
+
+=head1 FEATURES FOR RECORD SELECTION QUERIES
+
+=head2 QUERY_BASIC
+
+The Engine can query exactly one database table schema object and can return
+all columns of all rows in that table from a single request.  The returned rows
+and columns may be returned in an apparently random order, but the column name
+or sequence within each row must be the same for every row.  The means by which
+all of the rows are returned, such that it is accomplished within practical
+resource usage limits, is implementation-specific to the Engine.  (For example,
+the rows may actually be retrieved just one at a time to conserve local memory,
+or all at once to conserve database service resources.)  Basic query support is
+indeed extremely basic, and it does not imply support for anything more
+intelligent than the action "SELECT * FROM <table-name>"; there is no implied
+support for limiting columns or rows, or grouping, or sorting, or any kind of
+join, or for querying view schema objects, or for any kind of compound queries,
+or sub-queries, or invoking any kind of function or predicate.  This RNI
+feature depends on: CONN_BASIC.
+
+=head2 QUERY_SCHEMA_VIEW
+
+The Engine can query exactly one database view ("viewed table") schema object
+and can return all columns of all rows in that view ("viewed table") from a
+single request.  This feature does not imply support for anything more
+intelligent than the action "SELECT * FROM <view-name>".  This RNI feature
+depends on: QUERY_BASIC.
+
+I<Note that for all subsequent QUERY_* RNI feature descriptions, the term
+"table" means "table schema object or view schema object".>
+
+=head2 QUERY_RETURN_SPEC_COLS
+
+The Engine can query exactly one database table and return just a specified set
+of table columns, in the order specified, where each returned column
+corresponds exactly to one table column, and has the same name.  This feature
+does not imply support for either specifying different names for the returned
+columns, or for returning the result of an arbitrary value expression for the
+column; it also does not imply support for anything other than "SELECT
+<col-list> FROM <table-name>" where <col-list> means
+"<col-name>[,<col_name>]{1,}".  This RNI feature depends on: QUERY_BASIC.
+
+=head2 QUERY_RETURN_COL_EXPRS
+
+The Engine can take a query that returns a specified set of columns where each
+column name is specified and each column value comes from an arbitrary
+multi-level nested value expression.  At the very least, each column value can
+either be equal to a database table column value, or it can be equal to a
+specified literal value.  In addition, this feature gives support for queries
+that do not use any database tables at all (and always return exactly one row),
+such as "SELECT 'x' AS foo".  This feature does not imply support for any other
+kinds of sub-expressions or predicates or functions that might otherwise be
+used in a value expression.  This RNI feature depends on:
+QUERY_RETURN_SPEC_COLS.
+
+=head2 QUERY_WHERE
+
+The Engine can take a query that contains a simple WHERE search expression for
+limiting what rows are returned by the query.  At the very least, this search
+expression can contain multiple levels of nested sub-expressions, where each
+sub-expression is either a boolean value expression (NOT, AND, OR, XOR), or a
+comparison predicate (EQ, NE, LT, GT, LE, GE), or a required value predicate
+(IS NOT NULL, IS NULL), or a database table column value, or a specified
+literal value.  This feature does not imply support for any other kinds of
+sub-expressions or predicates (including LIKE) or functions that might
+otherwise be used in a value expression.  This RNI feature depends on:
+QUERY_BASIC.
+
+=head2 QUERY_COMPARE_PRED
+
+The Engine can take a query that contains comparison predicates or required
+value predicates in places outside of search expressions, such as in the
+returned column value expressions.  This RNI feature depends on: QUERY_BASIC.
+
+=head2 QUERY_BOOLEAN_EXPR
+
+The Engine can take a query that contains boolean value expressions in places
+outside of search expressions, such as in the returned column value
+expressions.  This RNI feature depends on: QUERY_BASIC.
+
+=head2 QUERY_NUMERIC_EXPR
+
+The Engine can take a query that contains numeric value expressions (ADD, SUB,
+MUL, DIV, DIVI, MOD, ROUND, ABS, POWER, LOG).  This RNI feature depends on:
+QUERY_BASIC.
+
+=head2 QUERY_STRING_EXPR
+
+The Engine can take a query that contains string value expressions (SCONCAT,
+SLENGTH, SINDEX, SUBSTR, SREPEAT, STRIM, SPAD, SPADL, LC, UC).  This RNI
+feature depends on: QUERY_BASIC.
+
+=head2 QUERY_LIKE_PRED
+
+The Engine can take a query that contains the LIKE predicate.  This RNI
+feature depends on: QUERY_BASIC.
+
+=head2 QUERY_JOIN_BASIC
+
+This Engine can query more than one database table, with the tables being
+joined together by the query.  This feature supports cross joins and inner
+joins only; this feature does not imply support for any kind of outer join. 
+This RNI feature depends on: QUERY_RETURN_COL_EXPRS.
+
+=head2 QUERY_JOIN_OUTER_LEFT
+
+This Engine can take a query that contains one or more left outer join, in
+addition to cross joins and inner joins.  This RNI feature depends on:
+QUERY_JOIN_BASIC.
+
+=head2 QUERY_JOIN_ALL
+
+This Engine can take a query that contains any kind of join (CROSS, INNER,
+LEFT|RIGHT|FULL OUTER).  This RNI feature depends on: QUERY_JOIN_OUTER_LEFT.
+
+=head2 QUERY_GROUP_BY_NONE
+
+The Engine can take a query that contains the basic aggregate functions in the
+returned column value expression and has no GROUP BY expressions; the use of
+this results in exactly one row being returned, as we have conceptually
+"grouped by nothing".  This RNI feature depends on: QUERY_RETURN_COL_EXPRS.
+
+=head2 QUERY_GROUP_BY_SOME
+
+The Engine can take a query that contains one or more simple GROUP BY
+expressions for controlling the aggregation of returned rows by related column
+values.  This feature also includes support for the use of basic aggregate
+functions (COUNT, MIN, MAX, SUM, AVG) in other appropriate parts of the query,
+such as the returned column value expressions.  This feature does not imply
+support for either existence predicates or OLAP extensions.  This RNI feature
+depends on: QUERY_GROUP_BY_NONE.
+
+=head2 QUERY_AGG_CONCAT
+
+The Engine can take a query that contains the CONCAT aggregate function.  This
+RNI feature depends on: QUERY_GROUP_BY_NONE.
+
+=head2 QUERY_AGG_EXIST
+
+The Engine can take a query that contains the existence aggregate predicates
+(EVERY, ANY, SOME, EXISTS).  This RNI feature depends on: QUERY_GROUP_BY_NONE.
+
+=head2 QUERY_OLAP
+
+The Engine can take a query that uses the various OLAP extensions (GB_SETS,
+GB_RLUP, GB_CUBE).  This RNI feature depends on: QUERY_GROUP_BY_SOME.
+
+=head2 QUERY_HAVING
+
+The Engine can take a query that contains a simple HAVING search expression for
+limiting what rows are returned by an aggregated query.  At the very least, this
+search expression can contain anything a WHERE search expression can contain, 
+plus the basic aggregate functions.  This RNI feature depends on:
+QUERY_GROUP_BY_SOME.
+
+=head2 QUERY_WINDOW_ORDER
+
+The Engine can take a query that contains one or more simple ORDER BY
+expressions for controlling the sequence of returned rows.  This RNI feature
+depends on: QUERY_RETURN_SPEC_COLS.
+
+=head2 QUERY_WINDOW_LIMIT
+
+The Engine can take a query that contains a low intelligence LIMIT clause for
+reducing how many rows are returned to a specified number N (either to the
+"first" N rows, or another specified number can be skipped first).  This RNI
+feature depends on: QUERY_BASIC.
+
+=head2 QUERY_COMPOUND
+
+The Engine can take a compound query, which is composed of several otherwise
+separate queries connected by a compound operator (UNION, DIFFERENCE,
+INTERSECTION, EXCLUSION).  This RNI feature depends on: QUERY_RETURN_COL_EXPRS.
+
+=head2 QUERY_SUBQUERY
+
+The Engine can take queries that contain sub-queries.  This RNI feature depends
+on: QUERY_RETURN_COL_EXPRS.
+
+=head1 SEE ALSO
+
+Rosetta and the various other modules mentioned in its SEE ALSO.
+
+=cut

@@ -1,3 +1,100 @@
+2004-08-06   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.32.
+
+	* Updated external dependencies on Locale::KeyedText to v0.06 and on
+	SQL::SyntaxModel to v0.24.
+
+	* Updated all distribution code that makes use of UNIVERSAL::isa() to test
+	for valid objects so that it no longer incorrectly "passes" literal strings
+	whose string values match the class names of valid objects.  For each test,
+	"UNIVERSAL::isa($obj,'<class-name>')" was replaced with "ref($obj) and
+	UNIVERSAL::isa($obj,'<class-name>')".  Before the fixes, code that
+	UNIVERSAL::isa() was supposed to guard would eventually die with the
+	standard Perl error "Can't use string ('<class-name>') as a HASH ref",
+	rather than elegantly dealing with the bad input value.
+
+	* Updated lib/Rosetta.pm (now v0.16), lib/Rosetta/L/en.pm (now v0.07),
+	lib/Rosetta/Validator.pm (now v0.02), and lib/Rosetta/Validator/L/en.pm
+	(now v0.02).  Many changes were made, in code and documentation.
+
+	* Added new documentation file lib/Rosetta/Features.pod which lists and
+	describes all of the RNI features which a Rosetta Engine could possibly
+	implement, and that Rosetta::Validator could possibly test an Engine for.
+
+	* Added new Rosetta::Interface method named payload(), which can only be
+	used with Literal Interfaces; you use it to retrieve the literal value(s)
+	that the Literal Interface represents.  Rosetta::Engine also gained a 
+	method of the same name, which Engines must implement.
+
+	* Added new Rosetta::Interface property accessor convenience method named
+	get_sibling_interfaces(), which works conceptually like
+	self.parent().children() but is more robust.
+
+	* Updated the STRUCTURE documentation so Literals can no longer be
+	grand-children of Applications.  Fixed a code bug in "Interface.new()" so
+	that Literals would be accepted as grand-children of Environments or
+	Connections (in addition to Transactions) as the POD says it should.
+
+	* Added some error-handling code to Rosetta.pm, wrapping all calls to
+	Engine methods in eval blocks that weren't so wrapped before.  Any caught
+	exceptions that are Message objects are simply re-thrown, and misc
+	exceptions (such as a Perl standard runtime error) are converted to Message
+	objects.  Now a single ROS_I_METH_MISC_EXCEPTION message key in
+	Rosetta/L/en.pm is used for all methods, replacing some proprietary ones.
+	Added validation code to get_supported_features to check for valid arg
+	values, and valid return list values.  
+
+	* Updated Interface.get_supported_features() so that it checks both input
+	arguments for being correct valid feature names, but it also checks the
+	return values of Engines to make sure the feature names they claim to
+	support match possible names that are actually in the Rosetta Interface
+	definition; these are the same names listed in Features.pod.
+
+	* Added a third inner class to Rosetta.pm called Rosetta::Dispatcher, which
+	collects together any code for mapping commands against Application
+	Interfaces to commands against Environment Interfaces.  It is implemented
+	as a Rosetta::Engine sub-class, and Interface will invoke it automatically
+	at required times; you never reference it like a normal Engine.  The new
+	class has 1 property, 'payload'.
+
+	* The old private Interface functions _prepare_with_no_engine() and
+	_get_or_make_environment_preparation() were combined into
+	_prepare_with_no_engine() and rewritten, with part of the code staying
+	there and the rest of it becoming the new Dispatcher class.
+
+	* Replaced or added a bunch of other message keys and user text in
+	Rosetta/L/en.pm that is relevant to various prepare() methods, and added
+	the first few Rosetta Generic Engine Error keys and user-text.
+
+	* Renamed a lot of the local variables in Rosetta.pm to be a lot more
+	consistent, descriptive, and scalable, meaning the code is now a lot easier
+	to read and understand.  For example, any SSM Node objects now end in
+	'_node', any Interface objects end in '_intf', any Engine objects in
+	'_eng', any "preparation" interfaces or engines have '_prep' in the middle.
+	 As an exception, for the few generic functions that can take many kinds of
+	intfs/engs rather than one specific kind, the variables are simply called
+	$interface or $preparation and $engine as before.
+
+	* Updated all user-text strings in Rosetta/L/en.pm so that the module-class
+	name appears at the start of each, to the left of the method names.  This
+	should make it easier for users to know which code file among many
+	candidates is generating any error messages they see.
+
+	* A few other small bug fixes and changes were made in Rosetta.pm.
+
+	* Updated Validator.pm to add a list of constant values or properties, plus
+	its first two methods; the latter come with new POD documentation.  Minor 
+	SYNOPSIS update.  Minor code update to Validator/L/en.pm.
+
+	* Small updates to Framework.pod.  Added new modules Rosetta::Features and 
+	Rosetta::Engine::GenericAC to BRIEF MODULE LIST.  Another minor update.
+
+	* For the first time, with this release, most of the Rosetta.pm code has
+	now been exercised and tested, in combination with external code, and is
+	now found to be working to spec.  Tests included successful runs of
+	DB_LIST, DB_OPEN, DB_CLOSE, and prepare( <data link product node> ).
+
 2004-07-05   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.31.

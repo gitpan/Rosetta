@@ -11,11 +11,11 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.01';
+$VERSION = '0.02';
 
-use Locale::KeyedText 0.04;
-use SQL::SyntaxModel 0.23;
-use Rosetta 0.15;
+use Locale::KeyedText 0.06;
+use SQL::SyntaxModel 0.24;
+use Rosetta 0.16;
 
 ######################################################################
 
@@ -27,9 +27,9 @@ Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	Locale::KeyedText 0.04 (for error messages)
-	SQL::SyntaxModel 0.23
-	Rosetta 0.15
+	Locale::KeyedText 0.06 (for error messages)
+	SQL::SyntaxModel 0.24
+	Rosetta 0.16
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -76,6 +76,51 @@ suggesting improvements to the standard version.
 ######################################################################
 
 # Names of properties for objects of the Rosetta::Validator class are declared here:
+# These are static configuration properties:
+my $PROP_ENGINE_NAME = 'engine_name'; # Name of the Rosetta Engine module to test.
+# These are just used internally for holding state:
+my $PROP_TEST_RESULTS = 'test_results'; # Accumulate test results while tests being run.
+
+# Names of $PROP_TEST_RESULTS list elements go here:
+my $TR_FEATURE_KEY = 'FEATURE_KEY';
+my $TR_FEATURE_STATUS = 'FEATURE_STATUS';
+my $TR_FEATURE_DESC_MSG = 'FEATURE_DESC_MSG'; # object (Locale::KeyedText::Message) - 
+	# This is the Validator module's description of what DBMS/Engine feature is being tested.
+my $TR_VAL_ERROR_MSG = 'VAL_ERROR_MSG'; # object (Locale::KeyedText::Message) - 
+	# This is the Validator module's own Error Message, if a test failed.
+	# This is made for a failure regardless of whether the Engine threw its own exception.
+my $TR_ENG_ERROR_MSG = 'ENG_ERROR_MSG'; # object (Locale::KeyedText::Message) - 
+	# This is the Error Message that the Rosetta Interface or Engine threw, if any.
+
+# Possible values for $TR_STATUS go here:
+my $TRS_PASS = 'PASS'; # the test was run and passed (Engine said it had feature to be tested)
+my $TRS_FAIL = 'FAIL'; # the test was run and failed (Engine said it had feature to be tested)
+my $TRS_SKIP = 'SKIP'; # the test was not run at all (Engine said it lacked feature to be tested)
+
+# Other constant values go here:
+my $TOTAL_POSSIBLE_TESTS = 1; # how many elements should be in results array (P+F+S) 
+
+######################################################################
+
+sub new {
+	my ($class) = @_;
+	my $validator = bless( {}, ref($class) || $class );
+
+	$validator->{$PROP_ENGINE_NAME} = undef;
+	$validator->{$PROP_TEST_RESULTS} = [];
+
+	return( $validator );
+}
+
+######################################################################
+
+sub engine_name {
+	my ($validator, $new_value) = @_;
+	if( defined( $new_value ) ) {
+		$validator->{$PROP_ENGINE_NAME} = $new_value;
+	}
+	return( $validator->{$PROP_ENGINE_NAME} );
+}
 
 ######################################################################
 
@@ -90,6 +135,9 @@ __END__
 
 	use strict; use warnings;
 	use Rosetta::Validator;
+
+	my $validator = Rosetta::Validator->new();
+	$validator->engine_name->( 'Rosetta::Engine::Generic' );
 
 	...
 
@@ -123,6 +171,38 @@ that people want to use their databases.  This task is unlikely to ever be
 finished, given the seemingly infinite size of the task.  You are welcome and
 encouraged to submit more tests to be included in this suite at any time, as
 holes in coverage are discovered.
+
+=head1 CONSTRUCTOR FUNCTIONS AND METHODS
+
+This function/method is stateless and can be invoked off of either this
+module's name or an existing module object, with the same result.
+
+=head2 new()
+
+	my $validator = Rosetta::Validator->new();
+	my $validator2 = $validator->new();
+
+This "getter" function/method will create and return a single
+Rosetta::Validator (or subclass) object.  All of this object's properties are
+set to default undefined values; you will at the very least have to set
+engine_name() afterwards.
+
+=head1 STATIC CONFIGURATION PROPERTY ACCESSOR METHODS
+
+These methods are stateful and can only be invoked from this module's objects. 
+This set of properties are generally set once at the start of a Validator
+object's life and aren't changed later, since they are generally static
+configuration data.
+
+=head2 engine_name([ NEW_VALUE ])
+
+	my $old_val = $validator->engine_name();
+	$validator->engine_name( 'Rosetta::Engine::Generic' );
+
+This getter/setter method returns this object's "engine name" character string
+property; if the optional NEW_VALUE argument is defined, this property is first
+set to that value.  This property defines the name of the Rosetta Engine module 
+that you want this Validator object to test.
 
 =head1 BUGS
 

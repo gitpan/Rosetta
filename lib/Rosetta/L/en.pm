@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.06';
+$VERSION = '0.07';
 
 ######################################################################
 
@@ -68,105 +68,133 @@ suggesting improvements to the standard version.
 
 ######################################################################
 
+my $CI = 'Rosetta::Interface';
+my $CE = 'Rosetta::Engine';
+my $GEN = 'Rosetta Generic Engine Error';
+
 my %text_strings = (
 	'ROS_I_NEW_INTF_NO_TYPE' => 
-		"new(): missing INTF_TYPE argument",
+		"$CI.new(): missing INTF_TYPE argument",
 	'ROS_I_NEW_INTF_BAD_TYPE' => 
-		"new(): invalid INTF_TYPE argument; there is no Interface Type named '{TYPE}'",
+		"$CI.new(): invalid INTF_TYPE argument; there is no Interface Type named '{TYPE}'",
 	'ROS_I_NEW_INTF_BAD_ERR' => 
-		"new(): invalid ERR_MSG argument; an Error Message may only be a ".
+		"$CI.new(): invalid ERR_MSG argument; an Error Message may only be a ".
 		"Locale::KeyedText::Message object; you tried to set it to '{ERR}'",
 	'ROS_I_NEW_INTF_NO_ERR' => 
-		"new(): missing ERR_MSG argument; it is mandatory for '{TYPE}' Interfaces",
+		"$CI.new(): missing ERR_MSG argument; it is mandatory for '{TYPE}' Interfaces",
 	'ROS_I_NEW_INTF_YES_ENG' => 
-		"new(): the ENGINE argument must be undefined for '{TYPE}' Interfaces",
+		"$CI.new(): the ENGINE argument must be undefined for '{TYPE}' Interfaces",
 	'ROS_I_NEW_INTF_NO_ENG' => 
-		"new(): missing ENGINE argument; it is mandatory for '{TYPE}' Interfaces",
+		"$CI.new(): missing ENGINE argument; it is mandatory for '{TYPE}' Interfaces",
 	'ROS_I_NEW_INTF_BAD_ENG' => 
-		"new(): invalid ENGINE argument; an Engine may only be a ".
+		"$CI.new(): invalid ENGINE argument; an Engine may only be a ".
 		"Rosetta::Engine (subclass) object; you tried to set it to '{ENG}'",
 	'ROS_I_NEW_INTF_NO_RTN' => 
-		"new(): missing ROUTINE argument; it is mandatory for '{TYPE}' Interfaces",
+		"$CI.new(): missing ROUTINE argument; it is mandatory for '{TYPE}' Interfaces",
 	'ROS_I_NEW_INTF_BAD_RTN' => 
-		"new(): invalid ROUTINE argument; a Routine may only be a ".
+		"$CI.new(): invalid ROUTINE argument; a Routine may only be a ".
 		"Perl anonymous subroutine reference (or closure); you tried to set it to '{RTN}'",
 	'ROS_I_NEW_INTF_YES_RTN' => 
-		"new(): the ROUTINE argument must be undefined for '{TYPE}' Interfaces",
+		"$CI.new(): the ROUTINE argument must be undefined for '{TYPE}' Interfaces",
 
 	'ROS_I_NEW_INTF_YES_PARENT' => 
-		"new(): the PARENT_INTF argument must be undefined for '{TYPE}' Interfaces",
+		"$CI.new(): the PARENT_INTF argument must be undefined for '{TYPE}' Interfaces",
 	'ROS_I_NEW_INTF_NO_PARENT' => 
-		"new(): missing PARENT_INTF argument; it is mandatory for '{TYPE}' Interfaces",
+		"$CI.new(): missing PARENT_INTF argument; it is mandatory for '{TYPE}' Interfaces",
 	'ROS_I_NEW_INTF_BAD_PARENT' => 
-		"new(): invalid PARENT_INTF argument; a Parent Interface may only be a ".
+		"$CI.new(): invalid PARENT_INTF argument; a Parent Interface may only be a ".
 		"Rosetta::Interface object; you tried to set it to '{PAR}'",
 	'ROS_I_NEW_INTF_P_INCOMP' =>
-		"new(): invalid PARENT_INTF argument; a '{TYPE}' Interface may not have a ".
+		"$CI.new(): invalid PARENT_INTF argument; a '{TYPE}' Interface may not have a ".
 		"'{PTYPE}' Interface as its parent",
 	'ROS_I_NEW_INTF_PP_INCOMP' =>
-		"new(): invalid PARENT_INTF argument; a '{TYPE}' Interface may not have a ".
+		"$CI.new(): invalid PARENT_INTF argument; a '{TYPE}' Interface may not have a ".
 		"'{PPTYPE}' Interface as its grand-parent (but its '{PTYPE}' parent type is okay)",
 
 	'ROS_I_NEW_INTF_YES_NODE' => 
-		"new(): the SSM_NODE argument must be undefined for '{TYPE}' Interfaces; ".
+		"$CI.new(): the SSM_NODE argument must be undefined for '{TYPE}' Interfaces; ".
 		"this Interface property would be set for you by using its parent Preparation",
 	'ROS_I_NEW_INTF_NO_NODE' => 
-		"new(): missing SSM_NODE argument; it is mandatory for '{TYPE}' Interfaces",
+		"$CI.new(): missing SSM_NODE argument; it is mandatory for '{TYPE}' Interfaces",
 	'ROS_I_NEW_INTF_BAD_NODE' => 
-		"new(): invalid SSM_NODE argument; a Parent Interface may only be a ".
+		"$CI.new(): invalid SSM_NODE argument; it may only be a ".
 		"SQL::SyntaxModel::Node object; you tried to set it to '{SSM}'",
 	'ROS_I_NEW_INTF_NODE_NOT_IN_CONT' =>
-		"new(): invalid SSM_NODE argument; that Node is not in a Container",
+		"$CI.new(): invalid SSM_NODE argument; that Node is not in a Container",
 	'ROS_I_NEW_INTF_NODE_NOT_SAME_CONT' =>
-		"new(): invalid SSM_NODE argument; that Node is not in the same Container ".
+		"$CI.new(): invalid SSM_NODE argument; that Node is not in the same Container ".
 		"as the Node associated with PARENT_INTF, so it can not be used",
 	'ROS_I_NEW_INTF_NODE_TYPE_NOT_SUPP' =>
-		"new(): the given SSM_NODE argument, having a Node Type of '{NTYPE}', ".
+		"$CI.new(): the given SSM_NODE argument, having a Node Type of '{NTYPE}', ".
 		"can not be associated with a '{ITYPE}' Interface",
 
 	'ROS_I_DESTROY_HAS_CHILD' => 
-		"destroy(): this Interface has child Interfaces of its ".
+		"$CI.destroy(): this Interface has child Interfaces of its ".
 		"own, so it can not be destroyed yet",
 
 	'ROS_I_THROW_ERR_BAD_ARG' => 
-		"throw_errors(): invalid NEW_VALUE argument; this flag may only be a ".
+		"$CI.throw_errors(): invalid NEW_VALUE argument; this flag may only be a ".
 		"boolean value, as expressed by '0' or '1'; you tried to set it to '{ARG}'",
 
-	'ROS_I_PREPARE_MISC_EXCEPTION' =>
-		"prepare(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
-		"has thrown a non-Locale::KeyedText::Message exception: '{VALUE}'",
 	'ROS_I_PREPARE_BAD_RESULT' =>
-		"prepare(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
+		"$CI.prepare(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
 		"did not return a Rosetta::Interface object, but rather: '{VALUE}'",
 
-	'ROS_I_PREPARE_CTYPE_NOT_IMPL' =>
-		"prepare(): the '{CTYPE}' Command Type is not implemented for 'application' Interfaces",
-	'ROS_I_PREPARE_ROUTINES_NOT_IMPL' =>
-		"prepare(): Routine commands are not implemented for 'application' Interfaces",
-	'ROS_I_PREPARE_INTERR_BAD_NTYPE' =>
-		"prepare(): Internal Error: somehow a '{NTYPE}' SSM Node was allowed in ".
-		"as a command for 'application' Interfaces; this should never happen",
+	'ROS_I_PREPARE_NO_NODE' => 
+		"$CI.prepare(): missing ROUTINE_DEFN argument; it is mandatory for '{TYPE}' Interfaces",
+	'ROS_I_PREPARE_BAD_NODE' => 
+		"$CI.prepare(): invalid ROUTINE_DEFN argument; it may only be a ".
+		"SQL::SyntaxModel::Node object; you tried to set it to '{SSM}'",
+	'ROS_I_PREPARE_NODE_NOT_IN_CONT' =>
+		"$CI.prepare(): invalid ROUTINE_DEFN argument; that Node is not in a Container",
+	'ROS_I_PREPARE_NODE_NOT_SAME_CONT' =>
+		"$CI.prepare(): invalid ROUTINE_DEFN argument; that Node is not in the same Container ".
+		"as the Node associated with PARENT_INTF, so it can not be used",
+	'ROS_I_PREPARE_NODE_TYPE_NOT_SUPP' =>
+		"$CI.prepare(): the given ROUTINE_DEFN argument, having a Node Type of '{NTYPE}', ".
+		"can not be associated with a '{ITYPE}' Interface",
 
 	'ROS_I_PREPARE_ENGINE_NO_LOAD' =>
-		"prepare(): the Engine class '{NAME}' failed to load: {ERR}",
+		"$CI.prepare(): the Engine class '{NAME}' failed to load: {ERR}",
 	'ROS_I_PREPARE_ENGINE_NO_ENGINE' =>
-		"prepare(): the class '{NAME}' does not sub-class Rosetta::Engine so it is not a valid Engine class",
+		"$CI.prepare(): the class '{NAME}' does not sub-class Rosetta::Engine so it is not a valid Engine class",
 
 	'ROS_I_EXECUTE_BAD_ARG' =>
-		"execute(): invalid ROUTINE_ARGS argument; it must be a hash ref if ".
+		"$CI.execute(): invalid ROUTINE_ARGS argument; it must be a hash ref if ".
 		"it is defined, but you tried to set it to '{ARG}'",
-	'ROS_I_EXECUTE_MISC_EXCEPTION' =>
-		"execute(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
-		"has thrown a non-Locale::KeyedText::Message exception: '{VALUE}'",
 	'ROS_I_EXECUTE_BAD_RESULT' =>
-		"execute(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
+		"$CI.execute(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
 		"did not return a Rosetta::Interface object, but rather: '{VALUE}'",
 
+	'ROS_I_GSF_BAD_ARG' =>
+		"$CI.get_supported_features(): invalid FEATURE_NAME argument; ".
+		"'{FNAME}' does not match any known Rosetta Feature Name",
+	'ROS_I_GSF_BAD_RESULT' =>
+		"$CI.get_supported_features(): the Rosetta Engine ".
+		"did not return a valid Hash ref, but rather: '{VALUE}'",
+	'ROS_I_GSF_BAD_RESULT_ITEM' =>
+		"$CI.get_supported_features(): the Rosetta Engine returned an invalid ".
+		"feature name, '{FNAME}', as part of its declared feature list",
+
 	'ROS_I_METH_NOT_SUPP' =>
-		"{METH}(): you may not invoke this method on Rosetta '{TYPE}' Interfaces",
+		"$CI.{METH}(): you may not invoke this method on Rosetta '{ITYPE}' Interfaces",
+	'ROS_I_METH_MISC_EXCEPTION' =>
+		"$CI.{METH}(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
+		"has thrown a non-Locale::KeyedText::Message exception: '{VALUE}'",
 
 	'ROS_E_METH_NOT_IMPL' =>
-		"{METH}(): this method is not implemented by the Rosetta '{CLASS}' Engine class",
+		"$CE.{METH}(): this method is not implemented by the Rosetta '{CLASS}' Engine class",
+
+	'ROS_G_PREPARE_INTF_NSUP_GEN_RTN' =>
+		"$GEN 00001 - can't prepare any type of generic routine on a '{ITYPE}' Interface",
+	'ROS_G_PREPARE_INTF_NSUP_THIS_CMD' =>
+		"$GEN 00002 - can't prepare a '{CTYPE}' command-routine on a '{ITYPE}' Interface",
+	'ROS_G_PREPARE_INTF_NSUP_SSM_NODE' =>
+		"$GEN 00003 - can't prepare a '{NTYPE}' SSM Node as a routine on a '{ITYPE}' Interface",
+
+	'ROS_G_CMD_DB_CLOSE_CONN_IN_USE' =>
+		"$GEN 00004 - can't close database connection since it has active transaction ".
+		"contexts or prepared ones",
 );
 
 ######################################################################

@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ######################################################################
 
@@ -67,6 +67,8 @@ suggesting improvements to the standard version.
 =cut
 
 ######################################################################
+
+my $CV = 'Rosetta::Validator';
 
 my %text_strings = (
 

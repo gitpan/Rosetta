@@ -430,6 +430,7 @@ I<Any indented package names represent inner classes of what they are beneath.>
 	Rosetta::L::fr (Localization of Rosetta core for French)
 	Rosetta::L::* ... like German, Spanish, Dutch, Chinese, etc
 
+	Rosetta::Features (What RNI features a Rosetta Engine can possibly implement)
 	Rosetta::Framework (Documentation on the Rosetta framework at large)
 
 	Rosetta::Validator (A common comprehensive test suite to run against all Engines)
@@ -450,6 +451,7 @@ split them up such as is seen in the other module blocks, below.
 		(File is a small place-holder POD file to represent the distribution on CPAN)
 	Rosetta::Engine::Generic (A catch-all Engine for any DBI-supported SQL database)
 	Rosetta::Engine::Generic::L::en (Localization of Rosetta::Engine::Generic for English)
+	Rosetta::Engine::GenericAC (A catch-all Engine for any DBI-supported SQL database that auto-commits everything)
 	Rosetta::Utility::SQLBuilder (Generate ANSI/ISO SQL-2003 and other SQL variants)
 	Rosetta::Utility::SQLParser (Parse ANSI/ISO SQL-2003 and other SQL variants)
 	Rosetta::Emulator::DBI (emulates DBI/DBD::*, but result is more portable)
@@ -463,8 +465,20 @@ split them up such as is seen in the other module blocks, below.
 
 =head2 In distribution "Rosetta-Engine-Generic"
 
+Note that Rosetta::Engine::Generic will always use transactions and require
+explicit commits for database actions to be saved; it will also declare its
+transaction support in its feature set.  Since transactions are too difficult
+to emulate properly, Generic won't try; it simply won't work as expected with
+databases that lack native support.  A second Engine named ::GenericAC exists
+for non-transactional databases, and declares its lack of support for the
+feature.  This Engine sub-classes Generic and should be identical except for
+the fact that it conceptually auto-commits every database action; if used with
+a transaction-supporting database, it will auto-commit, to emulate the
+non-support behaviour.
+
 	Rosetta::Engine::Generic (A catch-all Engine for any DBI-supported SQL database)
 	Rosetta::Engine::Generic::L::en (Localization of Rosetta::Engine::Generic for English)
+	Rosetta::Engine::GenericAC (A catch-all Engine for any DBI-supported SQL database that auto-commits everything)
 
 =head2 In a multiplicity of "Rosetta-Engine-*" distributions
 
@@ -674,8 +688,8 @@ subselects.  This Engine is intended mainly for programs that are used by one
 person at a time, as locks will grab the whole database.  Given that the actual
 database is embedded into the Engine, we simply use the latest version
 available at the time of each Engine update, so mention of version ranges being
-supported or not is not applicable.  That said, v2.8.14 is the current stable
-branch, and v3.0.2 is the current beta branch, which will move into production
+supported or not is not applicable.  That said, v2.8.15 is the current stable
+branch, and v3.0.3 is the current beta branch, which will move into production
 within a month or two.
 
 =item
