@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 ######################################################################
 
@@ -85,6 +85,13 @@ my %text_strings = (
 	'ROS_I_NEW_INTF_BAD_ENG' => 
 		"new(): invalid ENGINE argument; an Engine may only be a ".
 		"Rosetta::Engine (subclass) object; you tried to set it to '{ENG}'",
+	'ROS_I_NEW_INTF_NO_RTN' => 
+		"new(): missing ROUTINE argument; it is mandatory for '{TYPE}' Interfaces",
+	'ROS_I_NEW_INTF_BAD_RTN' => 
+		"new(): invalid ROUTINE argument; a Routine may only be a ".
+		"Perl anonymous subroutine reference (or closure); you tried to set it to '{RTN}'",
+	'ROS_I_NEW_INTF_YES_RTN' => 
+		"new(): the ROUTINE argument must be undefined for '{TYPE}' Interfaces",
 
 	'ROS_I_NEW_INTF_YES_PARENT' => 
 		"new(): the PARENT_INTF argument must be undefined for '{TYPE}' Interfaces",
@@ -146,7 +153,7 @@ my %text_strings = (
 		"prepare(): the class '{NAME}' does not sub-class Rosetta::Engine so it is not a valid Engine class",
 
 	'ROS_I_EXECUTE_BAD_ARG' =>
-		"execute(): invalid BIND_VARS argument; it must be a hash ref if ".
+		"execute(): invalid ROUTINE_ARGS argument; it must be a hash ref if ".
 		"it is defined, but you tried to set it to '{ARG}'",
 	'ROS_I_EXECUTE_MISC_EXCEPTION' =>
 		"execute(): the Rosetta Engine that implements this '{ITYPE}' Interface ".

@@ -1,3 +1,35 @@
+2004-04-10   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.30.
+
+	* Made a change that would mainly affect those people making Rosetta
+	Engines, but not other users; I am now dictating one aspect of how every
+	Engine should do its job, so they are less free-form than before (but
+	hopefully for the better).  Like before, every successful call to prepare() 
+	will produce a Preparation Interface; unlike before, every Preparation now 
+	has an actual Perl "closure" (anonymous routine reference) behind it, which 
+	is stored in an Interface property.  All Engines must now structure their 
+	prepare() methods so that they create an anonymous Perl subroutine which 
+	does the actual work to be done; a call to execute() will simply invoke 
+	this subroutine, and no actual Engine execute() method is called.
+
+	* Updated Rosetta.pm (now v0.14) and en.pm (now v0.05).  Added a ROUTINE
+	property to the Rosetta::Interface class which is set in Preparation
+	Interfaces.  Added argument to new() for setting it, and added method
+	get_routine() for fetching it.  Removed execute() from the Rosetta::Engine
+	class, since prepare() now handles all the details that it used to do.
+
+	* Updated Rosetta.pm to add a new 'tombstone' Interface Type, which is what
+	commands that destroy Interfaces (such as 'close database') return to
+	indicate success.  Interfaces of this type have no parents, like 'error'.
+
+	* Minor update to the names of prepare() and execute() arguments; COMMAND
+	is now called ROUTINE_DEFN and BIND_VARS is now called ROUTINE_ARGS.
+
+	* Minor capitalization changes in Framework.pod.
+
+	* Simplified the DEPENDENCIES documentation in the ReadMe file.
+
 2004-03-25   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.29.

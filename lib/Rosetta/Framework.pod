@@ -399,7 +399,7 @@ The following module names and descriptions are undergoing a state of
 transition, mainly in the 'Extensions' arena.  See below for details.  Most of
 these modules don't exist yet, but are being planned to exist, as they are
 implemented over time.
-	
+
 I<Any indented package names represent inner classes of what they are beneath.>
 
 =head2 In distribution "Locale-KeyedText"
@@ -430,7 +430,7 @@ I<Any indented package names represent inner classes of what they are beneath.>
 	Rosetta::L::* ... like German, Spanish, Dutch, Chinese, etc
 
 	Rosetta::Framework (Documentation on the Rosetta framework at large)
-	
+
 =head2 In temporary distribution "Rosetta-Extensions"
 
 During the short term, these following modules will have their first
@@ -441,17 +441,17 @@ changes in each update round.  Once these are modestly stable I will probably
 split them up such as is seen in the other module blocks, below.
 
 	Rosetta::Extensions (a small place-holder POD file to represent the distribution on CPAN)
-	Rosetta::Engine::L::en (a set of generic database error strings for engines, in English)
+	Rosetta::Engine::L::en (A set of generic database error strings for Engines, in English)
 	Rosetta::Engine::Generic (A catch-all Engine for any DBI-supported SQL database)
-	Rosetta::Utility::SQLBuilder (generate ANSI/ISO SQL-1999 and other SQL variants)
-	Rosetta::Utility::SQLParser (parse ANSI/ISO SQL-1999 and other SQL variants)
-	Rosetta::Validator (a common comprehensive test suite to run against all Engines)
+	Rosetta::Utility::SQLBuilder (Generate ANSI/ISO SQL-1999 and other SQL variants)
+	Rosetta::Utility::SQLParser (Parse ANSI/ISO SQL-1999 and other SQL variants)
+	Rosetta::Validator (A common comprehensive test suite to run against all Engines)
 	Rosetta::Emulator::DBI (emulates DBI/DBD::*, but result is more portable)
 
 =head2 In distribution "Rosetta-Utilities" or a multiplicity of similarly named
 
-	Rosetta::Utility::SQLBuilder (generate ANSI/ISO SQL-1999 and other SQL variants)
-	Rosetta::Utility::SQLParser (parse ANSI/ISO SQL-1999 and other SQL variants)
+	Rosetta::Utility::SQLBuilder (Generate ANSI/ISO SQL-1999 and other SQL variants)
+	Rosetta::Utility::SQLParser (Parse ANSI/ISO SQL-1999 and other SQL variants)
 	Rosetta::Utility::RWViews (convert IUD against views into IUD against tables)
 	Rosetta::Utility::* ... other non-core utility modules usable by several non-core distros
 
@@ -517,7 +517,7 @@ I<Note: more databases (and data access protocols) can be found listed at
 
 =head2 In distribution "Rosetta-Validators"
 
-	Rosetta::Validator (a common comprehensive test suite to run against all Engines)
+	Rosetta::Validator (A common comprehensive test suite to run against all Engines)
 	Rosetta::Validator::DB1 (tests include: new db, open db, close db)
 	Rosetta::Validator::Table1 (tests include: create/modify/delete tables, fetch table schema)
 	Rosetta::Validator::Select1 (tests Include: select recs from 1 table)

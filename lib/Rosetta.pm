@@ -11,10 +11,10 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.13';
+$VERSION = '0.14';
 
 use Locale::KeyedText 0.03;
-use SQL::SyntaxModel 0.15;
+use SQL::SyntaxModel 0.16;
 
 ######################################################################
 
@@ -27,7 +27,7 @@ Standard Modules: I<none>
 Nonstandard Modules: 
 
 	Locale::KeyedText 0.03 (for error messages)
-	SQL::SyntaxModel 0.15
+	SQL::SyntaxModel 0.16
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -99,6 +99,10 @@ my $IPROP_SSM_NODE = 'ssm_node'; # ref to SQL::SyntaxModel Node providing contex
 	# If we are an 'application' Interface, this would be an 'application_instance' Node.
 	# If we are a 'preparation' Interface, this would be a 'command' or 'routine' Node.
 	# If we are any other kind of interface, this is a second ref to same SSM the parent 'prep' has.
+my $IPROP_ROUTINE = 'routine'; # ref to a Perl anonymous subroutine; this property must be 
+	# set for Preparation interfaces and must not be set for other types.
+	# An Engine's prepare() method will create this sub when it creates a Preparation Interface.
+	# When calling execute(), the Interface will simply invoke the sub; no Engine execute() called.
 my $IPROP_THROW_ERRORS = 'throw_errors'; # boolean - true means that Interface objects will be 
 	# thrown by prepare/execute methods if they are errors, false means return all Interface objs
 
@@ -107,6 +111,7 @@ my $IPROP_THROW_ERRORS = 'throw_errors'; # boolean - true means that Interface o
 
 # Names of the allowed Interface types go here:
 my $INTFTP_ERROR       = 'error'; # What is returned if an error happens, in place of another Intf type
+my $INTFTP_TOMBSTONE   = 'tombstone'; # What is returned when execute() destroys an Interface
 my $INTFTP_APPLICATION = 'application'; # What you get when you create an Interface out of any context
 	# This type is the root of an Interface tree; when you create one, you provide an 
 	# "application_instance" SQL::SyntaxModel Node; that provides the necessary context for 
@@ -119,7 +124,7 @@ my $INTFTP_CURSOR      = 'cursor'; # Result of executing a query that would retu
 my $INTFTP_ROW         = 'row'; # Result of executing a query that returns one row
 my $INTFTP_LITERAL     = 'literal'; # Result of execution that isn't one of the above, like an IUD
 my %ALL_INTFTP = ( map { ($_ => 1) } (
-	$INTFTP_ERROR, $INTFTP_APPLICATION, $INTFTP_PREPARATION, 
+	$INTFTP_ERROR, $INTFTP_TOMBSTONE, $INTFTP_APPLICATION, $INTFTP_PREPARATION, 
 	$INTFTP_ENVIRONMENT, $INTFTP_CONNECTION, $INTFTP_TRANSACTION, 
 	$INTFTP_CURSOR, $INTFTP_ROW, $INTFTP_LITERAL, 
 ) );
@@ -160,14 +165,15 @@ use base qw( Rosetta );
 
 sub new {
 	# Make a new Interface with basically all props set now and not changed later.
-	my ($class, $intf_type, $err_msg, $parent_intf, $engine, $ssm_node) = @_;
+	my ($class, $intf_type, $err_msg, $parent_intf, $engine, $ssm_node, $routine) = @_;
 	my $interface = bless( {}, ref($class) || $class );
 
-	$interface->_validate_properties_to_be( $intf_type, $err_msg, $parent_intf, $engine, $ssm_node );
+	$interface->_validate_properties_to_be( 
+		$intf_type, $err_msg, $parent_intf, $engine, $ssm_node, $routine );
 
-	unless( $intf_type eq $INTFTP_ERROR ) {
+	unless( $intf_type eq $INTFTP_ERROR or $intf_type eq $INTFTP_TOMBSTONE ) {
 		# If type was Application or Preparation, $ssm_node would already be set.
-		# Anything else except Error has a parent.
+		# Anything else except Error and Tombstone has a parent.
 		$ssm_node ||= $parent_intf->{$IPROP_SSM_NODE}; # Copy from parent Preparation if applicable.
 	}
 	$interface->{$IPROP_INTF_TYPE} = $intf_type;
@@ -176,6 +182,7 @@ sub new {
 	$interface->{$IPROP_CHILD_INTFS} = [];
 	$interface->{$IPROP_ENGINE} = $engine;
 	$interface->{$IPROP_SSM_NODE} = $ssm_node;
+	$interface->{$IPROP_ROUTINE} = $routine;
 	$interface->{$IPROP_THROW_ERRORS} = $parent_intf ? $parent_intf->{$IPROP_THROW_ERRORS} : 0;
 	$parent_intf and push( @{$parent_intf->{$IPROP_CHILD_INTFS}}, $interface );
 
@@ -183,7 +190,7 @@ sub new {
 }
 
 sub _validate_properties_to_be {
-	my ($interface, $intf_type, $err_msg, $parent_intf, $engine, $ssm_node) = @_;
+	my ($interface, $intf_type, $err_msg, $parent_intf, $engine, $ssm_node, $routine) = @_;
 
 	# Check $intf_type, which is mandatory.
 	defined( $intf_type ) or $interface->_throw_error_message( 'ROS_I_NEW_INTF_NO_TYPE' );
@@ -205,7 +212,7 @@ sub _validate_properties_to_be {
 	$interface->_validate_parent_intf( $intf_type, $parent_intf );
 
 	# Check $engine, which must not be set when type is Error/Application, must be set otherwise.
-	if( $intf_type eq $INTFTP_ERROR or $intf_type eq $INTFTP_APPLICATION ) {
+	if( $intf_type eq $INTFTP_ERROR or $intf_type eq $INTFTP_TOMBSTONE or $intf_type eq $INTFTP_APPLICATION ) {
 		defined( $engine ) and $interface->_throw_error_message( 
 			'ROS_I_NEW_INTF_YES_ENG', { 'TYPE' => $intf_type } );
 	} else {
@@ -221,13 +228,25 @@ sub _validate_properties_to_be {
 	# parent Preparation when arg must not be given, except when Error.
 	$interface->_validate_ssm_node( $intf_type, $ssm_node, $parent_intf );
 
+	# Check $routine, which must be set when type is Preparation, must not be set otherwise.
+	if( $intf_type eq $INTFTP_PREPARATION ) {
+		defined( $routine ) or $interface->_throw_error_message( 
+			'ROS_I_NEW_INTF_NO_RTN', { 'TYPE' => $intf_type } );
+		unless( ref($routine) eq 'CODE' ) {
+			$interface->_throw_error_message( 'ROS_I_NEW_INTF_BAD_RTN', { 'RTN' => $routine } );
+		}
+	} else {
+		defined( $routine ) and $interface->_throw_error_message( 
+			'ROS_I_NEW_INTF_YES_RTN', { 'TYPE' => $intf_type } );
+	}
+
 	# All properties to be seem to check out fine.
 }
 
 sub _validate_parent_intf {
 	my ($interface, $intf_type, $parent_intf) = @_;
 
-	if( $intf_type eq $INTFTP_ERROR or $intf_type eq $INTFTP_APPLICATION ) {
+	if( $intf_type eq $INTFTP_ERROR or $intf_type eq $INTFTP_TOMBSTONE or $intf_type eq $INTFTP_APPLICATION ) {
 		defined( $parent_intf ) and $interface->_throw_error_message( 
 			'ROS_I_NEW_INTF_YES_PARENT', { 'TYPE' => $intf_type } );
 		# $parent_intf seems to check out fine.
@@ -404,6 +423,13 @@ sub get_ssm_node {
 }
 
 ######################################################################
+# We may not keep this method
+
+sub get_routine {
+	return( $_[0]->{$IPROP_ROUTINE} );
+}
+
+######################################################################
 
 sub throw_errors {
 	my ($interface, $new_value) = @_;
@@ -419,7 +445,7 @@ sub throw_errors {
 ######################################################################
 
 sub prepare {
-	my ($interface, $command) = @_;
+	my ($interface, $routine_defn) = @_;
 	# First check that this method may be called on an Interface of this type.
 	my $intf_type = $interface->{$IPROP_INTF_TYPE};
 	unless( $intf_type eq $INTFTP_APPLICATION or $intf_type eq $INTFTP_ENVIRONMENT or 
@@ -432,12 +458,12 @@ sub prepare {
 	eval {
 		# This test of our SSM Node argument is a bootstrap of sorts; the Interface->new() 
 		# method will do the same tests when it is called later; return same errors it would have.
-		$interface->_validate_ssm_node( $INTFTP_PREPARATION, $command, $interface );
+		$interface->_validate_ssm_node( $INTFTP_PREPARATION, $routine_defn, $interface );
 		# Now we get to doing the real work we were called for.
 		if( $intf_type eq $INTFTP_APPLICATION ) {
-			$preparation = $interface->_prepare_with_no_engine( $command );
+			$preparation = $interface->_prepare_with_no_engine( $routine_defn );
 		} else {
-			$preparation = $interface->{$IPROP_ENGINE}->prepare( $interface, $command );
+			$preparation = $interface->{$IPROP_ENGINE}->prepare( $interface, $routine_defn );
 		}
 	};
 	if( my $exception = $@ ) {
@@ -445,7 +471,7 @@ sub prepare {
 			# The called code threw a Rosetta::Interface object.
 			$preparation = $exception;
 		} elsif( UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
-			# The called code threw a Locale::KeyedText Message object.
+			# The called code threw a Locale::KeyedText::Message object.
 			$preparation = $interface->new( $INTFTP_ERROR, $exception );
 		} else {
 			# The called code died in some other way (means coding error, not user error).
@@ -466,17 +492,17 @@ sub prepare {
 }
 
 sub _prepare_with_no_engine {
-	my ($application, $command) = @_;
-	my $container = $command->get_container();
-	my $node_type = $command->get_node_type();
+	my ($application, $routine_defn) = @_;
+	my $container = $routine_defn->get_container();
+	my $node_type = $routine_defn->get_node_type();
 	my $preparation = undef;
 	if( $node_type eq $SSMNTP_LINKPRD ) {
-		$preparation = $application->_get_or_make_environment_preparation( $command );
+		$preparation = $application->_get_or_make_environment_preparation( $routine_defn );
 	} elsif( $node_type eq $SSMNTP_COMMAND ) {
-		my $cmd_type = $command->get_enumerated_attribute( 'command_type' );
+		my $cmd_type = $routine_defn->get_enumerated_attribute( 'command_type' );
 		if( $cmd_type eq $SSM_CMDTP_DB_OPEN ) {
 			# First, figure out link product by cross-referencing app inst with command-spec link bp.
-			my $cat_link_bp_id = $command->get_literal_attribute( 'command_arg' );
+			my $cat_link_bp_id = $routine_defn->get_literal_attribute( 'command_arg' );
 			my $cat_link_bp = $container->get_node( 'catalog_link', $cat_link_bp_id );
 			my $app_inst = $application->{$IPROP_SSM_NODE};
 			my $cat_link_inst = undef;
@@ -491,7 +517,7 @@ sub _prepare_with_no_engine {
 			my $env_prep = $application->_get_or_make_environment_preparation( $link_prod_node );
 			my $environment = $env_prep->execute();
 			# Now repeat the command we ourselves were given against a specific Environment Interface.
-			$preparation = $environment->prepare( $command );
+			$preparation = $environment->prepare( $routine_defn );
 		} else {
 			$application->_throw_error_message( 'ROS_I_PREPARE_CTYPE_NOT_IMPL', { 'CTYPE' => $cmd_type } );
 		}
@@ -535,7 +561,7 @@ sub _get_or_make_environment_preparation {
 ######################################################################
 
 sub execute {
-	my ($preparation, $bind_vars) = @_;
+	my ($preparation, $routine_args) = @_;
 	# First check that this method may be called on an Interface of this type.
 	my $intf_type = $preparation->{$IPROP_INTF_TYPE};
 	unless( $intf_type eq $INTFTP_PREPARATION ) {
@@ -546,12 +572,12 @@ sub execute {
 	my $result = undef;
 	eval {
 		# Test our argument and make sure it is a valid Perl hash ref or is undefined.
-		if( defined( $bind_vars ) ) {
-			unless( ref($bind_vars) eq 'HASH' ) {
-				$preparation->_throw_error_message( 'ROS_I_EXECUTE_BAD_ARG', { 'ARG' => $bind_vars } );
+		if( defined( $routine_args ) ) {
+			unless( ref($routine_args) eq 'HASH' ) {
+				$preparation->_throw_error_message( 'ROS_I_EXECUTE_BAD_ARG', { 'ARG' => $routine_args } );
 			}
 		} else {
-			$bind_vars = {};
+			$routine_args = {};
 		}
 		# Now we get to doing the real work we were called for.
 		if( $preparation->{$IPROP_PARENT_INTF}->{$IPROP_INTF_TYPE} eq $INTFTP_APPLICATION and 
@@ -560,7 +586,8 @@ sub execute {
 			# any attempts to create more become no-ops, returning the first instead.
 			$result = $preparation->{$IPROP_CHILD_INTFS}->[0];
 		} else {
-			$result = $preparation->{$IPROP_ENGINE}->execute( $preparation, $bind_vars );
+			$result = $preparation->{$IPROP_ROUTINE}->( 
+				$preparation->{$IPROP_ENGINE}, $preparation, $routine_args );
 		}
 	};
 	if( my $exception = $@ ) {
@@ -568,7 +595,7 @@ sub execute {
 			# The called code threw a Rosetta::Interface object.
 			$result = $exception;
 		} elsif( UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
-			# The called code threw a Locale::KeyedText Message object.
+			# The called code threw a Locale::KeyedText::Message object.
 			$result = $preparation->new( $INTFTP_ERROR, $exception );
 		} else {
 			# The called code died in some other way (means coding error, not user error).
@@ -680,15 +707,9 @@ sub destroy {
 }
 
 sub prepare {
-	my ($engine, $interface, $command) = @_;
+	my ($engine, $interface, $routine_defn) = @_;
 	$engine->_throw_error_message( 'ROS_E_METH_NOT_IMPL', 
 		{ 'METH' => 'prepare', 'CLASS' => ref($engine) } );
-}
-
-sub execute {
-	my ($engine, $interface, $bind_vars) = @_;
-	$engine->_throw_error_message( 'ROS_E_METH_NOT_IMPL', 
-		{ 'METH' => 'execute', 'CLASS' => ref($engine) } );
 }
 
 sub get_supported_features {
@@ -783,7 +804,7 @@ which fleshes out a number of details just relegated to "figure it out" below.>
 
 			my $error_message = $db_conn->get_error_message();
 
-			# ... Next examine $error_message (a machine-readable Locale::KeyedText Message 
+			# ... Next examine $error_message (a machine-readable Locale::KeyedText::Message 
 			# object) to see if the problem is our fault or the user's fault.
 
 			if( ... user is at fault ... ) {
@@ -1103,19 +1124,25 @@ relate to each other parent-child wise in an Interface tree:
 	11	                Row
 	12	              Preparation
 	13	                Literal
-	14	Error
+	14	Tombstone
+	15	Error
 
 The "Application" (1) at the top is created using "Rosetta->new()", and you
 normally have just one of those in your program.  A "Preparation"
 (2,4,6,8,10,12) is created when you invoke "prepare()" off of an Interface
-object of one of these types: "Application" (1), "Environment" (3), "Connection"
-(5), "Transaction" (7).  Every type of Interface except "Application" and
-"Preparation" is created by invoking "execute()" of of an appropriate
-"Preparation" method.  The "prepare()" and "execute()" methods always create a
-new Interface having the result of the call, and this is usually a child of the
-one you invoked it from.  
+object of one of these types: "Application" (1), "Environment" (3),
+"Connection" (5), "Transaction" (7).  Every type of Interface except
+"Application" and "Preparation" is created by invoking "execute()" of of an
+appropriate "Preparation" method.  The "prepare()" and "execute()" methods
+always create a new Interface having the result of the call, and this is
+usually a child of the one you invoked it from.  
 
-An "Error" (14) Interface can be returned potentially by any method and it is
+A "Tombstone" (14) Interface is returned by execute() when that method's
+successful action involves destroying the parent of the Interface on which it
+was invoked (which is the context for the destruction command-routine); the new
+Interface has no parent or child Interfaces.
+
+An "Error" (15) Interface can be returned potentially by any method and it is
 self-contained; it has no parent Interfaces or children.  Note that any other
 kind of Interface can also store an error condition in addition to keeping its
 normal properties.
@@ -1196,10 +1223,10 @@ SSM_NODE argument must be an 'application_instance' SQL::SyntaxModel::Node.
 This function/method is stateless and can be invoked off of either the Interface
 class name or an existing Interface object, with the same result.
 
-=head2 new( INTF_TYPE[, ERR_MSG][, PARENT_INTF][, ENGINE][, SSM_NODE] )
+=head2 new( INTF_TYPE[, ERR_MSG][, PARENT_INTF][, ENGINE][, SSM_NODE][, ROUTINE] )
 
 	my $app = Rosetta::Interface->new( 'application', undef, undef, undef, $my_app_inst );
-	my $conn_prep = $app->new( 'preparation', undef, $app, undef, $conn_command );
+	my $conn_prep = $app->new( 'preparation', undef, $app, undef, $conn_command, $conn_routine );
 
 This "getter" function/method will create and return a single
 Rosetta::Interface (or subclass) object whose Interface Type is given in the
@@ -1218,7 +1245,9 @@ Interface must have a parent unless it is an 'application', which must not have
 one.  The ENGINE argument is an Engine object that will implement the new
 Interface.  The SSM_NODE argument is a SQL::SyntaxModel::Node argument that
 provides a context or instruction for how the new Interface is created; eg, it
-contains the "command" which the new Interface mediates the result of.  This 
+contains the "command" which the new Interface mediates the result of.  The 
+ROUTINE argument is a Perl anonymous subroutine reference (or closure); this is 
+created by an Engine in its prepare() method, and executed by execute().  This 
 function will throw exceptions if any arguments are inappropriate in context.  
 Typically this function is only invoked directly by the Engine object behind 
 its parent-to-be Interface when said Interface is called with prepare/execute.  
@@ -1279,6 +1308,13 @@ Interface, if it has one.  I<This method may be removed later.>
 This "getter" method returns by reference the SQL::SyntaxModel::Node object
 property of this Interface, if it has one.
 
+=head2 get_routine()
+
+	my $routine = $preparation->get_routine();
+
+This "getter" method returns by reference the Perl anonymous routine property
+of this Interface, if it has one.  I<This method may be removed later.>
+
 =head2 throw_errors([ NEW_VALUE ])
 
 This "getter"/"setter" method returns the Throw Errors scalar (boolean)
@@ -1289,12 +1325,12 @@ time you invoke prepare() or execute() off of it and they produce an
 error-representing Interface, that error will be thrown as an exception rather
 than be returned normally.
 
-=head2 prepare( COMMAND )
+=head2 prepare( ROUTINE_DEFN )
 
 This "getter"/"setter" method takes a SQL::SyntaxModel::Node object
-representing either a "command" or a "routine" in its COMMAND argument, then
-"compiles" it into a new "preparation" Interface (returned) which is ready to
-execute the specified action.  This method may only be invoked off of
+representing either a "command" or a "routine" in its ROUTINE_DEFN argument,
+then "compiles" it into a new "preparation" Interface (returned) which is ready
+to execute the specified action.  This method may only be invoked off of
 Interfaces having one of these types: "application", "environment",
 "connection", "transaction"; it will throw an exception if you invoke it on
 anything else.  Most of the time, this method just passes the buck to the
@@ -1302,19 +1338,23 @@ Engine module that actually does its work, after doing some basic input
 checking, or it will instantiate an Engine object.  Any calls to Engine objects
 are wrapped in an eval block so that miscellaneous exceptions generated there
 don't kill the program.  Addendum: If you call prepare() off of an
-"application", then COMMAND can be a "data_link_product" Node instead of a
+"application", then ROUTINE_DEFN can be a "data_link_product" Node instead of a
 "command" or "routine"; passing a "data_link_product" will create a
 "preparation" Interface that would simply load an Engine, but doesn't make a
 connection or otherwise ask the Engine to do anything.
 
-=head2 execute([ BIND_VARS ])
+=head2 execute([ ROUTINE_ARGS ])
 
 This "getter"/"setter" method can only be invoked off of a "preparation"
 Interface and will actually perform the action that the Interface is created
-for.  The optional hash ref argument BIND_VARS provides run-time arguments 
-for the previously "compiled" routine/command, if it takes any.  As with 
-prepare(), most of the time this method just does basic input checking,  
-calls an Engine module to do the actual work, wrapped in an eval block.
+for.  The optional hash ref argument ROUTINE_ARGS provides run-time arguments
+for the previously "compiled" routine/command, if it takes any.  Unlike
+prepare(), which usually calls an Engine module's prepare() to do the actual
+work, execute() will not call an Engine directly at all.  Rather, execute()
+simply executes the Perl anonymous subroutine property of the "preparation"
+Interface.  Said routine is created by an Engine's prepare() method and is
+usually a closure, containing within it all the context necessary for work as
+if the Engine was doing it.  Said routine returns new non-prep Interfaces.
 
 =head2 get_supported_features([ FEATURE_NAME ])
 
@@ -1364,7 +1404,7 @@ Interface methods, which just turn around and call them.  Every Engine method
 takes as its first argument a reference to the Interface object that it is
 implementing (the Interface shim provides it); otherwise, each method's
 argument list is the same as its same-named Interface method.  These are the
-methods: destroy(), prepare(), execute(), get_supported_features(), finalize(),
+methods: destroy(), prepare(), get_supported_features(), finalize(),
 has_more_rows(), fetch_row(), fetch_all_rows().  Every Engine must also
 implement a new() method which will be called in the form
 [class-name-or-object-ref]->new() and must instantiate the Engine object;
