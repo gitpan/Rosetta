@@ -5,7 +5,7 @@ WriteMakefile(
 	NAME	=> 'Rosetta',
 	VERSION_FROM => 'lib/Rosetta.pm', # finds $VERSION
 	PREREQ_PM => {
-		'Locale::KeyedText' => 1.00,
-		'SQL::Routine' => 0.43,
+		'Locale::KeyedText' => '1.00',
+		'SQL::Routine' => '0.45',
 	},
 );

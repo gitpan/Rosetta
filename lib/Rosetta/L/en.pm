@@ -10,7 +10,7 @@ package Rosetta::L::en;
 use 5.006;
 use strict;
 use warnings;
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 ######################################################################
 
@@ -69,6 +69,7 @@ suggesting improvements to the standard version.
 
 my $CI = 'Rosetta::Interface';
 my $CE = 'Rosetta::Engine';
+my $CD = 'Rosetta::Dispatcher';
 my $GEN = 'Rosetta Generic Engine Error';
 
 my %text_strings = (
@@ -126,6 +127,10 @@ my %text_strings = (
 	'ROS_I_NEW_INTF_NODE_TYPE_NOT_SUPP' =>
 		"$CI.new(): the given SRT_NODE argument, having a Node Type of '{NTYPE}', ".
 		"can not be associated with a '{ITYPE}' Interface",
+	'ROS_I_NEW_INTF_NODE_TYPE_NOT_SUPP_UNDER_P' =>
+		"$CI.new(): the given SRT_NODE argument, having a Node Type of '{NTYPE}', ".
+		"can not be associated with a '{ITYPE}' Interface, when that Interface has ".
+		"a '{PITYPE}' Interface as its direct parent",
 
 	'ROS_I_DESTROY_HAS_CHILD' => 
 		"$CI.destroy(): this Interface has child Interfaces of its ".
@@ -178,6 +183,10 @@ my %text_strings = (
 	'ROS_I_PREPARE_NODE_TYPE_NOT_SUPP' =>
 		"$CI.prepare(): the given ROUTINE_DEFN argument, having a Node Type of '{NTYPE}', ".
 		"can not be associated with a '{ITYPE}' Interface",
+	'ROS_I_PREPARE_NODE_TYPE_NOT_SUPP_UNDER_P' =>
+		"$CI.prepare(): the given SRT_NODE argument, having a Node Type of '{NTYPE}', ".
+		"can not be associated with a '{ITYPE}' Interface, when that Interface has ".
+		"a '{PITYPE}' Interface as its direct parent",
 
 	'ROS_I_PREPARE_ENGINE_NO_LOAD' =>
 		"$CI.prepare(): the Engine class '{CLASS}' failed to load: {ERR}",
@@ -198,8 +207,8 @@ my %text_strings = (
 		"than the Interface upon which this method was invoked",
 	'ROS_I_EXECUTE_BAD_RESULT_WRONG_ITYPE' =>
 		"$CI.execute(): the '{CLASS}' Rosetta Engine that implements this '{ITYPE}' Interface ".
-		"did not return the correct type of Rosetta::Interface object (Lit, Env, Conn, Trans, ".
-		"Curs, Err, Tomb); it instead returned a '{RET_ITYPE}' Interface",
+		"did not return the correct type of Rosetta::Interface object ".
+		"(Err, Succ, Lit, Env, Conn, Curs); it instead returned a '{RET_ITYPE}' Interface",
 
 	'ROS_I_METH_NOT_SUPP' =>
 		"$CI.{METH}(): you may not invoke this method on Rosetta '{ITYPE}' Interfaces",
@@ -210,16 +219,27 @@ my %text_strings = (
 	'ROS_E_METH_NOT_IMPL' =>
 		"$CE.{METH}(): this method is not implemented by the '{CLASS}' Rosetta Engine class",
 
-	'ROS_G_PREPARE_INTF_NSUP_GEN_RTN' =>
-		"$GEN 00001 - {CLASS} - can't prepare any type of generic routine on a '{ITYPE}' Interface",
-	'ROS_G_PREPARE_INTF_NSUP_THIS_CMD' =>
-		"$GEN 00002 - {CLASS} - can't prepare a '{CTYPE}' command-routine on a '{ITYPE}' Interface",
-	'ROS_G_PREPARE_INTF_NSUP_SRT_NODE' =>
-		"$GEN 00003 - {CLASS} - can't prepare a '{NTYPE}' SRT Node as a routine on a '{ITYPE}' Interface",
+	'ROS_D_PREPARE_NO_ENGINE_DETERMINED' =>
+		"$CD.prepare(): can't determine what Rosetta Engine to dispatch this App invocation to",
 
-	'ROS_G_CMD_DB_CLOSE_CONN_IN_USE' =>
-		"$GEN 00004 - {CLASS} - can't close database connection since it has active transaction ".
-		"contexts or prepared ones",
+	'ROS_G_PERL_COMPILE_FAIL' =>
+		"$GEN 00001 - {CLASS} - concerning the SRT routine '{RNAME}'; ".
+		"can't compile a generated Perl routine ({PERL_ERROR}): \n{PERL_CODE}",
+	'ROS_G_RTN_TP_NO_INVOK' =>
+		"$GEN 00002 - {CLASS} - concerning the SRT routine '{RNAME}'; ".
+		"can't directly invoke a '{RTYPE}' routine (only FUNCTION and PROCEDURE calls are allowed)",
+	'ROS_G_NEST_RTN_NO_INVOK' =>
+		"$GEN 00003 - {CLASS} - concerning the SRT routine '{RNAME}'; ".
+		"can't externally invoke a nested routine (a routine that is declared inside another routine)",
+	'ROS_G_STD_RTN_NO_IMPL' =>
+		"$GEN 00004 - {CLASS} - concerning the SRT routine '{RNAME}'; ".
+		"can't invoke the standard routine '{SRNAME}'; it isn't implemented",
+	'ROS_G_CATALOG_OPEN_CONN_STATE_OPEN' =>
+		"$GEN 00005 - {CLASS} - concerning the SRT routine '{RNAME}'; ".
+		"failure in standard routine 'CATALOG_OPEN'; the given CONN_CX is already open",
+	'ROS_G_CATALOG_CLOSE_CONN_STATE_CLOSED' =>
+		"$GEN 00006 - {CLASS} - concerning the SRT routine '{RNAME}'; ".
+		"failure in standard routine 'CATALOG_CLOSE'; the given CONN_CX is already closed",
 );
 
 ######################################################################

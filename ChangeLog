@@ -1,3 +1,132 @@
+2004-10-26   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.37.
+
+	* From now on, Rosetta::Validator will have the same version number as
+	Rosetta itself (and the distribution), because they are by design always 
+	supposed to be updated in tandem.
+
+	* New code file versions are: Rosetta.pm and Validator.pm v0.37,
+	Rosetta/L/en.pm v0.12.
+
+	* This is a major release, with multiple significant design, code, and
+	documentation updates, mostly in Rosetta.pm, and also in Rosetta/L/en.pm.
+
+	* Updated external dependencies on SQL::Routine to v0.45.
+
+	* Corresponding to a SQL::Routine change, all references to the 'command'
+	SRT Node types were removed; that temporary stop-gap feature has now been
+	fully replaced with user-defined routines containing calls to corresponding
+	standard built-in routines.  All SRT built-in standard routines now take
+	named arguments rather than positional ones, just like SRT user-defined
+	routines; they can now all be used in the same ways.
+
+	* Now, 'routine' Nodes are the only acceptable input to prepare(), except
+	for the few circumstances where they take 'application_instance' or
+	'data_link_product' Nodes.  Updated Interface._validate_srt_node() and
+	added 2 corresponding new user text strings to Rosetta/L/en.pm.
+
+	* Changed the nature of how 'Connection' Interfaces are created, used, and
+	changed.  Now, a 'Connection' Interface is created by an Engine when an
+	executed SRT routine declares a variable of type 'CONN'; most details of
+	the Connection are provided at that time.  A Connection now has two
+	distinct states, being 'open' or 'closed', which it must be explicitly set
+	to using the CATALOG_OPEN() and CATALOG_CLOSE() SRT standard routines; a
+	Connection is no longer implicitly open simply by its existence; a brand
+	new Connection Interface starts out closed.  As a result of this change,
+	you can now declare a Connection in a different user-defined routine than
+	you open it in; also, you can now close and reopen a database connection
+	multiple times with the same Connection, rather than having to make a new
+	Connection for each time (it is also now easier to represent cached
+	database connections).  This also corresponds to a SQL::Routine change.
+
+	* Changed the nature of 'Cursor' Interfaces to be the same as 'Connection'
+	Interfaces now are, namely declaration with a SRT routine variable, having
+	distinct 'open' and 'closed' states set with CURSOR_OPEN() and
+	CURSOR_CLOSE(), and so on.  This new behaviour also matches the way that
+	cursors are handled in the SQL:2003 procedural language.  The 'Cursor'
+	Interface type can now have child 'Preparation' and grand-child 'Literal'
+	Interfaces, just like [App,Env,Conn] do.
+
+	* Deleted the 'Transaction' Interface type, which was mostly redundant with
+	'Connection'; anything that referenced or linked to it now does with
+	'Connection' instead.  This may be brought back later, but for now it adds
+	needless complexity.
+
+	* Renamed the 'Tombstone' Interface type to 'Success', and expanded its
+	usage.  An Interface of this type is now returned implicitly from all
+	'PROCEDURE' user-defined routines that complete execution successfully.  It
+	is not used with 'FUNCTION' routines since those are supposed to explicitly
+	return some other kind of Interface type when executing, either a "context"
+	Interface (Env,Conn,Curs) or a 'Literal' Interface.
+
+	* The Interface name constant declarations inside Rosetta.pm are now
+	declared using 'our' rather than 'my'; external code can now reference them
+	directly for reading, rather than having to re-declare their own copies.
+
+	* Added new Interface property 'trace_fh' and 3 associated accessor methods
+	[get|clear|set]_trace_fh().  Unlike other Interface properties, which can
+	only be set on object creation, this new property is set after object
+	creation, and can be changed at will.  It holds a Perl file-handle
+	reference that is open for writing.  When this property is set, a Rosetta
+	Engine can write useful debugging information to it as the code runs, to
+	help you understand what is happening behind the scenes and when.  For
+	example, when a user-defined routine is compiled to Perl code and/or SQL
+	from a SQL::Routine, then that Perl/SQL code can be output.  You turn
+	tracing on and off by setting or clearing the new property.
+
+	* Added new 'Environment' Interface method routine_source_code() to both
+	the Interface and Engine classes; all Rosetta Engine sub-classes must
+	implement this method.  This method is intended to help with debugging, and
+	will return the generated Perl/SQL source code for the 'routine' SRT Node
+	given as its argument.  The method does not generate that code, but rather
+	returns code that was previously generated when the same 'routine' SRT Node
+	was given to prepare(), or another 'routine' that invokes it was given to
+	prepare(); this new method returns undef if that hadn't happened.
+
+	* Deleted the following 4 'Cursor' Interface methods from both the
+	Interface and Engine classes: finalize(), has_more_rows(), fetch_row(),
+	fetch_all_rows().  These have been fully replaced by different SRT built-in
+	standard routines, such as CURSOR_CLOSE() and CURSOR_FETCH(), that you call
+	in a SRT user-defined routine that uses a 'Cursor' as its action context.
+
+	* Renamed a couple Rosetta features to "CATALOG_[LIST|INFO]" from
+	"DB_[LIST|INFO]"; this affects Rosetta.pm and Features.pod; in the latter
+	case, it is the only change to the file.  CATALOG_LIST now also behaves
+	differently, in that it returns a list of new 'catalog_link' Nodes rather
+	than 'catalog_link_instance' Nodes that it did before; this is now the same 
+	kind of Node that is used when creating new 'Connection' Interfaces.
+
+	* Updated the inheritable _throw_error_message() method to set the Message
+	argument 'CLASS' with the name of the current (Engine) class, if 'CLASS'
+	isn't already set; this saves users of the function from having to pass
+	that redundant argument.
+
+	* Rewrote most of the Rosetta::Dispatcher class.  The methods
+	prepare_cmd_db_list() and prepare_cmd_db_open() were recombined into
+	prepare() and a very different set of _prepare__*() methods.  The new
+	version is a lot more versatile and will do the right thing with a much
+	wider range of input routine types; before it worked with exactly 2 kinds
+	only.  Added new error message ROS_D_PREPARE_NO_ENGINE_DETERMINED, used by
+	Dispatcher, to Rosetta/L/en.pm; this replaces 3 older 'ROS_G_PREPARE_*'
+	messages, which were removed.
+
+	* Added 6 new 'ROS_G_*' messages to Rosetta/L/en.pm and removed the last
+	pre-existing one, ROS_G_CMD_DB_CLOSE_CONN_IN_USE.
+
+	* Replaced all documentation occurances of "SQL-2003" with "SQL:2003".
+
+	* Note that the SYNOPSIS in Rosetta.pm is now out of date, and wrong.  It
+	will be fixed later.
+
+	* Updated all code that referenced module version numbers so that those
+	numbers are now quoted in strings rather than being bare numbers.  In the
+	*.pm files, this affected only the "use" strings, since each $VERSION was
+	already declared as a string.  In the *.t files, the "use" strings.  In the
+	Makefile.PL, each PREREQ_PM item was updated.
+
+	* Other minor updates in Framework.pod and Rosetta.pm.
+
 2004-10-04   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.36.
@@ -46,7 +175,7 @@
 	test_deferrable_constraints() to assert_deferrable_constraints().
 
 	* Renamed all references of "bind variables" to "host parameters", since
-	that is the official name for them in the SQL-2003 standard.
+	that is the official name for them in the SQL:2003 standard.
 
 	* A few minor updates in Framework.pod regarding database product versions.
 

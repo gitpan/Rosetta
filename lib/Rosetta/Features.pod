@@ -73,7 +73,7 @@ POSSIBLE AREN'T LISTED YET.  THEY WILL BE ADDED OVER TIME.>
 
 =head1 FEATURES FOR DATABASE CATALOGS
 
-=head2 DB_LIST
+=head2 CATALOG_LIST
 
 The Engine can automatically detect existing instances of database catalogs
 that are available to be opened.  The means by which these databases are
@@ -84,7 +84,7 @@ or perhaps ODBC.  Or, they may be a listening network service or local server
 process such as ODBC or SQL*Net.  Or, they may be a local embedded or disk file
 based solution.)  This feature has no RNI feature dependencies.
 
-=head2 DB_INFO
+=head2 CATALOG_INFO
 
 The Engine can gather some basic information about a single specified database 
 catalog instance.  This feature has no RNI feature dependencies.
