@@ -11,11 +11,11 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 use Locale::KeyedText 0.06;
-use SQL::SyntaxModel 0.24;
-use Rosetta 0.16;
+use SQL::SyntaxModel 0.38;
+use Rosetta 0.33;
 
 ######################################################################
 
@@ -28,12 +28,12 @@ Standard Modules: I<none>
 Nonstandard Modules: 
 
 	Locale::KeyedText 0.06 (for error messages)
-	SQL::SyntaxModel 0.24
-	Rosetta 0.16
+	SQL::SyntaxModel 0.38
+	Rosetta 0.33
 
 =head1 COPYRIGHT AND LICENSE
 
-This file is part of the Rosetta database abstraction framework.
+This file is part of the Rosetta database portability library.
 
 Rosetta is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved.
 Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or

@@ -1,6 +1,6 @@
 =head1 NAME
 
-Rosetta - Framework for RDBMS-generic apps and schemas
+Rosetta - Rigorous database portability
 
 =cut
 
@@ -11,10 +11,10 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.16';
+$VERSION = '0.33';
 
 use Locale::KeyedText 0.06;
-use SQL::SyntaxModel 0.24;
+use SQL::SyntaxModel 0.38;
 
 ######################################################################
 
@@ -27,11 +27,11 @@ Standard Modules: I<none>
 Nonstandard Modules: 
 
 	Locale::KeyedText 0.06 (for error messages)
-	SQL::SyntaxModel 0.24
+	SQL::SyntaxModel 0.38
 
 =head1 COPYRIGHT AND LICENSE
 
-This file is part of the Rosetta database abstraction framework.
+This file is part of the Rosetta database portability library.
 
 Rosetta is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved.
 Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
@@ -96,21 +96,19 @@ my $IPROP_ENGINE = 'engine'; # ref to Engine implementing this Interface if any
 	# middle-layer and invokes another Interface/Engine tree of its own, then it would store 
 	# a reference to that Interface like an application would.
 my $IPROP_SSM_NODE = 'ssm_node'; # ref to SQL::SyntaxModel Node providing context for this Intf
-	# If we are an 'application' Interface, this would be an 'application_instance' Node.
-	# If we are a 'preparation' Interface, this would be a 'command' or 'routine' Node.
+	# If we are an 'Application' Interface, this would be an 'application_instance' Node.
+	# If we are a 'Preparation' Interface, this would be a 'command' or 'routine' Node.
 	# If we are any other kind of interface, this is a second ref to same SSM the parent 'prep' has.
 my $IPROP_ROUTINE = 'routine'; # ref to a Perl anonymous subroutine; this property must be 
 	# set for Preparation interfaces and must not be set for other types.
 	# An Engine's prepare() method will create this sub when it creates a Preparation Interface.
 	# When calling execute(), the Interface will simply invoke the sub; no Engine execute() called.
-my $IPROP_THROW_ERRORS = 'throw_errors'; # boolean - true means that Interface objects will be 
-	# thrown by prepare/execute methods if they are errors, false means return all Interface objs
 
 # Names of properties for objects of the Rosetta::Engine class are declared here:
 	 # No properties (yet) are declared by this parent class; leaving space free for child classes
 
 # Names of properties for objects of the Rosetta::Dispatcher class are declared here:
-my $DPROP_PAYLOAD = 'payload'; # If Eng fronts a LITERAL Intf, put payload it represents here.
+my $DPROP_LIT_PAYLOAD = 'lit_payload'; # If Eng fronts a LITERAL Intf, put payload it represents here.
 
 # Names of the allowed Interface types go here:
 my $INTFTP_ERROR       = 'Error'; # What is returned if an error happens, in place of another Intf type
@@ -120,24 +118,23 @@ my $INTFTP_APPLICATION = 'Application'; # What you get when you create an Interf
 	# "application_instance" SQL::SyntaxModel Node; that provides the necessary context for 
 	# subsequent "command" or "routine" Nodes you pass to any child Intf's "prepare" method.
 my $INTFTP_PREPARATION = 'Preparation'; # That which is returned by the 'prepare()' method
-my $INTFTP_ENVIRONMENT = 'Environment'; # Parent to all CONNECTION INTFs impl by same Engine
-my $INTFTP_CONNECTION  = 'Connection'; # Result of executing a 'connect' command
-my $INTFTP_TRANSACTION = 'Transaction'; # Result of asking to start a new transaction
-my $INTFTP_LITERAL     = 'Literal'; # Result of execution that isn't one of the above, like an IUD
+my $INTFTP_LITERAL     = 'Literal'; # Result of execution that isn't one of the following, like an IUD
 	# This type can be returned as the grand-child for any of [APPL, ENVI, CONN, TRAN].
 	# This type is returned by the execute() of any Command that doesn't return one of 
-	# the above 4 context INTFs, except for those that return CURSOR|ROW.
+	# the above 4 context INTFs, except for those that return CURSOR.
 	# Any commands that stuff new Nodes in the current SSM Container, such as the 
-	# *_LIST or *_INFO or *_CLONE Commands, will return a new Node ref as the payload.
+	# *_LIST or *_INFO or *_CLONE Commands, will return a new Node ref or list as the payload.
 	# Any commands that simply do a yes/no test, such as *_VERIFY, or DB_PING, 
 	# simply have a boolean payload.
 	# IUD commands usually return this, plus method calls; payload may be a hash ref of results.
-my $INTFTP_ROW         = 'Row'; # Result of executing a query that returns one row
+my $INTFTP_ENVIRONMENT = 'Environment'; # Parent to all CONNECTION INTFs impl by same Engine
+my $INTFTP_CONNECTION  = 'Connection'; # Result of executing a 'DB_OPEN' command
+my $INTFTP_TRANSACTION = 'Transaction'; # Result of asking to start a new Transaction
 my $INTFTP_CURSOR      = 'Cursor'; # Result of executing a query that would return rows to the caller
 my %ALL_INTFTP = ( map { ($_ => 1) } (
-	$INTFTP_ERROR, $INTFTP_TOMBSTONE, $INTFTP_APPLICATION, $INTFTP_PREPARATION, 
-	$INTFTP_ENVIRONMENT, $INTFTP_CONNECTION, $INTFTP_TRANSACTION, 
-	$INTFTP_LITERAL, $INTFTP_ROW, $INTFTP_CURSOR, 
+	$INTFTP_ERROR, $INTFTP_TOMBSTONE, 
+	$INTFTP_APPLICATION, $INTFTP_PREPARATION, $INTFTP_LITERAL, 
+	$INTFTP_ENVIRONMENT, $INTFTP_CONNECTION, $INTFTP_TRANSACTION, $INTFTP_CURSOR, 
 ) );
 
 # Names of all possible features that a Rosetta Engine can claim to support, 
@@ -151,6 +148,7 @@ my %POSSIBLE_FEATURES = map { ($_ => 1) } qw(
 	CONN_MULTI_SAME CONN_MULTI_DIFF 
 	CONN_PING 
 	TRAN_BASIC 
+	TRAN_ROLLBACK_ON_DEATH 
 	TRAN_MULTI_SIB TRAN_MULTI_CHILD 
 
 	USER_LIST USER_INFO
@@ -233,10 +231,10 @@ sub new {
 	$interface->{$IPROP_ERROR_MSG} = $err_msg;
 	$interface->{$IPROP_PARENT_INTF} = $parent_intf;
 	$interface->{$IPROP_CHILD_INTFS} = [];
-	$interface->{$IPROP_ENGINE} = $engine;
+	$interface->{$IPROP_ENGINE} = ($intf_type eq $INTFTP_APPLICATION) ? 
+		Rosetta::Dispatcher->new() : $engine;
 	$interface->{$IPROP_SSM_NODE} = $ssm_node;
 	$interface->{$IPROP_ROUTINE} = $routine;
-	$interface->{$IPROP_THROW_ERRORS} = $parent_intf ? $parent_intf->{$IPROP_THROW_ERRORS} : 0;
 	$parent_intf and push( @{$parent_intf->{$IPROP_CHILD_INTFS}}, $interface );
 
 	return( $interface );
@@ -328,10 +326,16 @@ sub _validate_parent_intf {
 			{ 'TYPE' => $intf_type, 'PTYPE' => $p_intf_type } );
 	}
 
-	# If we get here then at the very least we have an 'application' and 'preparation' above us.
+	# If we get here then at the very least we have an 'Application' and 'Preparation' above us.
 	# Now check that we may be a grand-child of the parent of the given $parent_intf.
 	my $pp_intf_type = $parent_intf->{$IPROP_PARENT_INTF}->{$IPROP_INTF_TYPE};
-	if( $intf_type eq $INTFTP_ENVIRONMENT ) {
+	if( $intf_type eq $INTFTP_LITERAL ) {
+		unless( $pp_intf_type eq $INTFTP_APPLICATION or $pp_intf_type eq $INTFTP_ENVIRONMENT 
+				or $pp_intf_type eq $INTFTP_CONNECTION or $pp_intf_type eq $INTFTP_TRANSACTION ) {
+			$interface->_throw_error_message( 'ROS_I_NEW_INTF_PP_INCOMP', 
+				{ 'TYPE' => $intf_type, 'PTYPE' => $p_intf_type, 'PPTYPE' => $pp_intf_type } );
+		}
+	} elsif( $intf_type eq $INTFTP_ENVIRONMENT ) {
 		unless( $pp_intf_type eq $INTFTP_APPLICATION ) {
 			$interface->_throw_error_message( 'ROS_I_NEW_INTF_PP_INCOMP', 
 				{ 'TYPE' => $intf_type, 'PTYPE' => $p_intf_type, 'PPTYPE' => $pp_intf_type } );
@@ -346,13 +350,7 @@ sub _validate_parent_intf {
 			$interface->_throw_error_message( 'ROS_I_NEW_INTF_PP_INCOMP', 
 				{ 'TYPE' => $intf_type, 'PTYPE' => $p_intf_type, 'PPTYPE' => $pp_intf_type } );
 		}
-	} elsif( $intf_type eq $INTFTP_LITERAL ) {
-		unless( $pp_intf_type eq $INTFTP_ENVIRONMENT or $pp_intf_type eq $INTFTP_CONNECTION 
-				or $pp_intf_type eq $INTFTP_TRANSACTION ) {
-			$interface->_throw_error_message( 'ROS_I_NEW_INTF_PP_INCOMP', 
-				{ 'TYPE' => $intf_type, 'PTYPE' => $p_intf_type, 'PPTYPE' => $pp_intf_type } );
-		}
-	} else { # $intf_type eq $INTFTP_ROW or $intf_type eq $INTFTP_CURSOR
+	} else { # $intf_type eq $INTFTP_CURSOR
 		unless( $pp_intf_type eq $INTFTP_TRANSACTION ) {
 			$interface->_throw_error_message( 'ROS_I_NEW_INTF_PP_INCOMP', 
 				{ 'TYPE' => $intf_type, 'PTYPE' => $p_intf_type, 'PPTYPE' => $pp_intf_type } );
@@ -383,6 +381,10 @@ sub _validate_ssm_node {
 	unless( $given_container ) {
 		$interface->_throw_error_message( $error_key_pfx.'_NODE_NOT_IN_CONT' );
 	}
+	unless( $ssm_node->are_reciprocal_links() ) {
+		$interface->_throw_error_message( $error_key_pfx.'_NODE_NOT_RECIP_LINKS' );
+	}
+	$given_container->test_deferrable_constraints(); # SSM throws own exceptions on problem.
 	if( $parent_intf ) {
 		my $expected_container = $parent_intf->{$IPROP_SSM_NODE}->get_container();
 		# Above line assumes parent Intf's Node not taken from Container since put in parent.
@@ -431,10 +433,9 @@ sub destroy {
 		if( my $exception = $@ ) {
 			my $intf_type = $interface->{$IPROP_INTF_TYPE};
 			unless( ref($exception) and UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
-				$exception = Locale::KeyedText->new_message( 'ROS_I_METH_MISC_EXCEPTION', 
+				$interface->_throw_error_message( 'ROS_I_METH_MISC_EXCEPTION', 
 					{ 'METH' => 'destroy', 'ITYPE' => $intf_type, 'VALUE' => $exception } );
 			}
-			die $exception;
 		}
 	}
 
@@ -515,15 +516,68 @@ sub get_routine {
 
 ######################################################################
 
-sub throw_errors {
-	my ($interface, $new_value) = @_;
-	if( defined( $new_value ) ) {
-		unless( $new_value eq '0' or $new_value eq '1' ) {
-			$interface->_throw_error_message( 'ROS_I_THROW_ERR_BAD_ARG', { 'ARG' => $new_value } );
-		}
-		$interface->{$IPROP_THROW_ERRORS} = $new_value;
+sub features {
+	my ($interface, $feature_name) = @_;
+	# First check that this method may be called on an Interface of this type.
+	my $intf_type = $interface->{$IPROP_INTF_TYPE};
+	unless( $intf_type eq $INTFTP_APPLICATION or $intf_type eq $INTFTP_ENVIRONMENT or 
+			$intf_type eq $INTFTP_CONNECTION or $intf_type eq $INTFTP_TRANSACTION ) {
+		$interface->_throw_error_message( 'ROS_I_METH_NOT_SUPP', 
+			{ 'METH' => 'features', 'ITYPE' => $intf_type } );
 	}
-	return( $interface->{$IPROP_THROW_ERRORS} );
+	# Test our argument and make sure it is a valid RNI feature name or is undefined.
+	if( defined( $feature_name ) ) {
+		unless( $POSSIBLE_FEATURES{$feature_name} ) {
+			$interface->_throw_error_message( 'ROS_I_FEATURES_BAD_ARG', { 'ARG' => $feature_name } );
+		}
+	}
+	# Now we get to doing the real work we were called for.
+	my $result = eval {
+		# An eval block is like a routine body.
+		if( $intf_type eq $INTFTP_TRANSACTION ) {
+			return( $interface->{$IPROP_PARENT_INTF}->{$IPROP_PARENT_INTF}->features( $feature_name ) );
+		} else {
+			return( $interface->{$IPROP_ENGINE}->features( $interface, $feature_name ) );
+		}
+	};
+	if( my $exception = $@ ) {
+		if( ref($exception) and UNIVERSAL::isa( $exception, 'Rosetta::Interface' ) ) {
+			# The called code threw a Rosetta::Interface object.
+			die $exception->{$IPROP_ERROR_MSG};
+		} elsif( ref($exception) and UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
+			# The called code threw a Locale::KeyedText::Message object.
+			die $exception;
+		} else {
+			# The called code died in some other way (means coding error, not user error).
+			$interface->_throw_error_message( 'ROS_I_METH_MISC_EXCEPTION', 
+				{ 'METH' => 'features', 'ITYPE' => $intf_type, 'VALUE' => $exception } );
+		}
+	}
+	if( defined( $feature_name ) ) {
+		if( defined( $result ) and $result ne '0' and $result ne '1' ) {
+			$interface->_throw_error_message( 'ROS_I_FEATURES_BAD_RESULT_SCALAR', 
+				{ 'FNAME' => $feature_name, 'VAL' => $result, 'ITYPE' => $intf_type } );
+		}
+	} else {
+		unless( ref( $result ) eq 'HASH' ) {
+			$interface->_throw_error_message( 'ROS_I_FEATURES_BAD_RESULT_LIST', 
+				{ 'VALUE' => $result, 'ITYPE' => $intf_type } );
+		}
+		foreach my $list_feature_name (keys %{$result}) {
+			unless( $POSSIBLE_FEATURES{$list_feature_name} ) {
+				$interface->_throw_error_message( 'ROS_I_FEATURES_BAD_RESULT_ITEM_NAME', 
+					{ 'FNAME' => $list_feature_name, 'ITYPE' => $intf_type } );
+			}
+			my $value = $result->{$list_feature_name};
+			defined( $value ) or $interface->_throw_error_message( 
+				'ROS_I_FEATURES_BAD_RESULT_ITEM_NO_VAL', { 'FNAME' => $list_feature_name } );
+			if( $value ne '0' and $value ne '1' ) {
+				$interface->_throw_error_message( 'ROS_I_FEATURES_BAD_RESULT_ITEM_BAD_VAL', 
+					{ 'FNAME' => $list_feature_name, 'VALUE' => $value, 'ITYPE' => $intf_type } );
+			}
+		}
+	}
+	return( $result );
 }
 
 ######################################################################
@@ -538,17 +592,17 @@ sub prepare {
 			{ 'METH' => 'prepare', 'ITYPE' => $intf_type } );
 	}
 	# From this point onward, an Interface object will be made, and any errors will go in it.
-	my $preparation = undef;
-	eval {
+	my $preparation = eval {
+		# An eval block is like a routine body.
 		# This test of our SSM Node argument is a bootstrap of sorts; the Interface->new() 
 		# method will do the same tests when it is called later; return same errors it would have; 
 		# actually, return slightly differently worded errors, show different method name.
 		$interface->_validate_ssm_node( 'ROS_I_PREPARE', $INTFTP_PREPARATION, $routine_defn, $interface );
 		# Now we get to doing the real work we were called for.
-		if( $intf_type eq $INTFTP_APPLICATION ) {
-			$preparation = $interface->_prepare_with_no_engine( $routine_defn );
+		if( $intf_type eq $INTFTP_APPLICATION and $routine_defn->get_node_type() eq $SSMNTP_LINKPRD ) {
+			return( $interface->_prepare_lpn( $routine_defn ) );
 		} else {
-			$preparation = $interface->{$IPROP_ENGINE}->prepare( $interface, $routine_defn );
+			return( $interface->{$IPROP_ENGINE}->prepare( $interface, $routine_defn ) );
 		}
 	};
 	if( my $exception = $@ ) {
@@ -571,38 +625,25 @@ sub prepare {
 				'ROS_I_PREPARE_BAD_RESULT', { 'VALUE' => $preparation, 'ITYPE' => $intf_type } ) );
 		}
 	}
-	if( $preparation->get_error_message() and $interface->{$IPROP_THROW_ERRORS} ) {
+	if( $preparation->{$IPROP_ERROR_MSG} ) {
 		die $preparation;
 	}
 	return( $preparation );
 }
 
-sub _prepare_with_no_engine {
-	my ($app_intf, $routine_defn) = @_;
-	my $node_type = $routine_defn->get_node_type();
-	my $engine_name = ($node_type eq $SSMNTP_LINKPRD) ? 
-		$routine_defn->get_literal_attribute( 'product_code' ) : 
-		'Rosetta::Dispatcher';
+sub _prepare_lpn {
+	my ($app_intf, $link_prod_node) = @_;
+	my $engine_name = $link_prod_node->get_literal_attribute( 'product_code' );
 	my $env_prep_intf = undef;
 	foreach my $ch_env_prep_intf (@{$app_intf->{$IPROP_CHILD_INTFS}}) {
-		if( ref($ch_env_prep_intf->{$IPROP_ENGINE}) eq $engine_name ) {
-			# An Engine object already exists of the class we want, so use it.
+		if( $ch_env_prep_intf->{$IPROP_SSM_NODE} eq $link_prod_node ) {
+			# An Environment Intf already exists for this link_product_node, so use it.
+			# Note that multiple lpn may use the same Engine class; each has diff object.
 			$env_prep_intf = $ch_env_prep_intf;
 			last;
 		}
 	}
 	unless( $env_prep_intf ) {
-		my $link_prod_node = $routine_defn; # correct when $node_type eq $SSMNTP_LINKPRD
-		unless( $node_type eq $SSMNTP_LINKPRD ) {
-			# A Disp link_prd shouldn't be in the SSM unless multiple Rosetta Application 
-			# Interfaces are using it, but then only one per each Appl would be made.
-			my $container = $app_intf->{$IPROP_SSM_NODE}->get_container();
-			$link_prod_node = $container->new_node( 'data_link_product' );
-			$link_prod_node->set_node_id( $container->get_next_free_node_id( 'data_link_product' ) );
-			$link_prod_node->set_literal_attribute( 'product_code', $engine_name );
-			$link_prod_node->put_in_container( $container );
-			# We intentionally do *not* add_reciprocal_links(), to minimize user disruption.
-		}
 		# This Application Interface has no child Environment Preparation Interface of the 
 		# requested kind; however, the package implementing that Engine may already be loaded.
 		# A package may be loaded due to it being embedded in a non-exclusive file, or because another 
@@ -622,6 +663,10 @@ sub _prepare_with_no_engine {
 			$app_intf->_throw_error_message( 'ROS_I_PREPARE_ENGINE_NO_ENGINE', 
 				{ 'NAME' => $engine_name } );
 		}
+		if( UNIVERSAL::isa( $engine_name, 'Rosetta::Dispatcher' ) ) {
+			$app_intf->_throw_error_message( 'ROS_I_PREPARE_ENGINE_YES_DISPATCHER', 
+				{ 'NAME' => $engine_name } );
+		}
 		my $routine = sub {
 			# This routine is a closure.
 			my ($rtv_env_prep_eng, $rtv_env_prep_intf, $rtv_args) = @_;
@@ -634,17 +679,7 @@ sub _prepare_with_no_engine {
 		$env_prep_intf = $app_intf->new( $INTFTP_PREPARATION, undef, 
 			$app_intf, $env_prep_eng, $link_prod_node, $routine );
 	}
-	if( $node_type eq $SSMNTP_LINKPRD ) {
-		return( $env_prep_intf );
-	} else {
-		my $env_intf = $env_prep_intf->execute();
-		if( $env_intf->get_error_message() ) {
-			return( $env_intf );
-		}
-		# Now repeat the command we ourselves were given against a specific Environment Interface.
-		my $preparation = $env_intf->prepare( $routine_defn );
-		return( $preparation );
-	}
+	return( $env_prep_intf );
 }
 
 ######################################################################
@@ -658,8 +693,8 @@ sub execute {
 			{ 'METH' => 'execute', 'ITYPE' => $intf_type } );
 	}
 	# From this point onward, an Interface object will be made, and any errors will go in it.
-	my $result = undef;
-	eval {
+	my $result = eval {
+		# An eval block is like a routine body.
 		# Test our argument and make sure it is a valid Perl hash ref or is undefined.
 		if( defined( $routine_args ) ) {
 			unless( ref($routine_args) eq 'HASH' ) {
@@ -671,12 +706,12 @@ sub execute {
 		# Now we get to doing the real work we were called for.
 		if( $preparation->{$IPROP_PARENT_INTF}->{$IPROP_INTF_TYPE} eq $INTFTP_APPLICATION and 
 				scalar(@{$preparation->{$IPROP_CHILD_INTFS}}) > 0 ) {
-			# Each "environment preparation" is only allowed one child "environment"; 
+			# Each "Environment preparation" is only allowed one child "Environment"; 
 			# any attempts to create more become no-ops, returning the first instead.
-			$result = $preparation->{$IPROP_CHILD_INTFS}->[0];
+			return( $preparation->{$IPROP_CHILD_INTFS}->[0] );
 		} else {
-			$result = $preparation->{$IPROP_ROUTINE}->( 
-				$preparation->{$IPROP_ENGINE}, $preparation, $routine_args );
+			return( $preparation->{$IPROP_ROUTINE}->( 
+				$preparation->{$IPROP_ENGINE}, $preparation, $routine_args ) );
 		}
 	};
 	if( my $exception = $@ ) {
@@ -699,48 +734,8 @@ sub execute {
 				'ROS_I_EXECUTE_BAD_RESULT', { 'VALUE' => $result, 'ITYPE' => $intf_type } ) );
 		}
 	}
-	if( $result->get_error_message() and $preparation->{$IPROP_THROW_ERRORS} ) {
+	if( $result->{$IPROP_ERROR_MSG} ) {
 		die $result;
-	}
-	return( $result );
-}
-
-######################################################################
-
-sub get_supported_features {
-	my ($env_intf, $feature_name) = @_;
-	# First check that this method may be called on an Interface of this type.
-	my $intf_type = $env_intf->{$IPROP_INTF_TYPE};
-	unless( $intf_type eq $INTFTP_ENVIRONMENT ) {
-		$env_intf->_throw_error_message( 'ROS_I_METH_NOT_SUPP', 
-			{ 'METH' => 'get_supported_features', 'ITYPE' => $intf_type } );
-	}
-	# Now we get to doing the real work we were called for.
-	my $result = undef;
-	eval {
-		if( defined( $feature_name ) ) {
-			unless( $POSSIBLE_FEATURES{$feature_name} ) {
-				$env_intf->_throw_error_message( 'ROS_I_GSF_BAD_ARG', { 'FNAME' => $feature_name } );
-			}
-			$result = $env_intf->{$IPROP_ENGINE}->get_supported_features( $env_intf, $feature_name );
-		} else {
-			$result = $env_intf->{$IPROP_ENGINE}->get_supported_features( $env_intf );
-			unless( ref( $result ) eq 'HASH' ) {
-				$env_intf->_throw_error_message( 'ROS_I_GSF_BAD_RESULT', { 'VALUE' => $result } );
-			}
-			foreach my $supp_fname (sort keys %{$result}) {
-				unless( $POSSIBLE_FEATURES{$supp_fname} ) {
-					$env_intf->_throw_error_message( 'ROS_I_GSF_BAD_RESULT_ITEM', { 'FNAME' => $supp_fname } );
-				}
-			}
-		}
-	};
-	if( my $exception = $@ ) {
-		unless( ref($exception) and UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
-			$exception = Locale::KeyedText->new_message( 'ROS_I_METH_MISC_EXCEPTION', 
-				{ 'METH' => 'get_supported_features', 'ITYPE' => $intf_type, 'VALUE' => $exception } );
-		}
-		die $exception;
 	}
 	return( $result );
 }
@@ -756,16 +751,15 @@ sub payload {
 			{ 'METH' => 'payload', 'ITYPE' => $intf_type } );
 	}
 	# Now we get to doing the real work we were called for.
-	my $result = undef;
-	eval {
-		$result = $lit_intf->{$IPROP_ENGINE}->payload( $lit_intf );
+	my $result = eval {
+		# An eval block is like a routine body.
+		return( $lit_intf->{$IPROP_ENGINE}->payload( $lit_intf ) );
 	};
 	if( my $exception = $@ ) {
 		unless( ref($exception) and UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
-			$exception = Locale::KeyedText->new_message( 'ROS_I_METH_MISC_EXCEPTION', 
+			$lit_intf->_throw_error_message( 'ROS_I_METH_MISC_EXCEPTION', 
 				{ 'METH' => 'payload', 'ITYPE' => $intf_type, 'VALUE' => $exception } );
 		}
-		die $exception;
 	}
 	return( $result );
 }
@@ -781,16 +775,15 @@ sub finalize {
 			{ 'METH' => 'finalize', 'ITYPE' => $intf_type } );
 	}
 	# Now we get to doing the real work we were called for.
-	my $result = undef;
-	eval {
-		$result = $curs_intf->{$IPROP_ENGINE}->finalize( $curs_intf ); # do the equivalent of CURSOR_CLOSE here
+	my $result = eval {
+		# An eval block is like a routine body.
+		return( $curs_intf->{$IPROP_ENGINE}->finalize( $curs_intf ) ); # do the equivalent of CURSOR_CLOSE here
 	};
 	if( my $exception = $@ ) {
 		unless( ref($exception) and UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
-			$exception = Locale::KeyedText->new_message( 'ROS_I_METH_MISC_EXCEPTION', 
+			$curs_intf->_throw_error_message( 'ROS_I_METH_MISC_EXCEPTION', 
 				{ 'METH' => 'finalize', 'ITYPE' => $intf_type, 'VALUE' => $exception } );
 		}
-		die $exception;
 	}
 	return( $result );
 }
@@ -806,16 +799,15 @@ sub has_more_rows {
 			{ 'METH' => 'has_more_rows', 'ITYPE' => $intf_type } );
 	}
 	# Now we get to doing the real work we were called for.
-	my $result = undef;
-	eval {
-		$result = $curs_intf->{$IPROP_ENGINE}->has_more_rows( $curs_intf );
+	my $result = eval {
+		# An eval block is like a routine body.
+		return( $curs_intf->{$IPROP_ENGINE}->has_more_rows( $curs_intf ) );
 	};
 	if( my $exception = $@ ) {
 		unless( ref($exception) and UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
-			$exception = Locale::KeyedText->new_message( 'ROS_I_METH_MISC_EXCEPTION', 
+			$curs_intf->_throw_error_message( 'ROS_I_METH_MISC_EXCEPTION', 
 				{ 'METH' => 'has_more_rows', 'ITYPE' => $intf_type, 'VALUE' => $exception } );
 		}
-		die $exception;
 	}
 	return( $result );
 }
@@ -831,16 +823,15 @@ sub fetch_row {
 			{ 'METH' => 'fetch_row', 'ITYPE' => $intf_type } );
 	}
 	# Now we get to doing the real work we were called for.
-	my $result = undef;
-	eval {
-		$result = $curs_intf->{$IPROP_ENGINE}->fetch_row( $curs_intf ); # do the equivalent of CURSOR_FETCH here
+	my $result = eval {
+		# An eval block is like a routine body.
+		return( $curs_intf->{$IPROP_ENGINE}->fetch_row( $curs_intf ) ); # do the equivalent of CURSOR_FETCH here
 	};
 	if( my $exception = $@ ) {
 		unless( ref($exception) and UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
-			$exception = Locale::KeyedText->new_message( 'ROS_I_METH_MISC_EXCEPTION', 
+			$curs_intf->_throw_error_message( 'ROS_I_METH_MISC_EXCEPTION', 
 				{ 'METH' => 'fetch_row', 'ITYPE' => $intf_type, 'VALUE' => $exception } );
 		}
-		die $exception;
 	}
 	return( $result );
 }
@@ -856,16 +847,15 @@ sub fetch_all_rows {
 			{ 'METH' => 'fetch_all_rows', 'ITYPE' => $intf_type } );
 	}
 	# Now we get to doing the real work we were called for.
-	my $result = undef;
-	eval {
-		$result = $curs_intf->{$IPROP_ENGINE}->fetch_all_rows( $curs_intf ); # stuff multiple fetch, then finalize
+	my $result = eval {
+		# An eval block is like a routine body.
+		return( $curs_intf->{$IPROP_ENGINE}->fetch_all_rows( $curs_intf ) ); # stuff multiple fetch, then finalize
 	};
 	if( my $exception = $@ ) {
 		unless( ref($exception) and UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
-			$exception = Locale::KeyedText->new_message( 'ROS_I_METH_MISC_EXCEPTION', 
+			$curs_intf->_throw_error_message( 'ROS_I_METH_MISC_EXCEPTION', 
 				{ 'METH' => 'fetch_all_rows', 'ITYPE' => $intf_type, 'VALUE' => $exception } );
 		}
-		die $exception;
 	}
 	return( $result );
 }
@@ -891,16 +881,16 @@ sub destroy {
 		{ 'METH' => 'destroy', 'CLASS' => ref($engine) } );
 }
 
+sub features {
+	my ($engine, $interface, $feature_name) = @_;
+	$engine->_throw_error_message( 'ROS_E_METH_NOT_IMPL', 
+		{ 'METH' => 'features', 'CLASS' => ref($engine) } );
+}
+
 sub prepare {
 	my ($engine, $interface, $routine_defn) = @_;
 	$engine->_throw_error_message( 'ROS_E_METH_NOT_IMPL', 
 		{ 'METH' => 'prepare', 'CLASS' => ref($engine) } );
-}
-
-sub get_supported_features {
-	my ($env_eng, $env_intf, $feature_name) = @_;
-	$env_eng->_throw_error_message( 'ROS_E_METH_NOT_IMPL', 
-		{ 'METH' => 'get_supported_features', 'CLASS' => ref($env_eng) } );
 }
 
 sub payload {
@@ -956,53 +946,99 @@ sub destroy {
 
 ######################################################################
 
+sub features {
+	# This method assumes that it is only called on Application Interfaces.
+	my ($app_eng, $app_intf, $feature_name) = @_;
+
+	# First gather the feature results from each available Engine.
+	my @results = ();
+	my $container = $app_intf->get_ssm_node()->get_container();
+	foreach my $link_prod_node (@{$container->get_child_nodes( 'data_link_product' )}) {
+		my $env_prep_intf = $app_intf->prepare( $link_prod_node );
+		my $env_intf = $env_prep_intf->execute();
+		my $result = $env_intf->features( $feature_name );
+		push( @results, $result );
+	}
+
+	# Now combine the results by means of intersection|and.  For each possible 
+	# feature, the combined output is 1 ('yes') only if all inputs are 1, and 0 ('no') 
+	# only if all are 0; if any inputs differ or are undef ('maybe') then 
+	# the output is undef ('maybe') or a missing list item.  If there are zero 
+	# Engines, then the result is undef ('maybe') or an empty list.
+
+	if( defined( $feature_name ) ) {
+		my $result = shift( @results ); # returns undef if no Engines
+		if( !defined( $result ) ) {
+			return( $result );
+		}
+		while( @results > 0 ) {
+			my $next_result = shift( @results );
+			if( !defined( $next_result ) or $next_result ne $result ) {
+				$result = undef; last;
+			}
+			# so far, both $result and $next_result have the same 1 or 0 value
+		}
+		return( $result );
+
+	} else {
+		my $result = shift( @results ) || {}; # returns {} if no Engines
+		if( (keys %{$result}) == 0 ) {
+			return( $result );
+		}
+		while( @results > 0 ) {
+			my $next_result = shift( @results );
+			if( (keys %{$next_result}) == 0 ) {
+				$result = {}; last;
+			}
+			foreach my $list_feature_name (keys %{$result}) {
+				my $result_value = $result->{$list_feature_name};
+				my $next_result_value = $next_result->{$list_feature_name};
+				if( !defined( $next_result_value ) or $next_result_value ne $result_value ) {
+					delete( $result->{$list_feature_name} );
+				}
+				# so far, both $result_value and $next_result_value have the same 1 or 0 value
+			}
+			(keys %{$result}) == 0 and last;
+		}
+		return( $result );
+	}
+}
+
+######################################################################
+
 sub prepare {
-	# This method assumes that it is only called on Environment Interfaces.
-	my ($env_eng, $env_intf, $command_bp_node) = @_;
-	my $preparation = undef;
-	my $intf_type = $INTFTP_ENVIRONMENT;
-	my $node_type = $command_bp_node->get_node_type();
+	# This method assumes that it is only called on Application Interfaces.
+	my ($app_eng, $app_intf, $routine_defn) = @_;
+	my $node_type = $routine_defn->get_node_type();
 	if( $node_type eq $SSMNTP_COMMAND ) {
-		my $cmd_type = $command_bp_node->get_enumerated_attribute( 'command_type' );
+		my $cmd_type = $routine_defn->get_enumerated_attribute( 'command_type' );
 		if( $cmd_type eq $SSM_CMDTP_DB_LIST ) {
-			$preparation = $env_eng->prepare_cmd_db_list( $env_intf, $command_bp_node );
+			return( $app_eng->prepare_cmd_db_list( $app_intf, $routine_defn ) );
 		} elsif( $cmd_type eq $SSM_CMDTP_DB_OPEN ) {
-			$preparation = $env_eng->prepare_cmd_db_open( $env_intf, $command_bp_node );
+			return( $app_eng->prepare_cmd_db_open( $app_intf, $routine_defn ) );
 		} else {
-			$env_intf->_throw_error_message( 'ROS_G_PREPARE_INTF_NSUP_THIS_CMD', 
-				{ 'ITYPE' => $intf_type, 'CTYPE' => $cmd_type } );
+			$app_intf->_throw_error_message( 'ROS_G_PREPARE_INTF_NSUP_THIS_CMD', 
+				{ 'ITYPE' => $INTFTP_APPLICATION, 'CTYPE' => $cmd_type } );
 		}
 	} else {
-		$env_intf->_throw_error_message( 'ROS_G_PREPARE_INTF_NSUP_SSM_NODE', 
-			{ 'ITYPE' => $intf_type, 'NTYPE' => $node_type } );
+		$app_intf->_throw_error_message( 'ROS_G_PREPARE_INTF_NSUP_SSM_NODE', 
+			{ 'ITYPE' => $INTFTP_APPLICATION, 'NTYPE' => $node_type } );
 	}
-	return( $preparation );
 }
 
 ######################################################################
 
 sub prepare_cmd_db_list {
-	# This method assumes that it is only called on Environment Interfaces.
-	my ($env_eng, $env_intf, $command_bp_node) = @_;
+	# This method assumes that it is only called on Application Interfaces.
+	my ($app_eng, $app_intf, $command_bp_node) = @_;
 
-	my $app_intf = $env_intf->get_parent_interface()->get_parent_interface();
-
-	my @proxied_lit_prep_intfs = ();
+	my @lit_prep_intfs = ();
 	my $container = $command_bp_node->get_container();
 	foreach my $link_prod_node (@{$container->get_child_nodes( 'data_link_product' )}) {
-		my $proxied_env_prep_intf = $app_intf->prepare( $link_prod_node );
-		if( $proxied_env_prep_intf->get_error_message() ) {
-			return( $proxied_env_prep_intf );
-		}
-		my $proxied_env_intf = $proxied_env_prep_intf->execute();
-		if( $proxied_env_intf->get_error_message() ) {
-			return( $proxied_env_intf );
-		}
-		my $proxied_lit_prep_intf = $proxied_env_intf->prepare( $command_bp_node );
-		if( $proxied_lit_prep_intf->get_error_message() ) {
-			return( $proxied_lit_prep_intf );
-		}
-		push( @proxied_lit_prep_intfs, $proxied_lit_prep_intf );
+		my $env_prep_intf = $app_intf->prepare( $link_prod_node );
+		my $env_intf = $env_prep_intf->execute();
+		my $lit_prep_intf = $env_intf->prepare( $command_bp_node );
+		push( @lit_prep_intfs, $lit_prep_intf );
 	}
 
 	my $routine = sub {
@@ -1011,34 +1047,32 @@ sub prepare_cmd_db_list {
 
 		my @cat_link_inst_nodes = ();
 
-		foreach my $proxied_lit_prep_intf (@proxied_lit_prep_intfs) {
-			my $proxied_lit_intf = $proxied_lit_prep_intf->execute();
-			my $proxied_payload = $proxied_lit_intf->payload();
-			push( @cat_link_inst_nodes, @{$proxied_payload} );
+		foreach my $lit_prep_intf (@lit_prep_intfs) {
+			my $lit_intf = $lit_prep_intf->execute();
+			my $payload = $lit_intf->payload();
+			push( @cat_link_inst_nodes, @{$payload} );
 		}
 
 		my $rtv_lit_eng = $rtv_lit_prep_eng->new();
-		$rtv_lit_eng->{$DPROP_PAYLOAD} = \@cat_link_inst_nodes;
+		$rtv_lit_eng->{$DPROP_LIT_PAYLOAD} = \@cat_link_inst_nodes;
 
 		my $rtv_lit_intf = $rtv_lit_prep_intf->new( $INTFTP_LITERAL, undef, 
 			$rtv_lit_prep_intf, $rtv_lit_eng );
 		return( $rtv_lit_intf );
 	};
 
-	my $lit_prep_eng = $env_eng->new();
+	my $lit_prep_eng = $app_eng->new();
 
-	my $lit_prep_intf = $env_intf->new( $INTFTP_PREPARATION, undef, 
-		$env_intf, $lit_prep_eng, $command_bp_node, $routine );
+	my $lit_prep_intf = $app_intf->new( $INTFTP_PREPARATION, undef, 
+		$app_intf, $lit_prep_eng, $command_bp_node, $routine );
 	return( $lit_prep_intf );
 }
 
 ######################################################################
 
 sub prepare_cmd_db_open {
-	# This method assumes that it is only called on Environment Interfaces.
-	my ($env_eng, $env_intf, $command_bp_node) = @_;
-
-	my $app_intf = $env_intf->get_parent_interface()->get_parent_interface();
+	# This method assumes that it is only called on Application Interfaces.
+	my ($app_eng, $app_intf, $command_bp_node) = @_;
 
 	# First, figure out link product by cross-referencing app inst with command-spec link bp.
 	my $cat_link_bp_node = $command_bp_node->get_node_ref_attribute( 'command_arg_1' );
@@ -1053,24 +1087,18 @@ sub prepare_cmd_db_open {
 	my $link_prod_node = $cat_link_inst_node->get_node_ref_attribute( 'product' );
 
 	# Now make sure that the Engine we need is loaded.
-	my $proxied_env_prep_intf = $app_intf->prepare( $link_prod_node );
-	if( $proxied_env_prep_intf->get_error_message() ) {
-		return( $proxied_env_prep_intf );
-	}
-	my $proxied_env_intf = $proxied_env_prep_intf->execute();
-	if( $proxied_env_intf->get_error_message() ) {
-		return( $proxied_env_intf );
-	}
+	my $env_prep_intf = $app_intf->prepare( $link_prod_node );
+	my $env_intf = $env_prep_intf->execute();
 	# Now repeat the command we ourselves were given against a specific Environment Interface.
-	my $proxied_conn_prep_intf = $proxied_env_intf->prepare( $command_bp_node );
-	return( $proxied_conn_prep_intf );
+	my $conn_prep_intf = $env_intf->prepare( $command_bp_node );
+	return( $conn_prep_intf );
 }
 
 ######################################################################
 
 sub payload {
 	my ($lit_eng, $lit_intf) = @_;
-	return( $lit_eng->{$DPROP_PAYLOAD} );
+	return( $lit_eng->{$DPROP_LIT_PAYLOAD} );
 }
 
 ######################################################################
@@ -1114,26 +1142,30 @@ which fleshes out a number of details just relegated to "figure it out" below.>
 		# to it (including what Rosetta "Engine" plug-in and DSN to use).  Then put a 'command' 
 		# Node which instructs to open a connection with said database in $open_db_command.
 
-		my $prepared_open_cmd = $application->prepare( $open_db_command );
-		if( $prepared_open_cmd->get_error_message() ) {
-			print "internal error: a command is invalid: ".error_to_string( $prepared_open_cmd );
+		my $prepared_open_cmd = eval { 
+			return( $application->prepare( $open_db_command ) );
+		};
+		if( $@ ) {
+			print "internal error: a command is invalid: ".error_to_string( $@ );
 			return( 0 );
 		}
 
+		my $db_conn = undef;
 		while( 1 ) {
 			# ... Next, assuming they are gotten dynamically such as from the user, gather the db 
 			# authentication credentials, username and password, and put them in $user and $pass.
 
-			my $db_conn = $prepared_open_cmd->execute( { 'login_user' => $user, 'login_pass' => $pass } );
-
-			unless( $db_conn->get_error_message() ) {
+			$db_conn = eval { 
+				return( $prepared_open_cmd->execute( { 'login_user' => $user, 'login_pass' => $pass } ) );
+			}
+			unless( $@ ) {
 				last; # Connection was successful.
 			}
 
 			# If we get here, something went wrong when trying to open the database; eg: the requested 
 			# Engine plug-in doesn't exist, or the DSN doesn't exist, or the user/pass are incorrect.  
 
-			my $error_message = $db_conn->get_error_message();
+			my $error_message = $@->get_error_message();
 
 			# ... Next examine $error_message (a machine-readable Locale::KeyedText::Message 
 			# object) to see if the problem is our fault or the user's fault.
@@ -1143,7 +1175,7 @@ which fleshes out a number of details just relegated to "figure it out" below.>
 				next;
 			}
 
-			print "sorry, problem opening db, we gotta quit: ".error_to_string( $db_conn );
+			print "sorry, problem opening db, we gotta quit: ".error_to_string( $@ );
 			return( 0 );
 		}
 
@@ -1160,7 +1192,9 @@ which fleshes out a number of details just relegated to "figure it out" below.>
 
 		# ... Next make a SSM 'command' to close the db and put it in $close_db_command.
 
-		$db_conn->prepare( $close_db_command )->execute(); # ignore the result this time
+		eval {
+			$db_conn->prepare( $close_db_command )->execute();
+		}; # ignore the result this time
 
 		return( 1 );
 	}
@@ -1186,9 +1220,11 @@ which fleshes out a number of details just relegated to "figure it out" below.>
 		# has 3 columns named 'foo', 'bar', 'baz'.  Then put a 'command' Node which 
 		# instructs to create said table in $create_stoff_command.
 
-		my $result = $db_conn->prepare( $create_stoff_command )->execute();
-		if( $result->get_error_message() ) {
-			print "sorry, problem making stoff table: ".error_to_string( $result );
+		my $result = eval { 
+			return( $db_conn->prepare( $create_stoff_command )->execute() );
+		};
+		if( $@ ) {
+			print "sorry, problem making stoff table: ".error_to_string( $@ );
 			return( 0 );
 		}
 
@@ -1201,9 +1237,11 @@ which fleshes out a number of details just relegated to "figure it out" below.>
 
 		# ... Next make a SSM 'command' to drop the table and put it in $drop_stoff_command.
 
-		my $result = $db_conn->prepare( $drop_stoff_command )->execute();
-		if( $result->get_error_message() ) {
-			print "sorry, problem removing table: ".error_to_string( $result );
+		my $result = eval { 
+			return( $db_conn->prepare( $drop_stoff_command )->execute() );
+		};
+		if( $@ ) {
+			print "sorry, problem removing table: ".error_to_string( $@ );
 			return( 0 );
 		}
 
@@ -1229,9 +1267,11 @@ which fleshes out a number of details just relegated to "figure it out" below.>
 		)
 
 		foreach my $data_item (@data) {
-			my $result = $prepared_insert_cmd->execute( $data_item );
-			if( $result->get_error_message() ) {
-				print "sorry, problem stuffing stoff: ".error_to_string( $result );
+			my $result = eval { 
+				return( $prepared_insert_cmd->execute( $data_item ) );
+			};
+			if( $@ ) {
+				print "sorry, problem stuffing stoff: ".error_to_string( $@ );
 				return( 0 );
 			}
 		}
@@ -1247,14 +1287,18 @@ which fleshes out a number of details just relegated to "figure it out" below.>
 		# selects a row from the 'stoff' table, where the column 'foo' matches the sole 
 		# routine arg 'a_foo'.  Then put this 'routine' Node in $get_one_stoff_cmd.
 
-		my $get_one_cmd = $db_conn->prepare( $get_one_stoff_cmd );
-		if( $get_one_cmd->get_error_message() ) {
-			print "internal error: a command is invalid: ".error_to_string( $get_one_cmd );
+		my $get_one_cmd = eval { 
+			return( $db_conn->prepare( $get_one_stoff_cmd ) );
+		}
+		if( $@ ) {
+			print "internal error: a command is invalid: ".error_to_string( $@ );
 			return( 0 );
 		}
-		my $row = $get_one_cmd->execute( { 'a_foo' => 'snowy' } );
-		if( $row->get_error_message() ) {
-			print "sorry, problem getting snowy: ".error_to_string( $result );
+		my $row = eval { 
+			return( $get_one_cmd->execute( { 'a_foo' => 'snowy' } ) );
+		}
+		if( $@ ) ) {
+			print "sorry, problem getting snowy: ".error_to_string( $@ );
 			return( 0 );
 		}
 		my $data = $row->row_data(); # $data is a hash-ref of tbl col name/val pairs.
@@ -1262,14 +1306,18 @@ which fleshes out a number of details just relegated to "figure it out" below.>
 		# ... Next create and stuff Nodes in $schema_model that represent a routine which 
 		# selects all rows from 'stoff'.  Then put this 'routine' Node in $get_all_stoff_cmd.
 
-		my $get_all_cmd = $db_conn->prepare( $get_all_stoff_cmd );
-		if( $get_all_cmd->get_error_message() ) {
-			print "internal error: a command is invalid: ".error_to_string( $get_all_cmd );
+		my $get_all_cmd = eval { 
+			return( $db_conn->prepare( $get_all_stoff_cmd ) );
+		}
+		if( $@ ) ) {
+			print "internal error: a command is invalid: ".error_to_string( $@ );
 			return( 0 );
 		}
-		my $cursor = $get_all_cmd->execute();
-		if( $cursor->get_error_message() ) {
-			print "sorry, problem getting all stoff: ".error_to_string( $result );
+		my $cursor = eval { 
+			return( $get_all_cmd->execute() );
+		}
+		if( $@ ) ) {
+			print "sorry, problem getting all stoff: ".error_to_string( $@ );
 			return( 0 );
 		}
 		my @data = ();
@@ -1286,13 +1334,13 @@ which fleshes out a number of details just relegated to "figure it out" below.>
 =head1 DESCRIPTION
 
 The Rosetta Perl 5 module implements the core of the Rosetta database
-abstraction framework.  Rosetta defines a complete API, having a "Command"
-design pattern, for applications to query and manipulate databases with; it
-handles all common functionality that is representable by SQL or that database
-products implement, both data manipulation and schema manipulation.  This
-Rosetta core does not implement that interface (or most of it), however; you
-use it with your choice of separate "Engine" plug-ins that each understand how
-to talk to particular data storage products or data link products, and
+portability framework.  Rosetta defines a complete and rigorous API, having a
+"Command" design pattern, for applications to query and manipulate databases
+with; it handles all common functionality that is representable by SQL or that
+database products implement, both data manipulation and schema manipulation. 
+This Rosetta core does not implement that interface (or most of it), however;
+you use it with your choice of separate "Engine" plug-ins that each understand
+how to talk to particular data storage products or data link products, and
 implement the Rosetta Native Interface (or "RNI") on top of those products.
 
 The level of abstraction that Rosetta provides is similar to a virtual machine,
@@ -1346,45 +1394,47 @@ wrapper functions to keep your code down to size, or use another CPAN module
 such as one of the above that does the wrapping for you.
 
 The Rosetta framework is conceptually similar to the mature and popular Perl
-DBI framework created by Tim Bunce; in fact, many initial Rosetta Engines
-are each implemented as a value-added wrapper for a DBI DBD module.  But they
-have significant differences as well, so Rosetta should not be considered a
-mere wrapper of DBI (moreover, on the implementation side, the Rosetta core
-does not require DBI at all, and any of its Engines can do their work without
-it also if they so choose).  I see DBI by itself as a generic communications
-pipe between a database and an application, that shuttles mostly opaque boxes
-back and forth; it is a courier that does its transport job very well, while it
-knows little about what it is carrying.  More specifically, it knows a fair
-amount about what it shuttles *from* the database, but considerably less about
-what is shuttled *to* the database (opaque SQL strings, save bind variables).
-It is up to the application to know and speak the same language as the
-database, meaning the SQL dialect that is in the boxes, so that the database
-understands what it is given.  I see Rosetta by itself as a communications pipe
-that *does* understand the contents of the boxes, and it can translate or
-reorganize the contents of the boxes while moving them, such that an
-application can always speak in the same language regardless of what database
-it is talking to.  Now, you could say that this sounds like Rosetta is a query
-generator on top of DBI, and in many respects you are correct; that is its
-largest function.  However, it can also translate results coming *from* a
-database, such as massaging returned data into a single format for the
-application, while different databases may not return in the same format.  One
-decision that I made with Rosetta, unlike other query generation type modules,
-is that it will never expose any underlying DBI object to the application. 
-I<Note that I may have mis-interpreted DBI's capabilities, so this paragraph
-stands to be changed as I get better educated.>
+DBI framework created by Tim Bunce, and loosely resembles that structurally as
+well; in fact, many initial Rosetta Engines are each implemented as a
+value-added wrapper for a DBI DBD module.  But they have significant
+differences as well, so Rosetta should not be considered a mere wrapper of DBI
+(moreover, on the implementation side, the Rosetta core does not require DBI at
+all, and any of its Engines can do their work without it also if they so
+choose).  I see DBI by itself as a generic communications pipe between a
+database and an application, that shuttles mostly opaque boxes back and forth;
+it is a courier that does its transport job very well, while it knows little
+about what it is carrying.  More specifically, it knows a fair amount about
+what it shuttles *from* the database, but considerably less about what is
+shuttled *to* the database (opaque SQL strings, save bind variables).  It is up
+to the application to know and speak the same language as the database, meaning
+the SQL dialect that is in the boxes, so that the database understands what it
+is given.  I see Rosetta by itself as a communications pipe that *does*
+understand the contents of the boxes, and it can translate or reorganize the
+contents of the boxes while moving them, such that an application can always
+speak in the same language regardless of what database it is talking to.  Now,
+you could say that this sounds like Rosetta is a query generator on top of DBI,
+and in many respects you are correct; that is its largest function.  However,
+it can also translate results coming *from* a database, such as massaging
+returned data into a single format for the application, while different
+databases may not return in the same format.  One decision that I made with
+Rosetta, unlike other query generation type modules, is that it will never
+expose any underlying DBI object to the application.  I<Note that I may have
+mis-interpreted DBI's capabilities, so this paragraph stands to be changed as I
+get better educated.>
 
-Please see the Rosetta::Framework documentation file for more information on 
-the Rosetta framework at large.
+Please see the Rosetta::Framework documentation file for more information on
+the Rosetta framework at large.  It shows this current module in the context of
+actual or possible other components.
 
 =head1 CLASSES IN THIS MODULE
 
 This module is implemented by several object-oriented Perl 5 packages, each of
-which is referred to as a class.  They are: B<Rosetta> (the module's name-sake), 
-B<Rosetta::Interface> (aka B<Interface>), B<Rosetta::Engine> (aka B<Engine>), 
-and B<Rosetta::Dispatcher> (aka B<Dispatcher>).
+which is referred to as a class.  They are: B<Rosetta> (the module's
+name-sake), B<Rosetta::Interface> (aka B<Interface>), B<Rosetta::Engine> (aka
+B<Engine>), and B<Rosetta::Dispatcher> (aka B<Dispatcher>).
 
 I<While all 4 of the above classes are implemented in one module for
-convenience, you should consider all 3 names as being "in use"; do not create
+convenience, you should consider all 4 names as being "in use"; do not create
 any modules or packages yourself that have the same names.>
 
 The Interface class does most of the work and is what you mainly use.  The
@@ -1392,11 +1442,11 @@ name-sake class mainly exists to guide CPAN in indexing the whole module, but
 it also provides a set of stateless utility methods and constants that the
 other two classes inherit, and it provides a wrapper function over the
 Interface class for your convenience; you never instantiate an object of
-Rosetta itself.  
+Rosetta itself.
 
-The Engine class is only invoked indirectly, via the Interface
-class; moreover, you need to choose an external class which subclasses Engine
-(and implements all of its methods) to use via the Interface class.  
+The Engine class is only invoked indirectly, via the Interface class; moreover,
+you need to choose an external class which subclasses Engine (and implements
+all of its methods) to use via the Interface class.
 
 The Dispatcher class is used internally by Interface to implement an
 ease-of-use feature of Rosetta where multiple Rosetta Engines can be used as
@@ -1462,23 +1512,23 @@ relate to each other parent-child wise in an Interface tree:
 	2	Tombstone
 	3	Application
 	4	  Preparation
-	5	    Environment
-	6	      Preparation
-	7	        Literal
-	8	        Connection
-	9	          Preparation
-	10	            Literal
-	11	            Transaction
-	12	              Preparation
-	13	                Literal
-	14	                Row
+	5	    Literal
+	6	    Environment
+	7	      Preparation
+	8	        Literal
+	9	        Connection
+	10	          Preparation
+	11	            Literal
+	12	            Transaction
+	13	              Preparation
+	14	                Literal
 	15	                Cursor
 
 The "Application" (3) at the top is created using "Rosetta->new()", and you
-normally have just one of those in your program.  A "Preparation" (4,6,9,12)
+normally have just one of those in your program.  A "Preparation" (4,7,10,13)
 is created when you invoke "prepare()" off of an Interface object of one of
-these types: "Application" (3), "Environment" (5), "Connection" (8),
-"Transaction" (11).  Every type of Interface except "Application" and
+these types: "Application" (3), "Environment" (6), "Connection" (9),
+"Transaction" (12).  Every type of Interface except "Application" and
 "Preparation" is created by invoking "execute()" of an appropriate
 "Preparation" method.  The "prepare()" and "execute()" methods always create a
 new Interface having the result of the call, and this is usually a child of the
@@ -1497,23 +1547,11 @@ Interface has no parent or child Interfaces.
 For convenience, what often happens is that the Rosetta Engine will create
 multiple Interface generations for you as appropriate when you say "prepare()".
 For example, if you give a "open this database" command to an "Application" (3)
-Interface, you would be given back a great-grand-child "Preparation" (6)
-Interface.  Or, if you give a "select these rows" command to a "Connection" (8)
-Interface, you will be given back a great-grand-child "Preparation" (12)
+Interface, you would be given back a great-grand-child "Preparation" (7)
+Interface.  Or, if you give a "select these rows" command to a "Connection" (9)
+Interface, you will be given back a great-grand-child "Preparation" (13)
 Interface (which would re-use the last "Transaction" if one exists).  Be aware
 of this if you ever request that an Interface you hold give you its parent.
-
-I<Warning: Rosetta::Dispatcher is implemented as a sub-class of
-Rosetta::Engine, and so is technically an Engine; however, you should never
-specify it for use as a data_link_product in your SQL::SyntaxModel like an
-ordinary Engine or your program won't work as expected.  Also note that, to
-make Rosetta's internal code simpler, this module may elect to automatically
-add a data_link_product Node to your SQL::SyntaxModel which names
-Rosetta::Dispatcher as its product_code.  However, this added Node will be in
-"At Home" status, meaning that it can not be referenced by other Nodes, nor
-will it appear in a get_all_properties() dump.  You shouldn't even notice it
-unless you afterwards try to add a data_link_product Node yourself that has the
-same Node Id (avoidable if you use the built-in sequence generator).>
 
 =head1 FEATURE SUPPORT VALIDATION
 
@@ -1532,7 +1570,18 @@ support, so that code using that Engine will know so in advance of trying to
 use said features.  Feature support declarations are typically coarse grained
 and lump closely similar things together, for simplicity; they will be just as
 fine grained as necessary and no finer (this can be changed over time).  See 
-the get_supported_features() method, which is how you read the declarations.
+the features() method, which is how you read the declarations.
+
+The features() method is usually invoked off of either an Environment Interface
+or a Connection Interface.  The Environment method invocation is used to
+declare features that the Environment's Engine supports under all circumstances
+of its use.  The Connection method invocation is used to declare features that
+the Engine conditionally supports on a per-connection basis, because the same
+Engine may be able to link to multiple database products that have different
+capabilities; the results only apply to the Connection Interface it was invoked
+off of.  Note that the declarations by the second are a full super-set of those
+by the first; if the Engine knowingly deals with exactly one database product,
+then the two declaration sets would be identical.
 
 One benefit of this QA feature is that, after you have written your application
 and it is working with one Engine/database, and you want to move it to a
@@ -1563,6 +1612,14 @@ using object notation.  This means using B<Class-E<gt>function()> for functions
 and B<$object-E<gt>method()> for methods.  If you are inheriting this class for
 your own modules, then that often means something like B<$self-E<gt>method()>. 
 
+All class functions and methods will throw exceptions on error conditions; they
+will only return normally if there are no error conditions.  The thrown
+exceptions will be Locale::KeyedText::Message objects when the error is bad
+user/caller input, and they will be Rosetta::Interface objects with set Error
+Message properties when the error is a failed prepare() or execute().  You
+should never get a raw Perl exception that is generated within Rosetta or one
+of its Engines.
+
 =head1 CONSTRUCTOR WRAPPER FUNCTIONS
 
 These functions are stateless and can be invoked off of either the module name,
@@ -1575,8 +1632,8 @@ are thin wrappers over other methods and exist strictly for convenience.
 	my $app2 = SQL::SyntaxModel::Interface->new_application( $my_app_inst );
 	my $app3 = $app->new_application( $my_app_inst );
 
-This function wraps Rosetta::Interface->new( 'application', undef, undef,
-undef, SSM_NODE ).  It can only create 'application' Interfaces, and its sole
+This function wraps Rosetta::Interface->new( 'Application', undef, undef,
+undef, SSM_NODE ).  It can only create 'Application' Interfaces, and its sole
 SSM_NODE argument must be an 'application_instance' SQL::SyntaxModel::Node.
 
 =head1 INTERFACE CONSTRUCTOR FUNCTIONS AND METHODS
@@ -1586,8 +1643,8 @@ class name or an existing Interface object, with the same result.
 
 =head2 new( INTF_TYPE[, ERR_MSG][, PARENT_INTF][, ENGINE][, SSM_NODE][, ROUTINE] )
 
-	my $app = Rosetta::Interface->new( 'application', undef, undef, undef, $my_app_inst );
-	my $conn_prep = $app->new( 'preparation', undef, $app, undef, $conn_command, $conn_routine );
+	my $app = Rosetta::Interface->new( 'Application', undef, undef, undef, $my_app_inst );
+	my $conn_prep = $app->new( 'Preparation', undef, $app, undef, $conn_command, $conn_routine );
 
 This "getter" function/method will create and return a single
 Rosetta::Interface (or subclass) object whose Interface Type is given in the
@@ -1602,7 +1659,7 @@ holds a Locale::KeyedText::Message object; you set this when the new Interface
 represents an error condition.  The PARENT_INTF argument holds another
 Interface object which is to be the parent of the new one; typically it is the
 Interface whose method was invoked to indirectly create the current one; every
-Interface must have a parent unless it is an 'application', which must not have
+Interface must have a parent unless it is an 'Application', which must not have
 one.  The ENGINE argument is an Engine object that will implement the new
 Interface.  The SSM_NODE argument is a SQL::SyntaxModel::Node argument that
 provides a context or instruction for how the new Interface is created; eg, it
@@ -1688,92 +1745,99 @@ property of this Interface, if it has one.
 This "getter" method returns by reference the Perl anonymous routine property
 of this Interface, if it has one.  I<This method may be removed later.>
 
-=head2 throw_errors([ NEW_VALUE ])
+=head2 features([ FEATURE_NAME ])
 
-This "getter"/"setter" method returns the Throw Errors scalar (boolean)
-property of this object; if NEW_VALUE is defined and correct, then that
-property will be set from it.  This property defaults to false, or to the same
-value as this Interface's parent when it is created.  If it is true, then any
-time you invoke prepare() or execute() off of it and they produce an
-error-representing Interface, that error will be thrown as an exception rather
-than be returned normally.
+This "getter" method may only be invoked off of Interfaces having one of these
+types: "Application", "Environment", "Connection", "Transaction"; it will throw
+an exception if you invoke it on anything else.  When called with no arguments,
+it will return a Perl hash ref whose keys are the names of key feature groups
+that the corresponding Engine is declaring its support status for; values are
+always either '1' for 'yes' and '0' for 'no'. If a key is absent, then the
+Engine is saying that it doesn't know yet whether it will support the feature
+or not.  If the optional argument FEATURE_NAME is defined, then this method
+will treat that like a key in the previous mentioned hash and return just the
+associated value of 1, 0, or undefined (don't know).  When a particular
+Environment says 'yes' or 'no' for particular features, then grandchild
+Connections are guaranteed to say likewise; when an Environment says "don't
+know" for a feature, then the Connections can each change this to 'yes' or 'no'
+as it applies to them; however, if a Connection still says "don't know" then
+this can be read as 'no'.  Note that invoking Application.features() will cause
+all available Engines to load, each of their Environments consulted, and the
+results combined to give the final result; for each possible feature, the
+combined output is 'yes' iff all input Engines are 'yes', 'no' iff all 'no',
+and undefined/missing if any inputs differ or are undefined/missing; if there
+are no available Engines, the result is empty-list/undefined.  Note that
+Transaction.features() is simply an alias for its grandparent
+Connection.features(); it is provided for convenience only.
 
 =head2 prepare( ROUTINE_DEFN )
 
-This "getter"/"setter" method takes a SQL::SyntaxModel::Node object
+This "getter"/"setter" method takes a SQL::SyntaxModel::Node object usually
 representing either a "command" or a "routine" in its ROUTINE_DEFN argument,
-then "compiles" it into a new "preparation" Interface (returned) which is ready
+then "compiles" it into a new "Preparation" Interface (returned) which is ready
 to execute the specified action.  This method may only be invoked off of
-Interfaces having one of these types: "application", "environment",
-"connection", "transaction"; it will throw an exception if you invoke it on
+Interfaces having one of these types: "Application", "Environment",
+"Connection", "Transaction"; it will throw an exception if you invoke it on
 anything else.  Most of the time, this method just passes the buck to the
 Engine module that actually does its work, after doing some basic input
 checking, or it will instantiate an Engine object.  Any calls to Engine objects
 are wrapped in an eval block so that miscellaneous exceptions generated there
-don't kill the program.  Addendum: If you call prepare() off of an
-"application", then ROUTINE_DEFN can be a "data_link_product" Node instead of a
-"command" or "routine"; passing a "data_link_product" will create a
-"preparation" Interface that would simply load an Engine, but doesn't make a
-connection or otherwise ask the Engine to do anything.
+don't kill the program.  Note that invoking Application.prepare() where the
+ROUTINE_DEFN is a "data_link_product" Node will create a "Preparation"
+Interface that would simply load an Engine, but doesn't make a Connection or
+otherwise ask the Engine to do anything.  Invoking Application.prepare() with a
+"command" or "routine" SSM Node will pass the buck to Rosetta::Dispatcher,
+which either passes to a single normal Engine (loading it first if necessary)
+or invokes a multitude of Engines (loading if needed) and combines their
+results, depending on the command type.
 
 =head2 execute([ ROUTINE_ARGS ])
 
-This "getter"/"setter" method can only be invoked off of a "preparation"
+This "getter"/"setter" method can only be invoked off of a "Preparation"
 Interface and will actually perform the action that the Interface is created
 for.  The optional hash ref argument ROUTINE_ARGS provides run-time arguments
 for the previously "compiled" routine/command, if it takes any.  Unlike
 prepare(), which usually calls an Engine module's prepare() to do the actual
 work, execute() will not call an Engine directly at all.  Rather, execute()
-simply executes the Perl anonymous subroutine property of the "preparation"
+simply executes the Perl anonymous subroutine property of the "Preparation"
 Interface.  Said routine is created by an Engine's prepare() method and is
 usually a closure, containing within it all the context necessary for work as
 if the Engine was doing it.  Said routine returns new non-prep Interfaces.
 
-=head2 get_supported_features([ FEATURE_NAME ])
-
-This "getter" method can only be invoked off of an "environment" interface. 
-When called with no arguments, it will return a Perl hash ref whose keys are
-the names of key feature groups that an Engine must declare its support status
-for; values are usually '1' for true and '0' for false, but if a key is absent,
-it is treated as false.  If FEATURE_NAME is defined, then this method will
-treat that like a key in the previous mentioned hash and return just the
-associated value of 1, 0, or undefined.  In the future, this method may be
-altered to return additional possible values, such as one for 'maybe'.
-
 =head2 payload()
 
-This "getter" method can only be invoked off of a "literal" Interface.  It will
-return the actual payload that the "literal" Interface represents.  This can
+This "getter" method can only be invoked off of a "Literal" Interface.  It will
+return the actual payload that the "Literal" Interface represents.  This can
 either be an ordinary string or number or boolean, or a SSM Node ref, or an
 array ref or hash ref containing other literal values.
 
 =head2 finalize()
 
-This "setter" method can only be invoked off of a "cursor" Interface.  It will
-close the cursor, indicating that you want no more data from it.  I<This method
+This "setter" method can only be invoked off of a "Cursor" Interface.  It will
+close the Cursor, indicating that you want no more data from it.  I<This method
 may be removed in favor of destroy() accomplishing the task.  Or maybe not, as
 we probably want a return value to indicate success.  Or maybe destroy can.>
 
 =head2 has_more_rows()
 
-This "getter" method can only be invoked off of a "cursor" Interface.  It will
-return a boolean value where true means you can read more rows from the cursor, 
+This "getter" method can only be invoked off of a "Cursor" Interface.  It will
+return a boolean value where true means you can read more rows from the Cursor, 
 and false means that all the rows have been read.
 
 =head2 fetch_row()
 
-This "getter"/"setter" method can only be invoked off of a "cursor" Interface. 
-It will fetch one more row from the cursor, if it can, and return that as a
+This "getter"/"setter" method can only be invoked off of a "Cursor" Interface. 
+It will fetch one more row from the Cursor, if it can, and return that as a
 hash ref where the hash keys are the column names and the values are the data;
-the cursor will be advanced so repeated calls to fetch_row() will return
+the Cursor will be advanced so repeated calls to fetch_row() will return
 subsequent rows.
 
 =head2 fetch_all_rows()
 
-This "getter"/"setter" method can only be invoked off of a "cursor" Interface.
-It will fetch all of the remaining rows from the cursor, returning them in an
+This "getter"/"setter" method can only be invoked off of a "Cursor" Interface.
+It will fetch all of the remaining rows from the Cursor, returning them in an
 array ref where each element is a row held in a hash-ref.  This method will
-also finalize() the cursor, so you don't have to call that separately.
+also finalize() the Cursor, so you don't have to call that separately.
 
 =head1 ENGINE OBJECT FUNCTIONS AND METHODS
 
@@ -1784,7 +1848,7 @@ Interface methods, which just turn around and call them.  Every Engine method
 takes as its first argument a reference to the Interface object that it is
 implementing (the Interface shim provides it); otherwise, each method's
 argument list is the same as its same-named Interface method.  These are the
-methods: destroy(), prepare(), get_supported_features(), payload(), finalize(),
+methods: destroy(), features(), prepare(), payload(), finalize(),
 has_more_rows(), fetch_row(), fetch_all_rows().  Every Engine must also
 implement a new() method which will be called in the form
 [class-name-or-object-ref]->new() and must instantiate the Engine object;

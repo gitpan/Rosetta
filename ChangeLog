@@ -1,3 +1,103 @@
+2004-08-16   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.33.
+
+	* From now on, Rosetta and its primary distribution will have identical
+	version/release numbers, to help avoid public confusion as to which
+	distribution releases contain which Rosetta versions.  This distribution's
+	Makefile.pl now uses "VERSION_FROM => 'lib/Rosetta.pm'" rather than
+	"VERSION => N".  As such, Rosetta.pm will always have its own version
+	number incremented for any distribution changes, even if the changes are
+	otherwise entirely in other files.  With this first such release,
+	Rosetta.pm is now at v0.33, up from v0.16 in the previous release.
+
+	* Other new code file versions are: lib/Rosetta/L/en.pm v0.08,
+	lib/Rosetta/Validator.pm v0.03, and lib/Rosetta/Validator/L/en.pm v0.03.
+
+	* Updated external dependencies on SQL::SyntaxModel to v0.38.
+
+	* Changed the first line of every file's COPYRIGHT AND LICENSE from "...
+	Rosetta database abstraction framework" to "... Rosetta database
+	portability library".  Changed the NAME of Rosetta.pm from "Framework for
+	RDBMS-generic apps and schemas" to "Rigorous database portability".  The
+	ReadMe file got a similar update to its main heading.  Minor corresponding
+	updates to other documentation.  These changes better reflect the current
+	state of the distribution, which contains just one important module, and
+	not a whole framework; the changes better reflect what is the purpose of
+	the module.
+
+	* Added new distinct RNI feature named TRAN_ROLLBACK_ON_DEATH, so an Engine
+	can declare what its implementing data storage product will do with
+	transactions left incomplete by a database process death or hardware
+	failure or severed connection from the Perl process (by Perl death or
+	network failure); the feature refers to a behaviour that is outside the
+	control of the Rosetta Engine module itself (which always tries to
+	explicitly rollback on disconnect if given the chance).
+
+	* The 'Row' Interface type no longer exists on its own; it has been rolled
+	into 'Literal', which was already a generic flexible type.  In addition,
+	'Literal' Intfs can now be direct children of 'Application' Intfs; such is
+	now what you get when issuing commands like 'DB_LIST' against an App Intf.
+
+	* The "throw errors" Rosetta::Interface property no longer exists, nor does
+	its throw_errors() accessor method.  Rosetta will now explcitly throw
+	object exceptions under every error condition, including errors raised
+	during prepare() and execute(); the option to have errors returned instead
+	no longer exists.  As a result, many Rosetta.pm functions now have simpler
+	internal code (and user code).  Corresponding updates were made to the
+	SYNOPSIS and SYNTAX POD.  Also changed any code using "my $foo = undef;
+	eval { $foo = ... };" to instead use "my $foo = eval { return( ... ) };".
+
+	* Overhauled the way that the Rosetta::Dispatcher class was used so that
+	the Rosetta.pm code is now simpler, faster, easier to understand, and less
+	prone to errors.  Now the root Rosetta::Dispatcher Engine object is always
+	created implicitly at the same time as a new Application Interface, and it
+	is assigned as the 'ssm node' property of that Interface; the Application
+	Intf itself now serves the same purpose for Rosetta::Dispatcher Engines as
+	Environment Intfs do for all normal Engine objects.  All calls to
+	App->prepare(), except those with link_product_node SSM arguments, are
+	always routed to RD->prepare() in exactly the same way that Env->prepare()
+	is routed to RE[sub]->prepare().  All Interface object results from
+	App->prepare() that involve combining multiple normal Engine results will
+	now be direct children of the Application Intf, and have RD as their
+	Engine.  Also, there is no longer any messing around with the user's
+	SQL::SyntaxModel; no lpn for RD will be added to it at any time.  Also, the
+	POD warnings against invoking Rosetta::Dispatcher (or subclass thereof)
+	like an ordinary Engine in an lpn were removed, since any attempt to do so
+	will cause an exception in prepare(), which averts the problem.  Also, the 
+	simplified private _prepare_with_no_engine() was renamed to _prepare_lpn().
+
+	* Rosetta now officially supports the use of multiple Environment Intfs
+	that use the same Rosetta Engine class; however, each one must still be
+	built from a differnet link_product_node, and has a different root Engine
+	object.  This is allowed since differing configuration options attached to
+	an lpn can make for diff 'global' Engine behaviour from the same class.
+
+	* Renamed the get_supported_features() method of Rosetta.pm to features()
+	and re-positioned it to be above prepare().  This function was overhauled
+	and can now be called off the same 4 Interface types that prepare() can:
+	Appl, Envi, Conn, Tran.  This change allows better recognition for
+	individual Engines that can link to multiple database products that have
+	different capabilities, rather than requiring a separate Engine for each
+	product of varying abilities. Examples of benefitting Engines include those
+	that are generic proxy clients, or generic ODBC or ADO clients, or any-DBD
+	DBI wrappers, or clients that support multiple different-abled versions of
+	the same database product series (like MySQL 3.x + 4.x + 5.x).  Also added
+	prepare() to Rosetta::Dispatcher, which handles the Appl case by combining
+	results of all available Engines.
+
+	* Updated the Interface._validate_ssm_node() private method, used by new()
+	and prepare(), so it now asserts that the given SSM Node has the Node
+	evolution status of "Well Known", and so it now invokes
+	test_deferrable_constraints() on that Node's Container; Rosetta is now only
+	accepting Node trees as input that pass all of SQL::SyntaxModel's own
+	tests.  STILL TODO: Test deferrables after an Engine adds/changes Nodes.
+
+	* Reversed the addition in Framework.pod of Rosetta::Engine::GenericAC to
+	BRIEF MODULE LIST that was made in release 0.32; GenericAC no longer exists
+	as a separate module in Rosetta-Extensions.  Other small Framework.pod
+	detail changes in regards to the potential Engines.
+
 2004-08-06   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.32.

@@ -4,7 +4,7 @@ Rosetta::Features - What RNI features a Rosetta Engine can possibly implement
 
 =head1 COPYRIGHT AND LICENSE
 
-This file is part of the Rosetta database abstraction framework.
+This file is part of the Rosetta database portability library.
 
 Rosetta is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved.
 Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
@@ -50,10 +50,10 @@ This documentation file, Rosetta::Features, shows all of the individual Rosetta
 Native Interface (RNI) features that a Rosetta Engine can possibly implement;
 all of them are technically optional, though the Engine would be useless
 without support for a basic subset.  Most of the level-2 headings correspond
-exactly to the spelling of a single FEATURE_NAME that get_supported_features()
-can work with.  An Engine declares its support for each feature on a yes/no
-basis; the features should be finely grained enough that each can be supported
-either in full or not at all.
+exactly to the spelling of a single FEATURE_NAME that features() can work with.
+An Engine declares its support for each feature on a yes/no basis; the
+features should be finely grained enough that each can be supported either in
+full or not at all.
 
 Considering that support for some features is dependant on support for other
 features (eg: SELECT support requires OPEN support), and such dependencies are
@@ -99,9 +99,13 @@ close any database connection that it previously opened.  If the Engine also
 supports transactions, then a newly opened database connection will also
 represent a single active transaction context (more may possibly be added
 later).  When a transaction-supporting database connection is closed, then any
-active transactions on it will be immediately rolled back (explicit commits
-prior to this must be made to preserve any database changes).  This feature has
-no RNI feature dependencies.
+incomplete transactions on it will be immediately rolled back (explicit commits
+prior to this must be made to preserve any database changes); this assumes that
+any relevant processes (Perl and/or the database and/or intermediaries) have
+not been killed or crashed or suffered hardware or power or network failure; on
+such a process death or network failure, the default database recovery
+behaviour will occur, that may be different; if there is no such death, then a
+rollback is guaranteed.  This feature has no RNI feature dependencies.
 
 =head2 CONN_MULTI_SAME
 
@@ -139,8 +143,26 @@ databases (perform explicit commits where you want them); "auto commit" only
 happens when a database doesn't support transactions anyway.  Basic transaction
 support means that at least one independent transaction can operate at a time
 on each open database connection; support for multiple parallel transactions
-within one connection, whether nested or not, is not implied to be supported. 
-This RNI feature depends on: CONN_BASIC.
+within one connection, whether nested or not, is not implied to be supported;
+neither is support for a certain transaction recovery behaviour on process
+death.  This RNI feature depends on: CONN_BASIC.
+
+=head2 TRAN_ROLLBACK_ON_DEATH
+
+The actual data storage product in use by this Engine will roll back any
+incomplete transactions during the recovery process following either the death
+(from any means such as power failure or hardware fault or killed or crashed
+process) of the data storage product itself or a prematurely severed connection
+from the Rosetta Engine (such as a killed or crashed Perl program, or network
+failure).  This feature is intrinsic to the data storage product itself, and
+the Rosetta Engine can't do anything about it.  This feature is separate from
+or additional to a prerequisite feature behaviour (CONN_BASIC) that guarantees
+a roll back on disconnection when there is no process death or network failure.
+If the data storage product's current or only possible behaviour is to commit
+incomplete transactions following a severed connection or during crash
+recovery, then TRAN_ROLLBACK_ON_DEATH is explicitly *not* supported (and I also
+personally recommend against said product for use in critical systems).  This
+RNI feature depends on: TRAN_BASIC.
 
 =head2 TRAN_MULTI_SIB
 

@@ -63,11 +63,12 @@ be added).  Rosetta does not automate installation of any separate database
 software or configure it (like a package manager); you will have to do that
 yourself.
 
-Note: the file Language.pod should be read next, after Framework.pod.
+Note: see also the SQL::SyntaxModel library, which is the foundation for the
+Rosetta API; see the Language.pod file in particular.
 
 =head1 COPYRIGHT AND LICENSE
 
-This file is part of the Rosetta database abstraction framework.
+This file is part of the Rosetta database portability library.
 
 Rosetta is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved.
 Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
@@ -425,6 +426,7 @@ I<Any indented package names represent inner classes of what they are beneath.>
 	Rosetta (Framework for RDBMS-generic apps and schemas)
 		Rosetta::Interface (defines the whole Rosetta public API, is largely a shim)
 		Rosetta::Engine (common base class for Engine modules that implement the Rosetta API)
+		Rosetta::Dispatcher (handle requests not directed at any particular Engine)
 	Rosetta::L::en (Localization of Rosetta core for English)
 		(Also provides a set of generic database error strings for Engines, in English)
 	Rosetta::L::fr (Localization of Rosetta core for French)
@@ -451,7 +453,6 @@ split them up such as is seen in the other module blocks, below.
 		(File is a small place-holder POD file to represent the distribution on CPAN)
 	Rosetta::Engine::Generic (A catch-all Engine for any DBI-supported SQL database)
 	Rosetta::Engine::Generic::L::en (Localization of Rosetta::Engine::Generic for English)
-	Rosetta::Engine::GenericAC (A catch-all Engine for any DBI-supported SQL database that auto-commits everything)
 	Rosetta::Utility::SQLBuilder (Generate ANSI/ISO SQL-2003 and other SQL variants)
 	Rosetta::Utility::SQLParser (Parse ANSI/ISO SQL-2003 and other SQL variants)
 	Rosetta::Emulator::DBI (emulates DBI/DBD::*, but result is more portable)
@@ -465,20 +466,8 @@ split them up such as is seen in the other module blocks, below.
 
 =head2 In distribution "Rosetta-Engine-Generic"
 
-Note that Rosetta::Engine::Generic will always use transactions and require
-explicit commits for database actions to be saved; it will also declare its
-transaction support in its feature set.  Since transactions are too difficult
-to emulate properly, Generic won't try; it simply won't work as expected with
-databases that lack native support.  A second Engine named ::GenericAC exists
-for non-transactional databases, and declares its lack of support for the
-feature.  This Engine sub-classes Generic and should be identical except for
-the fact that it conceptually auto-commits every database action; if used with
-a transaction-supporting database, it will auto-commit, to emulate the
-non-support behaviour.
-
 	Rosetta::Engine::Generic (A catch-all Engine for any DBI-supported SQL database)
 	Rosetta::Engine::Generic::L::en (Localization of Rosetta::Engine::Generic for English)
-	Rosetta::Engine::GenericAC (A catch-all Engine for any DBI-supported SQL database that auto-commits everything)
 
 =head2 In a multiplicity of "Rosetta-Engine-*" distributions
 
@@ -495,7 +484,7 @@ I<Note: more databases (and data access protocols) can be found listed at
 	Rosetta::Engine::SQLite (binding to public domain SQLite embedded db; default RDBMS for Rosetta)
 	Rosetta::Engine::Oracle (interface to Oracle db 8, 9)
 	Rosetta::Engine::Sybase (interface to Sybase db)
-	Rosetta::Engine::PostgreSQL (interface to PostgreSQL db 7.4.x, 7.3.x)
+	Rosetta::Engine::PostgreSQL (interface to PostgreSQL db 8.0.x, 7.4.x, 7.3.x)
 	Rosetta::Engine::MySQL (interface/binding to MySQL cli-serv/embed db 4.x, 5.x, 3.23.x)
 	Rosetta::Engine::Informix (interface to IBM Informix db)
 	Rosetta::Engine::DB2 (interface to IBM's DB/2 db and its DB/2 Express db)
@@ -689,7 +678,7 @@ person at a time, as locks will grab the whole database.  Given that the actual
 database is embedded into the Engine, we simply use the latest version
 available at the time of each Engine update, so mention of version ranges being
 supported or not is not applicable.  That said, v2.8.15 is the current stable
-branch, and v3.0.3 is the current beta branch, which will move into production
+branch, and v3.0.4 is the current beta branch, which will move into production
 within a month or two.
 
 =item
@@ -702,8 +691,13 @@ before 8.x, like 7.3, will not be supported unless there is a great demand.
 =item
 
 B<Rosetta::Engine::PostgreSQL> - This class implements an Engine for talking to
-PostgreSQL 7.4.3 databases, with 7.3.6 support likely present but deprecated. 
-Versions 7.2 and earlier won't be supported without demand.
+PostgreSQL databases.  It is intended to be used only with PostgreSQL versions
+7.4.3 and later, with version 8.0.0 or greater being strongly recommended. That
+said, which version you should use depends on your stage of development.
+PostgreSQL 8.0.0 officially went beta on 2004.08.10, while the officially
+stable 7.4.3 was released on 2004.06.15.  Support for 7.3.x in this module will
+be present in the short term, but it is deprecated.  7.2.x and earlier will not
+be supported at all, without great demand.
 
 =item
 

@@ -1,4 +1,4 @@
-             FRAMEWORK FOR PORTABLE DATABASE APPLICATIONS
+              ROSETTA - RIGOROUS DATABASE PORTABILITY
 ----------------------------------------------------------------------
 
 by Darren Duncan <perl@DarrenDuncan.net>
@@ -47,7 +47,7 @@ Standard Modules: none
 Nonstandard Modules: 
 
 	Locale::KeyedText 0.06 (for error messages)
-	SQL::SyntaxModel 0.24
+	SQL::SyntaxModel 0.38
 
 This module doesn't require anything else.
 
@@ -64,7 +64,7 @@ None besides myself so far.
 
 COPYRIGHT AND LICENSE
 
-This file is part of the Rosetta database abstraction framework.
+This file is part of the Rosetta database portability library.
 
 Rosetta is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved.
 Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
