@@ -7,10 +7,10 @@ BEGIN { $| = 1; print "1..1\n"; }
 ######################################################################
 # First ensure the modules to test will compile, are correct versions:
 
-use Rosetta '0.40';
-use Rosetta::L::en '0.14';
-use Rosetta::Validator '0.40';
-use Rosetta::Validator::L::en '0.08';
+use Rosetta '0.41';
+use Rosetta::L::en '0.15';
+use Rosetta::Validator '0.41';
+use Rosetta::Validator::L::en '0.09';
 
 ######################################################################
 # Here are some utility methods:
@@ -36,15 +36,15 @@ sub message {
 
 sub error_to_string {
 	my ($message) = @_;
-	ref($message) or return( $message ); # if this isn't an object
+	ref($message) or return $message; # if this isn't an object
 	my $translator = Locale::KeyedText->new_translator( 
 		['Rosetta::L::', 'SQL::Routine::L::'], ['en'] );
 	my $user_text = $translator->translate_message( $message );
 	unless( $user_text ) {
-		return( "internal error: can't find user text for a message: ".
-			$message->as_string()." ".$translator->as_string() );
+		return "internal error: can't find user text for a message: ".
+			$message->as_string()." ".$translator->as_string();
 	}
-	return( $user_text );
+	return $user_text;
 }
 
 ######################################################################

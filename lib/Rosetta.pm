@@ -3,10 +3,10 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta;
-our $VERSION = '0.40';
+our $VERSION = '0.41';
 
-use Locale::KeyedText '1.01';
-use SQL::Routine '0.52';
+use Locale::KeyedText '1.02';
+use SQL::Routine '0.56';
 
 ######################################################################
 
@@ -20,18 +20,18 @@ Rosetta - Rigorous database portability
 
 Perl Version: 5.008001
 
-Standard Modules: I<none>
+Core Modules: I<none>
 
-Nonstandard Modules: 
+Non-Core Modules: 
 
-	Locale::KeyedText 1.01 (for error messages)
-	SQL::Routine 0.52
+	Locale::KeyedText 1.02 (for error messages)
+	SQL::Routine 0.56
 
 =head1 COPYRIGHT AND LICENSE
 
 This file is part of the Rosetta database portability library.
 
-Rosetta is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved.
+Rosetta is Copyright (c) 1999-2005, Darren R. Duncan.  All rights reserved.
 Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
 visit "http://www.DarrenDuncan.net" for more information.
 
@@ -220,8 +220,8 @@ sub _build_node_auto_name {
 	my $node_id = $container->get_next_free_node_id();
 	my $si_name = 'Rosetta Default '.
 		join( ' ', map { ucfirst( $_ ) } split( '_', $node_type ) ).' '.$node_id;
-	return( $container->build_node( $node_type, 
-		{ 'si_name' => $si_name, %{$attrs || {}} } ) );
+	return $container->build_node( $node_type, 
+		{ 'si_name' => $si_name, %{$attrs || {}} } );
 }
 
 sub _build_child_node_auto_name {
@@ -230,15 +230,15 @@ sub _build_child_node_auto_name {
 	my $node_id = $container->get_next_free_node_id();
 	my $si_name = 'Rosetta Default '.
 		join( ' ', map { ucfirst( $_ ) } split( '_', $node_type ) ).' '.$node_id;
-	return( $pp_node->build_child_node( $node_type, 
-		{ 'si_name' => $si_name, %{$attrs || {}} } ) );
+	return $pp_node->build_child_node( $node_type, 
+		{ 'si_name' => $si_name, %{$attrs || {}} } );
 }
 
 ######################################################################
 # This is a convenience wrapper method; its sole argument is a SRT Node.
 
 sub new_application {
-	return( Rosetta::Interface->new( $INTFTP_APPLICATION, undef, undef, undef, $_[1] ) );
+	return Rosetta::Interface->new( $INTFTP_APPLICATION, undef, undef, undef, $_[1] );
 }
 
 ######################################################################
@@ -253,7 +253,7 @@ sub build_application {
 		{ 'blueprint' => $app_bp_node } );
 	$container->auto_set_node_ids( $orig_asni_vl );
 	my $app_intf = Rosetta->new_application( $app_inst_node );
-	return( $app_intf );
+	return $app_intf;
 }
 
 sub build_application_with_node_trees {
@@ -261,21 +261,21 @@ sub build_application_with_node_trees {
 	my $container = SQL::Routine->build_container( @args );
 	my $app_inst_node = @{$container->get_child_nodes( 'application_instance' )}[0];
 	my $app_intf = Rosetta->new_application( $app_inst_node );
-	return( $app_intf );
+	return $app_intf;
 }
 
 sub build_environment {
 	my ($self, @args) = @_;
 	my $app_intf = $self->build_application();
 	my $env_intf = $app_intf->build_child_environment( @args );
-	return( $env_intf );
+	return $env_intf;
 }
 
 sub build_connection {
 	my ($self, @args) = @_;
 	my $app_intf = $self->build_application();
 	my $conn_intf = $app_intf->build_child_connection( @args );
-	return( $conn_intf );
+	return $conn_intf;
 }
 
 ######################################################################
@@ -346,7 +346,7 @@ sub new {
 	$interface->{$IPROP_TRACE_FH} = undef;
 	$parent_intf and push( @{$parent_intf->{$IPROP_CHILD_INTFS}}, $interface );
 
-	return( $interface );
+	return $interface;
 }
 
 sub _validate_properties_to_be {
@@ -410,7 +410,7 @@ sub _validate_parent_intf {
 		defined( $parent_intf ) and $interface->_throw_error_message( 
 			'ROS_I_NEW_INTF_YES_PARENT', { 'TYPE' => $intf_type } );
 		# $parent_intf seems to check out fine.
-		return( 1 );
+		return;
 	}
 
 	# First check that the given $parent_intf is an Interface at all.
@@ -428,7 +428,7 @@ sub _validate_parent_intf {
 			$interface->_throw_error_message( 'ROS_I_NEW_INTF_P_INCOMP', 
 				{ 'TYPE' => $intf_type, 'PTYPE' => $p_intf_type } );
 		}
-		return( 1 ); # Skip the other tests
+		return; # Skip the other tests
 	}
 	unless( $p_intf_type eq $INTFTP_PREPARATION ) {
 		$interface->_throw_error_message( 'ROS_I_NEW_INTF_P_INCOMP', 
@@ -471,7 +471,7 @@ sub _validate_srt_node {
 		defined( $srt_node ) and $interface->_throw_error_message( 
 			$error_key_pfx.'_YES_NODE', { 'TYPE' => $intf_type } );
 		# $srt_node seems to check out fine.
-		return( 1 );
+		return;
 	}
 
 	# If we get here, we have an APPLICATION or a PREPARATION.
@@ -504,7 +504,7 @@ sub _validate_srt_node {
 				{ 'NTYPE' => $node_type, 'ITYPE' => $intf_type } );
 		}
 		# $srt_node seems to check out fine.
-		return( 1 );
+		return;
 	}
 
 	# If we get here, we have a PREPARATION.
@@ -566,35 +566,35 @@ sub destroy {
 ######################################################################
 
 sub get_interface_type {
-	return( $_[0]->{$IPROP_INTF_TYPE} );
+	return $_[0]->{$IPROP_INTF_TYPE};
 }
 
 ######################################################################
 
 sub get_error_message {
 	# This method returns the Message object by reference.
-	return( $_[0]->{$IPROP_ERROR_MSG} );
+	return $_[0]->{$IPROP_ERROR_MSG};
 }
 
 ######################################################################
 
 sub get_parent_interface {
 	# This method returns the Interface object by reference.
-	return( $_[0]->{$IPROP_PARENT_INTF} );
+	return $_[0]->{$IPROP_PARENT_INTF};
 }
 
 ######################################################################
 
 sub get_root_interface {
 	# This method returns the Interface object by reference.
-	return( $_[0]->{$IPROP_ROOT_INTF} );
+	return $_[0]->{$IPROP_ROOT_INTF};
 }
 
 ######################################################################
 
 sub get_child_interfaces {
 	# This method returns each Interface object by reference.
-	return( [@{$_[0]->{$IPROP_CHILD_INTFS}}] );
+	return [@{$_[0]->{$IPROP_CHILD_INTFS}}];
 }
 
 ######################################################################
@@ -604,11 +604,11 @@ sub get_sibling_interfaces {
 	my ($interface, $skip_self) = @_;
 	my $parent_intf = $interface->{$IPROP_PARENT_INTF};
 	if( $parent_intf ) {
-		return( $skip_self ? 
+		return $skip_self ? 
 			[grep { $_ ne $interface } @{$parent_intf->{$IPROP_CHILD_INTFS}}] : 
-			[@{$parent_intf->{$IPROP_CHILD_INTFS}}] );
+			[@{$parent_intf->{$IPROP_CHILD_INTFS}}];
 	} else {
-		return( $skip_self ? [] : [$interface] );
+		return $skip_self ? [] : [$interface];
 	}
 }
 
@@ -616,28 +616,28 @@ sub get_sibling_interfaces {
 # We may not keep this method
 
 sub get_engine {
-	return( $_[0]->{$IPROP_ENGINE} );
+	return $_[0]->{$IPROP_ENGINE};
 }
 
 ######################################################################
 
 sub get_srt_node {
 	# This method returns the Node object by reference.
-	return( $_[0]->{$IPROP_SRT_NODE} );
+	return $_[0]->{$IPROP_SRT_NODE};
 }
 
 sub get_srt_container {
 	if( my $app_intf = $_[0]->{$IPROP_ROOT_INTF} ) {
-		return( $app_intf->{$IPROP_SRT_NODE}->get_container() );
+		return $app_intf->{$IPROP_SRT_NODE}->get_container();
 	}
-	return( undef );
+	return;
 }
 
 ######################################################################
 # We may not keep this method
 
 sub get_routine {
-	return( $_[0]->{$IPROP_ROUTINE} );
+	return $_[0]->{$IPROP_ROUTINE};
 }
 
 ######################################################################
@@ -645,7 +645,7 @@ sub get_routine {
 sub get_trace_fh {
 	my ($interface) = @_;
 	my $app_intf = $interface->{$IPROP_ROOT_INTF};
-	return( $app_intf ? $app_intf->{$IPROP_TRACE_FH} : undef );
+	return $app_intf ? $app_intf->{$IPROP_TRACE_FH} : undef;
 }
 
 sub clear_trace_fh {
@@ -682,7 +682,7 @@ sub features {
 	# Now we get to doing the real work we were called for.
 	my $result = eval {
 		# An eval block is like a routine body.
-		return( $interface->{$IPROP_ENGINE}->features( $interface, $feature_name ) );
+		return $interface->{$IPROP_ENGINE}->features( $interface, $feature_name );
 	};
 	my $engine_name = ref($interface->{$IPROP_ENGINE}); # If undef, won't be used anyway.
 	if( my $exception = $@ ) {
@@ -722,7 +722,7 @@ sub features {
 			}
 		}
 	}
-	return( $result );
+	return $result;
 }
 
 ######################################################################
@@ -746,10 +746,10 @@ sub prepare {
 		# Now we get to doing the real work we were called for.
 		if( $routine_defn->get_node_type() eq 'data_link_product' ) {
 			# We only get here if $interface is a APPLICATION.
-			return( $interface->_prepare_lpn( $routine_defn ) );
+			return $interface->_prepare_lpn( $routine_defn );
 		} else { # the Node type is a $SRTNTP_ROUTINE
 			# We can get here for any $interface not blocked at the door: APPL, ENVI, CONN, CURS.
-			return( $interface->{$IPROP_ENGINE}->prepare( $interface, $routine_defn ) );
+			return $interface->{$IPROP_ENGINE}->prepare( $interface, $routine_defn );
 		}
 	};
 	my $engine_name = ref($interface->{$IPROP_ENGINE}); # If undef, won't be used anyway.
@@ -790,7 +790,7 @@ sub prepare {
 	if( $preparation->{$IPROP_ERROR_MSG} ) {
 		die $preparation;
 	}
-	return( $preparation );
+	return $preparation;
 }
 
 sub _prepare_lpn {
@@ -833,13 +833,13 @@ sub _prepare_lpn {
 			my $rtv_env_eng = $rtv_env_prep_eng->new();
 			my $rtv_env_intf = $rtv_env_prep_intf->new( $INTFTP_ENVIRONMENT, undef, 
 				$rtv_env_prep_intf, $rtv_env_eng );
-			return( $rtv_env_intf );
+			return $rtv_env_intf;
 		};
 		my $env_prep_eng = $engine_name->new();
 		$env_prep_intf = $app_intf->new( $INTFTP_PREPARATION, undef, 
 			$app_intf, $env_prep_eng, $link_prod_node, $routine );
 	}
-	return( $env_prep_intf );
+	return $env_prep_intf;
 }
 
 ######################################################################
@@ -868,10 +868,10 @@ sub execute {
 				scalar(@{$preparation->{$IPROP_CHILD_INTFS}}) > 0 ) {
 			# Each "Environment Preparation" is only allowed one child "Environment"; 
 			# any attempts to create more become no-ops, returning the first instead.
-			return( $preparation->{$IPROP_CHILD_INTFS}->[0] );
+			return $preparation->{$IPROP_CHILD_INTFS}->[0];
 		} else {
-			return( $preparation->{$IPROP_ROUTINE}->( 
-				$preparation->{$IPROP_ENGINE}, $preparation, $routine_args ) );
+			return $preparation->{$IPROP_ROUTINE}->( 
+				$preparation->{$IPROP_ENGINE}, $preparation, $routine_args );
 		}
 	};
 	my $engine_name = ref($preparation->{$IPROP_ENGINE}); # If undef, won't be used anyway.
@@ -913,7 +913,7 @@ sub execute {
 	if( $result->{$IPROP_ERROR_MSG} ) {
 		die $result;
 	}
-	return( $result );
+	return $result;
 }
 
 ######################################################################
@@ -922,7 +922,7 @@ sub do {
 	my ($interface, $routine_defn, $routine_args) = @_;
 	my $preparation = $interface->prepare( $routine_defn ); # prepare-time exceptions not caught
 	my $result = eval {
-		return( $preparation->execute( $routine_args ) );
+		return $preparation->execute( $routine_args );
 	};
 	my $exception = $@;
 	if( $exception or $result->{$IPROP_INTF_TYPE} eq $INTFTP_SUCCESS ) {
@@ -930,7 +930,7 @@ sub do {
 		$preparation->destroy(); # The $preparation has no child, the caller has no handle to it.
 	}
 	$exception and die $exception; # Re-throw any execute-time exception object or Perl error.
-	return( $result );
+	return $result;
 }
 
 ######################################################################
@@ -946,7 +946,7 @@ sub payload {
 	# Now we get to doing the real work we were called for.
 	my $result = eval {
 		# An eval block is like a routine body.
-		return( $lit_intf->{$IPROP_ENGINE}->payload( $lit_intf ) );
+		return $lit_intf->{$IPROP_ENGINE}->payload( $lit_intf );
 	};
 	if( my $exception = $@ ) {
 		unless( ref($exception) and UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
@@ -955,7 +955,7 @@ sub payload {
 				'ITYPE' => $intf_type, 'VALUE' => $exception } );
 		}
 	}
-	return( $result );
+	return $result;
 }
 
 ######################################################################
@@ -971,7 +971,7 @@ sub routine_source_code {
 	# Now we get to doing the real work we were called for.
 	my $result = eval {
 		# An eval block is like a routine body.
-		return( $env_intf->{$IPROP_ENGINE}->routine_source_code( $env_intf, $routine_node ) );
+		return $env_intf->{$IPROP_ENGINE}->routine_source_code( $env_intf, $routine_node );
 	};
 	if( my $exception = $@ ) {
 		unless( ref($exception) and UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
@@ -980,7 +980,7 @@ sub routine_source_code {
 				'ITYPE' => $intf_type, 'VALUE' => $exception } );
 		}
 	}
-	return( $result );
+	return $result;
 }
 
 ######################################################################
@@ -1007,7 +1007,7 @@ sub build_child_environment {
 			'si_name' => $engine_name, 'product_code' => $engine_name } );
 		$env_intf = $app_intf->do( $dlp_node ); # dies if bad Engine
 	}
-	return( $env_intf );
+	return $env_intf;
 }
 
 ######################################################################
@@ -1080,7 +1080,7 @@ sub build_child_connection {
 	$container->auto_set_node_ids( $orig_asni_vl );
 
 	my $conn_intf = $env_intf->do( $routine_node );
-	return( $conn_intf );
+	return $conn_intf;
 }
 
 ######################################################################
@@ -1090,7 +1090,7 @@ sub destroy_interface_tree {
 	my $container = $interface->get_srt_container();
 	my $app_intf = $interface->get_root_interface();
 	$app_intf->_destroy_interface_tree();
-	return( $container );
+	return $container;
 }
 
 sub _destroy_interface_tree {
@@ -1141,7 +1141,7 @@ sub sroutine_catalog_list {
 	$container->auto_set_node_ids( $orig_asni_vl );
 
 	my $prep_intf = $interface->prepare( $routine_node );
-	return( $prep_intf );
+	return $prep_intf;
 }
 
 ######################################################################
@@ -1197,7 +1197,7 @@ sub sroutine_catalog_open {
 	$container->auto_set_node_ids( $orig_asni_vl );
 
 	my $prep_intf = $conn_intf->prepare( $routine_node );
-	return( $prep_intf );
+	return $prep_intf;
 }
 
 ######################################################################
@@ -1242,7 +1242,7 @@ sub sroutine_catalog_close {
 	$container->auto_set_node_ids( $orig_asni_vl );
 
 	my $prep_intf = $conn_intf->prepare( $routine_node );
-	return( $prep_intf );
+	return $prep_intf;
 }
 
 ######################################################################
@@ -1301,7 +1301,7 @@ use base qw( Rosetta::Engine );
 sub new {
 	my ($class) = @_;
 	my $engine = bless( {}, ref($class) || $class );
-	return( $engine );
+	return $engine;
 }
 
 ######################################################################
@@ -1335,7 +1335,7 @@ sub features {
 	if( defined( $feature_name ) ) {
 		my $result = shift( @results ); # returns undef if no Engines
 		if( !defined( $result ) ) {
-			return( $result );
+			return $result;
 		}
 		while( @results > 0 ) {
 			my $next_result = shift( @results );
@@ -1344,12 +1344,12 @@ sub features {
 			}
 			# so far, both $result and $next_result have the same 1 or 0 value
 		}
-		return( $result );
+		return $result;
 
 	} else {
 		my $result = shift( @results ) || {}; # returns {} if no Engines
 		if( (keys %{$result}) == 0 ) {
-			return( $result );
+			return $result;
 		}
 		while( @results > 0 ) {
 			my $next_result = shift( @results );
@@ -1366,7 +1366,7 @@ sub features {
 			}
 			(keys %{$result}) == 0 and last;
 		}
-		return( $result );
+		return $result;
 	}
 }
 
@@ -1407,7 +1407,7 @@ sub prepare {
 		}
 		$app_eng->_throw_error_message( 'ROS_D_PREPARE_NO_ENGINE_DETERMINED' );
 	}
-	return( $prep_intf );
+	return $prep_intf;
 }
 
 sub _prepare__recurse {
@@ -1423,7 +1423,7 @@ sub _prepare__recurse {
 		$prep_intf = $app_eng->_prepare__recurse( $app_intf, $routine_node, $routine_expr_node );
 		$prep_intf and last;
 	}
-	return( $prep_intf );
+	return $prep_intf;
 }
 
 sub _prepare__srtn_cat_list {
@@ -1454,14 +1454,14 @@ sub _prepare__srtn_cat_list {
 
 		my $rtv_lit_intf = $rtv_lit_prep_intf->new( $INTFTP_LITERAL, undef, 
 			$rtv_lit_prep_intf, $rtv_lit_eng );
-		return( $rtv_lit_intf );
+		return $rtv_lit_intf;
 	};
 
 	my $lit_prep_eng = $app_eng->new();
 
 	my $lit_prep_intf = $app_intf->new( $INTFTP_PREPARATION, undef, 
 		$app_intf, $lit_prep_eng, $routine_node, $routine );
-	return( $lit_prep_intf );
+	return $lit_prep_intf;
 }
 
 sub _prepare__call_engine {
@@ -1482,14 +1482,14 @@ sub _prepare__call_engine {
 	my $env_intf = $app_intf->do( $link_prod_node );
 	# Now repeat the command we ourselves were given against a specific Environment Interface.
 	my $prep_intf = $env_intf->prepare( $routine_node );
-	return( $prep_intf );
+	return $prep_intf;
 }
 
 ######################################################################
 
 sub payload {
 	my ($lit_eng, $lit_intf) = @_;
-	return( $lit_eng->{$DPROP_LIT_PAYLOAD} );
+	return $lit_eng->{$DPROP_LIT_PAYLOAD};
 }
 
 ######################################################################
@@ -1559,7 +1559,7 @@ does so as SRT objects, while DBI dumps as either SQL strings or simple Perl
 arrays, depending on the schema object type.  Each 'routine' that Rosetta takes
 as input is equivalent to one or more SQL statements, where later statements
 can use the results of earlier ones as their input.  The named argument list of
-a 'routine' is analagous to the bind var list of DBI; each one defines what
+a 'routine' is analogous to the bind var list of DBI; each one defines what
 values can be given to the statements at "execute" time.
 
 Unlike SQL strings, SRT objects have very little redundancy, and the parts are
@@ -1582,9 +1582,9 @@ generation, but it also works without the DBI, and with non-SQL databases; it
 is up to each Engine to use or not use DBI, though most will use it because the
 DBI is a high quality and mature platform to build upon.
 
-The choice between using DBI and using Rosetta seems to be analagous to the
+The choice between using DBI and using Rosetta seems to be analogous to the
 choice between the C and Java programming languages, respectively, where each
-database product is analagous to a hardware CPU architecture or wider hardware
+database product is analogous to a hardware CPU architecture or wider hardware
 platform.  The DBI is great for people who like working as close to the metal
 as possible, with direct access to each database product's native way of doing
 things, those who *want* to talk to their database in its native SQL dialect,
@@ -2112,7 +2112,7 @@ its method list will remain undocumented and private.
 =head1 INTERFACE FUNCTIONS AND METHODS FOR RAPID DEVELOPMENT
 
 The following 9 "setter" functions and methods should assist more rapid
-development of code that uses Rosetta, at the cost of some flexability.  They
+development of code that uses Rosetta, at the cost of some flexibility.  They
 differ from the other Interface functions and methods in that they also create
 or alter the SQL::Routine model associated with a Rosetta Interface tree. 
 These methods are implemented as wrappers over other Rosetta and SQL::Routine
@@ -2140,7 +2140,7 @@ Node is given a default generated value.  You can invoke get_srt_node() or
 get_srt_container() on the new Application Interface to access the SRT Nodes
 and model for further additions or changes.
 
-=head2 build_application_with_node_trees( SRT_NODE_DEFN_LIST[, AUTO_ASSERT[, AUTO_IDS[, USE_ABSTRACT]]] )
+=head2 build_application_with_node_trees( SRT_NODE_DEFN_LIST[, AUTO_ASSERT[, AUTO_IDS[, MATCH_SURR_IDS]]] )
 
 	my $app_intf = Rosetta->build_application_with_node_trees( [...] );
 
@@ -2151,7 +2151,7 @@ define the 'application' and 'application_instance' Nodes yourself, in
 SRT_NODE_DEFN_LIST, and it will link the new Application Interface to the first
 'application_instance' Node that it finds in the newly created SRT model.  This
 method invokes SQL::Routine->build_container( SRT_NODE_DEFN_LIST, AUTO_ASSERT,
-AUTO_IDS, USE_ABSTRACT ) to do most of the work.
+AUTO_IDS, MATCH_SURR_IDS ) to do most of the work.
 
 =head2 build_environment( ENGINE_NAME )
 
@@ -2343,7 +2343,7 @@ return a Success Interface.
 This module is currently in pre-alpha development status, meaning that some
 parts of it will be changed in the near future, perhaps in incompatible ways;
 however, I believe that any further incompatible changes will be small.  The
-current state is analagous to 'developer releases' of operating systems; it is
+current state is analogous to 'developer releases' of operating systems; it is
 reasonable to being writing code that uses this module now, but you should be
 prepared to maintain it later in keeping with API changes.  All of this said, I
 plan to move this module into alpha development status within the next few
@@ -2356,6 +2356,7 @@ L<Locale::KeyedText>, L<SQL::Routine>, L<Rosetta::Engine::Generic>, L<DBI>,
 L<Alzabo>, L<SPOPS>, L<Class::DBI>, L<Tangram>, L<HDB>, L<Genezzo>,
 L<DBIx::RecordSet>, L<DBIx::SearchBuilder>, L<SQL::Schema>, L<DBIx::Abstract>,
 L<DBIx::AnyDBD>, L<DBIx::Browse>, L<DBIx::SQLEngine>, L<MKDoc::SQL>,
-L<Data::Transactional>, L<DBIx::ModelUpdate>, and various other modules.
+L<Data::Transactional>, L<DBIx::ModelUpdate>, L<DBIx::ProcedureCall>, and
+various other modules.
 
 =cut

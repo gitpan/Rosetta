@@ -8,8 +8,8 @@ WriteMakefile(
 	NAME	=> 'Rosetta',
 	VERSION_FROM => 'lib/Rosetta.pm', # finds $VERSION
 	PREREQ_PM => {
-		'Locale::KeyedText' => '1.01',
-		'SQL::Routine' => '0.52',
+		'Locale::KeyedText' => '1.02',
+		'SQL::Routine' => '0.56',
 	},
 );
 

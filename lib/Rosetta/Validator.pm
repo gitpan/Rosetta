@@ -3,9 +3,9 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta::Validator;
-our $VERSION = '0.40';
+our $VERSION = '0.41';
 
-use Rosetta '0.40';
+use Rosetta '0.41';
 
 ######################################################################
 
@@ -19,17 +19,17 @@ Rosetta::Validator - A common comprehensive test suite to run against all Engine
 
 Perl Version: 5.008001
 
-Standard Modules: I<none>
+Core Modules: I<none>
 
-Nonstandard Modules: 
+Non-Core Modules: 
 
-	Rosetta 0.40
+	Rosetta 0.41
 
 =head1 COPYRIGHT AND LICENSE
 
 This file is part of the Rosetta database portability library.
 
-Rosetta is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved.
+Rosetta is Copyright (c) 1999-2005, Darren R. Duncan.  All rights reserved.
 Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
 visit "http://www.DarrenDuncan.net" for more information.
 
@@ -102,7 +102,7 @@ my $TOTAL_POSSIBLE_TESTS = 5; # how many elements should be in results array (S+
 ######################################################################
 
 sub total_possible_tests {
-	return( $TOTAL_POSSIBLE_TESTS );
+	return $TOTAL_POSSIBLE_TESTS;
 }
 
 ######################################################################
@@ -120,7 +120,7 @@ sub main {
 
 	$validator->main_dispatch(); # any errors generated here go in TEST_RESULTS, presumably
 
-	return( $validator->{$PROP_TEST_RESULTS} ); # by ref not a problem, orig ref is now gone
+	return $validator->{$PROP_TEST_RESULTS}; # by ref not a problem, orig ref is now gone
 }
 
 ######################################################################
@@ -133,7 +133,7 @@ sub new_result {
 		$TR_FEATURE_DESC_MSG => Locale::KeyedText->new_message( 'ROSVAL_DESC_'.$feature_key ),
 	};
 	push( @{$validator->{$PROP_TEST_RESULTS}}, $result );
-	return( $result );
+	return $result;
 }
 
 sub pass_result {
@@ -175,7 +175,7 @@ sub setup_app {
 	my $container = $app_intf->get_srt_container();
 	$container->auto_assert_deferrable_constraints( 1 );
 	$container->auto_set_node_ids( 1 );
-	return( $app_intf );
+	return $app_intf;
 }
 
 sub setup_env {
@@ -183,27 +183,27 @@ sub setup_env {
 	my $app_intf = $validator->setup_app();
 	my $env_intf = eval {
 		my $engine_name = $validator->{$PROP_SETUP_OPTS}->{'data_link_product'}->{'product_code'};
-		return( $app_intf->build_child_environment( $engine_name ) );
+		return $app_intf->build_child_environment( $engine_name );
 	};
 	if( my $exception = $@ ) {
 		$app_intf->destroy_interface_tree_and_srt_container(); # avoid memory leaks
 		die $exception;
 	}
-	return( $env_intf );
+	return $env_intf;
 }
 
 sub setup_conn {
 	my ($validator, $rt_si_name) = @_;
 	my $app_intf = $validator->setup_app();
 	my $conn_intf = eval {
-		return( $app_intf->build_child_connection( 
-			$validator->{$PROP_SETUP_OPTS}, $rt_si_name ) );
+		return $app_intf->build_child_connection( 
+			$validator->{$PROP_SETUP_OPTS}, $rt_si_name );
 	};
 	if( my $exception = $@ ) {
 		$app_intf->destroy_interface_tree_and_srt_container(); # avoid memory leaks
 		die $exception;
 	}
-	return( $conn_intf );
+	return $conn_intf;
 }
 
 ######################################################################
@@ -225,23 +225,23 @@ sub test_load {
 
 	SWITCH: {
 		my $env_intf = eval {
-			return( $validator->setup_env() );
+			return $validator->setup_env();
 		};
 		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 
 		$validator->{$PROP_ENG_ENV_FEAT} = eval {
-			return( $env_intf->features() );
+			return $env_intf->features();
 		};
 		$env_intf->destroy_interface_tree_and_srt_container();
 		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 
 		my $conn_intf = eval {
-			return( $validator->setup_conn( 'declare_db_conn' ) );
+			return $validator->setup_conn( 'declare_db_conn' );
 		};
 		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 
 		$validator->{$PROP_ENG_CONN_FEAT} = eval {
-			return( $conn_intf->features() );
+			return $conn_intf->features();
 		};
 		$conn_intf->destroy_interface_tree_and_srt_container();
 
@@ -266,7 +266,7 @@ sub test_catalog_list {
 			my $lit_intf = $prep_intf->execute();
 			my $payload = $lit_intf->payload();
 			$container->assert_deferrable_constraints();
-			return( $payload );
+			return $payload;
 		};
 		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 
@@ -339,119 +339,7 @@ __END__
 
 =head1 SYNOPSIS
 
-This example demonstrates how Rosetta::Validator could be used in the standard
-test suite for an Engine module; in fact, this example is a simplified version
-of the actual t/*.t file for the Rosetta::Engine::Generic module.
-
-This is the content of a t_setup.pl, for a SQLite database:
-
-	my $setup_options = {
-		'data_storage_product' => {
-			'product_code' => 'SQLite',
-			'is_file_based' => 1,
-		},
-		'data_link_product' => {
-			'product_code' => 'Rosetta::Engine::Generic',
-		},
-		'catalog_instance' => {
-			'file_path' => 'test',
-		},
-	};
-
-This is the content of a t_setup.pl, for a MySQL database:
-
-	my $setup_options = {
-		'data_storage_product' => {
-			'product_code' => 'MySQL',
-			'is_network_svc' => 1,
-		},
-		'data_link_product' => {
-			'product_code' => 'Rosetta::Engine::Generic',
-		},
-		'catalog_link_instance' => {
-			'local_dsn' => 'test',
-			'login_name' => 'jane',
-			'login_pass' => 'pwd',
-		},
-	};
-
-This is a generalized version of Rosetta_Extensions.t:
-
-	#!perl
-
-	use strict; use warnings;
-	BEGIN { $| = 1; }
-	use Rosetta::Validator;
-	BEGIN { print "1..".Rosetta::Validator->total_possible_tests()."\n"; }
-
-	my $test_num = 0;
-
-	sub print_result {
-		my ($result) = @_;
-		$test_num ++;
-		my ($feature_key, $feature_status, $feature_desc_msg, $val_error_msg, $eng_error_msg) = 
-			@{$result}{'FEATURE_KEY', 'FEATURE_STATUS', 'FEATURE_DESC_MSG', 'VAL_ERROR_MSG', 'ENG_ERROR_MSG'};
-		my $result_str = 
-			($feature_status eq 'PASS' ? "ok $test_num (PASS)" : 
-				$feature_status eq 'FAIL' ? "not ok $test_num (FAIL)" : 
-				"ok $test_num (SKIP)").
-			" - $feature_key - ".object_to_string( $feature_desc_msg ).
-			($val_error_msg ? ' - '.object_to_string( $val_error_msg ) : '').
-			($eng_error_msg ? ' - '.object_to_string( $eng_error_msg ) : '');
-		print "$result_str\n";
-	}
-
-	sub object_to_string {
-		my ($message) = @_;
-		if( ref($message) and UNIVERSAL::isa( $message, 'Rosetta::Interface' ) ) {
-			$message = $message->get_error_message();
-		}
-		if( ref($message) and UNIVERSAL::isa( $message, 'Locale::KeyedText::Message' ) ) {
-			my $translator = Locale::KeyedText->new_translator( ['Rosetta::Engine::Generic::L::', 
-				'Rosetta::Validator::L::', 'Rosetta::L::', 'SQL::Routine::L::'], ['en'] );
-			my $user_text = $translator->translate_message( $message );
-			unless( $user_text ) {
-				return( "internal error: can't find user text for a message: ".
-					$message->as_string()." ".$translator->as_string() );
-			}
-			return( $user_text );
-		}
-		return( $message ); # if this isn't the right kind of object
-	}
-
-	sub import_setup_options {
-		my ($setup_filepath) = @_;
-		my $setup_options = do $setup_filepath;
-		unless( ref($setup_options) eq 'HASH' ) {
-			my $err_str = "can't obtain test setup specs from Perl file '".$setup_filepath."'; ";
-			if( defined( $setup_options ) ) {
-				$err_str .= "result is not a hash ref, but '$setup_options'";
-			} elsif( $@ ) {
-				$err_str .= "compilation or runtime error of '$@'";
-			} else {
-				$err_str .= "file system error of '$!.'";
-			}
-			die "$err_str\n";
-		}
-		return( $setup_options );
-	}
-
-	eval {
-		my $setup_filepath = shift( @ARGV ) || 't_setup.pl'; # set from first command line arg; '0' means use default name
-		my $trace_to_stdout = shift( @ARGV ) ? 1 : 0; # set from second command line arg
-
-		my $setup_options = import_setup_options( $setup_filepath );
-		my $trace_fh = $trace_to_stdout ? \*STDOUT : undef;
-
-		my $test_results = Rosetta::Validator->main( $setup_options, $trace_fh );
-
-		foreach my $result (@{$test_results}) {
-			print_result( $result );
-		}
-	};
-	$@ and print "TESTS ABORTED: ".object_to_string( $@ )."\n"; # errors in test suite itself, or core modules
-
-	1;
+I<The previous SYNOPSIS was removed; a new one will be written later.>
 
 =head1 DESCRIPTION
 

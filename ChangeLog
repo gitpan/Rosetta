@@ -1,3 +1,43 @@
+2005-03-18   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.41.
+
+	* New code file versions are: Rosetta.pm and Validator.pm v0.41,
+	Rosetta/L/en.pm v0.15, and Validator/L/en.pm v0.09.
+
+	* Updated external dependencies Locale::KeyedText to v1.02 and on
+	SQL::Routine to v0.56.
+
+	* Corrected a few spelling mistakes in the documentation.
+
+	* In order to help ease the transition to Perl 6, updated Rosetta/L/en.pm
+	and Validator/L/en.pm to make all user text message strings bound in
+	non-interpolating single quotes rather than interpolating double-quotes. 
+	The reason is because these text strings frequently use literal braces ({})
+	and Perl 6 would have incorrectly interpreted those as containing embedded
+	Perl code to execute and interpolate the result value of.
+
+	* Following a style suggestion given to me by Larry Wall on p6l, updated
+	every occurance of a "return" statement in the distribution to remove the
+	parenthesis around its value list, since it is a an operator rather than a
+	function; this also makes my code more consistent since I never used parens
+	for the likes of "sort" or "keys" or "next" or "last".  Also updated every
+	"return" to not explicitly return undefs (that's what "return" does by
+	default), and also to not return a generic truth value ("1") when any caller
+	would ignore it.
+
+	* Deleted the SYNOPSIS content in Validator.pm, leaving a promise of
+	something better to come.
+
+	* Updated any DEPENDENCIES documentation to use sub-headings "[|Non-] Core
+	Modules" rather than "[|Non]standard Modules".
+
+	* Added a section in the TODO file about an imminent branch from this
+	distribution of a version written in Perl 6, initially useable with Pugs.
+
+	* Added a similar comment in the portion of Framework.pod that talks about
+	future directions.  Made a few other minor Framework.pod updates.
+
 2004-12-18   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.40.
@@ -758,7 +798,7 @@
 	  description: Framework for RDBMS-generic apps and schemas
 	  userid:      DUNCAND (Darren Duncan)
 	  chapterid:    7 (Database_Interfaces)
-	  enteredby:   ANDK (Andreas J. K�nig)
+	  enteredby:   ANDK (Andreas J. König)
 	  enteredon:   Tue Jan 21 08:20:47 2003 GMT
 
 	The resulting entry will be:

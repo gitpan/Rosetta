@@ -72,7 +72,7 @@ Rosetta API; see the Language.pod file in particular.
 
 This file is part of the Rosetta database portability library.
 
-Rosetta is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved.
+Rosetta is Copyright (c) 1999-2005, Darren R. Duncan.  All rights reserved.
 Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
 visit "http://www.DarrenDuncan.net" for more information.
 
@@ -396,6 +396,11 @@ any parts written in C, I may decide to take the same approach with the next
 major version of Rosetta and related projects, implementing it in IMC
 instead of C.
 
+More recently (March 2005), considering that a working Perl 6 engine is already
+taking shape separately from Parrot (see Autrijus Tang's "Pugs" distribution), I
+will probably just make the second version in Perl 6 instead.  If an IMC version
+is made, it will be done later for the sake of better performance.
+
 =head1 BRIEF MODULE LIST
 
 The following module names and descriptions are undergoing a state of
@@ -667,29 +672,29 @@ It is small, powerful, easy to install and use, and implements the most
 important parts of the RNI, including Unicode, portability, transactions, and
 subselects.  This Engine is intended mainly for programs that are used by one
 person at a time, as locks will grab the whole database.  Given that the actual
-database is embedded into the Engine, we simply use the latest version
-available at the time of each Engine update, so mention of version ranges being
-supported or not is not applicable.  That said, given that SQLite recently went
-through a major revision that involves a file format change, where the current
-version can't read files of the older version, this class will temporarily
-embed both main versions, v3.0.8 and v2.8.15 (both of which are declared
-stable); the 2.x support is deprecated.
+database is embedded into the Engine, we simply use the latest version available
+at the time of each Engine update, so mention of version ranges being supported
+or not is not applicable.  That said, given that SQLite recently went through a
+major revision that involves a file format change, where the current version
+can't read files of the older version, this class will temporarily embed both
+main versions, v3.1.5 and v2.8.16 (both of which are declared stable); the 2.x
+support is deprecated.
 
 =item
 
 B<Rosetta::Engine::MySQL> - This class implements an Engine for talking to
-MySQL databases.  It is recommended for use only with MySQL versions 4.1.8
+MySQL databases.  It is recommended for use only with MySQL versions 4.1.10a
 (stable) and greater, including v5.0.2 (alpha) and v5.1.x.  Support for MySQL
-versions 4.0.22 (stable) and 3.23.58 (stable) is present but deprecated. 
+versions 4.0.24 (stable) and 3.23.58 (stable) is present but deprecated. 
 v3.22.x and earlier will not be supported at all, without great demand.
 
 =item
 
 B<Rosetta::Engine::PostgreSQL> - This class implements an Engine for talking to
 PostgreSQL databases.  It is recommended for use only with PostgreSQL versions
-8.0.0rc1 and greater.  Support for PostgreSQL versions 7.4.6 and 7.3.8 and 7.2.6
-is present but deprecated.  v7.1.x and earlier will not be supported at all,
-without great demand.
+8.0.1 (stable) and greater.  Support for PostgreSQL versions 7.4.7 and 7.3.9 and
+7.2.7 is present but deprecated.  v7.1.x and earlier will not be supported at
+all, without great demand.
 
 =item
 
@@ -702,7 +707,7 @@ demand.
 =item
 
 B<Rosetta::Engine::OpenBase> - This class implements an Engine for talking to
-OpenBase 8.0.3 databases.  v7.x and earlier won't be supported without demand.
+OpenBase 8.0.4 databases.  v7.x and earlier won't be supported without demand.
 
 =back
 
@@ -846,16 +851,16 @@ loosely derived from this, and that is up to date.
 
 		my $prefs = do $fn_prefs;
 		unless( ref( $prefs ) eq 'HASH' ) {
-			return( "Error: can't obtain required preferences hash from '$fn_prefs': ".
+			return "Error: can't obtain required preferences hash from '$fn_prefs': ".
 				(defined( $prefs ) ? "result not a hash ref, but '$prefs'" : 
-				$@ ? "compilation or runtime error of '$@'" : $!) );
+				$@ ? "compilation or runtime error of '$@'" : $!);
 		}
 
 		eval {
 			require Rosetta; # also compiles SQL::Routine
 		};
 		if( $@ ) {
-			return( "Error: can't compile Rosetta modules: $@" );
+			return "Error: can't compile Rosetta modules: $@";
 		}
 
 		my $interface = Rosetta->new_interface();
@@ -867,7 +872,7 @@ loosely derived from this, and that is up to date.
 			'args' => $prefs->{database_open_args}, # includes server name, user/pass
 		} );
 		if( $dbh->is_error() ) {
-			return( "Error: can't open database: ".$dbh->get_error() );
+			return "Error: can't open database: ".$dbh->get_error();
 		}
 
 		my $html_output = &script_while_opened( $prefs, $dbh, $curr_mode, $form_values );
@@ -876,10 +881,10 @@ loosely derived from this, and that is up to date.
 			'type' => 'database_close',
 		} );
 		if( $rv->is_error() ) {
-			return( "Error: can't close database: ".$rv->get_error() );
+			return "Error: can't close database: ".$rv->get_error();
 		}
 
-		return( $html_output );
+		return $html_output;
 	}
 
 	sub script_while_opened {
@@ -887,39 +892,39 @@ loosely derived from this, and that is up to date.
 
 		my $questions = $prefs->{question_list};
 		unless( ref( $questions ) eq 'ARRAY' and scalar( @{$questions} ) > 0 ) {
-			return( "Error: no survey question list defined in prefs file" );
+			return "Error: no survey question list defined in prefs file";
 		}
 
 		my $dd_table = SQL::Routine->new_table( 'survey_data' );
 
 		foreach my $question (@{$questions}) {
 			unless( ref( $question ) eq 'HASH' and $question->{visible_title} ) {
-				return( "Error: invalid question defined in prefs file" );
+				return "Error: invalid question defined in prefs file";
 			}
 			$dd_table->add_column( { 
 				'name' => $question->{name},
 				'data_type' => { 'base_type' => $question->{type}, },
 				'is_req' => $question->{is_required},
-			} ) or return( "Error: invalid question defined in prefs file" );
+			} ) or return "Error: invalid question defined in prefs file";
 		}
 
 		if( $curr_mode eq 'install' ) {
-			return( &script_do_install( $dbh, $dd_table, $questions, $form_values ) );
+			return &script_do_install( $dbh, $dd_table, $questions, $form_values );
 		}
 
 		if( $curr_mode eq 'remove' ) {
-			return( &script_do_remove( $dbh, $dd_table, $questions, $form_values ) );
+			return &script_do_remove( $dbh, $dd_table, $questions, $form_values );
 		}
 
 		if( $curr_mode eq 'fillin' ) {
-			return( &script_do_fillin( $dbh, $dd_table, $questions, $form_values ) );
+			return &script_do_fillin( $dbh, $dd_table, $questions, $form_values );
 		}
 
 		if( $curr_mode eq 'report' ) {
-			return( &script_do_report( $dbh, $dd_table, $questions, $form_values ) );
+			return &script_do_report( $dbh, $dd_table, $questions, $form_values );
 		}
 
-		return( "This is a simple demo.  Click on the menu items to do them." );
+		return "This is a simple demo.  Click on the menu items to do them.";
 	}
 
 	sub script_to_install {
@@ -927,14 +932,14 @@ loosely derived from this, and that is up to date.
 
 		unless( $form_values->{OK} ) {  
 			# user is seeing screen for first time (did not click 'OK' button)
-			return( join( "", 
+			return join( "", 
 				"<h1>Install Schema</h1>\n",
 				"<p>Do you want to install new schema to store answers for ", 
 				"the following questions?</p>\n",
 				"<ol>\n",
 				(map { "<li>".$_->{visible_title}."</li>\n" } @{$questions}),
 				"</ol>\n",
-			) );
+			);
 		}
 
 		# user saw screen and clicked the 'OK' button, so try to install;
@@ -942,10 +947,10 @@ loosely derived from this, and that is up to date.
 
 		my $rv = $dbh->execute_command( $dd_table->new_command_create() );
 		if( $rv->is_error() ) {
-			return( "Error: can't create survey table: ".$rv->get_error() );
+			return "Error: can't create survey table: ".$rv->get_error();
 		}
 
-		return( "The new schema was successfully created." );
+		return "The new schema was successfully created.";
 	}
 
 	sub script_to_remove {
@@ -953,14 +958,14 @@ loosely derived from this, and that is up to date.
 
 		unless( $form_values->{OK} ) {  
 			# user is seeing screen for first time (did not click 'OK' button)
-			return( join( "", 
+			return join( "", 
 				"<h1>Remove Schema</h1>\n",
 				"<p>Do you want to remove existing schema to store answers for ", 
 				"the following questions?</p>\n",
 				"<ol>\n",
 				(map { "<li>".$_->{visible_title}."</li>\n" } @{$questions}),
 				"</ol>\n",
-			) );
+			);
 		}
 
 		# user saw screen and clicked the 'OK' button, so try to destroy;
@@ -968,10 +973,10 @@ loosely derived from this, and that is up to date.
 
 		my $rv = $dbh->execute_command( $dd_table->new_command_destroy() );
 		if( $rv->is_error() ) {
-			return( "Error: can't remove survey table: ".$rv->get_error() );
+			return "Error: can't remove survey table: ".$rv->get_error();
 		}
 
-		return( "The new schema was successfully removed." );
+		return "The new schema was successfully removed.";
 	}
 
 	sub script_to_fillin {
@@ -979,7 +984,7 @@ loosely derived from this, and that is up to date.
 
 		unless( $form_values->{OK} ) {  
 			# user is seeing screen for first time (did not click 'OK' button)
-			return( join( "", 
+			return join( "", 
 				"<h1>Fill In Form</h1>\n",
 				"<p>Please answer the following questions.  ",
 				"Those marked with a '*' are required.</p>\n",
@@ -987,7 +992,7 @@ loosely derived from this, and that is up to date.
 						'<p>'.($_->{is_required} ? '*' : '').$_->{visible_title}.":".
 						'<input type="text" name="'.$_->{name}.'" /></p>'."\n"
 					} @{$questions}),
-			) );
+			);
 		}
 
 		# user saw screen and clicked the 'OK' button, so try to fillin;
@@ -995,10 +1000,10 @@ loosely derived from this, and that is up to date.
 		my $dd_view = SQL::Routine->new_view( $dd_table );
 		my $rv = $dbh->execute_command( $dd_view->new_command_insert( $form_values ) );
 		if( $rv->is_error() ) {
-			return( "Error: can't save form values in database: ".$rv->get_error() );
+			return "Error: can't save form values in database: ".$rv->get_error();
 		}
 
-		return( "Your form submission was saved successfully." );
+		return "Your form submission was saved successfully.";
 	}
 
 	sub script_to_report {
@@ -1008,7 +1013,7 @@ loosely derived from this, and that is up to date.
 		my $dd_view = SQL::Routine->new_view( $dd_table );
 		my $cursor = $dbh->execute_command( $dd_view->new_command_select() );
 		if( $cursor->is_error() ) {
-			return( "Error: can't fetch form values from database: ".$cursor->get_error() );
+			return "Error: can't fetch form values from database: ".$cursor->get_error();
 		}
 		my $rowset = $cursor->get_all_rows();
 
@@ -1030,7 +1035,7 @@ loosely derived from this, and that is up to date.
 		}
 		push( @html_output, "</table>\n" );
 
-		return( join( "", @html_output ) );
+		return join( "", @html_output );
 	}
 
 	1;

@@ -42,12 +42,12 @@ DEPENDENCIES
 
 Perl Version: 5.008001
 
-Standard Modules: none
+Core Modules: none
 
-Nonstandard Modules: 
+Non-Core Modules: 
 
-	Locale::KeyedText 1.01 (for error messages)
-	SQL::Routine 0.52
+	Locale::KeyedText 1.02 (for error messages)
+	SQL::Routine 0.56
 
 This module doesn't require anything else.
 
@@ -66,7 +66,7 @@ COPYRIGHT AND LICENSE
 
 This file is part of the Rosetta database portability library.
 
-Rosetta is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved.
+Rosetta is Copyright (c) 1999-2005, Darren R. Duncan.  All rights reserved.
 Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
 visit "http://www.DarrenDuncan.net" for more information.
 
