@@ -11,10 +11,10 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.11';
+$VERSION = '0.12';
 
 use Locale::KeyedText 0.03;
-use SQL::SyntaxModel 0.14;
+use SQL::SyntaxModel 0.15;
 
 ######################################################################
 
@@ -27,7 +27,7 @@ Standard Modules: I<none>
 Nonstandard Modules: 
 
 	Locale::KeyedText 0.03 (for error messages)
-	SQL::SyntaxModel 0.14
+	SQL::SyntaxModel 0.15
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -112,7 +112,7 @@ my $INTFTP_APPLICATION = 'application'; # What you get when you create an Interf
 	# "application_instance" SQL::SyntaxModel Node; that provides the necessary context for 
 	# subsequent "command" or "routine" Nodes you pass to any child Intf's "prepare" method.
 my $INTFTP_PREPARATION = 'preparation'; # That which is returned by the 'prepare()' method
-my $INTFTP_ENVIRONMENT = 'environment'; # Parent to all CONNECTION INTFs impl by same engine
+my $INTFTP_ENVIRONMENT = 'environment'; # Parent to all CONNECTION INTFs impl by same Engine
 my $INTFTP_CONNECTION  = 'connection'; # Result of executing a 'connect' command
 my $INTFTP_TRANSACTION = 'transaction'; # Result of asking to start a new transaction
 my $INTFTP_CURSOR      = 'cursor'; # Result of executing a query that would return rows to the caller
@@ -531,12 +531,12 @@ sub _prepare_with_no_engine {
 			# Now repeat the command we ourselves were given against a specific Environment Interface.
 			$preparation = $environment->prepare( $command );
 		} else {
-			die "when no engine, command not implemented yet";
+			die "when no Engine, command not implemented yet";
 		}
 	} elsif( $node_type eq $SSMNTP_ROUTINE ) {
-		die "when no engine, routine not implemented yet";
+		die "when no Engine, routine not implemented yet";
 	} else {
-		die "when no engine, we should never get here";
+		die "when no Engine, we should never get here";
 	}
 	return( $preparation );
 }
@@ -797,7 +797,7 @@ which fleshes out a number of details just relegated to "figure it out" below.>
 
 		# ... Next create and stuff Nodes in $schema_model that represent the database we want 
 		# to use (including what data storage product it is) and how we want to link/connect 
-		# to it (including what Rosetta "engine" plug-in and DSN to use).  Then put a 'command' 
+		# to it (including what Rosetta "Engine" plug-in and DSN to use).  Then put a 'command' 
 		# Node which instructs to open a connection with said database in $open_db_command.
 
 		my $prepared_open_cmd = $application->prepare( $open_db_command );
@@ -817,7 +817,7 @@ which fleshes out a number of details just relegated to "figure it out" below.>
 			}
 
 			# If we get here, something went wrong when trying to open the database; eg: the requested 
-			# engine plug-in doesn't exist, or the DSN doesn't exist, or the user/pass are incorrect.  
+			# Engine plug-in doesn't exist, or the DSN doesn't exist, or the user/pass are incorrect.  
 
 			my $error_message = $db_conn->get_error_message();
 
@@ -977,7 +977,7 @@ design pattern, for applications to query and manipulate databases with; it
 handles all common functionality that is representable by SQL or that database
 products implement, both data manipulation and schema manipulation.  This
 Rosetta core does not implement that interface (or most of it), however; you
-use it with your choice of separate "engine" plug-ins that each understand how
+use it with your choice of separate "Engine" plug-ins that each understand how
 to talk to particular data storage products or data link products, and
 implement the Rosetta Native Interface (or "RNI") on top of those products.
 
@@ -1000,7 +1000,7 @@ embedded and client-server databases.
 The separately released SQL::SyntaxModel Perl 5 module is used by Rosetta
 as a core part of its API.  Applications pass SQL::SyntaxModel objects in place
 of SQL strings when they want to invoke a database, both for DML and DDL
-activity, and a Rosetta engine translates those objects into the native SQL (or
+activity, and a Rosetta Engine translates those objects into the native SQL (or
 non-SQL) dialect of the database.  Similarly, when a database returns a schema
 dump of some sort, it is passed to the application as SQL::SyntaxModel objects
 in place of either SQL strings or "information schema" rows.  You should look
@@ -1032,11 +1032,11 @@ wrapper functions to keep your code down to size, or use another CPAN module
 such as one of the above that does the wrapping for you.
 
 The Rosetta framework is conceptually similar to the mature and popular Perl
-DBI framework created by Tim Bunce; in fact, many initial Rosetta engines
+DBI framework created by Tim Bunce; in fact, many initial Rosetta Engines
 are each implemented as a value-added wrapper for a DBI DBD module.  But they
 have significant differences as well, so Rosetta should not be considered a
 mere wrapper of DBI (moreover, on the implementation side, the Rosetta core
-does not require DBI at all, and any of its engines can do their work without
+does not require DBI at all, and any of its Engines can do their work without
 it also if they so choose).  I see DBI by itself as a generic communications
 pipe between a database and an application, that shuttles mostly opaque boxes
 back and forth; it is a courier that does its transport job very well, while it

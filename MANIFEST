@@ -3,24 +3,10 @@ INSTALL
 lib/Rosetta.pm
 lib/Rosetta/Framework.pod
 lib/Rosetta/L/en.pm
-lib/SQL/SyntaxModel.pm
-lib/SQL/SyntaxModel/API_C.pod
-lib/SQL/SyntaxModel/ByTree.pm
-lib/SQL/SyntaxModel/ByTree/L/en.pm
-lib/SQL/SyntaxModel/L/en.pm
-lib/SQL/SyntaxModel/Language.pod
-lib/SQL/SyntaxModel/SkipID.pm
-lib/SQL/SyntaxModel/SkipID/L/en.pm
-lib/t_SQL_SyntaxModel.pm
-lib/t_SQL_SyntaxModel_ByTree.pm
-lib/t_SQL_SyntaxModel_SkipID.pm
 LICENSE
 Makefile.PL
 MANIFEST
 META.yml                                Module meta-data (added by MakeMaker)
 ReadMe
-t/SQL_SyntaxModel.t
-t/SQL_SyntaxModel_ByTree.t
-t/SQL_SyntaxModel_SkipID.t
 t/Rosetta.t
 TODO

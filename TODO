@@ -1,13 +1,5 @@
 ONE DEVELOPMENT TRACK
 
-r0.28 - Split up the Rosetta core distro into 'Rosetta', 'SQL-SyntaxModel',
-'SQL-SyntaxModel-ByTree', 'SQL-SyntaxModel-SkipID'; afterwards I can largely
-ignore the last two as they aren't very important, nor recommended for general
-use.  Each of the 4 new distros will be at r0.28, and their ChangeLog files
-will be reset to a near-empty state, saying simply to look at the Rosetta-0.27
-*large* ChangeLog file if you want to know the previous change history details.
-ETD is Mar 22 (tomorrow).
-
 r0.29 - Start the temporary Rosetta-Extensions distribution, and do anything
 necessary with Rosetta.pm, so that together you can use them to actually do
 some stuff with a database, limited at the start to mainly schema object
@@ -110,7 +102,7 @@ for all RDBMS products, particularly those that don't support stored procedures
 at all, but is slower), and the other way involves a hand-crafted SQL string
 implementing the procedure plus a shim Perl function that calls it; your main
 application is still RDBMS generic because any multiplicity of stored procedure
-implementations will be keyed to a Rosetta engine, so the right one is used at
+implementations will be keyed to a Rosetta Engine, so the right one is used at
 the right time; in any event, the standard RNI means of calling a stored
 procedure is calling something that looks externally like a Perl function,
 which won't change, so you will still have to make at least the interface in

@@ -307,7 +307,7 @@ that the RDBMS products use, then they invoke the generated, and then interpret
 the results into other Interface/Schema objects to return as output.  The Engine
 modules also deal with extracting any existing schema stored in an RDBMS so
 they can generate an RNI data dictionary from it when desired.  Nothing talks
-to an RDBMS product except a Engine module, and nothing talks to an engine
+to an RDBMS product except a Engine module, and nothing talks to an Engine
 module except the Interface modules.
 
 Note that application specific "stored procedures" which are implemented in
@@ -343,14 +343,14 @@ details on behalf of the other.  See the following diagram:
 	APPLICATION
 
 The Validator modules are a common comprehensive test suite to run against all
-engines in order to tell that they are implementing the Rosetta interface
+Engines in order to tell that they are implementing the Rosetta interface
 properly or not.  This also saves each Engine maker from having to write their
 own tests.  These would be used similarly to how Sun has an official validation
 suite for Java Virtual Machines to make sure they implement the official Java
-specification.  Since not all databases are alike, each engine is expected to
+specification.  Since not all databases are alike, each Engine is expected to
 report programmatically which kinds of features it supports, and the validator
 suite will only test interface compliance for those features; this way, a
-missing feature does not mean the engine will fail its tests unless it
+missing feature does not mean the Engine will fail its tests unless it
 explicitly says it has said feature.
 
 The Emulator modules are extensions that are purely optional for use, and they
@@ -365,13 +365,13 @@ parsing functionality (as SQL is their input), and would convert SQL statements
 from known dialects into Interface/Schema objects
 
 All of the Rosetta components are implemented using pure Perl 5 code for now
-and during the near future (although some engines or extensions may have
+and during the near future (although some Engines or extensions may have
 prerequisites that are not).  Once Rosetta is feature complete in this form, it
 will be rewritten as a C library which has bindings for multiple languages,
 including Perl 5 and Parrot.  Advantages of this change are not only greater
 speed and memory efficiency but also compatability; it will allow Rosetta (and
 through it Perl) to use databases which previously had no Perl bindings or DBI
-engines before.  Moreover, the potential user base would increase sharply
+Engines before.  Moreover, the potential user base would increase sharply
 because users of other languages like PHP or Python would be able to use it.
 The C version of Rosetta will probably have the "Schema" (SQL::SyntaxModel) and
 "Interface" modules being mostly reduced to struct definitions, macros for
@@ -396,22 +396,19 @@ instead of C.
 =head1 BRIEF MODULE LIST
 
 The following module names and descriptions are undergoing a state of
-transition, and several parts of what was the Rosetta core are planning to be
-split off into separate distributions which the remaining Rosetta core is
-dependant on but which are also useful by themselves.  See below for details.
-The split will not be done immediately, although the modules have been renamed
-already.  Most of these modules don't exist yet, but are being planned to
-exist, as they are implemented over time.
-
+transition, mainly in the 'Extensions' arena.  See below for details.  Most of
+these modules don't exist yet, but are being planned to exist, as they are
+implemented over time.
+	
 I<Any indented package names represent inner classes of what they are beneath.>
 
 =head2 In distribution "Locale-KeyedText"
 
 	Locale::KeyedText (Refer to user messages in programs by keys)
+		Locale::KeyedText::Message (stores details of a machine-readable message)
+		Locale::KeyedText::Translator (converts a m-r message to a human readable form)
 
-=head2 In distribution "Rosetta"
-
-To become "SQL-SyntaxModel" or similar:
+=head2 In distribution "SQL-SyntaxModel"
 
 	SQL::SyntaxModel (An abstract syntax tree for all types of SQL)
 		SQL::SyntaxModel::Container (a context for Nodes, one of these per parent)
@@ -423,17 +420,7 @@ To become "SQL-SyntaxModel" or similar:
 	SQL::SyntaxModel::Language (What language or grammar SQL::SyntaxModel speaks)
 	SQL::SyntaxModel::API_C (Describe the core C API for SQL::SyntaxModel)
 
-To become "SQL-SyntaxModel-ByTree" or similar:
-
-	SQL::SyntaxModel::ByTree (Build SQL::SyntaxModels from multi-dimensional Perl hashes and arrays)
-	SQL::SyntaxModel::ByTree::L::en (Localization of SQL::SyntaxModel::ByTree for English)
-
-To become "SQL-SyntaxModel-SkipID" or similar:
-
-	SQL::SyntaxModel::SkipID (Use SQL::SyntaxModels without inputting Node IDs)
-	SQL::SyntaxModel::SkipID::L::en (Localization of SQL::SyntaxModel::SkipID for English)
-
-To stay "Rosetta":
+=head2 In distribution "Rosetta"
 
 	Rosetta (Framework for RDBMS-generic apps and schemas)
 		Rosetta::Interface (defines the whole Rosetta public API, is largely a shim)
@@ -443,7 +430,7 @@ To stay "Rosetta":
 	Rosetta::L::* ... like German, Spanish, Dutch, Chinese, etc
 
 	Rosetta::Framework (Documentation on the Rosetta framework at large)
-
+	
 =head2 In temporary distribution "Rosetta-Extensions"
 
 During the short term, these following 4 modules will have their first
@@ -515,7 +502,7 @@ I<Note: more databases (and data access protocols) can be found listed at
 	Rosetta::Engine::Access (interface to MS Access db)
 	Rosetta::Engine::Paradox (interface to Borland Paradox db)
 	Rosetta::Engine::dBase (interface to dBase db)
-	Rosetta::Engine::CSV (a database engine using CSV files for storage)
+	Rosetta::Engine::CSV (a database Engine using CSV files for storage)
 	Rosetta::Engine::* ... any of the 100+ other databases or services not listed above
 
 =head2 In distribution "Rosetta-Proxy"
@@ -527,7 +514,7 @@ I<Note: more databases (and data access protocols) can be found listed at
 
 =head2 In distribution "Rosetta-Validators"
 
-	Rosetta::Validator (a common comprehensive test suite to run against all engines)
+	Rosetta::Validator (a common comprehensive test suite to run against all Engines)
 	Rosetta::Validator::DB1 (tests include: new db, open db, close db)
 	Rosetta::Validator::Table1 (tests include: create/modify/delete tables, fetch table schema)
 	Rosetta::Validator::Select1 (tests Include: select recs from 1 table)
@@ -563,6 +550,16 @@ I<Note: more databases (and data access protocols) can be found listed at
 
 	RosettaX::* ... unofficial extensions or wrappers to Rosetta are allowed here ...
 
+=head2 In historical posterity distribution "SQL-SyntaxModel-ByTree"
+
+	SQL::SyntaxModel::ByTree (Build SQL::SyntaxModels from multi-dimensional Perl hashes and arrays)
+	SQL::SyntaxModel::ByTree::L::en (Localization of SQL::SyntaxModel::ByTree for English)
+
+=head2 In historical posterity distribution "SQL-SyntaxModel-SkipID"
+
+	SQL::SyntaxModel::SkipID (Use SQL::SyntaxModels without inputting Node IDs)
+	SQL::SyntaxModel::SkipID::L::en (Localization of SQL::SyntaxModel::SkipID for English)
+
 =head1 OLDER DOCUMENTATION
 
 These paragraphs were more or less the original documentation for high-level
@@ -587,7 +584,7 @@ types, execute_command() may only start the process that needs doing (eg: get a
 select cursor), and invoking execute_command() again on the Result object
 (which is a subclass) will continue or finish the process (eg: fetch a row). 
 Instantiated by itself, this class stores globals that are shared by all
-engines or connections.  Subclasses include: Result, Connection.
+Engines or connections.  Subclasses include: Result, Connection.
 
 =item
 
@@ -675,31 +672,31 @@ on DBI and one or more DBD modules.
 =item
 
 B<Rosetta::Engine::SQLite> - This class embeds the public domain SQLite RDBMS,
-and will serve as a default (though separately distributed) engine for Rosetta.
+and will serve as a default (though separately distributed) Engine for Rosetta.
 It is small, powerful, easy to install and use, and implements the most
 important parts of the RNI, including Unicode, portability, transactions, and
-subselects.  This engine is intended mainly for programs that are used by one
+subselects.  This Engine is intended mainly for programs that are used by one
 person at a time, as locks will grab the whole database.  Given that the actual
-database is embedded into the engine, we simply use the latest version
-available at the time of each engine update, so mention of version ranges being
+database is embedded into the Engine, we simply use the latest version
+available at the time of each Engine update, so mention of version ranges being
 supported or not is not applicable.  (However, 2.8.13 is the newest right now.)
 
 =item
 
-B<Rosetta::Engine::Oracle> - This class implements an engine for talking to
+B<Rosetta::Engine::Oracle> - This class implements an Engine for talking to
 Oracle 8.x, 9.x, 10.x databases.  Note that Oracle 9 is the first version of the
 Oracle database that runs under Mac OS X (10.2 and later).  Oracle versions 
 before 8.x, like 7.3, will not be supported unless there is a great demand.
 
 =item
 
-B<Rosetta::Engine::PostgreSQL> - This class implements an engine for talking to
+B<Rosetta::Engine::PostgreSQL> - This class implements an Engine for talking to
 PostgreSQL 7.4.2 databases, with 7.3.6 support likely present but deprecated. 
 Versions 7.2 and earlier won't be supported without demand.
 
 =item
 
-B<Rosetta::Engine::MySQL> - This class implements an engine for talking to MySQL
+B<Rosetta::Engine::MySQL> - This class implements an Engine for talking to MySQL
 databases.  It is intended to be used only with MySQL versions 4.0.18 and
 later, with version 4.1.1 or greater being strongly recommended.  That said,
 which version you should use depends on your stage of development; MySQL AB has

@@ -47,12 +47,13 @@ Standard Modules: none
 Nonstandard Modules: 
 
 	Locale::KeyedText 0.03 (for error messages)
+	SQL::SyntaxModel 0.15
 
 The Rosetta core modules, meaning all modules that are in the distribution that 
 you hold right now, don't require anything else.  
 
 However, other distributions which hold extensions to the Rosetta core, such as
-the almost always used Rosetta-Engines distributions, do have other
+the almost always used Rosetta-Engine-* distributions, do have other
 dependencies.  These are specified in said other distributions, and often
 include the popular DBI and DBD::* modules, which most Engine modules use.
 
@@ -65,7 +66,7 @@ support issues later, so that users of my modules can help each other with them.
 
 CREDITS
 
-... to write ...
+None besides myself so far.
 
 COPYRIGHT AND LICENSE
 
