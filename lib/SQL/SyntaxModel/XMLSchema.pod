@@ -1,79 +1,79 @@
 =head1 NAME
 
-SQL::ObjectModel::XMLSchema - Describe an XML schema suitable for storing SQL::ObjectModels.
+SQL::SyntaxModel::XMLSchema - Describe an XML schema suitable for storing SQL::SyntaxModels.
 
 =head1 COPYRIGHT AND LICENSE
 
-This file is part of the SQL::ObjectModel library (libSQLOM).
+This file is part of the SQL::SyntaxModel library (libSQLSM).
 
-SQL::ObjectModel is Copyright (c) 1999-2003, Darren R. Duncan.  All rights
+SQL::SyntaxModel is Copyright (c) 1999-2003, Darren R. Duncan.  All rights
 reserved.  Address comments, suggestions, and bug reports to
 B<perl@DarrenDuncan.net>, or visit "http://www.DarrenDuncan.net" for more
 information.
 
-SQL::ObjectModel is free software; you can redistribute it and/or modify it
+SQL::SyntaxModel is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License (GPL) version 2 as published
 by the Free Software Foundation (http://www.fsf.org/).  You should have
-received a copy of the GPL as part of the SQL::ObjectModel distribution, in the
+received a copy of the GPL as part of the SQL::SyntaxModel distribution, in the
 file named "LICENSE"; if not, write to the Free Software Foundation, Inc., 59
 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 
-Any versions of SQL::ObjectModel that you modify and distribute must carry
+Any versions of SQL::SyntaxModel that you modify and distribute must carry
 prominent notices stating that you changed the files and the date of any
 changes, in addition to preserving this original copyright notice and other
-credits. SQL::ObjectModel is distributed in the hope that it will be useful,
+credits. SQL::SyntaxModel is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 or FITNESS FOR A PARTICULAR PURPOSE.  See the GPL for more details.
 
-Linking SQL::ObjectModel statically or dynamically with other modules is making
-a combined work based on SQL::ObjectModel.  Thus, the terms and conditions of
+Linking SQL::SyntaxModel statically or dynamically with other modules is making
+a combined work based on SQL::SyntaxModel.  Thus, the terms and conditions of
 the GPL cover the whole combination.
 
-As a special exception, the copyright holders of SQL::ObjectModel give you
-permission to link SQL::ObjectModel with independent modules that are
+As a special exception, the copyright holders of SQL::SyntaxModel give you
+permission to link SQL::SyntaxModel with independent modules that are
 interfaces to or implementations of databases, regardless of the license terms
 of these independent modules, and to copy and distribute the resulting combined
 work under terms of your choice, provided that every copy of the combined work
-is accompanied by a complete copy of the source code of SQL::ObjectModel (the
-version of SQL::ObjectModel used to produce the combined work), being
+is accompanied by a complete copy of the source code of SQL::SyntaxModel (the
+version of SQL::SyntaxModel used to produce the combined work), being
 distributed under the terms of the GPL plus this exception.  An independent
-module is a module which is not derived from or based on SQL::ObjectModel, and
-which is fully useable when not linked to SQL::ObjectModel in any form.
+module is a module which is not derived from or based on SQL::SyntaxModel, and
+which is fully useable when not linked to SQL::SyntaxModel in any form.
 
-Note that people who make modified versions of SQL::ObjectModel are not
+Note that people who make modified versions of SQL::SyntaxModel are not
 obligated to grant this special exception for their modified versions; it is
 their choice whether to do so.  The GPL gives permission to release a modified
 version without this exception; this exception also makes it possible to
 release a modified version which carries forward this exception.
 
-While it is by no means required, the copyright holders of SQL::ObjectModel
+While it is by no means required, the copyright holders of SQL::SyntaxModel
 would appreciate being informed any time you create a modified version of
-SQL::ObjectModel that you are willing to distribute, because that is a
+SQL::SyntaxModel that you are willing to distribute, because that is a
 practical way of suggesting improvements to the standard version.
 
 =head1 DESCRIPTION
 
-All concepts in a SQL::ObjectModel can be represented by XML, whether it is an
+All concepts in a SQL::SyntaxModel can be represented by XML, whether it is an
 XML DOM or an XML string, which can make XML a suitable format for serializing
-SQL::ObjectModels, even though it may not be the most efficient.  However,
+SQL::SyntaxModels, even though it may not be the most efficient.  However,
 because this would involve storing elements which natively have many-to-many
 cardinality (like a relational database) in a medium that only stores up to
 one-to-many cardinality (like a tree), we will store the otherwise missing
 relationships by having references to 'id' attributes in each XML node by other
 attributes in other nodes.  This documentation will attempt to explain the
-components of a SQL::ObjectModel XML document and/or document fragments and how
-they relate.  Since SQL::ObjectModel doesn't actually use XML internally, and
+components of a SQL::SyntaxModel XML document and/or document fragments and how
+they relate.  Since SQL::SyntaxModel doesn't actually use XML internally, and
 that it is your application (or other third party modules) which would map such
-XML to SQL::ObjectModel objects, you are free to modify this schema to your
+XML to SQL::SyntaxModel objects, you are free to modify this schema to your
 liking.
 
 =head1 BRIEF NODE TYPE LIST
 
 These are all of the different types of nodes (tag names) that an XML
-SQL::ObjectModel can have.  They are displayed here in a tree to indicate which
+SQL::SyntaxModel can have.  They are displayed here in a tree to indicate which
 types of nodes can be children of which kinds of nodes.  The top two node
 levels shown are mandatory, although each may have zero children, which is an
-empty SQL::ObjectModel.  All nodes from level 3 down have an 'id' attribute
+empty SQL::SyntaxModel.  All nodes from level 3 down have an 'id' attribute
 that they can be referred to with; each 'id' is an integer and must be unique
 for all nodes of the same node type.  When the diagram below has an 'c="M"' in
 a node type, then more than one node of that type can go there; whereas, an
@@ -143,7 +143,7 @@ or below can have attributes of any kind.
 
 =head1 NODE ATTRIBUTE TYPES
 
-Each SQL::ObjectModel XML node attribute value is one of 4 types:
+Each SQL::SyntaxModel XML node attribute value is one of 4 types:
 
 =over 4
 
@@ -177,7 +177,7 @@ between XML nodes.
 =head1 ENUMERATED TYPES
 
 These are all of the different enumerated node attribute types that
-SQL::ObjectModel knows about and enforces.
+SQL::SyntaxModel knows about and enforces.
 
 =over 4
 
@@ -272,7 +272,7 @@ I<This documentation still has to be written.  Meanwhile, see DataDictionary.pod
 
 =head1 SEE ALSO
 
-perl(1), SQL::ObjectModel, SQL::ObjectModel::DataDictionary, Rosetta,
+perl(1), SQL::SyntaxModel, SQL::SyntaxModel::DataDictionary, Rosetta,
 Rosetta::Framework.
 
 =cut

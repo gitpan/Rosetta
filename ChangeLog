@@ -1,3 +1,145 @@
+2003-09-26   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.18.
+
+	* This is a major functionality update release, focused mostly in the
+	SQL::* code files; few changes were made to the documentation-only files.
+
+	* SQL::ObjectModel has been renamed to SQL::SyntaxModel, and is now at
+	v0.06 (was v0.05); the proposed C library name was also changed from
+	"libSQLOM" to "libSQLSM".  All files which made references to the old names
+	have been updated, and the corresponding test file is also renamed.
+
+	* Small updates to DataDictionary.pod.  Every table column which was an
+	'int' data type is now a 'uint'.  Also, each of these 4 tables had a column
+	added or moved: table_ind_col, view, view_col_def, block.
+
+	* Rewrote the STRUCTURE main documentation in SyntaxModel.pm so that it is
+	much easier to understand, and more accurately reflects how the module
+	works.  Also, part of the old STRUCTURE was split into the new BRIEF NODE
+	RELATIONSHIP LIST main documentation section.
+
+	* SQL::SyntaxModel is now a lot more strict with its input constraints, to
+	help ensure that its objects are always in a consistant and useable state.
+	Any deviation from proper input will throw an exception; any code which
+	massaged input (such as numbers, booleans, enumerated values) into a proper
+	format is now gone; a benefit from this is that any data that you get out
+	is guaranteed to match what you put in.  All Nodes are now required to have
+	a primary parent Node (except the single root); there are no longer any
+	detached nodes.  Node ids are required to be integers >= 1, and other
+	numbers all have to be non-negative integers.  Uniqueness of Node ids is
+	enforced; however, uniqueness of other attributes currently is not. 
+	Mandatory Node attributes are enforced to be present (they mostly were in
+	0.04).  No Node attributes can reference another Node that doesn't exist.
+
+	* SyntaxModel had some significant structural implementation details
+	changed.  Node attributes now actually contain Perl references to other
+	Nodes instead of copies of their 'id' attributes.  Related to this, each
+	Node can now have multiple 'parent' Nodes simultaneously; one of these is
+	more important than the others, and corresponds to the single parent XML
+	node.  A Node's child list now contains all of the Nodes which refer to it
+	in an attribute.  So parent-child relationships can now be many-to-many
+	rather than one-to-many.  This is in some ways actually a simpler design
+	than before.  One benefit gained from this is that you can now change a
+	Node's "id" property easily; before you couldn't.  Another is that you can
+	easily and efficiently determine every other Node that links to the one you
+	hold, should you need to update them on certain changes to your Node. 
+	Another is that you can crawl from one Node to another much easier, such as
+	when you want to generate SQL strings from them or otherwise use them.
+
+	* These SyntaxModel.pm methods were renamed: node_attribute() to
+	attribute(), add_node_attributes() to add_attributes().  The method
+	add_child_nodes() was split into itself and add_child_node().
+
+	* These SyntaxModel.pm methods were removed: clone(), unlink_parent_node(),
+	set_node_attributes(), set_child_nodes().  Their functionality was not
+	currently being used, and if any was going to be re-added, then
+	considerable thought will be needed in order to do it properly.
+
+	* These SyntaxModel.pm methods were added: initialize(), get_node(),
+	delete_node().  The latter replaces parts of the removed methods.
+
+	* Some extraneous SQL::SyntaxModel functionality has been removed from that
+	module and put into a new module named SQL::SyntaxModel::SkipID (v0.06),
+	which sub-classes the first module.  The corresponding *.t file was also
+	split.  The moved functionality is completely optional, and allows a
+	programmer to avoid explicit use of a Node's "id", and instead reference
+	Nodes using a different, more human-readable attribute, such as their
+	'name' (which is what actual SQL uses); it also sets default values for
+	more Node attributes, including auto-generation of an 'id' serial number;
+	it also can automatically assign a parent Node to a new Node, based on the
+	context of which Nodes were created previously.  This can make the module
+	"easier to use" in some circumstances than the bare-bones SQL::SyntaxModel.
+	 However, the moved functionality has its added cost in code complexity and
+	reliability; for example, since non-id attributes are not unique, the
+	module can "guess wrong" about what you wanted to do, and it won't work at
+	all in some circumstances; this added logic also makes the code slower and
+	use more memory.  Note that the upcoming C library will probably supplant
+	only the core SQL::SyntaxModel module, with SkipID staying in the realm of
+	a pure-Perl add-on.
+
+	* The test (*.t) scripts were split up into a module, containing input and
+	output data, and a thin script that uses it.  This was done so that the
+	separate test scripts for the split up module can use some of their test
+	data in common.  However, 'make test' doesn't seem to work when said
+	modules are in the 't' subdirectory, so I put the new for-testing-only
+	modules in 'lib' instead: t_SQL_SyntaxModel.pm, t_SQL_SyntaxModel_SkipID.pm.
+
+	* All sorts of SyntaxModel implementation details were updated, and any
+	code which seemed hackish was removed.  It is much easier now to look at
+	the code and know how it works or be confident that it works.  Or, if any
+	dubious code still exists, most of it is in SkipID.
+
+	* Note that, for all intents and purposes, you should be able to use
+	SQL::SyntaxModel::SkipID v0.06 in the same way as you used SQL::ObjectModel
+	v0.05; it accepts the same input, and except for some minor tweaks,
+	produces the same output.
+
+	* Some performance tests were run, to compare the speed of the old module
+	to the two new ones, and the results are below; the test environment was
+	the same as that for release 0.17.
+
+	Time test results, as reported by the Benchmark module; 
+		#1 shows SQL::ObjectModel v0.05;
+		#2 shows SQL::SyntaxModel v0.06;
+		#3 shows SQL::SyntaxModel::SkipID v0.06 with same input as SM 0.06;
+		#4 shows SQL::SyntaxModel::SkipID v0.06 with same input as OM 0.05:
+
+		Benchmark: timing 1000 iterations of MakeAndBreak, Output...
+		MakeAndBreak: 80 wallclock secs (78.66 usr +  0.00 sys = 78.66 CPU) @ 12.71/s (n=1000)
+			Output: 21 wallclock secs (21.04 usr +  0.00 sys = 21.04 CPU) @ 47.53/s (n=1000)
+		MakeAndBreak: 54 wallclock secs (53.55 usr +  0.00 sys = 53.55 CPU) @ 18.67/s (n=1000)
+			Output: 36 wallclock secs (34.33 usr +  0.00 sys = 34.33 CPU) @ 29.13/s (n=1000)
+		MakeAndBreak: 73 wallclock secs (71.55 usr +  0.00 sys = 71.55 CPU) @ 13.98/s (n=1000)
+			Output: 35 wallclock secs (34.14 usr +  0.00 sys = 34.14 CPU) @ 29.29/s (n=1000)
+		MakeAndBreak: 95 wallclock secs (93.25 usr +  0.00 sys = 93.25 CPU) @ 10.72/s (n=1000)
+			Output: 35 wallclock secs (33.91 usr +  0.00 sys = 33.91 CPU) @ 29.49/s (n=1000)
+
+	Memory usage (peak), as reported by 'top', for the above 4 items:
+
+	  PID COMMAND      %CPU   TIME   #TH #PRTS #MREGS RPRVT  RSHRD  RSIZE  VSIZE
+	  605 perl        99.3%  1:34.30   1     9    23  1.47M   308K  1.66M  2.59M 
+	 1222 perl        96.7%  1:04.05   1     9    23  1.48M   308K  1.67M  2.59M 
+	 1227 perl        98.4%  1:38.31   1     9    23  1.60M   308K  1.79M  2.59M 
+	 1231 perl        95.8%  1:40.83   1     9    23  1.55M   308K  1.74M  2.59M 
+
+	* As before, time taken increases linearly with the number of repetitions,
+	and the RAM consumption is unchanged and low no matter how long the test
+	runs.  Comparing the first two lines, which show input provided in the
+	'proper' format for each module version, we see v0.06 is one-third faster
+	for data input than v0.05, even though it is doing more validation tests,
+	because it is no longer "jumping through hoops" to recognize the data.
+	Whereas, v0.05 is two-fifths faster for outputting to XML, since v0.06 now
+	has to filter more Node meta-data (to convert many-to-many into a normal
+	tree).  The last two lines take predictably longer because they are doing
+	both the extra input validation and the "jumping through hoops".  Lines 1
+	and 4 have the same input and output data, while 2 and 3 have the same.
+
+	* Note: Where ObjectModel.pm was 93K in file size (46K POD + 47K code /
+	comments), SyntaxModel.pm is 93K (52K POD + 41K code), and SkipID.pm is 43K
+	(25K POD + 18K code).  So the total code with '#' comments in v0.06 is 59K,
+	12K more than before; the total POD in v0.06 is 77K, 31K more.
+
 2003-09-16   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.17.

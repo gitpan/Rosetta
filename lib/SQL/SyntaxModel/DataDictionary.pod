@@ -1,66 +1,66 @@
 =head1 NAME
 
-SQL::ObjectModel::DataDictionary - Describe a database suitable for storing SQL::ObjectModels.
+SQL::SyntaxModel::DataDictionary - Describe a database suitable for storing SQL::SyntaxModels.
 
 =head1 COPYRIGHT AND LICENSE
 
-This file is part of the SQL::ObjectModel library (libSQLOM).
+This file is part of the SQL::SyntaxModel library (libSQLSM).
 
-SQL::ObjectModel is Copyright (c) 1999-2003, Darren R. Duncan.  All rights
+SQL::SyntaxModel is Copyright (c) 1999-2003, Darren R. Duncan.  All rights
 reserved.  Address comments, suggestions, and bug reports to
 B<perl@DarrenDuncan.net>, or visit "http://www.DarrenDuncan.net" for more
 information.
 
-SQL::ObjectModel is free software; you can redistribute it and/or modify it
+SQL::SyntaxModel is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License (GPL) version 2 as published
 by the Free Software Foundation (http://www.fsf.org/).  You should have
-received a copy of the GPL as part of the SQL::ObjectModel distribution, in the
+received a copy of the GPL as part of the SQL::SyntaxModel distribution, in the
 file named "LICENSE"; if not, write to the Free Software Foundation, Inc., 59
 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 
-Any versions of SQL::ObjectModel that you modify and distribute must carry
+Any versions of SQL::SyntaxModel that you modify and distribute must carry
 prominent notices stating that you changed the files and the date of any
 changes, in addition to preserving this original copyright notice and other
-credits. SQL::ObjectModel is distributed in the hope that it will be useful,
+credits. SQL::SyntaxModel is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 or FITNESS FOR A PARTICULAR PURPOSE.  See the GPL for more details.
 
-Linking SQL::ObjectModel statically or dynamically with other modules is making
-a combined work based on SQL::ObjectModel.  Thus, the terms and conditions of
+Linking SQL::SyntaxModel statically or dynamically with other modules is making
+a combined work based on SQL::SyntaxModel.  Thus, the terms and conditions of
 the GPL cover the whole combination.
 
-As a special exception, the copyright holders of SQL::ObjectModel give you
-permission to link SQL::ObjectModel with independent modules that are
+As a special exception, the copyright holders of SQL::SyntaxModel give you
+permission to link SQL::SyntaxModel with independent modules that are
 interfaces to or implementations of databases, regardless of the license terms
 of these independent modules, and to copy and distribute the resulting combined
 work under terms of your choice, provided that every copy of the combined work
-is accompanied by a complete copy of the source code of SQL::ObjectModel (the
-version of SQL::ObjectModel used to produce the combined work), being
+is accompanied by a complete copy of the source code of SQL::SyntaxModel (the
+version of SQL::SyntaxModel used to produce the combined work), being
 distributed under the terms of the GPL plus this exception.  An independent
-module is a module which is not derived from or based on SQL::ObjectModel, and
-which is fully useable when not linked to SQL::ObjectModel in any form.
+module is a module which is not derived from or based on SQL::SyntaxModel, and
+which is fully useable when not linked to SQL::SyntaxModel in any form.
 
-Note that people who make modified versions of SQL::ObjectModel are not
+Note that people who make modified versions of SQL::SyntaxModel are not
 obligated to grant this special exception for their modified versions; it is
 their choice whether to do so.  The GPL gives permission to release a modified
 version without this exception; this exception also makes it possible to
 release a modified version which carries forward this exception.
 
-While it is by no means required, the copyright holders of SQL::ObjectModel
+While it is by no means required, the copyright holders of SQL::SyntaxModel
 would appreciate being informed any time you create a modified version of
-SQL::ObjectModel that you are willing to distribute, because that is a
+SQL::SyntaxModel that you are willing to distribute, because that is a
 practical way of suggesting improvements to the standard version.
 
 =head1 DESCRIPTION
 
-All concepts in a SQL::ObjectModel can be represented by a data dictionary.
+All concepts in a SQL::SyntaxModel can be represented by a data dictionary.
 Such a data dictionary can be a linked in-memory set of objects (or serialized
 version thereof), or they can be represented by records in database tables
 having specific columns and constraints.  This documentation will attempt to
-explain the components of a SQL::ObjectModel data dictionary and how they
-relate.  Since SQL::ObjectModel doesn't actually use any database tables
+explain the components of a SQL::SyntaxModel data dictionary and how they
+relate.  Since SQL::SyntaxModel doesn't actually use any database tables
 internally, and that it is your application (or other third party modules)
-which would map such database tables to SQL::ObjectModel objects, you are free
+which would map such database tables to SQL::SyntaxModel objects, you are free
 to modify this schema to your liking. However, it is recommended that you
 mainly just add columns, such as for adding user visible text descriptions of
 each record, rather than changing or removing the suggested columns.
@@ -183,15 +183,15 @@ primary keys are on a field named 'id'.
 
 =head1 CONSTANT CODE TABLES
 
-These tables correspond to basic concepts that are hard-coded into SQL::ObjectModel and
+These tables correspond to basic concepts that are hard-coded into SQL::SyntaxModel and
 they are intended to be read-only.  The table contents are meant for two main
 uses, one being for foreign key constraints on enumerated type columns in other
 tables, and the other being for a source of picklist values on forms that users
-define SQL::ObjectModels with.
+define SQL::SyntaxModels with.
 
-The values in these tables are stored in code by the SQL::ObjectModel::Codes
+The values in these tables are stored in code by the SQL::SyntaxModel::Codes
 class.  You can get the values for these tables from that class, and don't have
-to code them yourself.  The other SQL::ObjectModel classes use the Codes class
+to code them yourself.  The other SQL::SyntaxModel classes use the Codes class
 internally for when they need to know this information, and hence are not
 susceptible to security risks from someone altering the following tables in the
 database.
@@ -271,8 +271,8 @@ Column List:
 
 	code - str,req - name of the character encoding
 	is_var_len_enc - bool,req - true when char encoding is variable length, false when fixed length
-	min_bytes_per_char - int,req - minimum num bytes used to store each character; typically 1
-	max_bytes_per_char - int,req - maximum bytes per char, same as minimum when fixed length
+	min_bytes_per_char - uint,req - minimum num bytes used to store each character; typically 1
+	max_bytes_per_char - uint,req - maximum bytes per char, same as minimum when fixed length
 	has_latin_chars - bool,req - true when operations like upper/lowercase have any meaning
 
 Index List:
@@ -386,7 +386,7 @@ Record List:
 
 =head2 cct_view_type
 
-This table enumerates the basic types that a view can be, since SQL::ObjectModel "views"
+This table enumerates the basic types that a view can be, since SQL::SyntaxModel "views"
 have a broader meaning than in classic SQL.  There are 4 main types.
 
 First, the "classic" type of view is stored in a database schema as a schema
@@ -438,7 +438,7 @@ matches a distinct input row.  A union is the most common such operation.
 Column List:
 
 	code - str,req - name of the view row set merge type
-	max_inputs - int,req - number of input sets that this set merge operator can take; 0 = unlimited
+	max_inputs - uint,req - number of input sets that this set merge operator can take; 0 = unlimited
 	keeps_all - bool,req - true if all input rows are always returned, false if some may not be
 	is_unique - bool,req - true if all returned rows are distinct, false if duplicates may occur
 
@@ -551,10 +551,10 @@ Column List:
 
 	code - str,req - name of the standard function
 	can_have_args - bool,req - true when function can have any arguments
-	req_min_args - int,req - minimum num of args function must have, whether unlimited or not
-	req_arg_mult - int - all args over minimum must be supplied in this multiple (default=1)
+	req_min_args - uint,req - minimum num of args function must have, whether unlimited or not
+	req_arg_mult - uint - all args over minimum must be supplied in this multiple (default=1)
 	unlim_args - bool,req - true when function can take any number of arguments over minimum
-	req_max_args - int - count of maximum args function can have when not unlimited
+	req_max_args - uint - count of maximum args function can have when not unlimited
 	can_use_in_column - bool,req - true when func type may be used in view column def, [having/order]
 	can_use_in_filter - bool,req - true when func type may be used in view filter (where)
 	can_use_in_block - bool,req - true when func type may be used in a block (eg: stored proc)
@@ -631,7 +631,7 @@ Record List:
 
 =head2 cct_block_type
 
-This table enumerates the basic types that a blocks can be, since SQL::ObjectModel
+This table enumerates the basic types that a blocks can be, since SQL::SyntaxModel
 "blocks" are generic enough that each of the following can be represented by
 them: stored procedures and functions, triggers, and packages containing stored
 procedures and functions; all of the previous can also have nested stored
@@ -711,10 +711,10 @@ Column List:
 
 	code - str,req - name of the standard function
 	can_have_args - bool,req - true when function can have any arguments
-	req_min_args - int,req - minimum num of args function must have, whether unlimited or not
-	req_arg_mult - int - all args over minimum must be supplied in this multiple (default=1)
+	req_min_args - uint,req - minimum num of args function must have, whether unlimited or not
+	req_arg_mult - uint - all args over minimum must be supplied in this multiple (default=1)
 	unlim_args - bool,req - true when function can take any number of arguments over minimum
-	req_max_args - int - count of maximum args function can have when not unlimited
+	req_max_args - uint - count of maximum args function can have when not unlimited
 
 Index List:
 
@@ -733,7 +733,7 @@ Record List:
 
 =head2 cct_command_type
 
-This table enumerates the basic types of SQL::ObjectModel Commands that an application 
+This table enumerates the basic types of SQL::SyntaxModel Commands that an application 
 can execute against a database or other Result context.  Note that in many cases 
 "db" can mean either "database" or "data source"; "ds" may be used instead.
 
@@ -824,7 +824,7 @@ Record List:
 
 =head2 cct_result_type
 
-This table enumerates the basic types of Results that SQL::ObjectModel can return from executing a 
+This table enumerates the basic types of Results that SQL::SyntaxModel can return from executing a 
 Command against a database or other Result context.
 
 Column List:
@@ -857,7 +857,7 @@ Record List:
 =head1 DATA TYPES
 
 This table is for storing "user" definitions of data types.  Each of these
-would correspond to a basic type that is recognized in code by SQL::ObjectModel, and
+would correspond to a basic type that is recognized in code by SQL::SyntaxModel, and
 allows the users to customize details such as the type names or in some cases
 their scale or precision or certain other constraints.
 
@@ -870,7 +870,7 @@ custom types everywhere as if they were types built-in to the database.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
-to anything in the SQL::ObjectModel code.
+to anything in the SQL::SyntaxModel code.
 
 =head2 data_type
 
@@ -879,12 +879,12 @@ table column definitions, view column definitions, and block variables.
 
 Column List:
 
-	id - int,req - unique identifier for this data type
+	id - uint,req - unique identifier for this data type
 	name - str,req - name of the user customized data type
 	basic_type - enum,req - name of the basic data type this is customized from: bin, str, num, bool, datetime
-	size_in_bytes - int - maximum size in bytes data can be
-	size_in_chars - int - maximum size in chars data can be
-	size_in_digits - int - maximum size in digits data can be (aka num_scale)
+	size_in_bytes - uint - maximum size in bytes data can be
+	size_in_chars - uint - maximum size in chars data can be
+	size_in_digits - uint - maximum size in digits data can be (aka num_scale)
 	store_fixed - bool - when true then try to reserve max size on disk even if not all used
 	str_encoding - enum - which character encoding to use when data type is a string
 	str_trim_white - bool - when true then trim lead/trailing whitespace on save into field/var
@@ -892,13 +892,13 @@ Column List:
 	str_pad_char - str - when store_fixed is true then pad actual value with this to max size on save
 	str_trim_pad - bool - when store_fixed is true then trim padding on read from field/var
 	num_unsigned - bool - when basic_type is 'num', true means only >= 0 may be stored
-	num_precision - int - when basic_type is 'num', num digits of fractional precision we allowed
+	num_precision - uint - when basic_type is 'num', num digits of fractional precision we allowed
 	datetime_calendar - enum - when basic_type is 'datetime', what calendar the date and time is in
 
 Undecided Possible Extra Columns:
 
-	num_min_val - int - when type is numerical, what the allowed minimum value is
-	num_max_val - int - when type is numerical, what the allowed maximum value is
+	num_min_val - uint - when type is numerical, what the allowed minimum value is
+	num_max_val - uint - when type is numerical, what the allowed maximum value is
 	datetime_min_val - datetime - when type is datetime, what the allowed earliest value is
 	datetime_max_val - datetime - when type is datetime, what the allowed latest value is
 
@@ -945,14 +945,14 @@ Example Record List:
 
 =head1 DATABASES AND NAME SPACES
 
-SQL::ObjectModel data dictionaries can be and are used to describe both things
+SQL::SyntaxModel data dictionaries can be and are used to describe both things
 that are stored in a database schema and things which are not stored
 there, but are used in connection with database schema by applications.
 Items which are stored in a database can be accessed by other items
 stored in a database, like named stored procedures or packages, and they
 can not directly bind to application variables.  Items not stored in a
 database can be bound and customized to application variables, such as
-normal 'select' SQL.  There are two root tables in SQL::ObjectModel data
+normal 'select' SQL.  There are two root tables in SQL::SyntaxModel data
 dictioaries, into which almost everything else is grouped.  'database'
 groups what can be stored in a database, and 'application' groups what
 can not be.  The current version of DataDictionary.pod does not 
@@ -970,7 +970,7 @@ when one database wants to talk directly to another.
 
 Column List:
 
-	id - int,req - unique identifier for this database
+	id - uint,req - unique identifier for this database
 	name - str - corresponds to Oracle "Data Source" (for one db instance querying another)
 
 Index List:
@@ -995,21 +995,21 @@ user), and other databases do not support multiple name spaces (most?).  In
 many cases this table only ever contains one record, where all schema objects 
 share the same (or only) namespace.
 
-SQL::ObjectModel will let you define your schema objects (tables, views, procedures,
+SQL::SyntaxModel will let you define your schema objects (tables, views, procedures,
 etc) as if multiple namespaces were supported natively, and if you are
-deploying to a database that doesn't, then SQL::ObjectModel can put a common name prefix
+deploying to a database that doesn't, then SQL::SyntaxModel can put a common name prefix
 in front of all the schema objects (the namespace name), to simulate the
 lacking functionality.  That said, it is better for you to design your schemas 
 so different namespaces don't contain same-named objects anyway, if practical.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
-to anything in the SQL::ObjectModel code.
+to anything in the SQL::SyntaxModel code.
 
 Column List:
 
-	id - int,req - unique identifier for this namespace
-	database - int,req - the database that this namespace is in
+	id - uint,req - unique identifier for this namespace
+	database - uint,req - the database that this namespace is in
 	name - str - the name this namespace is identified by; corresponds to Oracle "Schema"
 
 Index List:
@@ -1042,7 +1042,7 @@ may change depending on what the implementing database is.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
-to anything in the SQL::ObjectModel code.
+to anything in the SQL::SyntaxModel code.
 
 =head2 table
 
@@ -1051,10 +1051,10 @@ some core details.
 
 Column List:
 
-	id - int,req - unique identifier for this table
-	namespace - int,req - the namespace that this table is in
+	id - uint,req - unique identifier for this table
+	namespace - uint,req - the namespace that this table is in
 	name - str,req - the name this table is identified by
-	order - int,req - to explicitely define what order tables are declared in
+	order - uint,req - to explicitely define what order tables are declared in
 	public_syn - str - a name for the table outside of any namespace; Oracle public synonym
 	storage_file - str - where applicable, explicitely say where to store table (aka, "tablespace")
 
@@ -1086,18 +1086,18 @@ details that are specific to that column.
 
 Column List:
 
-	id - int,req - unique identifier for this table column
-	table - int,req - unique identifier for this table
+	id - uint,req - unique identifier for this table column
+	table - uint,req - unique identifier for this table
 	name - str,req - unique identifier for column within table
-	order - int,req - what order columns are declared in (and by default returned in)
-	data_type - int,req - the user-customized data type for this column
+	order - uint,req - what order columns are declared in (and by default returned in)
+	data_type - uint,req - the user-customized data type for this column
 	required_val - bool,req - true when col value is required (not null), false when not (null)
 	default_val - str - an optional default value for the column, or starting val for auto_inc
 	auto_inc - bool - when true, col val defaults from a special auto-incrementing sequence
 
 Undecided Possible Extra Columns:
 
-	default_seq - int - when set, the column defaults to a value from this user defined sequence
+	default_seq - uint - when set, the column defaults to a value from this user defined sequence
 
 Index List:
 
@@ -1156,12 +1156,12 @@ That is, a constrained column may be empty even if the foreign column never is.
 
 Column List:
 
-	id - int,req - unique identifier for this table index
-	table - int,req - unique identifier for this table
+	id - uint,req - unique identifier for this table index
+	table - uint,req - unique identifier for this table
 	name - str,req - unique identifier for index within table
-	order - int,req - what order indexes are declared in
+	order - uint,req - what order indexes are declared in
 	ind_type - enum,req - what type of index this is (eg: unique, foreign)
-	f_table - int - when the index type is a foreign key, this is the constraining table
+	f_table - uint - when the index type is a foreign key, this is the constraining table
 
 Index List:
 
@@ -1196,14 +1196,14 @@ columns are involved in each table index.
 
 Column List:
 
-	id - int,req - unique identifier for this table index column
-	table_ind - int,req - unique identifier for index within table
-	table_col - int,req - unique identifier for column within table
-	order - int,req - order of the columns within the index
-	f_table_col - int - when the index type is a foreign key, this is the constraining column
+	id - uint,req - unique identifier for this table index column
+	table_ind - uint,req - unique identifier for index within table
+	table_col - uint,req - unique identifier for column within table
+	order - uint,req - order of the columns within the index
+	f_table_col - uint - when the index type is a foreign key, this is the constraining column
 
-	table - int,req - unique identifier for this table
-	f_table - int - when the index type is a foreign key, this is the constraining table
+	table - uint,req - unique identifier for this table
+	f_table - uint - when the index type is a foreign key, this is the constraining table
 
 Index List:
 
@@ -1216,21 +1216,21 @@ Index List:
 
 Example Record List:
 
-	|id|ind|col|ord|tbl|ftbl|fcol|
-	|--|---|---|---|---|----|----|
-	| 1|  1|  1|  1|  1|    |    | - ensure all [user_id] are unique
-	| 2|  2|  2|  1|  1|    |    | - ensure all [login_name] are unique
-	| 3|  3|  5|  1|  1|    |    | - ensure all [private_email] are unique
-	| 4|  4|  8|  1|  2|    |    | - ensure all [user_id] are unique
-	| 5|  5|  9|  1|  2|    |    | - ensure all [login_name] are unique
-	| 6|  6|  8|  1|  2|   1|   1| - ensure user_profile matches user_auth
-	| 7|  7| 17|  1|  3|    |    | - ensure all [user_id,pref_name] are unique
-	| 8|  7| 18|  2|  3|    |    | - ensure all [user_id,pref_name] are unique
-	| 9|  8| 17|  1|  3|   1|   1| - ensure user_pref matches user_auth
-	|10|  9| 20|  1|  4|    |    | - ensure all [person_id] are unique
-	|11| 10| 21|  1|  4|    |    | - ensure all [alternate_id] are unique
-	|12| 11| 24|  1|  4|   4|  20| - link child to father
-	|13| 12| 25|  1|  4|   4|  20| - link child to mother
+	|id|ind|col|ord|fcol|tbl|ftbl|
+	|--|---|---|---|----|---|----|
+	| 1|  1|  1|  1|    |  1|    | - ensure all [user_id] are unique
+	| 2|  2|  2|  1|    |  1|    | - ensure all [login_name] are unique
+	| 3|  3|  5|  1|    |  1|    | - ensure all [private_email] are unique
+	| 4|  4|  8|  1|    |  2|    | - ensure all [user_id] are unique
+	| 5|  5|  9|  1|    |  2|    | - ensure all [login_name] are unique
+	| 6|  6|  8|  1|   1|  2|   1| - ensure user_profile matches user_auth
+	| 7|  7| 17|  1|    |  3|    | - ensure all [user_id,pref_name] are unique
+	| 8|  7| 18|  2|    |  3|    | - ensure all [user_id,pref_name] are unique
+	| 9|  8| 17|  1|   1|  3|   1| - ensure user_pref matches user_auth
+	|10|  9| 20|  1|    |  4|    | - ensure all [person_id] are unique
+	|11| 10| 21|  1|    |  4|    | - ensure all [alternate_id] are unique
+	|12| 11| 24|  1|  20|  4|   4| - link child to father
+	|13| 12| 25|  1|  20|  4|   4| - link child to mother
 
 =head2 trigger
 
@@ -1244,9 +1244,9 @@ per each row worked on; they can run on inserts and/or updates and/or deletes.
 
 Column List:
 
-	id - int,req - unique identifier for this trigger
-	table - int,req - unique identifier for the table to watch
-	block - int,req - unique identifier for the block to execute, only 1 trig can use a block
+	id - uint,req - unique identifier for this trigger
+	table - uint,req - unique identifier for the table to watch
+	block - uint,req - unique identifier for the block to execute, only 1 trig can use a block
 	run_before - bool,req - true when the block should execute before attempted change is made
 	run_after - bool,req - true when the block should execute after attempted change is made
 	on_insert - bool,req - true when block should execute when a record insert is attempted
@@ -1266,7 +1266,7 @@ Index List:
 These tables are for storing user definitions of database views, which are
 interfaces to one or more tables that are related in a specific way.  Each view
 looks outwardly like a table, in that it has rows or columns, but it does not
-describe how data is stored, but mainly just how it is retrieved.  SQL::ObjectModel
+describe how data is stored, but mainly just how it is retrieved.  SQL::SyntaxModel
 "views" are used for more types of things than SQL views are; see the
 cct_view_type table description above for details.
 
@@ -1276,7 +1276,7 @@ name in the schema may change depending on what the implementing database is.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
-to anything in the SQL::ObjectModel code.
+to anything in the SQL::SyntaxModel code.
 
 =head2 view
 
@@ -1295,31 +1295,33 @@ utility that lets users make direct changes to a table.
 
 Since the ability to change database records is more complicated than simply
 viewing records, and usually requires more information to be available (such as
-primary keys for rows being updated), SQL::ObjectModel allows you to store a hint with a
+primary keys for rows being updated), SQL::SyntaxModel allows you to store a hint with a
 view, called "may_write", that says whether or not you will even try to make
 updates against a view, so we will know in advance and save ourselves
 unnecessary work or complexity.  The flag defaults to false.
 
 Column List:
 
-	id - int,req - unique identifier for this view
+	id - uint,req - unique identifier for this view
 	view_type - enum,req - what kind of view this is; eg: object, caller, cursor, inside
-	namespace - int - the namespace that this view is in, if any
+	p_view - uint - parent view of this one, if any; empty if this is the root view
+	namespace - uint - the namespace that this view is in, if any
 	name - str - the name this view is identified by, if any
-	order - int - to explicitely define what order views are declared in, if named
+	order - uint - to explicitely define what order views are declared in, if named
 	public_syn - str - a name for the view outside of any namespace, if named; Oracle public synonym
 	may_write - bool,req - true when we should at least try allowing updates through the view
-	match_table - int - when set, the view matches exactly the interface for one table
+	match_table - uint - when set, the view matches exactly the interface for one table
 
 Undecided Possible Extra Columns:
 
+	p_view_order - uint,req - order of this view among its siblings; 1 if no siblings
 	page_rows - bool,req - true when we should page the resulting rows so only some are returned
-	maxr_lit_val - int - if paging, this literal value says maximum rows to be returned
-	maxr_block_var - int - if paging, get max rows from this containing block variable
-	maxr_command_var - int - if paging, get max rows from this caller bind variable
-	skipr_lit_val - int - if paging, this literal value says rows to skip before returning any
-	skipr_block_var - int - if paging, get skip rows from this containing block variable
-	skipr_command_var - int - if paging, get skip rows from this caller bind variable
+	maxr_lit_val - uint - if paging, this literal value says maximum rows to be returned
+	maxr_block_var - uint - if paging, get max rows from this containing block variable
+	maxr_command_var - uint - if paging, get max rows from this caller bind variable
+	skipr_lit_val - uint - if paging, this literal value says rows to skip before returning any
+	skipr_block_var - uint - if paging, get skip rows from this containing block variable
+	skipr_command_var - uint - if paging, get skip rows from this caller bind variable
 
 Index List:
 
@@ -1340,12 +1342,12 @@ Undecided Possible Extra Indexes:
 
 Example Record List:
 
-	|id|type  |ns|name|ord|pub|wr|match|
-	|--|------|--|----|---|---|--|-----|
-	| 1|caller|  |    |   |   |1 |     | - user - joins the "user_auth" and "user_profile" tables
-	| 2|caller|  |    |   |   |0 |     | - person_with_parents - joins the "person" table with itself twice
-	| 3|caller|  |    |   |   |0 |     | - user_theme - shows how many users use each theme pref value
-	| 4|caller|  |    |   |   |1 |    4| - person - simply the "person" table
+	|id|type  |pvw|ns|name|ord|pub|wr|match|
+	|--|------|---|--|----|---|---|--|-----|
+	| 1|caller|   |  |    |   |   |1 |     | - user - joins the "user_auth" and "user_profile" tables
+	| 2|caller|   |  |    |   |   |0 |     | - person_with_parents - joins the "person" table with itself twice
+	| 3|caller|   |  |    |   |   |0 |     | - user_theme - shows how many users use each theme pref value
+	| 4|caller|   |  |    |   |   |1 |    4| - person - simply the "person" table
 
 =head2 view_col
 
@@ -1355,12 +1357,12 @@ implementation (where the data comes from or goes to) is not described here.
 
 Column List:
 
-	id - int,req - unique identifier for this view column
-	view - int,req - unique identifier for this view
+	id - uint,req - unique identifier for this view column
+	view - uint,req - unique identifier for this view
 	name - str,req - unique identifier for column within view
-	order - int,req - what order columns are declared in (and by default returned in)
-	data_type - int,req - the user-customized data type for this column
-	sort_priority - int - if valued, priority for final result rows (after rs merges) to be sorted by this column
+	order - uint,req - what order columns are declared in (and by default returned in)
+	data_type - uint,req - the user-customized data type for this column
+	sort_priority - uint - if valued, priority for final result rows (after rs merges) to be sorted by this column
 
 Undecided Possible Extra Columns:
 
@@ -1418,10 +1420,10 @@ that the merging operations (eg: the unions) are done in the correct order.
 
 Column List:
 
-	id - int,req - unique identifier for this view rowset
-	view - int,req - unique identifier for this view
-	p_rowset - int - parent rowset of this one, if any; empty if this is the root rowset
-	p_rowset_order - int,req - order of this rowset among its siblings; 1 if no siblings
+	id - uint,req - unique identifier for this view rowset
+	view - uint,req - unique identifier for this view
+	p_rowset - uint - parent rowset of this one, if any; empty if this is the root rowset
+	p_rowset_order - uint,req - order of this rowset among its siblings; 1 if no siblings
 	c_merge_type - enum - how to merge any child rowsets of this one together, if any
 
 Index List:
@@ -1449,12 +1451,12 @@ alias for it.
 
 Column List:
 
-	id - int,req - unique identifier for this view source
-	rowset - int,req - unique identifier for rowset within view
+	id - uint,req - unique identifier for this view source
+	rowset - uint,req - unique identifier for rowset within view
 	name - str,req - unique "alias" identifier for source within view rowset
-	order - int,req - what order sources are declared in (and by default joined)
-	match_table - int - if set, the source is a table (and match_view must not be set)
-	match_view - int - if set, the source is another view (and match_table must not be set)
+	order - uint,req - what order sources are declared in (and by default joined)
+	match_table - uint - if set, the source is a table (and match_view must not be set)
+	match_view - uint - if set, the source is another view (and match_table must not be set)
 
 Index List:
 
@@ -1487,14 +1489,14 @@ may be needed for some of the below items.
 
 Column List:
 
-	id - int,req - unique identifier for this view source column
-	src - int,req - which view source this column is associated with
-	match_table_col - int - which column from the source table is represented, if applicable
-	match_view_col - int - which column from the source view is represented, if applicable
+	id - uint,req - unique identifier for this view source column
+	src - uint,req - which view source this column is associated with
+	match_table_col - uint - which column from the source table is represented, if applicable
+	match_view_col - uint - which column from the source view is represented, if applicable
 
-	rowset - int,req - unique identifier for rowset within view (for fk to col table)
-	match_table - int - if set, the source is a table (and match_view must not be set)
-	match_view - int - if set, the source is another view (and match_table must not be set)
+	rowset - uint,req - unique identifier for rowset within view (for fk to col table)
+	match_table - uint - if set, the source is a table (and match_view must not be set)
+	match_view - uint - if set, the source is another view (and match_table must not be set)
 
 Index List:
 
@@ -1550,10 +1552,10 @@ which in many databases is illegal.
 
 Column List:
 
-	id - int,req - unique identifier for this view join
-	rowset - int,req - unique identifier for rowset within view
-	lhs_src - int,req - which view source is on the left side of the join
-	rhs_src - int,req - which view source is on the right side of the join
+	id - uint,req - unique identifier for this view join
+	rowset - uint,req - unique identifier for rowset within view
+	lhs_src - uint,req - which view source is on the left side of the join
+	rhs_src - uint,req - which view source is on the right side of the join
 	join_type - enum,req - what kind of table/view join is being done
 
 Index List:
@@ -1567,7 +1569,7 @@ Index List:
 
 Example Record List:
 
-	|id|pa|lhs|rhs|type|
+	|id|rs|lhs|rhs|type|
 	|--|--|---|---|----|
 	| 1| 1|  1|  2|left| - "user_auth" left join "user_profile"
 	| 2| 2|  3|  4|left| - "self" left join "father"
@@ -1585,13 +1587,13 @@ source) that are being matched.
 
 Column List:
 
-	id - int,req - unique identifier for this view join column
-	join - int,req - which view join this column is associated with
-	lhs_src_col - int,req - which column from the left source is being matched on
-	rhs_src_col - int,req - which column from the right source is being matched on
+	id - uint,req - unique identifier for this view join column
+	join - uint,req - which view join this column is associated with
+	lhs_src_col - uint,req - which column from the left source is being matched on
+	rhs_src_col - uint,req - which column from the right source is being matched on
 
-	lhs_src - int,req - which view source is on the left side of the join
-	rhs_src - int,req - which view source is on the right side of the join
+	lhs_src - uint,req - which view source is on the left side of the join
+	rhs_src - uint,req - which view source is on the right side of the join
 
 Index List:
 
@@ -1603,7 +1605,7 @@ Index List:
 
 Example Record List:
 
-	|id|pa|lhs|lhc|rhs|rhc|
+	|id|vj|lhs|lhc|rhs|rhc|
 	|--|--|---|---|---|---|
 	| 1| 1|  1|  1|  2|  8| - on "user_profile"."user_id" = "user_auth"."user_id"
 	| 2| 2|  3| 25|  4| 19| - on "father"."person_id" = "self"."father_id"
@@ -1621,16 +1623,16 @@ a standard way of doing the same thing as Oracle's CONNECT BY.
 
 Column List:
 
-	id - int,req - unique identifier for this view hierarchy
-	rowset - int,req - unique identifier for rowset within view
-	start_src_col - int,req - which source column is checked against to determine the root of the hierarchy
+	id - uint,req - unique identifier for this view hierarchy
+	rowset - uint,req - unique identifier for rowset within view
+	start_src_col - uint,req - which source column is checked against to determine the root of the hierarchy
 	start_lit_val - str - if start_src_col is being compared to a literal, then store the literal value here
-	start_block_var - int - if start_src_col is being compared to a containing block variable
-	start_command_var - int - if start_src_col is being compared to a caller bind variable
-	conn_src_col - int,req - which source column contains a record's own identifier against which children match
-	p_conn_src_col - int,req - which source column contains the value of a parent identifier
+	start_block_var - uint - if start_src_col is being compared to a containing block variable
+	start_command_var - uint - if start_src_col is being compared to a caller bind variable
+	conn_src_col - uint,req - which source column contains a record's own identifier against which children match
+	p_conn_src_col - uint,req - which source column contains the value of a parent identifier
 
-	src - int,req - which view source is being hierarchically joined to itself
+	src - uint,req - which view source is being hierarchically joined to itself
 
 Index List:
 
@@ -1665,20 +1667,21 @@ as the data_type specified in the view_col record.
 
 Column List:
 
-	id - int,req - unique identifier for this view column def sub-expression
-	view - int,req - unique identifier for this view
-	view_col - int,req - unique identifier for interface/output column within view
-	rowset - int,req - unique identifier for rowset within view
-	p_expr - int - parent expression of this one, if any; empty if this is the root expression
-	p_expr_order - int,req - order of this expression among its siblings; 1 if no siblings
+	id - uint,req - unique identifier for this view column def sub-expression
+	view_col - uint,req - unique identifier for interface/output column within view
+	rowset - uint,req - unique identifier for rowset within view
+	p_expr - uint - parent expression of this one, if any; empty if this is the root expression
+	p_expr_order - uint,req - order of this expression among its siblings; 1 if no siblings
 	expr_type - enum,req - what type of expression this is; eg: literal, variable, column, view, function
 	lit_val - str - if expr_type is 'lit', then store the literal value here
-	block_var - int - if expr_type is 'var', then use this containing block variable
-	command_var - int - if expr_type is 'var', then use this caller bind variable
-	src_col - int - if expr_type is 'col', then use this source table/view column
-	f_view - int - if expr_type is 'view', then put the view/subquery id here
+	block_var - uint - if expr_type is 'var', then use this containing block variable
+	command_var - uint - if expr_type is 'var', then use this caller bind variable
+	src_col - uint - if expr_type is 'col', then use this source table/view column
+	f_view - uint - if expr_type is 'view', then put the view/subquery id here
 	sfunc - enum - if expr_type is 'sfunc', then put the standard built-in function name/code here
-	ufunc - int - if expr_type is 'ufunc', then put the user-defined stored function (block) id here
+	ufunc - uint - if expr_type is 'ufunc', then put the user-defined stored function (block) id here
+
+	view - uint,req - unique identifier for this view
 
 Index List:
 
@@ -1696,32 +1699,32 @@ Index List:
 
 Example Record List:
 
-	|id|vw|ci|ri|pe|peo|type |lit|blv|cmv|src|fvw|sf    |uf|
-	|--|--|--|--|--|---|-----|---|---|---|---|---|------|--|
-	| 1| 1| 1| 1|  |  1|col  |   |   |   |  1|   |      |  |
-	| 2| 1| 2| 1|  |  1|col  |   |   |   |  2|   |      |  |
-	| 3| 1| 3| 1|  |  1|col  |   |   |   |  3|   |      |  |
-	| 4| 1| 4| 1|  |  1|col  |   |   |   |  4|   |      |  |
-	| 5| 1| 5| 1|  |  1|col  |   |   |   |  5|   |      |  |
-	| 6| 1| 6| 1|  |  1|col  |   |   |   |  6|   |      |  |
-	| 7| 1| 7| 1|  |  1|col  |   |   |   |  7|   |      |  |
-	| 8| 1| 8| 1|  |  1|col  |   |   |   |  9|   |      |  |
-	| 9| 1| 9| 1|  |  1|col  |   |   |   | 10|   |      |  |
-	|10| 1|10| 1|  |  1|col  |   |   |   | 11|   |      |  |
-	|11| 1|11| 1|  |  1|col  |   |   |   | 12|   |      |  |
-	|12| 1|12| 1|  |  1|col  |   |   |   | 13|   |      |  |
-	|13| 1|13| 1|  |  1|col  |   |   |   | 14|   |      |  |
-	|14| 1|14| 1|  |  1|col  |   |   |   | 15|   |      |  |
-	|15| 1|15| 1|  |  1|col  |   |   |   | 16|   |      |  |
-	|16| 2|16| 2|  |  1|col  |   |   |   | 17|   |      |  |
-	|17| 2|17| 2|  |  1|col  |   |   |   | 18|   |      |  |
-	|18| 2|18| 2|  |  1|col  |   |   |   | 19|   |      |  |
-	|19| 2|19| 2|  |  1|col  |   |   |   | 20|   |      |  |
-	|20| 2|20| 2|  |  1|col  |   |   |   | 21|   |      |  |
-	|21| 2|21| 2|  |  1|col  |   |   |   | 22|   |      |  |
-	|22| 3|22| 3|  |  1|col  |   |   |   | 24|   |      |  |
-	|23| 3|23| 3|  |  1|sfunc|   |   |   |   |   |gcount|  |
-	|24| 3|23| 3|23|  1|col  |   |   |   | 24|   |      |  |
+	|id|ci|ri|pe|peo|type |lit|blv|cmv|src|fvw|sf    |uf|vw|
+	|--|--|--|--|---|-----|---|---|---|---|---|------|--|--|
+	| 1| 1| 1|  |  1|col  |   |   |   |  1|   |      |  | 1|
+	| 2| 2| 1|  |  1|col  |   |   |   |  2|   |      |  | 1|
+	| 3| 3| 1|  |  1|col  |   |   |   |  3|   |      |  | 1|
+	| 4| 4| 1|  |  1|col  |   |   |   |  4|   |      |  | 1|
+	| 5| 5| 1|  |  1|col  |   |   |   |  5|   |      |  | 1|
+	| 6| 6| 1|  |  1|col  |   |   |   |  6|   |      |  | 1|
+	| 7| 7| 1|  |  1|col  |   |   |   |  7|   |      |  | 1|
+	| 8| 8| 1|  |  1|col  |   |   |   |  9|   |      |  | 1|
+	| 9| 9| 1|  |  1|col  |   |   |   | 10|   |      |  | 1|
+	|10|10| 1|  |  1|col  |   |   |   | 11|   |      |  | 1|
+	|11|11| 1|  |  1|col  |   |   |   | 12|   |      |  | 1|
+	|12|12| 1|  |  1|col  |   |   |   | 13|   |      |  | 1|
+	|13|13| 1|  |  1|col  |   |   |   | 14|   |      |  | 1|
+	|14|14| 1|  |  1|col  |   |   |   | 15|   |      |  | 1|
+	|15|15| 1|  |  1|col  |   |   |   | 16|   |      |  | 1|
+	|16|16| 2|  |  1|col  |   |   |   | 17|   |      |  | 2|
+	|17|17| 2|  |  1|col  |   |   |   | 18|   |      |  | 2|
+	|18|18| 2|  |  1|col  |   |   |   | 19|   |      |  | 2|
+	|19|19| 2|  |  1|col  |   |   |   | 20|   |      |  | 2|
+	|20|20| 2|  |  1|col  |   |   |   | 21|   |      |  | 2|
+	|21|21| 2|  |  1|col  |   |   |   | 22|   |      |  | 2|
+	|22|22| 3|  |  1|col  |   |   |   | 24|   |      |  | 3|
+	|23|23| 3|  |  1|sfunc|   |   |   |   |   |gcount|  | 3|
+	|24|23| 3|23|  1|col  |   |   |   | 24|   |      |  | 3|
 
 =head2 view_part_def
 
@@ -1754,19 +1757,19 @@ expression each.
 
 Column List:
 
-	id - int,req - unique identifier for this view part def sub-expression
-	rowset - int,req - unique identifier for rowset within view
+	id - uint,req - unique identifier for this view part def sub-expression
+	rowset - uint,req - unique identifier for rowset within view
 	view_part - enum,req - what "part" of a view definition this is defining
-	p_expr - int - parent expression of this one, if any; empty if this is the root expression
-	p_expr_order - int,req - order of this expression among its siblings; 1 if no siblings
+	p_expr - uint - parent expression of this one, if any; empty if this is the root expression
+	p_expr_order - uint,req - order of this expression among its siblings; 1 if no siblings
 	expr_type - enum,req - what type of expression this is; eg: literal, variable, column, view, function
 	lit_val - str - if expr_type is 'lit', then store the literal value here
-	block_var - int - if expr_type is 'var', then use this containing block variable
-	command_var - int - if expr_type is 'var', then use this caller bind variable
-	src_col - int - if expr_type is 'col', then use this source table/view column
-	f_view - int - if expr_type is 'view', then put the view/subquery id here
+	block_var - uint - if expr_type is 'var', then use this containing block variable
+	command_var - uint - if expr_type is 'var', then use this caller bind variable
+	src_col - uint - if expr_type is 'col', then use this source table/view column
+	f_view - uint - if expr_type is 'view', then put the view/subquery id here
 	sfunc - enum - if expr_type is 'sfunc', then put the standard built-in function name/code here
-	ufunc - int - if expr_type is 'ufunc', then put the user-defined stored function (block) id here
+	ufunc - uint - if expr_type is 'ufunc', then put the user-defined stored function (block) id here
 
 Index List:
 
@@ -1811,6 +1814,8 @@ Example Record List:
 
 	Notes: In Oracle notation: the third view says match having "count(*) > 1" ("gcount" has no args).
 
+	Notes: The example 'command_var' values are actually incorrect and will be changed to id numbers.
+
 =head2 Had there been separate tables for the above, here are their descriptions
 
 view_src_filter: Each record in this table uniquely corresponds to a
@@ -1853,7 +1858,7 @@ This section still needs to be written.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
-to anything in the SQL::ObjectModel code.
+to anything in the SQL::SyntaxModel code.
 
 To be added: sequence.
 
@@ -1872,7 +1877,7 @@ name in the schema may change depending on what the implementing database is.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
-to anything in the SQL::ObjectModel code.
+to anything in the SQL::SyntaxModel code.
 
 =head2 block
 
@@ -1881,18 +1886,17 @@ some core details.
 
 Column List:
 
-	id - int,req - unique identifier for this block
+	id - uint,req - unique identifier for this block
 	block_type - enum,req - what kind of block this is; eg: object, caller, cursor, inside
-	namespace - int - the namespace that this block is in, if any
+	p_block - uint - parent block of this one, if any; empty if this is the root block
+	namespace - uint - the namespace that this block is in, if any
 	name - str - the name this block is identified by, if any
-	order - int - to explicitely define what order blocks are declared in, if named
+	order - uint - to explicitely define what order blocks are declared in, if named
 	public_syn - str - a name for the block outside of any namespace, if named; Oracle public synonym
-
-	p_block - int - parent block of this one, if any; empty if this is the root block
-	p_block_order - int,req - order of this block among its siblings; 1 if no siblings
 
 Undecided Possible Extra Columns:
 
+	p_block_order - uint,req - order of this block among its siblings; 1 if no siblings
 	return_type - str,req - if this block returns a value, this is its data type
 
 Index List:
@@ -1919,15 +1923,15 @@ determined by its type.
 
 Column List:
 
-	id - int,req - unique identifier for this block var
-	block - int,req - what block this variable is in
+	id - uint,req - unique identifier for this block var
+	block - uint,req - what block this variable is in
 	name - str,req - unique identifier for variable within view
-	order - int,req - what order variables are declared in
+	order - uint,req - what order variables are declared in
 	var_type - enum,req - what basic variable type the variable is
 	is_argument - bool,req - true if this variable is a block argument (needs fleshing out)
-	data_type - int - if the var type is 'scalar', this is its user customized data type
+	data_type - uint - if the var type is 'scalar', this is its user customized data type
 	init_lit_val - str - if var type is 'scalar', an initial value for var can go here
-	c_view - int - if var type is 'cursor', then put the view defining it here
+	c_view - uint - if var type is 'cursor', then put the view defining it here
 
 Undecided Possible Extra Columns:
 
@@ -1954,14 +1958,14 @@ referred to by the block_stmt record.
 
 Column List:
 
-	id - int,req - unique identifier for this block statement
-	block - int,req - what block this statement is in
-	order - int,req - what order a statement executes in
+	id - uint,req - unique identifier for this block statement
+	block - uint,req - what block this statement is in
+	order - uint,req - what order a statement executes in
 	stmt_type - str,req - what type of stmt this is; eg: assignment, condit, call, loop, dml, return
-	dest_var - int - if the stmt type is 'assign', this var is where the expression result goes
+	dest_var - uint - if the stmt type is 'assign', this var is where the expression result goes
 	sproc - enum - if expr_type is 'sproc', then this is the standard built-in procedure to call
-	uproc - int - if expr_type is 'uproc', then this is the user-defined stored function (block) to call
-	c_block - int - if the stmt type starts an unnamed block context, this is the child block id
+	uproc - uint - if expr_type is 'uproc', then this is the user-defined stored function (block) to call
+	c_block - uint - if the stmt type starts an unnamed block context, this is the child block id
 
 Index List:
 
@@ -1984,15 +1988,15 @@ side of the statement.
 
 Column List:
 
-	id - int,req - unique identifier for this block statement sub-expression
-	stmt - int,req - unique identifier for block statement this expression is part of
-	p_expr - int - parent expression of this one, if any; empty if this is the root expression
-	p_expr_order - int,req - order of this expression among its siblings; 1 if no siblings
+	id - uint,req - unique identifier for this block statement sub-expression
+	stmt - uint,req - unique identifier for block statement this expression is part of
+	p_expr - uint - parent expression of this one, if any; empty if this is the root expression
+	p_expr_order - uint,req - order of this expression among its siblings; 1 if no siblings
 	expr_type - enum,req - what type of expression this is; eg: literal, variable, column, function
 	lit_val - str - if expr_type is 'lit', then store the literal value here
-	src_var - int - if expr_type is 'var', then use this containing block variable
+	src_var - uint - if expr_type is 'var', then use this containing block variable
 	sfunc - enum - if expr_type is 'sfunc', then put the standard built-in function name/code here
-	ufunc - int - if expr_type is 'ufunc', then put the user-defined stored function (block) id here
+	ufunc - uint - if expr_type is 'ufunc', then put the user-defined stored function (block) id here
 
 Index List:
 
@@ -2010,7 +2014,7 @@ This section still needs to be written.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
-to anything in the SQL::ObjectModel code.
+to anything in the SQL::SyntaxModel code.
 
 To be added: user, privilege.
 
@@ -2020,13 +2024,13 @@ This section still needs to be written.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
-to anything in the SQL::ObjectModel code.
+to anything in the SQL::SyntaxModel code.
 
 To be added: application, command, command_var, result.
 
 =head1 SEE ALSO
 
-perl(1), SQL::ObjectModel, SQL::ObjectModel::XMLSchema, Rosetta,
+perl(1), SQL::SyntaxModel, SQL::SyntaxModel::XMLSchema, Rosetta,
 Rosetta::Framework.
 
 =cut

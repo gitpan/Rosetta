@@ -15,7 +15,7 @@ require 5.004;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.071';
+$VERSION = '0.072';
 
 ######################################################################
 
@@ -79,13 +79,13 @@ suggesting improvements to the standard version.
 
 =head2 Nonstandard Modules
 
-	SQL::ObjectModel 0.011
+	SQL::SyntaxModel 0.011
 
 =cut
 
 ######################################################################
 
-use SQL::ObjectModel 0.011;
+use SQL::SyntaxModel 0.011;
 
 ######################################################################
 
@@ -131,6 +131,6 @@ __END__
 
 =head1 SEE ALSO
 
-perl(1), Rosetta::Framework, Rosetta::SimilarModules, SQL::ObjectModel.
+perl(1), Rosetta::Framework, Rosetta::SimilarModules, SQL::SyntaxModel.
 
 =cut

@@ -360,7 +360,7 @@ Module List (release 2.09; 2002 Dec 10):
 
 =head1 SEE ALSO
 
-perl(1), Rosetta::Framework, SQL::ObjectModel, DBI, DBD::*, Alzabo,
+perl(1), Rosetta::Framework, SQL::SyntaxModel, DBI, DBD::*, Alzabo,
 DBIx::SearchBuilder, SQL::Schema, DBIx::Abstract, DBIx::AnyDBD, DBIx::Browse,
 and various other modules.
 

@@ -130,7 +130,7 @@ dependencies.  These are specified in said other distributions, and often
 include the popular DBI and DBD::* modules, which most Driver modules use.
 
 This distribution is getting split up soon.  When that happens, the "Rosetta" 
-distribution will be dependant on the new "SQL-ObjectModel" distribution.
+distribution will be dependant on the new "SQL-SyntaxModel" distribution.
 
 =head2 Perl Version
 
@@ -232,7 +232,7 @@ distribution will be dependant on the new "SQL-ObjectModel" distribution.
 		}
 
 		eval {
-			require Rosetta; # also compiles SQL::ObjectModel
+			require Rosetta; # also compiles SQL::SyntaxModel
 		};
 		if( $@ ) {
 			return( "Error: can't compile Rosetta modules: $@" );
@@ -270,7 +270,7 @@ distribution will be dependant on the new "SQL-ObjectModel" distribution.
 			return( "Error: no survey question list defined in prefs file" );
 		}
 
-		my $dd_table = SQL::ObjectModel->new_table( 'survey_data' );
+		my $dd_table = SQL::SyntaxModel->new_table( 'survey_data' );
 
 		foreach my $question (@{$questions}) {
 			unless( ref( $question ) eq 'HASH' and $question->{visible_title} ) {
@@ -372,7 +372,7 @@ distribution will be dependant on the new "SQL-ObjectModel" distribution.
 
 		# user saw screen and clicked the 'OK' button, so try to fillin;
 		# the following makes a Command of type 'data_insert' and executes it
-		my $dd_view = SQL::ObjectModel->new_view( $dd_table );
+		my $dd_view = SQL::SyntaxModel->new_view( $dd_table );
 		my $rv = $dbh->execute_command( $dd_view->new_command_insert( $form_values ) );
 		if( $rv->is_error() ) {
 			return( "Error: can't save form values in database: ".$rv->get_error() );
@@ -385,7 +385,7 @@ distribution will be dependant on the new "SQL-ObjectModel" distribution.
 		my ($dbh, $dd_table, $questions, $form_values) = @_;
 
 		# the following makes a Command of type 'data_select' and executes it
-		my $dd_view = SQL::ObjectModel->new_view( $dd_table );
+		my $dd_view = SQL::SyntaxModel->new_view( $dd_table );
 		my $cursor = $dbh->execute_command( $dd_view->new_command_select() );
 		if( $cursor->is_error() ) {
 			return( "Error: can't fetch form values from database: ".$cursor->get_error() );
@@ -546,7 +546,7 @@ provide.
 =head1 STRUCTURE
 
 The modules composing the Rosetta framework are grouped into several main
-categories, which can be called: "Locale", "Schema" (SQL::ObjectModel),
+categories, which can be called: "Locale", "Schema" (SQL::SyntaxModel),
 "Engine", "Driver", "Proxy" (Server/Client), "Validator", "Emulator", and
 others.
 
@@ -680,7 +680,7 @@ speed and memory efficiency but also compatability; it will allow Rosetta (and
 through it Perl) to use databases which previously had no Perl bindings or DBI
 drivers before.  Moreover, the potential user base would increase sharply
 because users of other languages like PHP or Python would be able to use it.
-The C version of Rosetta will probably have the "Schema" (SQL::ObjectModel) and
+The C version of Rosetta will probably have the "Schema" (SQL::SyntaxModel) and
 "Engine" modules being mostly reduced to struct definitions, macros for
 manipulating the structs, header files, and a small amount of implementation
 code.  Most of the normal implementation C code would be derived from the other
@@ -708,28 +708,29 @@ To become "Locale-KeyedText" or similar:
 
 	Locale::KeyedText (Refer to user messages in programs by keys)
 
-To become "SQL-ObjectModel" or similar:
+To become "SQL-SyntaxModel" or similar:
 
-	SQL::ObjectModel (Unserialized SQL objects, use like XML DOM)
-		SQL::ObjectModel::_::Codes (declare base types or enums; meanings hard-coded in SQL::ObjectModel)
-		SQL::ObjectModel::_::Command (describes an action to do and what bind vars should be prompted for)
-		SQL::ObjectModel::_::DataType (metadata for individual atomic or scalar values)
-		SQL::ObjectModel::_::Database (describes a database, that which you connect to)
-		SQL::ObjectModel::_::Namespace (a namespace in a database for schema objects)
-		SQL::ObjectModel::_::Table (details of table columns are part of this class)
-		SQL::ObjectModel::_::View (a parsed select, used for any DML like IUD, gen stored views)
-		SQL::ObjectModel::_::Sequence (a sequence generator)
-		SQL::ObjectModel::_::Block (a block of code to run in a db; part of a proc, function, trigger)
-		SQL::ObjectModel::_::Trigger (a code block assoc with a table, only auto-called by db on events)
-		SQL::ObjectModel::_::User (an entity who may connect to a database and order it around)
-		SQL::ObjectModel::_::* ... like Privilege, PrivilegeType, whatever
+	SQL::SyntaxModel (Unserialized SQL objects, use like XML DOM)
+		SQL::SyntaxModel::_::Codes (declare base types or enums; meanings hard-coded in SQL::SyntaxModel)
+		SQL::SyntaxModel::_::Command (describes an action to do and what bind vars should be prompted for)
+		SQL::SyntaxModel::_::DataType (metadata for individual atomic or scalar values)
+		SQL::SyntaxModel::_::Database (describes a database, that which you connect to)
+		SQL::SyntaxModel::_::Namespace (a namespace in a database for schema objects)
+		SQL::SyntaxModel::_::Table (details of table columns are part of this class)
+		SQL::SyntaxModel::_::View (a parsed select, used for any DML like IUD, gen stored views)
+		SQL::SyntaxModel::_::Sequence (a sequence generator)
+		SQL::SyntaxModel::_::Block (a block of code to run in a db; part of a proc, function, trigger)
+		SQL::SyntaxModel::_::Trigger (a code block assoc with a table, only auto-called by db on events)
+		SQL::SyntaxModel::_::User (an entity who may connect to a database and order it around)
+		SQL::SyntaxModel::_::* ... like Privilege, PrivilegeType, whatever
 
-	SQL::ObjectModel::Locale::en (English localization of input error messages)
-	SQL::ObjectModel::Locale::fr (French localization of input error messages)
-	SQL::ObjectModel::Locale::* ... like German, Spanish, Dutch, Chinese, etc
+	SQL::SyntaxModel::Locale::en (English localization of input error messages)
+	SQL::SyntaxModel::Locale::fr (French localization of input error messages)
+	SQL::SyntaxModel::Locale::* ... like German, Spanish, Dutch, Chinese, etc
 
-	SQL::ObjectModel::DataDictionary (POD only, describes a db suitable for storing SQL::ObjectModels)
-	SQL::ObjectModel::API_C (POD only, describes the core C API for SQL::ObjectModel)
+	SQL::SyntaxModel::DataDictionary (POD only, describes a db suitable for storing SQL::SyntaxModels)
+	SQL::SyntaxModel::XMLSchema (POD only, describes an XML schema suitable for storing SQL::SyntaxModels)
+	SQL::SyntaxModel::API_C (POD only, describes the core C API for SQL::SyntaxModel)
 
 To stay "Rosetta":
 
@@ -856,13 +857,13 @@ including addition of more modules or removal of some existing ones.
 Note the third: now that some of these modules have been implemented, their 
 updated descriptions here are more accurate.
 
-=head2 Schema (SQL::ObjectModel) Modules
+=head2 Schema (SQL::SyntaxModel) Modules
 
 =over 4
 
 =item 0
 
-B<SQL::ObjectModel::_::Command> - This Schema class describes an action that needs
+B<SQL::SyntaxModel::_::Command> - This Schema class describes an action that needs
 to be done against a database; the action may include several steps, and all of
 them must be done when executing the Command.  A Command object has one
 mandatory string property named 'type' (eg: 'database_open', 'table_create',
@@ -878,7 +879,7 @@ Rosetta::Engine::_::Command.>
 
 =item 0
 
-B<SQL::ObjectModel::_::DataType> - This Schema class describes a simple data type,
+B<SQL::SyntaxModel::_::DataType> - This Schema class describes a simple data type,
 which serves as metadata for a single atomic or scalar unit of data, or a
 column whose members are all of the same data type, such as in a regular
 database table or in row sets read from or to be written to one.  This class
@@ -887,7 +888,7 @@ database data.
 
 =item 0
 
-B<SQL::ObjectModel::_::Table> - This Schema class describes a single database
+B<SQL::SyntaxModel::_::Table> - This Schema class describes a single database
 table, and would be used for such things as managing schema for the table (eg:
 create, alter, destroy), and describing the table's "public interface" so other
 functionality like views or various DML operations know how to use the table.
@@ -897,12 +898,12 @@ details.  This class does not describe anything that is changed by DML
 activity, such as a count of stored records, or the current values of sequences
 attached to columns.  This class would be used both when manipulating database
 schema and when manipulating database data.  This class can generate
-SQL::ObjectModel::Command objects having types of: 'table_verify',
+SQL::SyntaxModel::Command objects having types of: 'table_verify',
 'table_create', 'table_alter', 'table_destroy'.
 
 =item 0
 
-B<SQL::ObjectModel::_::View> - This Schema class describes a single database view,
+B<SQL::SyntaxModel::_::View> - This Schema class describes a single database view,
 which conceptually looks like a table, but it is used differently.  Tables and
 views are similar in that they both represent or store a matrix of data, which
 has uniquely identifiable columns, and rows which can be uniquely identifiable
@@ -916,7 +917,7 @@ views don't.  A view is actually a custom abstracted interface to one or more
 database tables which are related to each other in a specific way; when you
 issue DML against a view, you are actually fetching from or modifying the data
 stored in one (simplest case) or more tables.  This class can generate
-SQL::ObjectModel::Command objects having types of: 'data_select', 'data_insert',
+SQL::SyntaxModel::Command objects having types of: 'data_select', 'data_insert',
 'data_update', 'data_delete', 'data_lock', 'data_unlock', 'view_verify',
 'view_create', 'view_alter', 'view_destroy'.
 
@@ -943,10 +944,10 @@ drivers or connections.  Subclasses include: Result, Database.
 
 B<Rosetta::_::Command> - This Engine class describes an action that needs
 to be done against a database; its objects encapsulate
-SQL::ObjectModel::Command objects and also encapsulates the resolved bind vars,
+SQL::SyntaxModel::Command objects and also encapsulates the resolved bind vars,
 or live objects like 'Cursor'.  Code using these objects should be doing
 something like both calling DBI->prepare() and DBI->execute().  I<See also
-SQL::ObjectModel::_::Command.>
+SQL::SyntaxModel::_::Command.>
 
 =item 0
 
@@ -1105,8 +1106,8 @@ it.
 
 =head1 SEE ALSO
 
-perl(1), Rosetta, Rosetta::SimilarModules, SQL::ObjectModel,
-SQL::ObjectModel::DataDictionary, SQL::ObjectModel::XMLSchema,
-SQL::ObjectModel::API_C, DBI.
+perl(1), Rosetta, Rosetta::SimilarModules, SQL::SyntaxModel,
+SQL::SyntaxModel::DataDictionary, SQL::SyntaxModel::XMLSchema,
+SQL::SyntaxModel::API_C, DBI.
 
 =cut
