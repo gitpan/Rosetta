@@ -1,3 +1,42 @@
+2004-08-19   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.34.
+
+	* New code file versions are: Rosetta.pm v0.34, Rosetta/L/en.pm v0.09, and
+	Validator.pm v0.04.  (Validator/L/en.pm was not changed at all.)
+
+	* From now on, any modules that have 'Rosetta' as an explicit dependency
+	will also have implicit dependencies on the same versions of
+	[SQL::SyntaxModel, Locale::KeyedText] that Rosetta explicitly depends on;
+	the explicit dependencies on those two modules are now gone.  If either of
+	the two modules are updated and a Rosetta-using module requires a newer
+	version, then that module should simply update its requirement to a version
+	of Rosetta that itself requires the implicit dependency.
+
+	* Updated all Rosetta.pm functions (and corresponding Rosetta/L/en.pm user
+	text) which invoke an Engine method so that, when they display any error
+	results (thrown misc exceptions or bad output), then the name of the
+	offending Engine class is displayed in the user text, for easier tracking
+	of problems.
+
+	* Added new Interface.get_root_interface() method and corresponding "root
+	interface" Interface property which provides a convenient short-cut to
+	access the root Application of an Intf's Interface tree.  This property is
+	meant to make the module faster by avoiding a lot of frequent recursive
+	get_parent_interface() calls, which it is conceptually the same as.
+
+	* Added a couple of "bad result" tests to both prepare() and execute(), and
+	renamed the single existing one; made corresponding additions or updates to
+	Rosetta/L/en.pm.  The first added test makes sure the Interface object
+	returned by those methods is in the same Intf tree as the invoked-on object
+	(an Engine could create a new tree if it wanted and return a piece of that,
+	a no-no).  The second added test makes sure that the "Interface type" of
+	the returned Interface is correct, within reason (it is thorough for
+	prepare() as the tests are simple, but for execute() it's less so).
+
+	* Note that this release should be fully backwards compatible with any code
+	written for the previous release.
+
 2004-08-16   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.33.

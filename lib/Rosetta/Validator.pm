@@ -11,11 +11,9 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.03';
+$VERSION = '0.04';
 
-use Locale::KeyedText 0.06;
-use SQL::SyntaxModel 0.38;
-use Rosetta 0.33;
+use Rosetta 0.34;
 
 ######################################################################
 
@@ -27,9 +25,7 @@ Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	Locale::KeyedText 0.06 (for error messages)
-	SQL::SyntaxModel 0.38
-	Rosetta 0.33
+	Rosetta 0.34
 
 =head1 COPYRIGHT AND LICENSE
 

@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.33';
+$VERSION = '0.34';
 
 use Locale::KeyedText 0.06;
 use SQL::SyntaxModel 0.38;
@@ -82,6 +82,9 @@ my $IPROP_ERROR_MSG = 'error_msg'; # object (Locale::KeyedText::Message) - detai
 	# This property is mandatory for Error Interfaces, and optional for other Interfaces
 my $IPROP_PARENT_INTF = 'parent_intf'; # ref to parent Interface, which provides a context 
 	# for the current one, unless the current Interface is a root
+my $IPROP_ROOT_INTF = 'root_intf'; # ref to Application Interface that is the root of this 
+	# Intf's Interface tree; ref to self if self is an Appl, null if PARENT_INTF otherwise null.
+	# This is a convenience property only, redundant with a chain of PARENT_INTF, used for speed.
 my $IPROP_CHILD_INTFS = 'child_intfs'; # array - list of refs to child Interfaces that the 
 	# current one spawned and provides a context for; this may or may not be useful in practice, 
 	# and it does set up a circular ref problem such that all Interfaces in a tree will not be 
@@ -108,7 +111,7 @@ my $IPROP_ROUTINE = 'routine'; # ref to a Perl anonymous subroutine; this proper
 	 # No properties (yet) are declared by this parent class; leaving space free for child classes
 
 # Names of properties for objects of the Rosetta::Dispatcher class are declared here:
-my $DPROP_LIT_PAYLOAD = 'lit_payload'; # If Eng fronts a LITERAL Intf, put payload it represents here.
+my $DPROP_LIT_PAYLOAD = 'lit_payload'; # If Eng fronts a Literal Intf, put payload it represents here.
 
 # Names of the allowed Interface types go here:
 my $INTFTP_ERROR       = 'Error'; # What is returned if an error happens, in place of another Intf type
@@ -119,15 +122,15 @@ my $INTFTP_APPLICATION = 'Application'; # What you get when you create an Interf
 	# subsequent "command" or "routine" Nodes you pass to any child Intf's "prepare" method.
 my $INTFTP_PREPARATION = 'Preparation'; # That which is returned by the 'prepare()' method
 my $INTFTP_LITERAL     = 'Literal'; # Result of execution that isn't one of the following, like an IUD
-	# This type can be returned as the grand-child for any of [APPL, ENVI, CONN, TRAN].
+	# This type can be returned as the grand-child for any of [Appl, Envi, Conn, Tran].
 	# This type is returned by the execute() of any Command that doesn't return one of 
-	# the above 4 context INTFs, except for those that return CURSOR.
+	# the following 4 context INTFs, except for those that return Cursor.
 	# Any commands that stuff new Nodes in the current SSM Container, such as the 
 	# *_LIST or *_INFO or *_CLONE Commands, will return a new Node ref or list as the payload.
 	# Any commands that simply do a yes/no test, such as *_VERIFY, or DB_PING, 
 	# simply have a boolean payload.
 	# IUD commands usually return this, plus method calls; payload may be a hash ref of results.
-my $INTFTP_ENVIRONMENT = 'Environment'; # Parent to all CONNECTION INTFs impl by same Engine
+my $INTFTP_ENVIRONMENT = 'Environment'; # Parent to all Connection INTFs impl by same Engine
 my $INTFTP_CONNECTION  = 'Connection'; # Result of executing a 'DB_OPEN' command
 my $INTFTP_TRANSACTION = 'Transaction'; # Result of asking to start a new Transaction
 my $INTFTP_CURSOR      = 'Cursor'; # Result of executing a query that would return rows to the caller
@@ -230,6 +233,8 @@ sub new {
 	$interface->{$IPROP_INTF_TYPE} = $intf_type;
 	$interface->{$IPROP_ERROR_MSG} = $err_msg;
 	$interface->{$IPROP_PARENT_INTF} = $parent_intf;
+	$interface->{$IPROP_ROOT_INTF} = $parent_intf ? $parent_intf->{$IPROP_ROOT_INTF} : 
+		($intf_type eq $INTFTP_APPLICATION) ? $interface : undef;
 	$interface->{$IPROP_CHILD_INTFS} = [];
 	$interface->{$IPROP_ENGINE} = ($intf_type eq $INTFTP_APPLICATION) ? 
 		Rosetta::Dispatcher->new() : $engine;
@@ -434,7 +439,8 @@ sub destroy {
 			my $intf_type = $interface->{$IPROP_INTF_TYPE};
 			unless( ref($exception) and UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
 				$interface->_throw_error_message( 'ROS_I_METH_MISC_EXCEPTION', 
-					{ 'METH' => 'destroy', 'ITYPE' => $intf_type, 'VALUE' => $exception } );
+					{ 'METH' => 'destroy', 'CLASS' => ref($interface->{$IPROP_ENGINE}), 
+					'ITYPE' => $intf_type, 'VALUE' => $exception } );
 			}
 		}
 	}
@@ -469,6 +475,13 @@ sub get_error_message {
 sub get_parent_interface {
 	# This method returns the Interface object by reference.
 	return( $_[0]->{$IPROP_PARENT_INTF} );
+}
+
+######################################################################
+
+sub get_root_interface {
+	# This method returns the Interface object by reference.
+	return( $_[0]->{$IPROP_ROOT_INTF} );
 }
 
 ######################################################################
@@ -540,6 +553,7 @@ sub features {
 			return( $interface->{$IPROP_ENGINE}->features( $interface, $feature_name ) );
 		}
 	};
+	my $engine_name = ref($interface->{$IPROP_ENGINE}); # If undef, won't be used anyway.
 	if( my $exception = $@ ) {
 		if( ref($exception) and UNIVERSAL::isa( $exception, 'Rosetta::Interface' ) ) {
 			# The called code threw a Rosetta::Interface object.
@@ -550,30 +564,30 @@ sub features {
 		} else {
 			# The called code died in some other way (means coding error, not user error).
 			$interface->_throw_error_message( 'ROS_I_METH_MISC_EXCEPTION', 
-				{ 'METH' => 'features', 'ITYPE' => $intf_type, 'VALUE' => $exception } );
+				{ 'METH' => 'features', 'CLASS' => $engine_name, 'ITYPE' => $intf_type, 'VALUE' => $exception } );
 		}
 	}
 	if( defined( $feature_name ) ) {
 		if( defined( $result ) and $result ne '0' and $result ne '1' ) {
 			$interface->_throw_error_message( 'ROS_I_FEATURES_BAD_RESULT_SCALAR', 
-				{ 'FNAME' => $feature_name, 'VAL' => $result, 'ITYPE' => $intf_type } );
+				{ 'CLASS' => $engine_name, 'ITYPE' => $intf_type, 'FNAME' => $feature_name, 'VALUE' => $result } );
 		}
 	} else {
 		unless( ref( $result ) eq 'HASH' ) {
 			$interface->_throw_error_message( 'ROS_I_FEATURES_BAD_RESULT_LIST', 
-				{ 'VALUE' => $result, 'ITYPE' => $intf_type } );
+				{ 'CLASS' => $engine_name, 'ITYPE' => $intf_type, 'VALUE' => $result } );
 		}
 		foreach my $list_feature_name (keys %{$result}) {
 			unless( $POSSIBLE_FEATURES{$list_feature_name} ) {
 				$interface->_throw_error_message( 'ROS_I_FEATURES_BAD_RESULT_ITEM_NAME', 
-					{ 'FNAME' => $list_feature_name, 'ITYPE' => $intf_type } );
+					{ 'CLASS' => $engine_name, 'ITYPE' => $intf_type, 'FNAME' => $list_feature_name } );
 			}
 			my $value = $result->{$list_feature_name};
 			defined( $value ) or $interface->_throw_error_message( 
-				'ROS_I_FEATURES_BAD_RESULT_ITEM_NO_VAL', { 'FNAME' => $list_feature_name } );
+				'ROS_I_FEATURES_BAD_RESULT_ITEM_NO_VAL', { 'CLASS' => $engine_name, 'FNAME' => $list_feature_name } );
 			if( $value ne '0' and $value ne '1' ) {
 				$interface->_throw_error_message( 'ROS_I_FEATURES_BAD_RESULT_ITEM_BAD_VAL', 
-					{ 'FNAME' => $list_feature_name, 'VALUE' => $value, 'ITYPE' => $intf_type } );
+					{ 'CLASS' => $engine_name, 'ITYPE' => $intf_type, 'FNAME' => $list_feature_name, 'VALUE' => $value } );
 			}
 		}
 	}
@@ -605,6 +619,7 @@ sub prepare {
 			return( $interface->{$IPROP_ENGINE}->prepare( $interface, $routine_defn ) );
 		}
 	};
+	my $engine_name = ref($interface->{$IPROP_ENGINE}); # If undef, won't be used anyway.
 	if( my $exception = $@ ) {
 		if( ref($exception) and UNIVERSAL::isa( $exception, 'Rosetta::Interface' ) ) {
 			# The called code threw a Rosetta::Interface object.
@@ -615,14 +630,28 @@ sub prepare {
 		} else {
 			# The called code died in some other way (means coding error, not user error).
 			$preparation = $interface->new( $INTFTP_ERROR, Locale::KeyedText->new_message( 
-				'ROS_I_METH_MISC_EXCEPTION', { 'METH' => 'prepare', 
+				'ROS_I_METH_MISC_EXCEPTION', { 'METH' => 'prepare', 'CLASS' => $engine_name, 
 				'ITYPE' => $intf_type, 'VALUE' => $exception } ) );
 		}
 	} else {
 		unless( ref($preparation) and UNIVERSAL::isa( $preparation, 'Rosetta::Interface' ) ) {
 			# The called code didn't die, but didn't return a Rosetta::Interface object either.
 			$preparation = $interface->new( $INTFTP_ERROR, Locale::KeyedText->new_message( 
-				'ROS_I_PREPARE_BAD_RESULT', { 'VALUE' => $preparation, 'ITYPE' => $intf_type } ) );
+				'ROS_I_PREPARE_BAD_RESULT_NO_INTF', 
+				{ 'CLASS' => $engine_name, 'ITYPE' => $intf_type, 'VALUE' => $preparation } ) );
+		}
+	}
+	my $prep_intf_type = $preparation->{$IPROP_INTF_TYPE};
+	unless( $prep_intf_type eq $INTFTP_ERROR ) {
+		# Result is not an Error, so must belong to our Intf tree.
+		unless( $preparation->{$IPROP_ROOT_INTF} eq $interface->{$IPROP_ROOT_INTF} ) {
+			$preparation = $interface->new( $INTFTP_ERROR, Locale::KeyedText->new_message( 
+				'ROS_I_PREPARE_BAD_RESULT_WRONG_ITREE', { 'CLASS' => $engine_name, 'ITYPE' => $intf_type } ) );
+		} elsif( $prep_intf_type ne $INTFTP_PREPARATION ) {
+			# Non-Error result of prepare() must be a Preparation, without exception.
+			$preparation = $interface->new( $INTFTP_ERROR, Locale::KeyedText->new_message( 
+				'ROS_I_PREPARE_BAD_RESULT_WRONG_ITYPE', 
+				{ 'CLASS' => $engine_name, 'ITYPE' => $intf_type, 'RET_ITYPE' => $prep_intf_type } ) );
 		}
 	}
 	if( $preparation->{$IPROP_ERROR_MSG} ) {
@@ -656,16 +685,14 @@ sub _prepare_lpn {
 			eval "require $engine_name;";
 			if( $@ ) {
 				$app_intf->_throw_error_message( 'ROS_I_PREPARE_ENGINE_NO_LOAD', 
-					{ 'NAME' => $engine_name, 'ERR' => $@ } );
+					{ 'CLASS' => $engine_name, 'ERR' => $@ } );
 			}
 		}
 		unless( UNIVERSAL::isa( $engine_name, 'Rosetta::Engine' ) ) {
-			$app_intf->_throw_error_message( 'ROS_I_PREPARE_ENGINE_NO_ENGINE', 
-				{ 'NAME' => $engine_name } );
+			$app_intf->_throw_error_message( 'ROS_I_PREPARE_ENGINE_NO_ENGINE', { 'CLASS' => $engine_name } );
 		}
 		if( UNIVERSAL::isa( $engine_name, 'Rosetta::Dispatcher' ) ) {
-			$app_intf->_throw_error_message( 'ROS_I_PREPARE_ENGINE_YES_DISPATCHER', 
-				{ 'NAME' => $engine_name } );
+			$app_intf->_throw_error_message( 'ROS_I_PREPARE_ENGINE_YES_DISPATCHER', { 'CLASS' => $engine_name } );
 		}
 		my $routine = sub {
 			# This routine is a closure.
@@ -706,7 +733,7 @@ sub execute {
 		# Now we get to doing the real work we were called for.
 		if( $preparation->{$IPROP_PARENT_INTF}->{$IPROP_INTF_TYPE} eq $INTFTP_APPLICATION and 
 				scalar(@{$preparation->{$IPROP_CHILD_INTFS}}) > 0 ) {
-			# Each "Environment preparation" is only allowed one child "Environment"; 
+			# Each "Environment Preparation" is only allowed one child "Environment"; 
 			# any attempts to create more become no-ops, returning the first instead.
 			return( $preparation->{$IPROP_CHILD_INTFS}->[0] );
 		} else {
@@ -714,6 +741,7 @@ sub execute {
 				$preparation->{$IPROP_ENGINE}, $preparation, $routine_args ) );
 		}
 	};
+	my $engine_name = ref($preparation->{$IPROP_ENGINE}); # If undef, won't be used anyway.
 	if( my $exception = $@ ) {
 		if( ref($exception) and UNIVERSAL::isa( $exception, 'Rosetta::Interface' ) ) {
 			# The called code threw a Rosetta::Interface object.
@@ -724,14 +752,29 @@ sub execute {
 		} else {
 			# The called code died in some other way (means coding error, not user error).
 			$result = $preparation->new( $INTFTP_ERROR, Locale::KeyedText->new_message( 
-				'ROS_I_METH_MISC_EXCEPTION', { 'METH' => 'execute', 
+				'ROS_I_METH_MISC_EXCEPTION', { 'METH' => 'execute', 'CLASS' => $engine_name, 
 				'ITYPE' => $intf_type, 'VALUE' => $exception } ) );
 		}
 	} else {
 		unless( ref($result) and UNIVERSAL::isa( $result, 'Rosetta::Interface' ) ) {
 			# The called code didn't die, but didn't return a Rosetta::Interface object either.
 			$result = $preparation->new( $INTFTP_ERROR, Locale::KeyedText->new_message( 
-				'ROS_I_EXECUTE_BAD_RESULT', { 'VALUE' => $result, 'ITYPE' => $intf_type } ) );
+				'ROS_I_EXECUTE_BAD_RESULT_NO_INTF', 
+				{ 'CLASS' => $engine_name, 'ITYPE' => $intf_type, 'VALUE' => $result } ) );
+		}
+	}
+	my $res_intf_type = $result->{$IPROP_INTF_TYPE};
+	unless( $res_intf_type eq $INTFTP_ERROR or $res_intf_type eq $INTFTP_TOMBSTONE ) {
+		# Result is not an Error or Tombstone, so must belong to our Intf tree.
+		unless( $result->{$IPROP_ROOT_INTF} eq $preparation->{$IPROP_ROOT_INTF} ) {
+			$result = $preparation->new( $INTFTP_ERROR, Locale::KeyedText->new_message( 
+				'ROS_I_EXECUTE_BAD_RESULT_WRONG_ITREE', { 'CLASS' => $engine_name, 'ITYPE' => $intf_type } ) );
+		} elsif( $res_intf_type eq $INTFTP_PREPARATION or $res_intf_type eq $INTFTP_APPLICATION ) {
+			# Non-Error result of execute() must be one of [Lit, Env, Conn, Trans, Curs].
+			# We do not validate here for having the exact right kind as criteria is complicated.
+			$result = $preparation->new( $INTFTP_ERROR, Locale::KeyedText->new_message( 
+				'ROS_I_EXECUTE_BAD_RESULT_WRONG_ITYPE', 
+				{ 'CLASS' => $engine_name, 'ITYPE' => $intf_type, 'RET_ITYPE' => $res_intf_type } ) );
 		}
 	}
 	if( $result->{$IPROP_ERROR_MSG} ) {
@@ -758,7 +801,8 @@ sub payload {
 	if( my $exception = $@ ) {
 		unless( ref($exception) and UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
 			$lit_intf->_throw_error_message( 'ROS_I_METH_MISC_EXCEPTION', 
-				{ 'METH' => 'payload', 'ITYPE' => $intf_type, 'VALUE' => $exception } );
+				{ 'METH' => 'payload', 'CLASS' => ref($lit_intf->{$IPROP_ENGINE}), 
+				'ITYPE' => $intf_type, 'VALUE' => $exception } );
 		}
 	}
 	return( $result );
@@ -782,7 +826,8 @@ sub finalize {
 	if( my $exception = $@ ) {
 		unless( ref($exception) and UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
 			$curs_intf->_throw_error_message( 'ROS_I_METH_MISC_EXCEPTION', 
-				{ 'METH' => 'finalize', 'ITYPE' => $intf_type, 'VALUE' => $exception } );
+				{ 'METH' => 'finalize', 'CLASS' => ref($curs_intf->{$IPROP_ENGINE}), 
+				'ITYPE' => $intf_type, 'VALUE' => $exception } );
 		}
 	}
 	return( $result );
@@ -806,7 +851,8 @@ sub has_more_rows {
 	if( my $exception = $@ ) {
 		unless( ref($exception) and UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
 			$curs_intf->_throw_error_message( 'ROS_I_METH_MISC_EXCEPTION', 
-				{ 'METH' => 'has_more_rows', 'ITYPE' => $intf_type, 'VALUE' => $exception } );
+				{ 'METH' => 'has_more_rows', 'CLASS' => ref($curs_intf->{$IPROP_ENGINE}), 
+				'ITYPE' => $intf_type, 'VALUE' => $exception } );
 		}
 	}
 	return( $result );
@@ -830,7 +876,8 @@ sub fetch_row {
 	if( my $exception = $@ ) {
 		unless( ref($exception) and UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
 			$curs_intf->_throw_error_message( 'ROS_I_METH_MISC_EXCEPTION', 
-				{ 'METH' => 'fetch_row', 'ITYPE' => $intf_type, 'VALUE' => $exception } );
+				{ 'METH' => 'fetch_row', 'CLASS' => ref($curs_intf->{$IPROP_ENGINE}), 
+				'ITYPE' => $intf_type, 'VALUE' => $exception } );
 		}
 	}
 	return( $result );
@@ -854,7 +901,8 @@ sub fetch_all_rows {
 	if( my $exception = $@ ) {
 		unless( ref($exception) and UNIVERSAL::isa( $exception, 'Locale::KeyedText::Message' ) ) {
 			$curs_intf->_throw_error_message( 'ROS_I_METH_MISC_EXCEPTION', 
-				{ 'METH' => 'fetch_all_rows', 'ITYPE' => $intf_type, 'VALUE' => $exception } );
+				{ 'METH' => 'fetch_all_rows', 'CLASS' => ref($curs_intf->{$IPROP_ENGINE}), 
+				'ITYPE' => $intf_type, 'VALUE' => $exception } );
 		}
 	}
 	return( $result );
@@ -1018,11 +1066,11 @@ sub prepare {
 			return( $app_eng->prepare_cmd_db_open( $app_intf, $routine_defn ) );
 		} else {
 			$app_intf->_throw_error_message( 'ROS_G_PREPARE_INTF_NSUP_THIS_CMD', 
-				{ 'ITYPE' => $INTFTP_APPLICATION, 'CTYPE' => $cmd_type } );
+				{ 'CLASS' => 'Rosetta::Dispatcher', 'ITYPE' => $INTFTP_APPLICATION, 'CTYPE' => $cmd_type } );
 		}
 	} else {
 		$app_intf->_throw_error_message( 'ROS_G_PREPARE_INTF_NSUP_SSM_NODE', 
-			{ 'ITYPE' => $INTFTP_APPLICATION, 'NTYPE' => $node_type } );
+			{ 'CLASS' => 'Rosetta::Dispatcher', 'ITYPE' => $INTFTP_APPLICATION, 'NTYPE' => $node_type } );
 	}
 }
 
@@ -1704,6 +1752,17 @@ Locale::KeyedText::Message object property of this Interface, if it has one.
 
 This "getter" method returns by reference the parent Interface of this
 Interface, if it has one.
+
+=head2 get_root_interface()
+
+	my $appl_intf = $interface->get_root_interface();
+
+This "getter" method returns by reference the root 'Application' Interface of
+the tree that this Interface is in, if possible.  If the current Interface is
+an 'Application', then this method returns a reference to itself.  If the
+current Interface is either an 'Error' or 'Tombstone', then this method returns
+undef.  This is strictly a convenience method, similar to calling
+get_parent_interface() recursively, and it exists to help make code faster.
 
 =head2 get_child_interfaces()
 

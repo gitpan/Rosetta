@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.08';
+$VERSION = '0.09';
 
 ######################################################################
 
@@ -138,27 +138,35 @@ my %text_strings = (
 		"$CI.features(): invalid FEATURE_NAME argument; ".
 		"'{ARG}' does not match any known Rosetta Feature Name",
 	'ROS_I_FEATURES_BAD_RESULT_SCALAR' =>
-		"$CI.features(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
+		"$CI.features(): the '{CLASS}' Rosetta Engine that implements this '{ITYPE}' Interface ".
 		"did not return a valid boolean value, as expressed by '0' or '1', ".
 		"for the scalar query; it is instead: '{VALUE}'",
 	'ROS_I_FEATURES_BAD_RESULT_LIST' =>
-		"$CI.features(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
+		"$CI.features(): the '{CLASS}' Rosetta Engine that implements this '{ITYPE}' Interface ".
 		"did not return a valid Hash ref for the list query, but rather: '{VALUE}'",
 	'ROS_I_FEATURES_BAD_RESULT_ITEM_NAME' =>
-		"$CI.features(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
+		"$CI.features(): the '{CLASS}' Rosetta Engine that implements this '{ITYPE}' Interface ".
 		"returned a list key that does not match any known Rosetta Feature Name: '{FNAME}'",
 	'ROS_I_FEATURES_BAD_RESULT_ITEM_NO_VAL' =>
-		"$CI.features(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
+		"$CI.features(): the '{CLASS}' Rosetta Engine that implements this '{ITYPE}' Interface ".
 		"did not return a valid boolean value, as expressed by '0' or '1', ".
 		"for the '{FNAME}' feature name in this list query; it is instead undefined",
 	'ROS_I_FEATURES_BAD_RESULT_ITEM_BAD_VAL' =>
-		"$CI.features(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
+		"$CI.features(): the '{CLASS}' Rosetta Engine that implements this '{ITYPE}' Interface ".
 		"did not return a valid boolean value, as expressed by '0' or '1', ".
 		"for the '{FNAME}' feature name in this list query; it is instead: '{VALUE}'",
 
-	'ROS_I_PREPARE_BAD_RESULT' =>
-		"$CI.prepare(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
+	'ROS_I_PREPARE_BAD_RESULT_NO_INTF' =>
+		"$CI.prepare(): the '{CLASS}' Rosetta Engine that implements this '{ITYPE}' Interface ".
 		"did not return a Rosetta::Interface object, but rather: '{VALUE}'",
+	'ROS_I_PREPARE_BAD_RESULT_WRONG_ITREE' =>
+		"$CI.prepare(): the '{CLASS}' Rosetta Engine that implements this '{ITYPE}' Interface ".
+		"returned a Rosetta::Interface object that is in a different Interface tree ".
+		"than the Interface upon which this method was invoked",
+	'ROS_I_PREPARE_BAD_RESULT_WRONG_ITYPE' =>
+		"$CI.prepare(): the '{CLASS}' Rosetta Engine that implements this '{ITYPE}' Interface ".
+		"did not return the correct type of Rosetta::Interface object (Prep, Err); ".
+		"it instead returned a '{RET_ITYPE}' Interface",
 
 	'ROS_I_PREPARE_NO_NODE' => 
 		"$CI.prepare(): missing ROUTINE_DEFN argument; it is mandatory for '{TYPE}' Interfaces",
@@ -177,37 +185,45 @@ my %text_strings = (
 		"can not be associated with a '{ITYPE}' Interface",
 
 	'ROS_I_PREPARE_ENGINE_NO_LOAD' =>
-		"$CI.prepare(): the Engine class '{NAME}' failed to load: {ERR}",
+		"$CI.prepare(): the Engine class '{CLASS}' failed to load: {ERR}",
 	'ROS_I_PREPARE_ENGINE_NO_ENGINE' =>
-		"$CI.prepare(): the class '{NAME}' does not sub-class Rosetta::Engine so it is not a valid Engine class",
+		"$CI.prepare(): the class '{CLASS}' does not sub-class Rosetta::Engine so it is not a valid Engine class",
 	'ROS_I_PREPARE_ENGINE_YES_DISPATCHER' =>
-		"$CI.prepare(): the class '{NAME}' sub-classes Rosetta::Dispatcher so it is not a valid Engine class",
+		"$CI.prepare(): the class '{CLASS}' sub-classes Rosetta::Dispatcher so it is not a valid Engine class",
 
 	'ROS_I_EXECUTE_BAD_ARG' =>
 		"$CI.execute(): invalid ROUTINE_ARGS argument; it must be a hash ref if ".
 		"it is defined, but you tried to set it to '{ARG}'",
-	'ROS_I_EXECUTE_BAD_RESULT' =>
-		"$CI.execute(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
+	'ROS_I_EXECUTE_BAD_RESULT_NO_INTF' =>
+		"$CI.execute(): the '{CLASS}' Rosetta Engine that implements this '{ITYPE}' Interface ".
 		"did not return a Rosetta::Interface object, but rather: '{VALUE}'",
+	'ROS_I_EXECUTE_BAD_RESULT_WRONG_ITREE' =>
+		"$CI.execute(): the '{CLASS}' Rosetta Engine that implements this '{ITYPE}' Interface ".
+		"returned a Rosetta::Interface object that is in a different Interface tree ".
+		"than the Interface upon which this method was invoked",
+	'ROS_I_EXECUTE_BAD_RESULT_WRONG_ITYPE' =>
+		"$CI.execute(): the '{CLASS}' Rosetta Engine that implements this '{ITYPE}' Interface ".
+		"did not return the correct type of Rosetta::Interface object (Lit, Env, Conn, Trans, ".
+		"Curs, Err, Tomb); it instead returned a '{RET_ITYPE}' Interface",
 
 	'ROS_I_METH_NOT_SUPP' =>
 		"$CI.{METH}(): you may not invoke this method on Rosetta '{ITYPE}' Interfaces",
 	'ROS_I_METH_MISC_EXCEPTION' =>
-		"$CI.{METH}(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
+		"$CI.{METH}(): the {CLASS} Rosetta Engine that implements this '{ITYPE}' Interface ".
 		"has thrown a non-Locale::KeyedText::Message exception: '{VALUE}'",
 
 	'ROS_E_METH_NOT_IMPL' =>
 		"$CE.{METH}(): this method is not implemented by the '{CLASS}' Rosetta Engine class",
 
 	'ROS_G_PREPARE_INTF_NSUP_GEN_RTN' =>
-		"$GEN 00001 - can't prepare any type of generic routine on a '{ITYPE}' Interface",
+		"$GEN 00001 - {CLASS} - can't prepare any type of generic routine on a '{ITYPE}' Interface",
 	'ROS_G_PREPARE_INTF_NSUP_THIS_CMD' =>
-		"$GEN 00002 - can't prepare a '{CTYPE}' command-routine on a '{ITYPE}' Interface",
+		"$GEN 00002 - {CLASS} - can't prepare a '{CTYPE}' command-routine on a '{ITYPE}' Interface",
 	'ROS_G_PREPARE_INTF_NSUP_SSM_NODE' =>
-		"$GEN 00003 - can't prepare a '{NTYPE}' SSM Node as a routine on a '{ITYPE}' Interface",
+		"$GEN 00003 - {CLASS} - can't prepare a '{NTYPE}' SSM Node as a routine on a '{ITYPE}' Interface",
 
 	'ROS_G_CMD_DB_CLOSE_CONN_IN_USE' =>
-		"$GEN 00004 - can't close database connection since it has active transaction ".
+		"$GEN 00004 - {CLASS} - can't close database connection since it has active transaction ".
 		"contexts or prepared ones",
 );
 
