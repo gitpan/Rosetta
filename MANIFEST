@@ -3,6 +3,8 @@ INSTALL
 lib/Rosetta.pm
 lib/Rosetta/Framework.pod
 lib/Rosetta/L/en.pm
+lib/Rosetta/Validator.pm
+lib/Rosetta/Validator/L/en.pm
 LICENSE
 Makefile.PL
 MANIFEST

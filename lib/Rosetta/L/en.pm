@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 ######################################################################
 
@@ -208,7 +208,10 @@ __END__
 =head1 DESCRIPTION
 
 The Rosetta::L::en Perl 5 module contains localization data for Rosetta.  It is
-designed to be interpreted by Locale::KeyedText.
+designed to be interpreted by Locale::KeyedText.  Besides localizing generic
+error messages that Rosetta produces itself, this file also provides a
+ready-made set of generic database error strings that can be thrown by any
+Rosetta Engine.
 
 This class is optional and you can still use Rosetta effectively without it,
 especially if you plan to either show users different error messages than this
@@ -232,6 +235,6 @@ user text template string, if there is one, or undef if not.
 
 =head1 SEE ALSO
 
-perl(1), Locale::KeyedText, Rosetta, SQL::SyntaxModel::L::*.
+perl(1), Locale::KeyedText, Rosetta.
 
 =cut

@@ -1,3 +1,37 @@
+2004-07-05   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.31.
+
+	* This is mainly a documentation update and file reorganizing release; there 
+	are no significant code changes.
+
+	* Updated external dependencies on Locale::KeyedText to v0.04 and on
+	SQL::SyntaxModel to v0.23.
+
+	* Updated Framework.pod in several spots.  The "Schema" module group that
+	is referenced in several places is renamed to the "Model" module group. The
+	BRIEF MODULE LIST section now shows the upcoming "Rosetta-Validators"
+	distribution to be merged into the core "Rosetta" distribution, rather than
+	being separate; the Validator modules will also never make an appearance in
+	the "Rosetta-Extensions" as previously stated.  Also, Rosetta::Validator
+	will be just a single module in the forseeable future, rather than a set. 
+	Also, Rosetta::L::en will now take over the responsibility of storing the
+	ready-made set of generic database error strings that can be thrown by any
+	Rosetta Engine; the old Rosetta::Engine::L::en module in "Extensions" no
+	longer does this, but is now ::Generic specific (with appropriate rename). 
+	A few more small changes, mainly in OLDER DOCUMENTATION: Engine Modules.
+
+	* Updated lib/Rosetta.pm (now v0.15) and lib/Rosetta/L/en.pm (now v0.06),
+	mainly with updated documentation.  Most Rosetta.pm changes were in the
+	STRUCTURE POD, and internal property list declaration comments.  The list
+	of Interface types now shows that any kind of preparation can return a
+	Literal-producing routine, and not just Transaction ones.  Most en.pm 
+	changes were in DESCRIPTION.
+
+	* Added new modules lib/Rosetta/Validator.pm and
+	lib/Rosetta/Validator/L/en.pm; both are at version 0.01.  These are now 
+	place-holder skeletons that have their main documentation but lack code.
+
 2004-04-10   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.30.

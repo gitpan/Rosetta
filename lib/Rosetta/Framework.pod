@@ -226,7 +226,7 @@ un-documented APIs on an operating sytem, or doing direct OS data structure
 access on a non-memory-protected OS, would break if the implementation of that
 OS changed).
 
-Included in the Rosetta distribution will be several applications which serve
+Included in a Rosetta distribution will be several applications which serve
 as examples of Rosetta in use, but in some cases are useful themselves.  One
 example will be a utility for copying one database to another, such as for
 backup or restore, or just migration.  Another example will be a web app that
@@ -239,7 +239,7 @@ provide.
 =head1 STRUCTURE
 
 The modules composing the Rosetta framework are grouped into several main
-categories, which can be called: "Locale" (Locale::KeyedText), "Schema"
+categories, which can be called: "Locale" (Locale::KeyedText), "Model"
 (SQL::SyntaxModel), "Interface", "Engine", "Proxy" (Server/Client), "Validator",
 "Emulator", and others.
 
@@ -260,7 +260,7 @@ This briefly illustrates the relationship of the module groups:
 	    called by |   uses   used by \
 	              |                   \
 	      invokes |                    \
-	          Interface--------------Schema;Locale (both used by other 7 groups)
+	          Interface--------------Model;Locale (both used by other 7 groups)
 	    called by | \ uses   used by /  |
 	              |  \              /   |
 	      invokes/|   \            /   /
@@ -283,28 +283,28 @@ for displaying error messages.  All strings are mapped to short codes (eg:
 'R001372'); these codes are what the normal module code uses to display a
 particular message.
 
-The "Schema" and "Interface" modules are collectively referred to as the "Rosetta
+The "Model" and "Interface" modules are collectively referred to as the "Rosetta
 Native Interface" or "RNI", and they are the "Core" of the Rosetta framework to
-which all else is attached.  The distinction between the two is that Schema
+which all else is attached.  The distinction between the two is that Model
 modules are purely container objects which hold descriptions of "things" (such
 as data types or tables or views), while Interface modules typically are not
-containers and represent "actions" (such as connections or cursors).  Schema
+containers and represent "actions" (such as connections or cursors).  Model
 objects are complete on their own and can be serialized or stored indefinately
 off site for later retrieval and use, such as with a "data dictionary"
 describing a table or view.  Interface objects only make sense within the context
 where they were created and often contain time-sensitive data; it wouldn't make
 sense to store them except during the short term, such as with a pool of active
 and reusable database connections.  It is common for Interface objects to hold
-Schema objects as properties, to help them know how to do their actions, such
+Model objects as properties, to help them know how to do their actions, such
 as how to create a table or select from it.
 
 The Engine modules are what enable Rosetta to use each type of database.  They
 are what handle (interface to or implement) all the details of using a specific
 RDBMS product; you need at least one for each unique RDBMS product you plan to
-run your application on; they are "action" modules.  They take Interface/Schema
+run your application on; they are "action" modules.  They take Interface/Model
 objects as input and convert them into the actual SQL or other method calls
 that the RDBMS products use, then they invoke the generated, and then interpret
-the results into other Interface/Schema objects to return as output.  The Engine
+the results into other Interface/Model objects to return as output.  The Engine
 modules also deal with extracting any existing schema stored in an RDBMS so
 they can generate an RNI data dictionary from it when desired.  Nothing talks
 to an RDBMS product except a Engine module, and nothing talks to an Engine
@@ -362,7 +362,7 @@ correspondingly; each should have an identical public interface to what it
 emulates.  So applications often won't need to be changed to use Rosetta, but
 they still just become more portable.  Many Emulator modules would include SQL
 parsing functionality (as SQL is their input), and would convert SQL statements
-from known dialects into Interface/Schema objects
+from known dialects into Interface/Model objects
 
 All of the Rosetta components are implemented using pure Perl 5 code for now
 and during the near future (although some Engines or extensions may have
@@ -373,7 +373,7 @@ speed and memory efficiency but also compatability; it will allow Rosetta (and
 through it Perl) to use databases which previously had no Perl bindings or DBI
 Engines before.  Moreover, the potential user base would increase sharply
 because users of other languages like PHP or Python would be able to use it.
-The C version of Rosetta will probably have the "Schema" (SQL::SyntaxModel) and
+The C version of Rosetta will probably have the "Model" (SQL::SyntaxModel) and
 "Interface" modules being mostly reduced to struct definitions, macros for
 manipulating the structs, header files, and a small amount of implementation
 code.  Most of the normal implementation C code would be derived from the other
@@ -396,7 +396,7 @@ instead of C.
 =head1 BRIEF MODULE LIST
 
 The following module names and descriptions are undergoing a state of
-transition, mainly in the 'Extensions' arena.  See below for details.  Most of
+transition, mainly in the 'Extensions' arena.  See below for details.  Many of
 these modules don't exist yet, but are being planned to exist, as they are
 implemented over time.
 
@@ -426,10 +426,16 @@ I<Any indented package names represent inner classes of what they are beneath.>
 		Rosetta::Interface (defines the whole Rosetta public API, is largely a shim)
 		Rosetta::Engine (common base class for Engine modules that implement the Rosetta API)
 	Rosetta::L::en (Localization of Rosetta core for English)
+		(Also provides a set of generic database error strings for Engines, in English)
 	Rosetta::L::fr (Localization of Rosetta core for French)
 	Rosetta::L::* ... like German, Spanish, Dutch, Chinese, etc
 
 	Rosetta::Framework (Documentation on the Rosetta framework at large)
+
+	Rosetta::Validator (A common comprehensive test suite to run against all Engines)
+	Rosetta::Validator::L::en (Localization of Rosetta::Validator for English)
+	Rosetta::Validator::L::fr (Localization of Rosetta::Validator for French)
+	Rosetta::Validator::L::* ... like German, Spanish, Dutch, Chinese, etc
 
 =head2 In temporary distribution "Rosetta-Extensions"
 
@@ -440,24 +446,25 @@ distributions that are always being released in tandem, because each saw major
 changes in each update round.  Once these are modestly stable I will probably
 split them up such as is seen in the other module blocks, below.
 
-	Rosetta::Extensions (a small place-holder POD file to represent the distribution on CPAN)
-	Rosetta::Engine::L::en (A set of generic database error strings for Engines, in English)
+	Rosetta::Extensions (Reference implementations of fundamental Rosetta features)
+		(File is a small place-holder POD file to represent the distribution on CPAN)
 	Rosetta::Engine::Generic (A catch-all Engine for any DBI-supported SQL database)
-	Rosetta::Utility::SQLBuilder (Generate ANSI/ISO SQL-1999 and other SQL variants)
-	Rosetta::Utility::SQLParser (Parse ANSI/ISO SQL-1999 and other SQL variants)
-	Rosetta::Validator (A common comprehensive test suite to run against all Engines)
+	Rosetta::Engine::Generic::L::en (Localization of Rosetta::Engine::Generic for English)
+	Rosetta::Utility::SQLBuilder (Generate ANSI/ISO SQL-2003 and other SQL variants)
+	Rosetta::Utility::SQLParser (Parse ANSI/ISO SQL-2003 and other SQL variants)
 	Rosetta::Emulator::DBI (emulates DBI/DBD::*, but result is more portable)
 
 =head2 In distribution "Rosetta-Utilities" or a multiplicity of similarly named
 
-	Rosetta::Utility::SQLBuilder (Generate ANSI/ISO SQL-1999 and other SQL variants)
-	Rosetta::Utility::SQLParser (Parse ANSI/ISO SQL-1999 and other SQL variants)
+	Rosetta::Utility::SQLBuilder (Generate ANSI/ISO SQL-2003 and other SQL variants)
+	Rosetta::Utility::SQLParser (Parse ANSI/ISO SQL-2003 and other SQL variants)
 	Rosetta::Utility::RWViews (convert IUD against views into IUD against tables)
 	Rosetta::Utility::* ... other non-core utility modules usable by several non-core distros
 
 =head2 In distribution "Rosetta-Engine-Generic"
 
 	Rosetta::Engine::Generic (A catch-all Engine for any DBI-supported SQL database)
+	Rosetta::Engine::Generic::L::en (Localization of Rosetta::Engine::Generic for English)
 
 =head2 In a multiplicity of "Rosetta-Engine-*" distributions
 
@@ -484,7 +491,7 @@ I<Note: more databases (and data access protocols) can be found listed at
 	Rosetta::Engine::Unify (interface to Unify db)
 	Rosetta::Engine::Empress (interface to the Empress db)
 	Rosetta::Engine::PrimeBase (interface to PrimeBase db)
-	Rosetta::Engine::OpenBase (interface to OpenBase db)
+	Rosetta::Engine::OpenBase (interface to OpenBase db 8.x)
 	Rosetta::Engine::FrontBase (interface to FrontBase db)
 	Rosetta::Engine::InterBase (binding to Borland InterBase embedded db)
 	Rosetta::Engine::Firebird (interface to Firebird db)
@@ -500,6 +507,7 @@ I<Note: more databases (and data access protocols) can be found listed at
 	Rosetta::Engine::Helix (interface to Helix db)
 	Rosetta::Engine::Pick (interface to Pick Systems' db)
 	Rosetta::Engine::PointBase (interface to PointBase db, if linking to Java is possible)
+	Rosetta::Engine::HSQLDB (interface to HSQLDB db, if linking to Java is possible)
 	Rosetta::Engine::FileMaker (interface to FileMaker Pro db)
 	Rosetta::Engine::FoxPro (interface to FoxPro db)
 	Rosetta::Engine::Access (interface to MS Access db)
@@ -510,28 +518,12 @@ I<Note: more databases (and data access protocols) can be found listed at
 
 =head2 In distribution "Rosetta-Proxy"
 
+I<Some terms seen here are out of date.>
+
 	Rosetta::Proxy::Server (an application on top of RNI implementing a network server)
 	Rosetta::Proxy::Client (a "Engine" implementing a network client of the server)
 	Rosetta::Proxy::Command (network-safe packed repr of ::Interface::Command obj)
 	Rosetta::Proxy::Result (network-safe packed repr of ::Interface::Result obj)
-
-=head2 In distribution "Rosetta-Validators"
-
-	Rosetta::Validator (A common comprehensive test suite to run against all Engines)
-	Rosetta::Validator::DB1 (tests include: new db, open db, close db)
-	Rosetta::Validator::Table1 (tests include: create/modify/delete tables, fetch table schema)
-	Rosetta::Validator::Select1 (tests Include: select recs from 1 table)
-	Rosetta::Validator::IUD1 (tests include: insert/update/delete recs in 1 table)
-	Rosetta::Validator::View1 (tests include: create/modify/delete views, fetch view schema)
-	Rosetta::Validator::Select2 (tests Include: select from mult tables using joins only)
-	Rosetta::Validator::Select3 (tests Include: select from mult tables using unions only)
-	Rosetta::Validator::Select4 (tests Include: select from mult tables using subqueries)
-	Rosetta::Validator::IUD2 (tests include: i/u/d against views using joins only)
-	Rosetta::Validator::IUD3 (tests include: i/u/d against views using unions only)
-	Rosetta::Validator::IUD4 (tests include: i/u/d against views using subqueries)
-	Rosetta::Validator::Select5 (tests include: various built-in functions)
-	Rosetta::Validator::IUD5 (tests include: i/u/d against views using built-in functions)
-	Rosetta::Validator::* ... like stored procedures, triggers, various others
 
 =head2 In a multiplicity of "Rosetta-Emulator-*" distributions
 
@@ -568,9 +560,9 @@ I<Note: more databases (and data access protocols) can be found listed at
 These paragraphs were more or less the original documentation for high-level
 Rosetta concepts, back when each concept was planned to be a separate class of
 its own.  They were originally published in Framework.pod since the first
-release of the Rosetta distribution.  Some details you see here shouldn't be
-considered accurate.  One portion that was here as late as release 0.22,
-'Schema Modules', has been moved to Language.pod.
+release of the Rosetta distribution (2003-01-05).  Some details you see here
+shouldn't be considered accurate.  One portion that was here as late as
+2004-02-04, 'Model Modules', has been moved to Language.pod, as of 2004-02-12.
 
 =head2 Interface Modules
 
@@ -653,7 +645,7 @@ take care of translating RNI commands into SQL commands.  While a large part of
 SQL is implemented in a common way on most SQL-using databases, this class will
 take arguments that instruct it how to vary the SQL output to the dialect that
 a particular RDBMS uses.  Note that the default SQL being produced will be 
-compliant with the ANSI/ISO SQL-1999 standard.
+compliant with the ANSI/ISO SQL-2003 standard.
 
 =back
 
@@ -682,7 +674,9 @@ subselects.  This Engine is intended mainly for programs that are used by one
 person at a time, as locks will grab the whole database.  Given that the actual
 database is embedded into the Engine, we simply use the latest version
 available at the time of each Engine update, so mention of version ranges being
-supported or not is not applicable.  (However, 2.8.13 is the newest right now.)
+supported or not is not applicable.  That said, v2.8.14 is the current stable
+branch, and v3.0.2 is the current beta branch, which will move into production
+within a month or two.
 
 =item
 
@@ -694,28 +688,40 @@ before 8.x, like 7.3, will not be supported unless there is a great demand.
 =item
 
 B<Rosetta::Engine::PostgreSQL> - This class implements an Engine for talking to
-PostgreSQL 7.4.2 databases, with 7.3.6 support likely present but deprecated. 
+PostgreSQL 7.4.3 databases, with 7.3.6 support likely present but deprecated. 
 Versions 7.2 and earlier won't be supported without demand.
 
 =item
 
-B<Rosetta::Engine::MySQL> - This class implements an Engine for talking to MySQL
-databases.  It is intended to be used only with MySQL versions 4.0.18 and
-later, with version 4.1.1 or greater being strongly recommended.  That said,
-which version you should use depends on your stage of development; MySQL AB has
-declared the 4.1.x series to be alpha quality now (2003.04.10), and expects it
-to be production ready in eight months (and 5.x six months after that), whereas
-the 4.0.x series is production quality right now (2003.03.15).  Support for
-3.23.x will be present in the short term, but it is deprecated.  3.22.x and
-earlier will not be supported at all, without great demand.
+B<Rosetta::Engine::MySQL> - This class implements an Engine for talking to
+MySQL databases.  It is intended to be used only with MySQL versions 4.0.20 and
+later, with version 4.1.3 or greater being strongly recommended.  That said,
+which version you should use depends on your stage of development.  MySQL AB
+had declared the 4.0.x series to be production quality at v4.0.12 (2003.03.15),
+and since then this line had over a year's worth of bug-fix improvements. 
+MySQL AB had declared the 4.1.x series to be beta quality at v4.1.3
+(2004.06.28), and previously was at alpha quality at v4.1.0 (2003.04.10); they
+initially said the 4.1.x line would be production ready 8 months after its
+alpha release.  MySQL AB provided a preview release of the 5.0.x line on
+2003.12.22, which is v5.0.0; at the same time that the 4.1.x line was declared
+stable, the 5.0.x line was declared alpha, without a version increment; they
+initially said 5.0.x would be production ready 6 months after 4.1.x was. 
+Support for 3.23.x in this module will be present in the short term, but it is
+deprecated.  3.22.x and earlier will not be supported at all, without great
+demand.
+
+=item
+
+B<Rosetta::Engine::OpenBase> - This class implements an Engine for talking to
+OpenBase 8.0.3 databases.  v7.x and earlier won't be supported without demand.
 
 =back
 
 All other databases in common use should be supported as well; some in the
 above module list are products that I have used personally; I need to research
 others to know what versions exist or are stable or are in common use.  Other
-RDBMS products include: Sybase, PostgreSQL, DB2, SQL-Server, OpenBase,
-FrontBase, Valentina, Informix, and others.
+RDBMS products include: Sybase, DB2, SQL-Server, FrontBase, Valentina,
+Informix, and others.
 
 =head2 Miscellaneous Modules From Afar
 
@@ -766,10 +772,10 @@ it.
 =head1 OLDER EXAMPLE PROGRAM
 
 The following sample code is more or less the original SYNOPSIS documentation
-in Framework.pod since the first release of the Rosetta distribution; it was
-moved down here during release 0.24.  Some details you see here shouldn't be
-considered accurate; the new SYNOPSIS in Rosetta.pm is loosely derived from
-this, and that is up to date.
+in Framework.pod since the first release of the Rosetta distribution
+(2003-01-05); it was moved down here as of 2004-02-23.  Some details you see
+here shouldn't be considered accurate; the new SYNOPSIS in Rosetta.pm is
+loosely derived from this, and that is up to date.
 
 =head2 Content of settings file "survey_prefs.pl", used by script below:
 

@@ -11,10 +11,10 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.14';
+$VERSION = '0.15';
 
-use Locale::KeyedText 0.03;
-use SQL::SyntaxModel 0.16;
+use Locale::KeyedText 0.04;
+use SQL::SyntaxModel 0.23;
 
 ######################################################################
 
@@ -26,8 +26,8 @@ Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	Locale::KeyedText 0.03 (for error messages)
-	SQL::SyntaxModel 0.16
+	Locale::KeyedText 0.04 (for error messages)
+	SQL::SyntaxModel 0.23
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -123,6 +123,14 @@ my $INTFTP_TRANSACTION = 'transaction'; # Result of asking to start a new transa
 my $INTFTP_CURSOR      = 'cursor'; # Result of executing a query that would return rows to the caller
 my $INTFTP_ROW         = 'row'; # Result of executing a query that returns one row
 my $INTFTP_LITERAL     = 'literal'; # Result of execution that isn't one of the above, like an IUD
+	# This type can be returned as the grand-child for any of [APPL, ENVI, CONN, TRAN].
+	# This type is returned by the execute() of any Command that doesn't return one of 
+	# the above 4 context INTFs, except for those that return CURSOR|ROW.
+	# Any commands that stuff new Nodes in the current SSM Container, such as the 
+	# *_LIST or *_INFO or *_CLONE Commands, will return a new Node ref as the payload.
+	# Any commands that simply do a yes/no test, such as *_VERIFY, or DB_PING, 
+	# simply have a boolean payload.
+	# IUD commands usually return this, plus method calls; payload may be a hash ref of results.
 my %ALL_INTFTP = ( map { ($_ => 1) } (
 	$INTFTP_ERROR, $INTFTP_TOMBSTONE, $INTFTP_APPLICATION, $INTFTP_PREPARATION, 
 	$INTFTP_ENVIRONMENT, $INTFTP_CONNECTION, $INTFTP_TRANSACTION, 
@@ -969,7 +977,7 @@ such that applications written to do their database communications through it
 should "just work", without changes, when moved between databases.  This should
 happen with applications of nearly any complexity level, including those that
 use all (most) manner of advanced database features.  It is as if every
-database product out there has full ANSI/ISO SQL-1999 (or 1992 or 2003)
+database product out there has full ANSI/ISO SQL-2003 (or 1999 or 1992)
 compliance, so you write in standard SQL that just works anywhere.  Supported
 advanced features include generation and invocation of database stored
 routines, select queries (or views or cursors) of any complexity, [ins,upd,del]
@@ -1101,58 +1109,60 @@ however, an inappropriately called method will throw an exception saying so, so
 it is as if Perl had a normal run-time error due to calling a non-existent
 method.
 
-Each Interface object may also have its own Engine object associated with it 
-behind the scenes, with all the Engine objects in a mirroring tree structure; 
-but that may not always be true.  One example is right when you start out, or 
-if you try to open a database connection using a non-existent Engine module.  
-Specifically, both Application Interfaces and Error Interfaces never have 
-their own associated Engine; every other type of Interface must have one.
+Each Interface object may also have its own Engine object associated with it
+behind the scenes, with all the Engine objects in a mirroring tree structure;
+but that may not always be true.  One example is right when you start out, or
+if you try to open a database connection using a non-existent Engine module.
+Specifically, it is Error Interfaces and Tombstone Interfaces and Application
+Interfaces that never have their own associated Engine; every other type of
+Interface must have one.
 
 This diagram shows all of the Interface types and how they are allowed to 
 relate to each other parent-child wise in an Interface tree:
 
-	1	Application
-	2	  Preparation
-	3	    Environment
-	4	      Preparation
-	5	        Connection
-	6	          Preparation
-	7	            Transaction
-	8	              Preparation
-	9	                Cursor
-	10	              Preparation
-	11	                Row
-	12	              Preparation
-	13	                Literal
-	14	Tombstone
-	15	Error
+	1	Error
+	2	Tombstone
+	3	Application
+	4	  Preparation
+	5	    Literal
+	6	    Environment
+	7	      Preparation
+	8	        Literal
+	9	        Connection
+	10	          Preparation
+	11	            Literal
+	12	            Transaction
+	13	              Preparation
+	14	                Literal
+	15	                Row
+	16	                Cursor
 
-The "Application" (1) at the top is created using "Rosetta->new()", and you
-normally have just one of those in your program.  A "Preparation"
-(2,4,6,8,10,12) is created when you invoke "prepare()" off of an Interface
-object of one of these types: "Application" (1), "Environment" (3),
-"Connection" (5), "Transaction" (7).  Every type of Interface except
-"Application" and "Preparation" is created by invoking "execute()" of of an
-appropriate "Preparation" method.  The "prepare()" and "execute()" methods
-always create a new Interface having the result of the call, and this is
-usually a child of the one you invoked it from.  
+The "Application" (3) at the top is created using "Rosetta->new()", and you
+normally have just one of those in your program.  A "Preparation" (4,7,10,13)
+is created when you invoke "prepare()" off of an Interface object of one of
+these types: "Application" (3), "Environment" (6), "Connection" (9),
+"Transaction" (12).  Every type of Interface except "Application" and
+"Preparation" is created by invoking "execute()" of of an appropriate
+"Preparation" method.  The "prepare()" and "execute()" methods always create a
+new Interface having the result of the call, and this is usually a child of the
+one you invoked it from.
 
-A "Tombstone" (14) Interface is returned by execute() when that method's
-successful action involves destroying the parent of the Interface on which it
-was invoked (which is the context for the destruction command-routine); the new
-Interface has no parent or child Interfaces.
-
-An "Error" (15) Interface can be returned potentially by any method and it is
+An "Error" (1) Interface can be returned potentially by any method and it is
 self-contained; it has no parent Interfaces or children.  Note that any other
 kind of Interface can also store an error condition in addition to keeping its
 normal properties.
 
+A "Tombstone" (2) Interface is returned by execute() when that method's
+successful action involves destroying the parent of the Interface on which it
+was invoked (which is the context for the destruction command-routine); the new
+Interface has no parent or child Interfaces.
+
 For convenience, what often happens is that the Rosetta Engine will create
 multiple Interface generations for you as appropriate when you say "prepare()".
-For example, if you give a "open this database" command to an "Application" (1)
-Interface, you would be given back a great-grand-child "Preparation" (4)
-Interface.  Or, if you give a "select these rows" command to a "Connection"
-Interface, you will be given back a great-grand-child "Preparation" (8)
+For example, if you give a "open this database" command to an "Application" (3)
+Interface, you would be given back a great-grand-child "Preparation" (7)
+Interface.  Or, if you give a "select these rows" command to a "Connection" (9)
+Interface, you will be given back a great-grand-child "Preparation" (13)
 Interface (which would re-use the last "Transaction" if one exists).  Be aware
 of this if you ever request that an Interface you hold give you its parent.
 
@@ -1418,7 +1428,7 @@ parts of it will be changed in the near future, perhaps in incompatible ways.
 
 =head1 SEE ALSO
 
-perl(1), Rosetta::L::*, Rosetta::Framework, SQL::SyntaxModel,
+perl(1), Rosetta::L::en, Rosetta::Framework, SQL::SyntaxModel,
 Locale::KeyedText, Rosetta::Engine::Generic, DBI, DBD::*, Alzabo, SPOPS,
 Class::DBI, Tangram, DBIx::SearchBuilder, SQL::Schema, DBIx::Abstract,
 DBIx::AnyDBD, DBIx::Browse, DBIx::SQLEngine, MKDoc::SQL, and various other
