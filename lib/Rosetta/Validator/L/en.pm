@@ -10,7 +10,7 @@ package Rosetta::Validator::L::en;
 use 5.006;
 use strict;
 use warnings;
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 ######################################################################
 
@@ -68,9 +68,52 @@ suggesting improvements to the standard version.
 ######################################################################
 
 my $CV = 'Rosetta::Validator';
+my $FAIL = 'Rosetta::Validator Test Failure';
 
 my %text_strings = (
+	'ROSVAL_SET_ENG_NO_ARG' => 
+		"$CV.set_engine_name(): missing ENGINE_NAME argument",
 
+	'ROSVAL_GET_ECO_NO_ARG' => 
+		"$CV.get_engine_config_option(): missing ECO_NAME argument",
+
+	'ROSVAL_CLEAR_ECO_NO_ARG' => 
+		"$CV.clear_engine_config_option(): missing ECO_NAME argument",
+
+	'ROSVAL_SET_ECO_NO_NAME' => 
+		"$CV.set_engine_config_option(): missing ECO_NAME argument",
+	'ROSVAL_SET_ECO_NO_VALUE' => 
+		"$CV.set_engine_config_option(): missing ECO_VALUE argument",
+
+	'ROSVAL_SET_ECOS_NO_ARGS' => 
+		"$CV.set_engine_config_options(): missing EC_OPTS argument",
+	'ROSVAL_SET_ECOS_BAD_ARGS' => 
+		"$CV.set_engine_config_options(): invalid EC_OPTS argument; ".
+		"it is not a hash ref, but rather is '{ARG}'",
+
+	'ROSVAL_PER_TESTS_NO_ENG_NM' => 
+		"$CV.perform_tests(): you can not invoke this method until ".
+		"after you provide an Engine name to Validator.set_engine_name()",
+
+	'ROSVAL_DESC_LOAD' => 
+		"compiles and declares the Engine class",
+
+	'ROSVAL_DESC_CATALOG_LIST' => 
+		"gather a list of auto-detectable database instances",
+
+	'ROSVAL_DESC_CATALOG_INFO' => 
+		"gather more details on a specific database instance",
+
+	'ROSVAL_DESC_CONN_BASIC' => 
+		"open and close a connection to a specific database instance",
+
+	'ROSVAL_DESC_TRAN_BASIC' => 
+		"full basic support for transactions",
+
+	'ROSVAL_FAIL_MISC_STR' => 
+		"$FAIL: Miscellaneous Error: {VALUE}",
+	'ROSVAL_FAIL_MISC_OBJ' => 
+		"$FAIL: Miscellaneous Error",
 );
 
 ######################################################################

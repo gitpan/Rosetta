@@ -5,10 +5,10 @@
 
 BEGIN { $| = 1; print "1..1\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use Rosetta '0.37';
+use Rosetta '0.38';
 use Rosetta::L::en '0.12';
-use Rosetta::Validator '0.37';
-use Rosetta::Validator::L::en '0.05';
+use Rosetta::Validator '0.38';
+use Rosetta::Validator::L::en '0.06';
 $loaded = 1;
 print "ok 1\n";
 use strict;
@@ -29,7 +29,8 @@ sub result {
 	my ($worked, $detail) = @_;
 	$verbose or 
 		$detail = substr( $detail, 0, 50 ).
-		(length( $detail ) > 47 ? "..." : "");	print "@{[$worked ? '' : 'not ']}ok $test_num $detail\n";
+		(length( $detail ) > 47 ? "..." : "");
+	print "@{[$worked ? '' : 'not ']}ok $test_num $detail\n";
 }
 
 sub message {

@@ -1,3 +1,60 @@
+2004-11-06   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.38.
+
+	* New code file versions are: Rosetta.pm and Validator.pm v0.38, and
+	Validator/L/en.pm v0.06.
+
+	* Updated external dependencies on SQL::Routine to v0.48.
+
+	* There were no changes to Rosetta.pm except for the version and dependency 
+	number increments.  Zero changes to Rosetta/L/en.pm and Features.pod.
+
+	* This release is primarily a major upgrade to Validator.pm and its en.pm
+	file.  Previously, they had almost no code at all, and now they have a host
+	of utility functions plus testing functions for the CATALOG_LIST and
+	CONN_BASIC Rosetta features.  Externally, the Rosetta-Extensions
+	distribution is now using Rosetta::Validator as the primary component of
+	its t/*.t test suite, so it is being put to practical use.  Details follow.
+
+	* In Validator.pm, added 3 new class properties, "trace fh", "engine eco",
+	"eng env feat"; these complement the existing 2 properties, "engine name"
+	and "test results".  The single accessor method for "engine name" was split
+	into 3 methods; added 3 for "trace fh", 6 for "engine eco", and 2 for "test
+	results"; "eng env feat" is private and has no accessors.
+
+	* Added 8 new private utility functions: _throw_error_message(),
+	_new_result(), _pass_result(), _fail_result(), _misc_result(),
+	_setup_test(), _takedown_test(), _takedown_test_destroy_intf_tree().
+
+	* Added the first set of 6 methods that do the real work of Validator:
+	perform_tests(), perform_tests_load(), perform_tests_catalog_list(),
+	perform_tests_conn_basic(), perform_tests_catalog_info(),
+	perform_tests_tran_basic(); the last 2 don't do anything yet, but the first
+	4 are more or less complete.  You should only invoke perform_tests()
+	directly, and it invokes the others; the others are private.
+
+	* Added new Validator information function total_possible_tests(); it
+	currently returns a value of 5, which is the number of elements that
+	get_test_results() will return after perform_tests() is called.
+
+	* Rewrote the SYNOPSIS in Validator.pm to provide a fully functional 
+	example, similar to the Rosetta-Extensions t/*.t file.
+
+	* Added the first 15 user-text messages to Validator/L/en.pm; of these, 8
+	are error messages thrown when Validator.pm gets bad method inputs, 5 are
+	the description text for the first/current 5 test results, and 2 are
+	Validator-specific test failure messages.
+
+	* Updated Framework.pod to remove all mention of the historical posterity
+	distribution SQL-Routine-Castaways and its modules SQL::Routine::ByTree and
+	SQL::Routine::SkipID.  During this last week, all of the useful code in
+	that distribution was merged into the core SQL::Routine module, and the
+	test suites for ByTree and SkipID were also adapted into SQL-Routine; 
+	Castaways and ByTree and SkipID no longer exist as distinct entities.
+
+	* Other minor updates in Framework.pod.
+
 2004-10-26   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.37.

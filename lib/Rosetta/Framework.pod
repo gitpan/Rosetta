@@ -548,15 +548,6 @@ I<Some terms seen here are out of date.>
 
 	RosettaX::* ... unofficial extensions or wrappers to Rosetta are allowed here ...
 
-=head2 In historical posterity distribution "SQL-Routine-Castaways"
-
-	SQL::Routine::Castaways (Archaic functionality that was stripped from SQL::Routine)
-		(File is a small place-holder POD file to represent the distribution on CPAN)
-	SQL::Routine::ByTree (Build SQL::Routines from multi-dimensional Perl hashes and arrays)
-	SQL::Routine::ByTree::L::en (Localization of SQL::Routine::ByTree for English)
-	SQL::Routine::SkipID (Use SQL::Routines without inputting Node IDs)
-	SQL::Routine::SkipID::L::en (Localization of SQL::Routine::SkipID for English)
-
 =head1 OLDER DOCUMENTATION
 
 These paragraphs were more or less the original documentation for high-level
@@ -687,14 +678,14 @@ stable); the 2.x support is deprecated.
 B<Rosetta::Engine::MySQL> - This class implements an Engine for talking to
 MySQL databases.  It is recommended for use only with MySQL versions 4.1.7
 (stable) and greater, including v5.0.x (alpha) and v5.1.x.  Support for MySQL
-versions 4.0.21 (stable) and 3.23.58 (stable) is present but deprecated. 
+versions 4.0.22 (stable) and 3.23.58 (stable) is present but deprecated. 
 v3.22.x and earlier will not be supported at all, without great demand.
 
 =item
 
 B<Rosetta::Engine::PostgreSQL> - This class implements an Engine for talking to
 PostgreSQL databases.  It is recommended for use only with PostgreSQL versions
-8.0.0b3 and greater.  Support for PostgreSQL versions 7.4.6 and 7.3.8 and 7.2.6
+8.0.0b4 and greater.  Support for PostgreSQL versions 7.4.6 and 7.3.8 and 7.2.6
 is present but deprecated.  v7.1.x and earlier will not be supported at all,
 without great demand.
 

@@ -10,10 +10,10 @@ package Rosetta;
 use 5.006;
 use strict;
 use warnings;
-our $VERSION = '0.37';
+our $VERSION = '0.38';
 
 use Locale::KeyedText '1.00';
-use SQL::Routine '0.45';
+use SQL::Routine '0.48';
 
 ######################################################################
 
@@ -26,7 +26,7 @@ Standard Modules: I<none>
 Nonstandard Modules: 
 
 	Locale::KeyedText 1.00 (for error messages)
-	SQL::Routine 0.45
+	SQL::Routine 0.48
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -451,7 +451,7 @@ sub destroy {
 	# Now break link from our parent Interface to ourself, if we have a parent.
 	if( my $parent = $interface->{$IPROP_PARENT_INTF} ) {
 		my $siblings = $parent->{$IPROP_CHILD_INTFS};
-		@{$siblings} = grep { $_ ne $interface } @{$siblings}; # should only be one; break all
+		@{$siblings} = grep { $_ ne $interface } @{$siblings}; # should only be one link; break all
 	}
 
 	# Now break any links from ourself to other things, and destroy ourself.
