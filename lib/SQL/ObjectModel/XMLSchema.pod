@@ -1,6 +1,6 @@
 =head1 NAME
 
-SQL::ObjectModel::XMLSchema - Describe a database suitable for storing SQL::ObjectModels.
+SQL::ObjectModel::XMLSchema - Describe an XML schema suitable for storing SQL::ObjectModels.
 
 =head1 COPYRIGHT AND LICENSE
 

@@ -11,7 +11,7 @@ require 5.004;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 ######################################################################
 
@@ -673,6 +673,11 @@ APPLICATIONS, COMMANDS AND RESULTS
 ######################################################################
 
 # Names of properties for objects of the SQL::ObjectModel class are declared here:
+my $PROP_CONTAINERC = 'containerc'; # holds all the actual container properties for this class
+	# We use two classes here so that no internal refs point to the parentmost object, 
+	# and hence DESTROY() will be called properly when all external refs go away.
+
+# Names of properties for objects of the SQL::ObjectModel::_::Container class are declared here:
 my $PROP_ALL_NODES  = 'all_nodes'; # hash of hashes of node refs; find any node by node_type:node_id quickly
 my $PROP_ROOT_NODE  = 'root_node'; # reference to the root node of the node tree
 my $PROP_LAST_NODES = 'last_nodes'; # hash of node refs; find last node created of each node type
@@ -1318,7 +1323,44 @@ returns it.
 ######################################################################
 
 sub new {
-	my ($class, $args) = @_;
+	my ($class) = @_;
+	my $self = bless( {}, ref($class) || $class );
+	$self->{$PROP_CONTAINERC} = SQL::ObjectModel::_::Container->_create_container();
+	return( $self );
+}
+
+sub clone {
+	my ($self, $clone) = @_;
+	ref($clone) eq ref($self) or $clone = bless( {}, ref($self) );
+	$clone->{$PROP_CONTAINERC} = $self->{$PROP_CONTAINERC}->clone();
+	return( $clone );
+}
+
+sub get_root_node {
+	return( $_[0]->{$PROP_CONTAINERC}->get_root_node() );
+}
+
+sub create_node {
+	return( $_[0]->{$PROP_CONTAINERC}->create_node( $_[1] ) );
+}
+
+sub create_nodes {
+	$_[0]->{$PROP_CONTAINERC}->create_nodes( $_[1] );
+}
+
+sub DESTROY {
+	$_[0]->{$PROP_CONTAINERC}->_destroy_container();
+}
+
+######################################################################
+
+package # hide this class name from PAUSE indexer
+SQL::ObjectModel::_::Container;
+
+######################################################################
+
+sub _create_container {
+	my ($class) = @_;
 	my $self = bless( {}, ref($class) || $class );
 
 	$self->{$PROP_ALL_NODES} = { map { ($_ => {}) } keys %NODE_TYPES };
@@ -1332,6 +1374,16 @@ sub new {
 	} );
 
 	return( $self );
+}
+
+sub _destroy_container {
+	my ($self) = @_;
+	foreach my $nodes_by_type (values %{$self->{$PROP_ALL_NODES}}) {
+		foreach my $node (values %{$nodes_by_type}) {
+			%{$node} = ();
+		}
+	}
+	%{$self} = ();
 }
 
 ######################################################################
@@ -2303,13 +2355,6 @@ This module currently does not prevent the user from creating circular
 references between nodes, such as "A is the child of B and B is the child of
 A"; however, only a few types of nodes (such as 'view' and 'block' and
 '*_expr') even make this possible.
-
-The objects that this module creates involve a lot of circular Perl references;
-eg: each parent and child node have references to each other, and each
-container object and its nodes have references to each other.  Currently the
-module does not try to assist on garbage collection by explicitely breaking
-references at the right time, so until it does, use of this module is best kept
-to short-running programs, to avoid memory leaks.
 
 The mechanisms for automatically linking nodes to each other, and particularly
 for resolving parent-child node relationships, are under-developed (somewhat
