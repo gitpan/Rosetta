@@ -53,17 +53,17 @@ practical way of suggesting improvements to the standard version.
 
 =head1 DESCRIPTION
 
-All concepts in a SQL::ObjectModel can be represented by a
-data dictionary.  Such a data dictionary can be a linked in-memory set of
-objects (or serialized version thereof), or they can be represented by records
-in database tables having specific columns and constraints.  This documentation
-will attempt to explain the components of a SQL::ObjectModel data dictionary and how
-they relate.  Since SQL::ObjectModel doesn't actually use any database tables
+All concepts in a SQL::ObjectModel can be represented by a data dictionary. 
+Such a data dictionary can be a linked in-memory set of objects (or serialized
+version thereof), or they can be represented by records in database tables
+having specific columns and constraints.  This documentation will attempt to
+explain the components of a SQL::ObjectModel data dictionary and how they
+relate.  Since SQL::ObjectModel doesn't actually use any database tables
 internally, and that it is your application which would map such database
-tables to SQL::ObjectModel objects, you are free to modify this schema to your liking. 
-However, it is recommended that you mainly just add columns, such as for adding
-user visible text descriptions of each record, rather than changing or removing
-the suggested columns.
+tables to SQL::ObjectModel objects, you are free to modify this schema to your
+liking. However, it is recommended that you mainly just add columns, such as
+for adding user visible text descriptions of each record, rather than changing
+or removing the suggested columns.
 
 =head1 STRUCTURE
 
@@ -214,15 +214,12 @@ columns or view columns or block variables or arguments can be.
 Column List:
 
 	code - str,req - name of the base data type
-	is_storable - bool,req - true when may be used for a table col, false only be intermediate val
 	size_undefined - bool,req - true when user can't customize space used by data type
 	size_is_bytes - bool,req - true when can customize type to a size measured in bytes
 	size_is_chars - bool,req - true when can customize type to a size measured in chars
-	size_is_fixed - bool - true when customized size is what data always takes up
-	size_is_max - bool - true when data can take up variable space with size the maximum possible
-	typ_min_size - uint - suggested typical minimum size to customize to
-	typ_max_size - uint - suggested typical maximum size to customize to
-	can_use_as_num - bool,req - true when data can be used in mathematics in its natural form
+	size_is_digits - bool,req - true when can customize type to a size measured in digits
+	typ_min_size - uint - suggested typical minimum size to customize to (in any above unit)
+	typ_max_size - uint - suggested typical maximum size to customize to (in any above unit)
 
 Index List:
 
@@ -230,16 +227,13 @@ Index List:
 
 Record List:
 
-	|code    |st|un|by|ch|if|im|min|       max|num|
-	|--------|--|--|--|--|--|--|---|----------|---|
-	|bin     |1 |0 |1 |0 |0 |1 |  1|4294967295|0  | - stores anything as binary data
-	|str     |1 |0 |0 |1 |0 |1 |  1|4294967295|0  | - stores character data
-	|bool    |1 |1 |0 |0 |  |  |   |          |0  | - a boolean; only 2 values of false or true
-	|int     |1 |0 |1 |0 |1 |0 |  1|         8|1  | - a precise integer
-	|float   |1 |0 |1 |0 |1 |0 |  4|         8|1  | - an imprecise fractional number
-	|dec     |1 |0 |1 |0 |1 |0 |  1|       255|1  | - a precise fractional number as base-10 str
-	|datetime|1 |1 |0 |0 |  |  |   |          |0  | - a date or time or both (may be split up)
-	|numeric |0 |  |  |  |  |  |   |          |1  | - a num type for math exprs, can be int or not
+	|code    |un|by|ch|di|min|       max|
+	|--------|--|--|--|--|---|----------|
+	|bin     |0 |1 |0 |0 |  1|4294967295| - stores anything as binary data
+	|str     |0 |1 |1 |0 |  1|4294967295| - stores character data
+	|num     |0 |1 |1 |1 |  1|       255| - a number, either integral or fractional
+	|bool    |1 |0 |0 |0 |   |          | - a boolean; only 2 values of false or true
+	|datetime|1 |0 |0 |0 |   |          | - a date or time or both (may be split up)
 
 	Geographical types are expected to be added as well.  Maybe enumerated or set types also.
 
@@ -551,10 +545,10 @@ Record List:
 
 	|code   |ha|mn|ml|ul|mx|cc|cf|cb|ag|datatype|
 	|-------|--|--|--|--|--|--|--|--|--|--------|
-	|to_num |1 | 1|  |0 | 1|1 |1 |1 |0 |numeric | - cast arg as numeric (might take more args)
-	|to_bool|1 | 1|  |0 | 1|1 |1 |1 |0 |bool    | - cast arg as boolean (might take more args)
-	|to_int |1 | 1|  |0 | 1|1 |1 |1 |0 |int     | - cast arg as integer (might take more args)
 	|to_str |1 | 1|  |0 | 1|1 |1 |1 |0 |str     | - cast arg as string (might take more args)
+	|to_num |1 | 1|  |0 | 1|1 |1 |1 |0 |num     | - cast arg as numeric (might take more args)
+	|to_int |1 | 1|  |0 | 1|1 |1 |1 |0 |num     | - cast arg as integer (might take more args)
+	|to_bool|1 | 1|  |0 | 1|1 |1 |1 |0 |bool    | - cast arg as boolean (might take more args)
 	|to_date|1 | 1|  |0 | 1|1 |1 |1 |0 |datetime| - cast arg as datetime (might take more args)
 	|not    |1 | 1|  |0 | 1|1 |1 |1 |0 |bool    | - a logical 'not', true iif lone arg is false
 	|and    |1 | 2| 1|1 |  |1 |1 |1 |0 |bool    | - a logical 'and', true iif every arg is true
@@ -570,21 +564,21 @@ Record List:
 	|nvl    |1 | 2|  |0 | 2|1 |1 |1 |0 |        | - returns arg 1 if it is not null, else arg 2
 	|switch |1 | 2| 2|1 |  |1 |1 |1 |0 |        | - a logical switch-case expr (like Oracle 'decode')
 	|like   |1 | 2| 1|0 | 4|1 |1 |1 |0 |bool    | - true if first arg contains second; args 3,4 are flags
-	|add    |1 | 2| 1|1 |  |1 |1 |1 |0 |numeric | - result of adding all args as numbers
-	|sub    |1 | 2| 1|1 |  |1 |1 |1 |0 |numeric | - result of subtracting all subsequent args from first
-	|mul    |1 | 2| 1|1 |  |1 |1 |1 |0 |numeric | - result of multiplying all arguments
-	|div    |1 | 2|  |0 | 2|1 |1 |1 |0 |numeric | - result of dividing first argument by second
-	|divi   |1 | 2|  |0 | 2|1 |1 |1 |0 |int     | - integral division of first arg by second
-	|mod    |1 | 2|  |0 | 2|1 |1 |1 |0 |int     | - modulus of integral division of first arg by second
-	|round  |1 | 1| 1|0 | 2|1 |1 |1 |0 |numeric | - rounds first arg to N dec places; N is second arg or 0
-	|exp    |1 | 2| 1|0 | 2|1 |1 |1 |0 |numeric | - raises first arg to the power of the second
-	|log    |1 | 2| 1|0 | 2|1 |1 |1 |0 |numeric | - logarithm of the first arg on the base of second
-	|min    |1 | 1| 1|1 |  |1 |1 |1 |0 |numeric | - minimum arg value of all arguments
-	|max    |1 | 1| 1|1 |  |1 |1 |1 |0 |numeric | - maximum arg value of all arguments
-	|avg    |1 | 1| 1|1 |  |1 |1 |1 |0 |numeric | - average value of all arguments
+	|add    |1 | 2| 1|1 |  |1 |1 |1 |0 |num     | - result of adding all args as numbers
+	|sub    |1 | 2| 1|1 |  |1 |1 |1 |0 |num     | - result of subtracting all subsequent args from first
+	|mul    |1 | 2| 1|1 |  |1 |1 |1 |0 |num     | - result of multiplying all arguments
+	|div    |1 | 2|  |0 | 2|1 |1 |1 |0 |num     | - result of dividing first argument by second
+	|divi   |1 | 2|  |0 | 2|1 |1 |1 |0 |num     | - integral division of first arg by second
+	|mod    |1 | 2|  |0 | 2|1 |1 |1 |0 |num     | - modulus of integral division of first arg by second
+	|round  |1 | 1| 1|0 | 2|1 |1 |1 |0 |num     | - rounds first arg to N dec places; N is second arg or 0
+	|exp    |1 | 2| 1|0 | 2|1 |1 |1 |0 |num     | - raises first arg to the power of the second
+	|log    |1 | 2| 1|0 | 2|1 |1 |1 |0 |num     | - logarithm of the first arg on the base of second
+	|min    |1 | 1| 1|1 |  |1 |1 |1 |0 |num     | - minimum arg value of all arguments
+	|max    |1 | 1| 1|1 |  |1 |1 |1 |0 |num     | - maximum arg value of all arguments
+	|avg    |1 | 1| 1|1 |  |1 |1 |1 |0 |num     | - average value of all arguments
 	|sconcat|1 | 1| 1|1 |  |1 |1 |1 |0 |str     | - str concat of all arguments
-	|slength|1 | 1|  |0 | 1|1 |1 |1 |0 |int     | - length of input string in characters
-	|sindex |1 | 2| 1|0 | 3|1 |1 |1 |0 |int     | - pos in arg 1 of arg 2 if present, start at arg 3
+	|slength|1 | 1|  |0 | 1|1 |1 |1 |0 |num     | - length of input string in characters
+	|sindex |1 | 2| 1|0 | 3|1 |1 |1 |0 |num     | - pos in arg 1 of arg 2 if present, start at arg 3
 	|substr |1 | 2| 1|0 | 3|1 |1 |1 |0 |str     | - substr in arg 1 starting pos arg 2 of length arg 3
 	|srepeat|1 | 1| 1|0 | 2|1 |1 |1 |0 |str     | - str concat arg 1 to self repeated by arg 2 instances
 	|strim  |1 | 1|  |0 | 1|1 |1 |1 |0 |str     | - trims leading and trailing whitespace from arg 1
@@ -592,18 +586,18 @@ Record List:
 	|spadl  |1 | 2| 1|0 | 3|1 |1 |1 |0 |str     | - like spad but add filler on left rather than right
 	|lc     |1 | 1|  |0 | 1|1 |1 |1 |0 |str     | - lowercases latin chars in a string
 	|uc     |1 | 1|  |0 | 1|1 |1 |1 |0 |str     | - uppercases latin chars in a string
-	|gcount |0 | 0|  |0 | 0|1 |0 |0 |1 |int     | - count of rows a view/cursor can see
-	|gmin   |1 | 1|  |0 | 1|1 |0 |0 |1 |numeric | - minimum of values in all records in one view col
-	|gmax   |1 | 1|  |0 | 1|1 |0 |0 |1 |numeric | - maximum of values in all records in one view col
-	|gsum   |1 | 1|  |0 | 1|1 |0 |0 |1 |numeric | - sum of values in all records in one view col
-	|gavg   |1 | 1|  |0 | 1|1 |0 |0 |1 |numeric | - average of values in all records in one view col
+	|gcount |0 | 0|  |0 | 0|1 |0 |0 |1 |num     | - count of rows a view/cursor can see
+	|gmin   |1 | 1|  |0 | 1|1 |0 |0 |1 |num     | - minimum of values in all records in one view col
+	|gmax   |1 | 1|  |0 | 1|1 |0 |0 |1 |num     | - maximum of values in all records in one view col
+	|gsum   |1 | 1|  |0 | 1|1 |0 |0 |1 |num     | - sum of values in all records in one view col
+	|gavg   |1 | 1|  |0 | 1|1 |0 |0 |1 |num     | - average of values in all records in one view col
 	|gconcat|1 | 1|  |0 | 1|1 |0 |0 |1 |str     | - str concat of values in all records in one view col
 	|gevery |1 | 1|  |0 | 1|1 |0 |0 |1 |bool    | - is true when all rec values in one col are true
 	|gany   |1 | 1|  |0 | 1|1 |0 |0 |1 |bool    | - is true when at least one rec value in one col is true
 	|gsome  |1 | 1|  |0 | 1|1 |0 |0 |1 |bool    | - is true when some rec values are true
 	|crowid |0 | 0|  |0 | 0|1 |0 |0 |0 |str     | - unique database-generated row id of returned row (=rowid?)
-	|crownum|0 | 0|  |0 | 0|1 |0 |0 |0 |int     | - row number of returned row, before sorting (eg:Oracle)
-	|clevel |0 | 0|  |0 | 0|1 |0 |0 |0 |int     | - when using st-wi-cn-by, what hierarchy level row is in (eg:Oracle)
+	|crownum|0 | 0|  |0 | 0|1 |0 |0 |0 |num     | - row number of returned row, before sorting (eg:Oracle)
+	|clevel |0 | 0|  |0 | 0|1 |0 |0 |0 |num     | - when using st-wi-cn-by, what hierarchy level row is in (eg:Oracle)
 
 	Note that the function list is incomplete and will grow over time.  It does not currently 
 	mention functions for working with view/cursor subqueries, such as "in" (field in subquery), 
@@ -782,7 +776,7 @@ Record List:
 	|rec_verify  |0 |0 |0 |0 |0 |0 |1 |0 | - compares a provided set of records to stored ones
 	|rec_insert  |0 |0 |0 |0 |0 |0 |0 |1 | - inserts new recs into a table or view of multiple tables
 	|rec_update  |0 |0 |0 |0 |0 |0 |0 |1 | - updates exist recs in a table or view of multiple tables
-	|rec_c_update|0 |0 |0 |0 |0 |0 |0 |1 | - updates exist recs with calculation rather than value list
+	|rec_c_update|0 |0 |0 |0 |0 |0 |0 |1 | - ? updates exist recs with calculation rather than value list
 	|rec_delete  |0 |0 |0 |0 |0 |0 |0 |1 | - deletes exist recs from a table or view of multiple tables
 	|rec_replace |0 |0 |0 |0 |0 |0 |0 |1 | - either updates or inserts recs if they exist or not
 	|rec_clone   |0 |0 |0 |0 |0 |0 |0 |1 | - creates a clone of a record in same table/view (if possible)
@@ -861,58 +855,60 @@ table column definitions, view column definitions, and block variables.
 Column List:
 
 	name - str,req - name of the user customized data type
-	base_type - str,req - name of the basic data type this is customized from
-	size - int - maximum size in bytes data can be, in bytes for binary and nums, in chars for strs
+	basic_type - str,req - name of the basic data type this is customized from: bin, str, num, bool, datetime
+	size_in_bytes - int - maximum size in bytes data can be
+	size_in_chars - int - maximum size in chars data can be
+	size_in_digits - int - maximum size in digits data can be (aka num_scale)
 	store_fixed - bool - when true then try to reserve max size on disk even if not all used
 	str_encoding - str - which character encoding to use when data type is a string
 	str_trim_white - bool - when true then trim lead/trailing whitespace on save into field/var
 	str_latin_case - str - when str has latin chars do we upper/lowercase them on save
 	str_pad_char - str - when store_fixed is true then pad actual value with this to max size on save
 	str_trim_pad - bool - when store_fixed is true then trim padding on read from field/var
-	int_unsigned - bool - when basic_type is 'int', true means only >= 0 may be stored
-	dec_precision - int - when basic_type is 'dec', num digits of fractional precision we allowed
-	dt_calendar - str - when basic_type is 'datetime', what calendar the date and time is in
+	num_unsigned - bool - when basic_type is 'num', true means only >= 0 may be stored
+	num_precision - int - when basic_type is 'num', num digits of fractional precision we allowed
+	datetime_calendar - str - when basic_type is 'datetime', what calendar the date and time is in
 
 Undecided Possible Extra Columns:
 
-	min_num_val - int - when type is numerical, what the allowed minimum value is
-	max_num_val - int - when type is numerical, what the allowed maximum value is
-	min_date_val - datetime - when type is datetime, what the allowed earliest value is
-	max_date_val - datetime - when type is datetime, what the allowed latest value is
+	num_min_val - int - when type is numerical, what the allowed minimum value is
+	num_max_val - int - when type is numerical, what the allowed maximum value is
+	datetime_min_val - datetime - when type is datetime, what the allowed earliest value is
+	datetime_max_val - datetime - when type is datetime, what the allowed latest value is
 
 Index List:
 
 	primary - unique - [name]
-	fk_base_type - foreign - [base_type]->[cct_basic_data_type]:[code]
+	fk_basic_type - foreign - [basic_type]->[cct_basic_data_type]:[code]
 	fk_str_encoding - foreign - [str_encoding]->[cct_str_enc]:[code]
 	fk_str_latin_case - foreign - [str_latin_case]->[cct_str_latin_case]:[code]
-	fk_dt_calendar - foreign - [dt_calendar]->[cct_datetime_calendar]:[code]
+	fk_datetime_calendar - foreign - [datetime_calendar]->[cct_datetime_calendar]:[code]
 
 Example Record List:
 
-	|name    |base    | size|fx|enc|tw|la|pc|tp|u|p|cal|
-	|--------|--------|-----|--|---|--|--|--|--|-|-|---|
-	|bin1k   |bin     | 1000| 0|   |  |  |  |  | | |   | - a hunk of binary data of maximum 1000 bytes
-	|bin32k  |bin     |32000| 0|   |  |  |  |  | | |   | - a hunk of binary data of maximum 32000 bytes
-	|str4    |str     |    4| 1|asc| 1|uc|20|1 | | |   | - a fix-w 4 char ascii str, uppercased, spc-pad
-	|str10   |str     |   10| 1|asc| 1|pr|20|1 | | |   | - a fix-w 10 char ascii str, case-preserve, spc-pad
-	|str30   |str     |   30| 0|asc| 1|pr|  |  | | |   | - a var-w 30 char ascii str, case-preserving
-	|str2k   |str     | 2000| 0|u16| 0|pr|  |  | | |   | - a var-w 2000 char unicode str, case-preserving
-	|boolean |bool    |     |  |   |  |  |  |  | | |   | - a boolean; only 2 values of false or true
-	|byte    |int     |    1|  |   |  |  |  |  |0| |   | - a precise int btwn           -128 and           +127
-	|short   |int     |    2|  |   |  |  |  |  |0| |   | - a precise int btwn        -32,768 and        +32,767
-	|int     |int     |    4|  |   |  |  |  |  |0| |   | - a precise int btwn -2,147,483,648 and +2,147,483,647
-	|long    |int     |    8|  |   |  |  |  |  |0| |   | - a precise int btwn        -(2^63) and      +(2^63)-1
-	|ubyte   |int     |    1|  |   |  |  |  |  |1| |   | - a precise integer between 0 and           +255
-	|ushort  |int     |    2|  |   |  |  |  |  |1| |   | - a precise integer between 0 and        +65,535
-	|uint    |int     |    4|  |   |  |  |  |  |1| |   | - a precise integer between 0 and +4,294,967,295
-	|ulong   |int     |    8|  |   |  |  |  |  |1| |   | - a precise integer between 0 and      +(2^64)-1
-	|float   |float   |    4|  |   |  |  |  |  | | |   | - a 32-bit imprecise fractional number
-	|double  |float   |    8|  |   |  |  |  |  | | |   | - a 64-bit imprecise fractional number
-	|dec10p2 |dec     |   10|  |   |  |  |  |  | |2|   | - a precise 10-digit num with hundredths precision
-	|dec255  |dec     |  255|  |   |  |  |  |  | | |   | - a precise 255-digit num with arbitrary precision
-	|datetime|datetime|     |  |   |  |  |  |  | | |abs| - a date or time or both, non-calendar specific
-	|dtchines|datetime|     |  |   |  |  |  |  | | |chi| - a date or time or both, in the Chinese calendar
+	|name    |base    |bytes|char|dig|fx|enc|tw|la|pc|tp|u|p|cal|
+	|--------|--------|-----|----|---|--|---|--|--|--|--|-|-|---|
+	|bin1k   |bin     | 1000|    |   | 0|   |  |  |  |  | | |   | - a hunk of binary data of maximum 1000 bytes
+	|bin32k  |bin     |32000|    |   | 0|   |  |  |  |  | | |   | - a hunk of binary data of maximum 32000 bytes
+	|str4    |str     |     |   4|   | 1|asc| 1|uc|20|1 | | |   | - a fix-w 4 char ascii str, uppercased, spc-pad
+	|str10   |str     |     |  10|   | 1|asc| 1|pr|20|1 | | |   | - a fix-w 10 char ascii str, case-preserve, spc-pad
+	|str30   |str     |     |  30|   | 0|asc| 1|pr|  |  | | |   | - a var-w 30 char ascii str, case-preserving
+	|str2k   |str     |     |2000|   | 0|u16| 0|pr|  |  | | |   | - a var-w 2000 char unicode str, case-preserving
+	|byte    |num     |    1|    |   | 1|   |  |  |  |  |0|0|   | - a precise int btwn           -128 and           +127
+	|short   |num     |    2|    |   | 1|   |  |  |  |  |0|0|   | - a precise int btwn        -32,768 and        +32,767
+	|int     |num     |    4|    |   | 1|   |  |  |  |  |0|0|   | - a precise int btwn -2,147,483,648 and +2,147,483,647
+	|long    |num     |    8|    |   | 1|   |  |  |  |  |0|0|   | - a precise int btwn        -(2^63) and      +(2^63)-1
+	|ubyte   |num     |    1|    |   | 1|   |  |  |  |  |1|0|   | - a precise integer between 0 and           +255
+	|ushort  |num     |    2|    |   | 1|   |  |  |  |  |1|0|   | - a precise integer between 0 and        +65,535
+	|uint    |num     |    4|    |   | 1|   |  |  |  |  |1|0|   | - a precise integer between 0 and +4,294,967,295
+	|ulong   |num     |    8|    |   | 1|   |  |  |  |  |1|0|   | - a precise integer between 0 and      +(2^64)-1
+	|float   |num     |    4|    |   | 1|   |  |  |  |  | | |   | - a 32-bit imprecise fractional number
+	|double  |num     |    8|    |   | 1|   |  |  |  |  | | |   | - a 64-bit imprecise fractional number
+	|dec10p2 |num     |     |    | 10| 0|   |  |  |  |  | |2|   | - a precise 10-digit num with hundredths precision
+	|dec255  |num     |     |    |255| 0|   |  |  |  |  | | |   | - a precise 255-digit num with arbitrary precision
+	|boolean |bool    |     |    |   |  |   |  |  |  |  | | |   | - a boolean; only 2 values of false or true
+	|datetime|datetime|     |    |   |  |   |  |  |  |  | | |abs| - a date or time or both, non-calendar specific
+	|dtchines|datetime|     |    |   |  |   |  |  |  |  | | |chi| - a date or time or both, in the Chinese calendar
 
 =head1 DATABASES AND NAME SPACES
 
@@ -939,8 +935,23 @@ one record, if you are only using one database.  The rationale for being able
 to describe multiple databases in the same data dictionary is, for example, 
 when one database wants to talk directly to another.
 
-This documentation is not yet complete, or referenced.  It may also be dropped 
-if 'namespace' fills its role well enough.
+Column List:
+
+	database_id - int,req - unique identifier for this database
+	database_name - str - corresponds to Oracle "Data Source" (for one db instance querying another)
+
+Index List:
+
+	primary - unique - [database_id]
+	ak_name - unique - [database_name]
+
+Example Record List:
+
+	|id|name|
+	|--|----|
+	| 1|    | - a default database, usually just used if it is the only database
+	| 2|site| - a multi-namespace genealogy database that you manage
+	| 3|dist| - a similar database that someone else manages
 
 =head2 namespace
 
@@ -965,21 +976,23 @@ to anything in the SQL::ObjectModel code.
 Column List:
 
 	namespace_id - int,req - unique identifier for this namespace
-	level_1_name - str - corresponds to Oracle "Schema"
-	level_2_name - str - corresponds to Oracle "Data Source" (for one db instance querying another)
+	database_id - int,req - the database that this namespace is in
+	namespace_name - str - the name this namespace is identified by; corresponds to Oracle "Schema"
 
 Index List:
 
 	primary - unique - [namespace_id]
+	ak_name - unique - [database_id,namespace_name]
+	fk_database - foreign - [database_id]->[database]:[database_id]
 
 Example Record List:
 
-	|id|lev1|lev2|
-	|--|----|----|
-	| 1|    |    | - a default namespace, usually just used if it is the only namespace
-	| 2|gene|    | - store all the normal app data that constitutes a genealogy database
-	| 3|dd  |    | - store a data dictionary describing an application for editing gene data
-	| 4|gene|dist| - in case we want to access genealogy data collected by someone else
+	|id|db|name|
+	|--|--|----|
+	| 1| 1|    | - a default namespace, usually just used if it is the only namespace
+	| 2| 2|gene| - store all the normal app data that constitutes a genealogy database
+	| 3| 2|dd  | - store a data dictionary describing an application for editing gene data
+	| 4| 3|gene| - in case we want to access genealogy data collected by someone else
 
 Note: it may not be practical in real life to have databases directly querying
 each other, but for when you do want to, some database engines do support it.
@@ -1178,6 +1191,34 @@ Example Record List:
 	|  4|ak_alternate_id |alternate_id |  1|    |         | - ensure all [alternate_id] are unique
 	|  4|fk_father       |father_id    |  1|   4|person_id| - link child to father
 	|  4|fk_mother       |mother_id    |  1|   4|person_id| - link child to mother
+
+=head2 trigger
+
+This table is basically an intersection table between a table and a block,
+except that each block can only be used in one trigger.  Each record in this
+table uniquely corresponds to a single trigger, which is a special unnamed
+block that is associated with a table and which executes automatically when
+certain kinds of DML activity happen to the table.  Triggers can be set to run
+before or after said activity, either once per SQL statement execution or once
+per each row worked on; they can run on inserts and/or updates and/or deletes.
+
+Column List:
+
+	table_id - int,req - unique identifier for the table to watch
+	block_id - int,req - unique identifier for the block to execute, only 1 trig can use a block
+	run_before - bool,req - true when the block should execute before attempted change is made
+	run_after - bool,req - true when the block should execute after attempted change is made
+	on_insert - bool,req - true when block should execute when a record insert is attempted
+	on_update - bool,req - true when block should execute when a record update is attempted
+	on_delete - bool,req - true when block should execute when a record delete is attempted
+	for_each_row - bool,req - true when block is re-executed for each row affected; false is once
+
+Index List:
+
+	primary - unique - [table_id,block_id]
+	ak_block - unique - [block_id]
+	fk_table - foreign - [table_id]->[table]:[table_id]
+	fk_block - foreign - [block_id]->[block]:[block_id]
 
 =head1 VIEWS
 
@@ -1886,34 +1927,6 @@ Index List:
 	fk_src_var_name - foreign - [block_id,src_var_name]->[block_var]:[block_id,var_name]
 	fk_sfunc_code - foreign - [sfunc_code]->[cct_standard_func]:[code]
 	fk_ufunc - foreign - [ufunc_id]->[block]:[block_id]
-
-=head2 trigger
-
-This table is basically an intersection table between a table and a block,
-except that each block can only be used in one trigger.  Each record in this
-table uniquely corresponds to a single trigger, which is a special unnamed
-block that is associated with a table and which executes automatically when
-certain kinds of DML activity happen to the table.  Triggers can be set to run
-before or after said activity, either once per SQL statement execution or once
-per each row worked on; they can run on inserts and/or updates and/or deletes.
-
-Column List:
-
-	table_id - int,req - unique identifier for the table to watch
-	block_id - int,req - unique identifier for the block to execute, only 1 trig can use a block
-	run_before - bool,req - true when the block should execute before attempted change is made
-	run_after - bool,req - true when the block should execute after attempted change is made
-	on_insert - bool,req - true when block should execute when a record insert is attempted
-	on_update - bool,req - true when block should execute when a record update is attempted
-	on_delete - bool,req - true when block should execute when a record delete is attempted
-	for_each_row - bool,req - true when block is re-executed for each row affected; false is once
-
-Index List:
-
-	primary - unique - [table_id,block_id]
-	ak_block - unique - [block_id]
-	fk_table - foreign - [table_id]->[table]:[table_id]
-	fk_block - foreign - [block_id]->[block]:[block_id]
 
 =head1 USERS
 

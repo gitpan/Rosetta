@@ -1,12 +1,14 @@
 ONE DEVELOPMENT TRACK
 
-r0.14 - Create the Locale::KeyedText module and other Locale modules.  These
+r0.15 - Rewrite SQL::ObjectModel so that one would interact with it much like a
+DOM, and such that it is implemented sort of like one too; bringing it up to
+DataDictionary state.
+
+r0.16 - Create the Locale::KeyedText module and other Locale modules.  These
 will be needed by the other code modules. The french module will only contain
 mock text (to be replaced later) since I'm not fluent in non-english languages.
 
-r0.15 - Flesh out SQL::ObjectModel, bringing it up to DataDictionary state.
-
-r0.16 - Create modules Rosetta::Engine, Rosetta::Connection,
+r0.17 - Create modules Rosetta, Rosetta::_::Engine, Rosetta::_::Connection,
 as well as Rosetta::Driver::Null.
 
 * Start Rosetta-Drivers distribution, having just module ::Native.  This driver

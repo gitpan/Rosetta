@@ -2,18 +2,19 @@
 
 SQL::ObjectModel - Unserialized SQL objects, use like XML DOM
 
-=cut
+=head1 PREFACE
 
-######################################################################
+Most of this module's code or structure isn't yet directly documented in POD,
+so you should view the source of this file to better understand what it can do
+and how to use it.  That said, many details are indirectly documented in the
+DataDictionary.pod file, so looking at that may help you understand this code.
 
-package SQL::ObjectModel;
-require 5.004;
-use strict;
-use warnings;
-use vars qw($VERSION);
-$VERSION = '0.012';
-
-######################################################################
+Please note that this module is currently in pre-alpha development status,
+meaning that everything in it is highly likely to change in the future, and
+that it hasn't been tested much yet.  Moreover, there isn't a lot of input
+checking yet, and the module currently assumes you will provide correct input
+when calling its methods; this lack currently makes the code a lot simpler and
+easier to understand.
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -66,17 +67,680 @@ practical way of suggesting improvements to the standard version.
 
 =head1 DEPENDENCIES
 
-=head2 Perl Version
+Perl Version:
 
 	5.004
 
-=head2 Standard Modules
+Standard Modules:
 
-	I<none>
+I<none>
 
-=head2 Nonstandard Modules
+Nonstandard Modules:
 
-	I<none>
+I<none>
+
+=cut
+
+######################################################################
+######################################################################
+# General file-level pragma or module dependencies are specified here.
+
+require 5.004;
+use strict;
+use warnings;
+
+# This is the logical organization of the classes in this module:
+# 
+# 	+-objectmodel
+# 	   +-datatype
+# 	   +-database
+# 	   |  +-namespace
+# 	   |  |  +-table
+# 	   |  |  |  +-trigger
+# 	   |  |  |     +-block
+# 	   |  |  +-view
+# 	   |  |  |  +-view
+# 	   |  |  +-sequence    
+# 	   |  |  +-block
+# 	   |  |     +-block
+# 	   |  +-user
+# 	   +-command
+# 	      +-view
+# 	      +-block
+
+######################################################################
+######################################################################
+# Any named constant values that are used by any of the classes in this 
+# file are declared here, including the names of any class properties 
+# or sub-properties or named method arguments.
+
+# Names of SQL::ObjectModel class properties are declared here:
+my $PROP_SOM_DATATYPE_LIST = 'datatype_list';
+my $PROP_SOM_DATABASE_LIST = 'database_list';
+# No list of commands will be stored here since they are not part of a schema.
+# However, an application specific class using this one may implement one.
+
+# Names of SQL::ObjectModel::_::Node class properties are declared here:
+my $PROP_NODE_CONTAINER = 'som_node_container';  # ref to SOM containing node
+my $PROP_NODE_PARENT    = 'som_node_parent';  # ref to parent node of this node
+
+######################################################################
+# Names of SQL::ObjectModel::_::DataType class properties are declared here:
+my $PROP_DATP_NAME   = 'name';
+my $PROP_DATP_BATP   = 'basic_type';
+my $PROP_DATP_SIBY   = 'size_in_bytes';
+my $PROP_DATP_SICH   = 'size_in_chars';
+my $PROP_DATP_SIDI   = 'size_in_digits';
+my $PROP_DATP_STFX   = 'store_fixed';
+my $PROP_DATP_S_ENC  = 'str_encoding';
+my $PROP_DATP_S_TRWH = 'str_trim_white';
+my $PROP_DATP_S_LTCS = 'str_latin_case';
+my $PROP_DATP_S_PDCH = 'str_pad_char';
+my $PROP_DATP_S_TRPD = 'str_trim_pad';
+my $PROP_DATP_N_UNSG = 'num_unsigned';
+my $PROP_DATP_N_PREC = 'num_precision';
+my $PROP_DATP_D_CAL  = 'datetime_calendar';
+
+# Names of the allowed basic data types are declared here:
+# ... NOT SURE IF THIS WILL BE USED ...
+my $DATP_BINARY   = 'bin';
+my $DATP_STRING   = 'str';
+my $DATP_NUMBER   = 'num';
+my $DATP_BOOLEAN  = 'bool';
+my $DATP_DATETIME = 'datetime';
+my %DATP_BASIC_TYPES = (
+	$DATP_BINARY   => 250,  # eg: '\0x24\0x00\0xF4\0x1A'
+	$DATP_STRING   => 250,  # eg: 'Hello World'
+	$DATP_NUMBER   =>   4,  # eg: 14, 3, -7, 200000, 3.14159
+	$DATP_BOOLEAN  =>   0,  # eg: 1, 0
+	$DATP_DATETIME =>   0,  # eg: 2003.02.28.16.06.30
+);
+
+######################################################################
+# Names of SQL::ObjectModel::_::Database class properties are declared here:
+my $PROP_DB_DATABASE_ID    = 'database_id';
+my $PROP_DB_DATABASE_NAME  = 'database_name';
+
+my $PROP_DB_NAMESPACE_LIST = 'namespace_list';
+my $PROP_DB_USER_LIST      = 'user_list';
+
+# Names of SQL::ObjectModel::_::Namespace class properties are declared here:
+my $PROP_NS_NAMESPACE_ID   = 'namespace_id';
+my $PROP_NS_DATABASE_ID    = 'database_id';
+my $PROP_NS_NAMESPACE_NAME = 'namespace_name';
+
+my $PROP_NS_TABLE_LIST    = 'table_list';
+my $PROP_NS_VIEW_LIST     = 'view_list';
+my $PROP_NS_SEQUENCE_LIST = 'sequence_list';
+my $PROP_NS_BLOCK_LIST    = 'block_list';
+
+######################################################################
+# Names of SQL::ObjectModel::_::Table class properties are declared here:
+my $PROP_TB_TRIGGER_LIST = 'trigger_list';
+
+# Names of SQL::ObjectModel::_::Trigger class properties are declared here:
+my $PROP_TG_BLOCK = 'block';
+
+######################################################################
+# Names of SQL::ObjectModel::_::View class properties are declared here:
+
+######################################################################
+# Names of SQL::ObjectModel::_::Sequence class properties are declared here:
+
+######################################################################
+# Names of SQL::ObjectModel::_::Block class properties are declared here:
+
+######################################################################
+# Names of SQL::ObjectModel::_::User class properties are declared here:
+
+######################################################################
+# Names of SQL::ObjectModel::_::Command class properties are declared here:
+my $PROP_CMD_ID   = 'id';  # not sure if this will be needed
+my $PROP_CMD_TYPE = 'type';
+# ...
+
+# Names of the allowed command types are declared here:
+my $CMD_DB_LIST   = 'db_list';
+my $CMD_DB_INFO   = 'db_info';
+my $CMD_DB_VERIFY = 'db_verify';
+my $CMD_DB_OPEN   = 'db_open';
+my $CMD_DB_CLOSE  = 'db_close';
+my $CMD_DB_PING   = 'db_ping';
+my $CMD_DB_CREATE = 'db_create';
+my $CMD_DB_DELETE = 'db_delete';
+my $CMD_DB_CLONE  = 'db_clone';
+my $CMD_DB_MOVE   = 'db_move';
+my $CMD_US_LIST   = 'user_list';
+my $CMD_US_INFO   = 'user_info';
+my $CMD_US_VERIFY = 'user_verify';
+my $CMD_US_CREATE = 'user_create';
+my $CMD_US_DELETE = 'user_delete';
+my $CMD_US_CLONE  = 'user_clone';
+my $CMD_US_UPDATE = 'user_update';
+my $CMD_US_GRANT  = 'user_grant';
+my $CMD_US_REVOKE = 'user_revoke';
+my $CMD_TB_LIST   = 'table_list';
+my $CMD_TB_INFO   = 'table_info';
+my $CMD_TB_VERIFY = 'table_verify';
+my $CMD_TB_CREATE = 'table_create';
+my $CMD_TB_DELETE = 'table_delete';
+my $CMD_TB_CLONE  = 'table_clone';
+my $CMD_TB_UPDATE = 'table_update';  # means 'alter'
+my $CMD_VW_LIST   = 'view_list';
+my $CMD_VW_INFO   = 'view_info';
+my $CMD_VW_VERIFY = 'view_verify';
+my $CMD_VW_CREATE = 'view_create';
+my $CMD_VW_DELETE = 'view_delete';
+my $CMD_VW_CLONE  = 'view_clone';
+my $CMD_VW_UPDATE = 'view_update';
+my $CMD_BL_LIST   = 'block_list';
+my $CMD_BL_INFO   = 'block_info';
+my $CMD_BL_VERIFY = 'block_verify';
+my $CMD_BL_CREATE = 'block_create';
+my $CMD_BL_DELETE = 'block_delete';
+my $CMD_BL_CLONE  = 'block_clone';
+my $CMD_BL_UPDATE = 'block_update';
+my $CMD_RC_FETCH  = 'rec_fetch';  # means 'select'
+my $CMD_RC_VERIFY = 'rec_verify';
+my $CMD_RC_INSERT = 'rec_insert';
+my $CMD_RC_UPDATE = 'rec_update';
+my $CMD_RC_DELETE = 'rec_delete';
+my $CMD_RC_REPLAC = 'rec_replace';
+my $CMD_RC_CLONE  = 'rec_clone';
+my $CMD_RC_LOCK   = 'rec_lock';
+my $CMD_RC_UNLOCK = 'rec_unlock';
+my $CMD_TR_START  = 'tra_start';
+my $CMD_TR_COMMIT = 'tra_commit';
+my $CMD_TR_RLLBCK = 'tra_rollback';
+my $CMD_CA_PROC   = 'call_proc';
+my $CMD_CA_FUNC   = 'call_func';
+
+######################################################################
+######################################################################
+# Some file-scope convenience functions are declared here.
+# They are intended to be temporary, and exist only to help with rapid 
+# prototyping of this module.  They are not class or object methods.
+
+sub util_get {
+	# Takes an array ref of hash refs and looks for a hash ref having 
+	# a certain element value; it returns the hash ref that matches.
+	# Hash refs may be objects.  An index may be used later instead.
+	my ($node_list, $prop_name, $prop_value) = @_;
+	foreach my $node (@{$node_list}) {
+		if( $node->{$prop_name} eq $prop_value ) {
+			return( $node );
+		}
+	}
+	return( undef );
+}
+
+sub util_pos {
+	# Takes an array ref of hash refs and looks for a hash ref having 
+	# a certain value; returns array index of the hash that matches.
+	# Hash refs may be objects.  An index may be used later instead.
+	my ($node_list, $prop_name, $prop_value) = @_;
+	foreach my $i (0..$#{$node_list}) {
+		if( $node_list->[$i]->{$prop_name} eq $prop_value ) {
+			return( $i );
+		}
+	}
+	return( undef );
+}
+
+######################################################################
+######################################################################
+# The class SQL::ObjectModel is declared here, with version number.
+
+package SQL::ObjectModel;
+use vars qw($VERSION);
+$VERSION = '0.02';
+
+######################################################################
+
+sub new {
+	my $class = shift( @_ );
+	my $self = bless( {}, ref($class) || $class );
+	$self->_initialize( @_ );
+	return( $self );
+}
+
+sub initialize {
+	my $self = shift( @_ );
+	%{$self} = ();
+	$self->_initialize( @_ );
+}
+
+sub clone {
+	my ($self, $clone) = @_;
+	ref($clone) eq ref($self) or $clone = bless( {}, ref($self) );
+	$clone->_initialize( $self );
+	return( $clone );
+}
+
+######################################################################
+
+sub _initialize {
+	my ($self, $initializer) = @_;
+
+	$self->{$PROP_SOM_DATATYPE_LIST} = [];
+	$self->{$PROP_SOM_DATABASE_LIST} = [];
+
+	if( ref($initializer) eq ref($self) ) {
+		# We were given another SQL::ObjectModel whose properties we 
+		# need to copy into ourself; we may be a clone of that object.
+
+		# ... TASK STILL TO DO ...
+	}
+}
+
+######################################################################
+# Create objects which are subclasses of SQL::ObjectModel::_::Node; 
+# all of these "belong" to a SQL::ObjectModel (like an XML NODE to an 
+# XML DOM); the code in the Node sub/class is responsible for its 
+# global circular reference attachments to a Model.  When creating a 
+# new Node, the ObjectModel ref is passed as the first argument.
+
+sub new_command {
+	return( SQL::ObjectModel::_::Command->new( @_ ) );
+}
+
+sub new_data_type {
+	return( SQL::ObjectModel::_::DataType->new( @_ ) );
+}
+
+sub new_database {
+	return( SQL::ObjectModel::_::Database->new( @_ ) );
+}
+
+
+
+
+
+
+######################################################################
+
+sub DESTROY {
+	# This is supposed to make sure that any circular references don't 
+	# prevent timely object destruction, by dropping refs to Nodes.
+	%{$_[0]} = ();
+}
+
+######################################################################
+######################################################################
+# The class SQL::ObjectModel::_::Node is declared here.
+# It is a parent class for all SQL::ObjectModel inner classes.
+
+package  # Break line so PAUSE doesn't index this inner class.
+	SQL::ObjectModel::_::Node;
+
+######################################################################
+# Note: For now, the SQL::ObjectModel object that a Node belongs to is 
+# set when the Node is first created, and may not be changed later, such 
+# as with initialize().
+
+sub new {
+	my $class = shift( @_ );
+	my $self = bless( {}, ref($class) || $class );
+	unless( UNIVERSAL::isa($_[0],'SQL::ObjectModel') ) {
+		die "fatal source code error: no ObjectModel to put new Node in";
+	}
+	$self->{$PROP_NODE_CONTAINER} = shift( @_ );
+	$self->_initialize( @_ );
+	return( $self );
+}
+
+sub initialize {
+	my $self = shift( @_ );
+	%{$self} = ($PROP_NODE_CONTAINER => $self->{$PROP_NODE_CONTAINER});
+	$self->_initialize( @_ );
+}
+
+sub clone {
+	my ($self, $clone) = @_;
+	ref($clone) eq ref($self) or $clone = bless( {}, ref($self) );
+	$clone->{$PROP_NODE_CONTAINER} = $self->{$PROP_NODE_CONTAINER};
+	$clone->_initialize( $self );
+	return( $clone );
+}
+
+######################################################################
+
+sub _initialize {} # placeholder for subclass to override
+
+######################################################################
+
+sub get_containing_object_model {
+	# Returns reference to ObjectModel that contains this Node.
+	return( $_[0]->{$PROP_NODE_CONTAINER} );
+}
+
+######################################################################
+
+sub DESTROY {
+	# This is supposed to remove circular references, although it may 
+	# never be called; the complement refs may need removing instead.
+	$_[0]->{$PROP_NODE_CONTAINER} = undef;
+}
+
+######################################################################
+######################################################################
+# The class SQL::ObjectModel::_::DataType is declared here.
+
+package  # Break line so PAUSE doesn't index this inner class.
+	SQL::ObjectModel::_::DataType;
+use vars qw(@ISA);
+@ISA = qw( SQL::ObjectModel::_::Node );
+
+######################################################################
+
+sub _initialize {
+	my ($self, $initializer) = @_;
+
+	if( ref($initializer) eq ref($self) or ref($initializer) eq 'HASH' ) {
+		$self->{$PROP_DATP_NAME}   = $initializer->{$PROP_DATP_NAME} || 'No_Name_Data_Type';
+		$self->{$PROP_DATP_BATP}   = $initializer->{$PROP_DATP_BATP} || $DATP_STRING;
+		$self->{$PROP_DATP_SIBY}   = $initializer->{$PROP_DATP_SIBY};
+		$self->{$PROP_DATP_SICH}   = $initializer->{$PROP_DATP_SICH};
+		$self->{$PROP_DATP_SIDI}   = $initializer->{$PROP_DATP_SIDI};
+		$self->{$PROP_DATP_STFX}   = $initializer->{$PROP_DATP_STFX};
+		$self->{$PROP_DATP_S_ENC}  = $initializer->{$PROP_DATP_S_ENC};
+		$self->{$PROP_DATP_S_TRWH} = $initializer->{$PROP_DATP_S_TRWH};
+		$self->{$PROP_DATP_S_LTCS} = $initializer->{$PROP_DATP_S_LTCS};
+		$self->{$PROP_DATP_S_PDCH} = $initializer->{$PROP_DATP_S_PDCH};
+		$self->{$PROP_DATP_S_TRPD} = $initializer->{$PROP_DATP_S_TRPD};
+		$self->{$PROP_DATP_N_UNSG} = $initializer->{$PROP_DATP_N_UNSG};
+		$self->{$PROP_DATP_N_PREC} = $initializer->{$PROP_DATP_N_PREC};
+		$self->{$PROP_DATP_D_CAL}  = $initializer->{$PROP_DATP_D_CAL};
+
+	} else {
+		$self->{$PROP_DATP_NAME} = 'No_Name_Data_Type';
+		$self->{$PROP_DATP_BATP} = $initializer || $DATP_STRING;
+		$self->{$PROP_DATP_SIBY} = 250;
+	}
+
+	unless( $self->{$PROP_DATP_SIBY} or $self->{$PROP_DATP_SICH} or $self->{$PROP_DATP_SIDI} ) {
+		my $basic_type = $self->{$PROP_DATP_BATP};
+		$basic_type eq $DATP_BINARY and $self->{$PROP_DATP_SIBY} = 250;
+		$basic_type eq $DATP_STRING and $self->{$PROP_DATP_SICH} = 250;
+		$basic_type eq $DATP_NUMBER and $self->{$PROP_DATP_SIBY} = 4;
+	}
+}
+
+######################################################################
+
+sub get_all_properties {
+	my ($self) = @_;
+	return( {
+		$PROP_DATP_NAME   => $self->{$PROP_DATP_NAME},
+		$PROP_DATP_BATP   => $self->{$PROP_DATP_BATP},
+		$PROP_DATP_SIBY   => $self->{$PROP_DATP_SIBY},
+		$PROP_DATP_SICH   => $self->{$PROP_DATP_SICH},
+		$PROP_DATP_SIDI   => $self->{$PROP_DATP_SIDI},
+		$PROP_DATP_STFX   => $self->{$PROP_DATP_STFX},
+		$PROP_DATP_S_ENC  => $self->{$PROP_DATP_S_ENC},
+		$PROP_DATP_S_TRWH => $self->{$PROP_DATP_S_TRWH},
+		$PROP_DATP_S_LTCS => $self->{$PROP_DATP_S_LTCS},
+		$PROP_DATP_S_PDCH => $self->{$PROP_DATP_S_PDCH},
+		$PROP_DATP_S_TRPD => $self->{$PROP_DATP_S_TRPD},
+		$PROP_DATP_N_UNSG => $self->{$PROP_DATP_N_UNSG},
+		$PROP_DATP_N_PREC => $self->{$PROP_DATP_N_PREC},
+		$PROP_DATP_D_CAL  => $self->{$PROP_DATP_D_CAL},
+	} );
+}
+
+######################################################################
+
+sub name {
+	my ($self, $new_value) = @_;
+	if( defined( $new_value ) ) {
+		$self->{$PROP_DATP_NAME} = $new_value;
+	}
+	return( $self->{$PROP_DATP_NAME} );
+}
+
+######################################################################
+
+sub basic_type {
+	my ($self, $new_value) = @_;
+	if( defined( $new_value ) ) {
+		$self->{$PROP_DATP_BATP} = $new_value;
+	}
+	return( $self->{$PROP_DATP_BATP} );
+}
+
+######################################################################
+
+sub size_in_bytes {
+	my ($self, $new_value) = @_;
+	if( defined( $new_value ) ) {
+		$self->{$PROP_DATP_SIBY} = int( $new_value );
+	}
+	return( $self->{$PROP_DATP_SIBY} );
+}
+
+sub size_in_chars {
+	my ($self, $new_value) = @_;
+	if( defined( $new_value ) ) {
+		$self->{$PROP_DATP_SICH} = int( $new_value );
+	}
+	return( $self->{$PROP_DATP_SICH} );
+}
+
+sub size_in_digits {
+	my ($self, $new_value) = @_;
+	if( defined( $new_value ) ) {
+		$self->{$PROP_DATP_SIDI} = int( $new_value );
+	}
+	return( $self->{$PROP_DATP_SIDI} );
+}
+
+######################################################################
+
+sub store_fixed {
+	my ($self, $new_value) = @_;
+	if( defined( $new_value ) ) {
+		$self->{$PROP_DATP_STFX} = ($new_value ? 1 : 0);
+	}
+	return( $self->{$PROP_DATP_STFX} );
+}
+
+######################################################################
+
+sub str_encoding {
+	my ($self, $new_value) = @_;
+	if( defined( $new_value ) ) {
+		$self->{$PROP_DATP_S_ENC} = $new_value;
+	}
+	return( $self->{$PROP_DATP_S_ENC} );
+}
+
+sub str_trim_white {
+	my ($self, $new_value) = @_;
+	if( defined( $new_value ) ) {
+		$self->{$PROP_DATP_S_TRWH} = ($new_value ? 1 : 0);
+	}
+	return( $self->{$PROP_DATP_S_TRWH} );
+}
+
+sub str_latin_case {
+	my ($self, $new_value) = @_;
+	if( defined( $new_value ) ) {
+		$self->{$PROP_DATP_S_LTCS} = $new_value;
+	}
+	return( $self->{$PROP_DATP_S_LTCS} );
+}
+
+sub str_pad_char {
+	my ($self, $new_value) = @_;
+	if( defined( $new_value ) ) {
+		$self->{$PROP_DATP_S_PDCH} = $new_value;
+	}
+	return( $self->{$PROP_DATP_S_PDCH} );
+}
+
+sub str_trim_pad {
+	my ($self, $new_value) = @_;
+	if( defined( $new_value ) ) {
+		$self->{$PROP_DATP_S_TRPD} = ($new_value ? 1 : 0);
+	}
+	return( $self->{$PROP_DATP_S_TRPD} );
+}
+
+######################################################################
+
+sub num_unsigned {
+	my ($self, $new_value) = @_;
+	if( defined( $new_value ) ) {
+		$self->{$PROP_DATP_N_UNSG} = ($new_value ? 1 : 0);
+	}
+	return( $self->{$PROP_DATP_N_UNSG} );
+}
+
+sub num_precision {
+	my ($self, $new_value) = @_;
+	if( defined( $new_value ) ) {
+		$self->{$PROP_DATP_N_PREC} = int( $new_value );
+	}
+	return( $self->{$PROP_DATP_N_PREC} );
+}
+
+######################################################################
+
+sub datetime_calendar {
+	my ($self, $new_value) = @_;
+	if( defined( $new_value ) ) {
+		$self->{$PROP_DATP_D_CAL} = $new_value;
+	}
+	return( $self->{$PROP_DATP_D_CAL} );
+}
+
+######################################################################
+
+sub valid_basic_types {
+	my (undef, $type) = @_;
+	return( defined($type) ? $DATP_BASIC_TYPES{$type} : {%DATP_BASIC_TYPES} );
+}
+
+######################################################################
+######################################################################
+# The class SQL::ObjectModel::_::Database is declared here.
+
+package  # Break line so PAUSE doesn't index this inner class.
+	SQL::ObjectModel::_::Database;
+use vars qw(@ISA);
+@ISA = qw( SQL::ObjectModel::_::Node );
+
+######################################################################
+
+sub new_namespace {
+	return( SQL::ObjectModel::_::Namespace->new( @_ ) );
+}
+
+sub new_user {
+	return( SQL::ObjectModel::_::User->new( @_ ) );
+}
+
+######################################################################
+######################################################################
+# The class SQL::ObjectModel::_::Command is declared here.
+
+package  # Break line so PAUSE doesn't index this inner class.
+	SQL::ObjectModel::_::Command;
+use vars qw(@ISA);
+@ISA = qw( SQL::ObjectModel::_::Node );
+
+######################################################################
+######################################################################
+# The class SQL::ObjectModel::_::Namespace is declared here.
+
+package  # Break line so PAUSE doesn't index this inner class.
+	SQL::ObjectModel::_::Namespace;
+use vars qw(@ISA);
+@ISA = qw( SQL::ObjectModel::_::Node );
+
+######################################################################
+
+sub new_table {
+	return( SQL::ObjectModel::_::Table->new( @_ ) );
+}
+
+sub new_view {
+	return( SQL::ObjectModel::_::View->new( @_ ) );
+}
+
+sub new_sequence {
+	return( SQL::ObjectModel::_::Sequence->new( @_ ) );
+}
+
+sub new_block {
+	return( SQL::ObjectModel::_::Block->new( @_ ) );
+}
+
+######################################################################
+######################################################################
+# The class SQL::ObjectModel::_::User is declared here.
+
+package  # Break line so PAUSE doesn't index this inner class.
+	SQL::ObjectModel::_::User;
+use vars qw(@ISA);
+@ISA = qw( SQL::ObjectModel::_::Node );
+
+######################################################################
+######################################################################
+# The class SQL::ObjectModel::_::Table is declared here.
+
+package  # Break line so PAUSE doesn't index this inner class.
+	SQL::ObjectModel::_::Table;
+use vars qw(@ISA);
+@ISA = qw( SQL::ObjectModel::_::Node );
+
+######################################################################
+
+sub new_trigger {
+	return( SQL::ObjectModel::_::Trigger->new( @_ ) );
+}
+
+######################################################################
+######################################################################
+# The class SQL::ObjectModel::_::View is declared here.
+
+package  # Break line so PAUSE doesn't index this inner class.
+	SQL::ObjectModel::_::View;
+use vars qw(@ISA);
+@ISA = qw( SQL::ObjectModel::_::Node );
+
+######################################################################
+######################################################################
+# The class SQL::ObjectModel::_::Sequence is declared here.
+
+package  # Break line so PAUSE doesn't index this inner class.
+	SQL::ObjectModel::_::Sequence;
+use vars qw(@ISA);
+@ISA = qw( SQL::ObjectModel::_::Node );
+
+######################################################################
+######################################################################
+# The class SQL::ObjectModel::_::Block is declared here.
+
+package  # Break line so PAUSE doesn't index this inner class.
+	SQL::ObjectModel::_::Block;
+use vars qw(@ISA);
+@ISA = qw( SQL::ObjectModel::_::Node );
+
+######################################################################
+######################################################################
+# The class SQL::ObjectModel::_::Trigger is declared here.
+
+package  # Break line so PAUSE doesn't index this inner class.
+	SQL::ObjectModel::_::Trigger;
+use vars qw(@ISA);
+@ISA = qw( SQL::ObjectModel::_::Node );
+
+######################################################################
+######################################################################
+
+1;
+__END__
 
 =head1 SYNOPSIS
 
@@ -302,6 +966,34 @@ serialized or stored indefinately off site for later retrieval and use, such as
 in a data dictionary.  See the file lib/SQL/ObjectModel/DataDictionary.pod for 
 an example of doing this.
 
+This is the logical organization of the classes in this module:
+
+	+-objectmodel
+	   +-datatype
+	   +-database
+	   |  +-namespace
+	   |  |  +-table
+	   |  |  |  +-trigger
+	   |  |  |     +-block
+	   |  |  +-view
+	   |  |  |  +-view
+	   |  |  +-sequence    
+	   |  |  +-block
+	   |  |     +-block
+	   |  +-user
+	   +-command
+	      +-view
+	      +-block
+
+=head1 SYNTAX
+
+These classes do not export any functions or methods, so you need to call them
+using object notation.  This means using B<Class-E<gt>function()> for functions
+and B<$object-E<gt>method()> for methods.  If you are inheriting this class for
+your own modules, then that often means something like B<$self-E<gt>method()>. 
+
+=head1 DEPRECATED POD: INNER CLASSES
+
 =head2 SQL::ObjectModel::DataType
 
 Each SQL::ObjectModel::DataType object describes a simple data type, which
@@ -389,7 +1081,7 @@ This class can generate SQL::ObjectModel::Command objects having types of:
 'data_select', 'data_insert', 'data_update', 'data_delete', 'data_lock',
 'data_unlock', 'view_verify', 'view_create', 'view_alter', 'view_destroy'.
 
-=head1 CLASS PROPERTIES
+=head1 DEPRECATED POD: CLASS PROPERTIES
 
 =head2 SQL::ObjectModel::DataType
 
@@ -590,422 +1282,6 @@ These are the conceptual properties of a SQL::ObjectModel::View object:
 I<This documentation is not written yet.>
 
 =back
-
-=head1 SYNTAX
-
-These classes do not export any functions or methods, so you need to call them
-using object notation.  This means using B<Class-E<gt>function()> for functions
-and B<$object-E<gt>method()> for methods.  If you are inheriting this class for
-your own modules, then that often means something like B<$self-E<gt>method()>. 
-
-
-=cut
-
-######################################################################
-
-{	package # hide from PAUSE, experiment 1
-SQL::ObjectModel::DataType;
-require 5.004;
-use strict;
-use warnings;
-
-# Names of properties for objects of this class are declared here:
-my $KEY_NAME = 'name';  # string - user readable unique id for this data type
-my $KEY_BATP = 'base_type';  # string - one of: [boolean,int,float,datetime,str,binary]
-my $KEY_SIZE = 'size';  # integer - max size in bytes or chars of data being stored
-my $KEY_STFX = 'store_fixed';  # boolean - true if value stored in fixed size db field
-
-# These are the allowed base types and their default sizes:
-my %BASE_TYPES = (
-	'boolean'  =>   0,  # eg: 1, 0
-	'int'      =>   4,  # eg: 14, 3, -7, 200000
-	'float'    =>   4,  # eg: 3.14159
-	'datetime' =>   0,  # eg: 2003.02.28.16.06.30
-	'str'      => 250,  # eg: 'Hello World'
-	'binary'   => 250,  # eg: '\0x24\0x00\0xF4\0x1A'
-);
-
-######################################################################
-
-=head1 FUNCTIONS AND METHODS FOR SQL::ObjectModel::DataType
-
-=head2 new([ INITIALIZER ])
-
-This function creates a new SQL::ObjectModel::DataType (or subclass) object and
-returns it.  All of the method arguments are passed to initialize() as is; please
-see the POD for that method for an explanation of them.
-
-=cut
-
-######################################################################
-
-sub new {
-	my $class = shift( @_ );
-	my $self = bless( {}, ref($class) || $class );
-	$self->initialize( @_ );
-	return( $self );
-}
-
-######################################################################
-
-=head2 initialize([ INITIALIZER ])
-
-This method is used by B<new()> to set the initial properties of objects that
-it creates.  Calling it yourself will revert all of this object's properties to
-their default values, which correspond to a string of maximum 250 characters.
-The optional argument, INITIALIZER, is a hash reference (or object) whose
-values would be used to set explicit default properties for this object.  The
-hash keys which this class will look for are: name, base_type, size,
-store_fixed.  These values are passed to the same-named property accessor
-methods for evaluation; please see the POD for those methods for an explanation
-of what input values are allowed and any side effects of setting them.  If
-INITIALIZER is defined and not a hash reference, it will be interpreted as a
-scalar value and passed to base_type().  Nothing is returned.
-
-=cut
-
-######################################################################
-
-sub initialize {
-	my ($self, $initializer) = @_;
-
-	$self->{$KEY_NAME} = 'No_Name_Data_Type';
-	$self->{$KEY_BATP} = 'str';
-	$self->{$KEY_SIZE} = 250;
-	$self->{$KEY_STFX} = 0;
-
-	if( UNIVERSAL::isa($initializer,'SQL::ObjectModel::DataType') or 
-			ref($initializer) eq 'HASH' ) {
-		$self->name( $initializer->{$KEY_NAME} );
-		$self->base_type( $initializer->{$KEY_BATP} );
-		$self->size( $initializer->{$KEY_SIZE} );
-		$self->store_fixed( $initializer->{$KEY_STFX} );
-
-	} elsif( defined( $initializer ) ) {
-		$self->base_type( $initializer );
-	}
-}
-
-######################################################################
-
-=head2 clone([ CLONE ])
-
-This method initializes a new object to have all of the same properties of the
-current object and returns it.  This new object can be provided in the optional
-argument CLONE (if CLONE is an object of the same class as the current object);
-otherwise, a brand new object of the current class is used.  Only object
-properties recognized by SQL::ObjectModel::DataType are set in the clone; other
-properties are not changed.
-
-=cut
-
-######################################################################
-
-sub clone {
-	my ($self, $clone) = @_;
-	ref($clone) eq ref($self) or $clone = bless( {}, ref($self) );
-
-	$clone->{$KEY_NAME} = $self->{$KEY_NAME};
-	$clone->{$KEY_BATP} = $self->{$KEY_BATP};
-	$clone->{$KEY_SIZE} = $self->{$KEY_SIZE};
-	$clone->{$KEY_STFX} = $self->{$KEY_STFX};
-
-	return( $clone );
-}
-
-######################################################################
-
-=head2 get_all_properties()
-
-This method returns a hash reference whose keys and values are the property
-names and values of this object: name, base_type, size, store_fixed.  If you
-pass this hash reference as an argument to the new() class function, the object
-that it creates will be identical to this one.
-
-=cut
-
-######################################################################
-
-sub get_all_properties {
-	my ($self) = @_;
-	return( {
-		$KEY_NAME => $self->{$KEY_NAME}, 
-		$KEY_BATP => $self->{$KEY_BATP}, 
-		$KEY_SIZE => $self->{$KEY_SIZE}, 
-		$KEY_STFX => $self->{$KEY_STFX},
-	} );
-}
-
-######################################################################
-
-=head2 name([ VALUE ])
-
-This method is an accessor for the string "name" property of this object, which
-it returns.  If VALUE is defined, this property is set to it.
-
-=cut
-
-######################################################################
-
-sub name {
-	my ($self, $new_value) = @_;
-	if( defined( $new_value ) ) {
-		$self->{$KEY_NAME} = $new_value;
-	}
-	return( $self->{$KEY_NAME} );
-}
-
-######################################################################
-
-=head2 base_type([ VALUE ])
-
-This method is an accessor for the string "base_type" property of this object,
-which it returns.  If VALUE is defined and matches a valid base type (it gets
-lowercased), then this property is set to it; in addition, "size" is reset to a
-default value appropriate for the base type, and "store_fixed" is set false; 
-you should set those properties after this one if you want them different.
-
-=cut
-
-######################################################################
-
-sub base_type {
-	my ($self, $new_value) = @_;
-	if( defined( $new_value ) ) {
-		$new_value = lc($new_value);
-		if( exists( $BASE_TYPES{$new_value} ) ) {
-			$self->{$KEY_BATP} = $new_value;
-			$self->{$KEY_SIZE} = $BASE_TYPES{$new_value};
-			$self->{$KEY_STFX} = 0;
-		}
-	}
-	return( $self->{$KEY_BATP} );
-}
-
-######################################################################
-
-=head2 size([ VALUE ])
-
-This method is an accessor for the integer "size" property of this object,
-which it returns.  If VALUE is defined, then it is cast as an integer, and this
-property is set to it; non-integral numbers will be truncated and other scalar
-values will become zero.
-
-=cut
-
-######################################################################
-
-sub size {
-	my ($self, $new_value) = @_;
-	if( defined( $new_value ) ) {
-		$self->{$KEY_SIZE} = int( $new_value ); # cast as integer
-	}
-	return( $self->{$KEY_SIZE} );
-}
-
-######################################################################
-
-=head2 store_fixed([ VALUE ])
-
-This method is an accessor for the boolean "store_fixed" property of this
-object, which it returns.  If VALUE is defined, then it is cast as a 1 or 0
-based on Perl's determination of truth, and this property is set to it.
-
-=cut
-
-######################################################################
-
-sub store_fixed {
-	my ($self, $new_value) = @_;
-	if( defined( $new_value ) ) {
-		$self->{$KEY_STFX} = ($new_value ? 1 : 0);
-	}
-	return( $self->{$KEY_STFX} );
-}
-
-######################################################################
-
-=head2 valid_types([ TYPE ])
-
-This function returns a hash ref having as keys all of the basic data types
-that SQL::ObjectModel recognizes, any of which is valid input to the base_type() method,
-and having as values the default storage size reserved for table columns of
-that type, which are valid input to the size() method.  This list contains the
-same types listed in the DESCRIPTION.  If the optional string argument, TYPE,
-is defined, then this function will instead return a scalar value depending on
-whether TYPE is a valid base type or not; if it is, then the returned value is
-its default size (which may be zero); if it is not, then the undefined value is
-returned.
-
-=cut
-
-######################################################################
-
-sub valid_types {
-	my (undef, $type) = @_;
-	return( defined($type) ? $BASE_TYPES{$type} : {%BASE_TYPES} );
-}
-
-######################################################################
-
-} # end of hide from PAUSE, experiment 1
-
-######################################################################
-
-{ # hide from PAUSE, experiment 2
-package SQL::ObjectModel::Table;
-require 5.004;
-use strict;
-use warnings;
-
-# Names of properties for objects of this class are declared here:
-# ... they go here, really ...
-
-######################################################################
-
-=head1 FUNCTIONS AND METHODS FOR SQL::ObjectModel::Table
-
-I<Note: this class is incomplete, and so most of its methods are missing.>
-
-=head2 new([ INITIALIZER ])
-
-This function creates a new SQL::ObjectModel::Table (or subclass) object and
-returns it.  All of the method arguments are passed to initialize() as is; please
-see the POD for that method for an explanation of them.
-
-=cut
-
-######################################################################
-
-sub new {
-	my $class = shift( @_ );
-	my $self = bless( {}, ref($class) || $class );
-	$self->initialize( @_ );
-	return( $self );
-}
-
-######################################################################
-
-=head2 initialize([ INITIALIZER ])
-
-This method is used by B<new()> to set the initial properties of objects that
-it creates.  Nothing is returned.
-
-=cut
-
-######################################################################
-
-sub initialize {
-	my ($self, $initializer) = @_;
-
-}
-
-######################################################################
-
-=head2 clone([ CLONE ])
-
-This method initializes a new object to have all of the same properties of the
-current object and returns it.  This new object can be provided in the optional
-argument CLONE (if CLONE is an object of the same class as the current object);
-otherwise, a brand new object of the current class is used.  Only object
-properties recognized by SQL::ObjectModel::Table are set in the clone; other
-properties are not changed.
-
-=cut
-
-######################################################################
-
-sub clone {
-	my ($self, $clone) = @_;
-	ref($clone) eq ref($self) or $clone = bless( {}, ref($self) );
-
-	return( $clone );
-}
-
-######################################################################
-
-} # end of hide from PAUSE, experiment 2
-
-######################################################################
-
-package # hide from PAUSE, experiment 3
-SQL::ObjectModel::View;
-require 5.004;
-use strict;
-use warnings;
-
-# Names of properties for objects of this class are declared here:
-# ... they go here, really ...
-
-######################################################################
-
-=head1 FUNCTIONS AND METHODS FOR SQL::ObjectModel::View
-
-I<Note: this class is incomplete, and so most of its methods are missing.>
-
-=head2 new([ INITIALIZER ])
-
-This function creates a new SQL::ObjectModel::View (or subclass) object and
-returns it.  All of the method arguments are passed to initialize() as is; please
-see the POD for that method for an explanation of them.
-
-=cut
-
-######################################################################
-
-sub new {
-	my $class = shift( @_ );
-	my $self = bless( {}, ref($class) || $class );
-	$self->initialize( @_ );
-	return( $self );
-}
-
-######################################################################
-
-=head2 initialize([ INITIALIZER ])
-
-This method is used by B<new()> to set the initial properties of objects that
-it creates.  Nothing is returned.
-
-=cut
-
-######################################################################
-
-sub initialize {
-	my ($self, $initializer) = @_;
-
-}
-
-######################################################################
-
-=head2 clone([ CLONE ])
-
-This method initializes a new object to have all of the same properties of the
-current object and returns it.  This new object can be provided in the optional
-argument CLONE (if CLONE is an object of the same class as the current object);
-otherwise, a brand new object of the current class is used.  Only object
-properties recognized by SQL::ObjectModel::View are set in the clone; other
-properties are not changed.
-
-=cut
-
-######################################################################
-
-sub clone {
-	my ($self, $clone) = @_;
-	ref($clone) eq ref($self) or $clone = bless( {}, ref($self) );
-
-	return( $clone );
-}
-
-######################################################################
-
-# end of hide from PAUSE, experiment 3
-
-######################################################################
-
-1;
-__END__
 
 =head1 SEE ALSO
 

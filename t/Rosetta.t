@@ -16,6 +16,63 @@ use warnings;
 
 ######################### End of black magic.
 
-# Note: No functional tests are written yet; they will come later.
+# Set this to 1 to see complete result text for each test
+my $verbose = shift( @ARGV ) ? 1 : 0;  # set from command line
+
+######################################################################
+# Here are some utility methods:
+
+my $test_num = 1;  # same as the first test, above
+
+sub result {
+	$test_num++;
+	my ($worked, $detail) = @_;
+	$verbose or 
+		$detail = substr( $detail, 0, 50 ).
+		(length( $detail ) > 47 ? "..." : "");	print "@{[$worked ? '' : 'not ']}ok $test_num $detail\n";
+}
+
+sub message {
+	my ($detail) = @_;
+	print "-- $detail\n";
+}
+
+sub vis {
+	my ($str) = @_;
+	$str =~ s/\n/\\n/g;  # make newlines visible
+	$str =~ s/\t/\\t/g;  # make tabs visible
+	return( $str );
+}
+
+sub serialize {
+	my ($input,$is_key) = @_;
+	return( join( '', 
+		ref($input) eq 'HASH' ? 
+			( '{ ', ( map { 
+				( serialize( $_, 1 ), serialize( $input->{$_} ) ) 
+			} sort keys %{$input} ), '}, ' ) 
+		: ref($input) eq 'ARRAY' ? 
+			( '[ ', ( map { 
+				( serialize( $_ ) ) 
+			} @{$input} ), '], ' ) 
+		: defined($input) ?
+			"'$input'".($is_key ? ' => ' : ', ')
+		: "undef".($is_key ? ' => ' : ', ')
+	) );
+}
+
+######################################################################
+
+message( "START TESTING Rosetta" );
+
+######################################################################
+
+message( "No functional tests are written yet; they will come later" );
+
+######################################################################
+
+message( "DONE TESTING Rosetta" );
+
+######################################################################
 
 1;

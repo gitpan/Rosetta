@@ -711,15 +711,18 @@ To become "Locale-KeyedText" or similar:
 To become "SQL-ObjectModel" or similar:
 
 	SQL::ObjectModel (Unserialized SQL objects, use like XML DOM)
-		SQL::ObjectModel::Command (describes an action to do and what bind vars should be prompted for)
-		SQL::ObjectModel::Codes (declare base types or enums; meanings hard-coded in SQL::ObjectModel)
-		SQL::ObjectModel::DataType (metadata for individual atomic or scalar values)
-		SQL::ObjectModel::Table (details of table columns are part of this class)
-		SQL::ObjectModel::View (a parsed select, used for any DML like IUD, gen stored views)
-		SQL::ObjectModel::Sequence (a sequence generator)
-		SQL::ObjectModel::Block (a block of code to run in a db; part of a proc, function, trigger)
-		SQL::ObjectModel::Trigger (a code block assoc with a table, only auto-called by db on events)
-		SQL::ObjectModel::* ... like User, Privilege, PrivilegeType, whatever
+		SQL::ObjectModel::_::Codes (declare base types or enums; meanings hard-coded in SQL::ObjectModel)
+		SQL::ObjectModel::_::Command (describes an action to do and what bind vars should be prompted for)
+		SQL::ObjectModel::_::DataType (metadata for individual atomic or scalar values)
+		SQL::ObjectModel::_::Database (describes a database, that which you connect to)
+		SQL::ObjectModel::_::Namespace (a namespace in a database for schema objects)
+		SQL::ObjectModel::_::Table (details of table columns are part of this class)
+		SQL::ObjectModel::_::View (a parsed select, used for any DML like IUD, gen stored views)
+		SQL::ObjectModel::_::Sequence (a sequence generator)
+		SQL::ObjectModel::_::Block (a block of code to run in a db; part of a proc, function, trigger)
+		SQL::ObjectModel::_::Trigger (a code block assoc with a table, only auto-called by db on events)
+		SQL::ObjectModel::_::User (an entity who may connect to a database and order it around)
+		SQL::ObjectModel::_::* ... like Privilege, PrivilegeType, whatever
 
 	SQL::ObjectModel::Locale::en (English localization of input error messages)
 	SQL::ObjectModel::Locale::fr (French localization of input error messages)
@@ -731,13 +734,13 @@ To become "SQL-ObjectModel" or similar:
 To stay "Rosetta":
 
 	Rosetta (Framework for RDBMS-generic apps and schemas)
-		Rosetta::Engine (base class to provide 'execute' function; calls Drivers)
-		Rosetta::Engine::Command (describes an action to do, and bundles resolved bind vars)
-		Rosetta::Engine::Result (result of action including errors)
-		Rosetta::Engine::Connection (represents a connection)
-		Rosetta::Engine::Transaction (represents context within connection)
-		Rosetta::Engine::Cursor (result of a selection command; can be input to insert/update/delete)
-		Rosetta::Engine::* ... like DriverEngineGlobals or whatever
+		Rosetta::_::Engine (base class to provide 'execute' function; calls Drivers)
+		Rosetta::_::Command (describes an action to do, and bundles resolved bind vars)
+		Rosetta::_::Result (result of action including errors)
+		Rosetta::_::Connection (represents a connection)
+		Rosetta::_::Transaction (represents context within connection)
+		Rosetta::_::Cursor (result of a selection command; can be input to insert/update/delete)
+		Rosetta::_::* ... like DriverEngineGlobals or whatever
 
 	Rosetta::Locale::en (English localization of execution/input error messages)
 	Rosetta::Locale::fr (French localization of execution/input error messages)
@@ -845,10 +848,6 @@ Note that the exact module names and descriptions listed within each grouping
 are an older draft and are subject to near-future revisions or rewrites,
 including addition of more modules or removal of some existing ones.
 
-Note also that a bunch of summary documentation was dropped between release
-0.01 and 0.02, since it was at least partly redundant with other additions in
-0.02; the remaining parts should be brought back soon.
-
 Note the third: now that some of these modules have been implemented, their 
 updated descriptions here are more accurate.
 
@@ -858,7 +857,7 @@ updated descriptions here are more accurate.
 
 =item 0
 
-B<SQL::ObjectModel::Command> - This Schema class describes an action that needs
+B<SQL::ObjectModel::_::Command> - This Schema class describes an action that needs
 to be done against a database; the action may include several steps, and all of
 them must be done when executing the Command.  A Command object has one
 mandatory string property named 'type' (eg: 'database_open', 'table_create',
@@ -870,11 +869,11 @@ to code like DBI->prepare().   While bind vars are often used with them (such
 as values to insert or update, or record matching conditions), it is always up
 to the calling code to resolve the bind vars such as with a user prompt (as
 SQL*Plus does), and pass those to code like DBI->execute().  I<See also
-Rosetta::Engine::Command.>
+Rosetta::Engine::_::Command.>
 
 =item 0
 
-B<SQL::ObjectModel::DataType> - This Schema class describes a simple data type,
+B<SQL::ObjectModel::_::DataType> - This Schema class describes a simple data type,
 which serves as metadata for a single atomic or scalar unit of data, or a
 column whose members are all of the same data type, such as in a regular
 database table or in row sets read from or to be written to one.  This class
@@ -883,7 +882,7 @@ database data.
 
 =item 0
 
-B<SQL::ObjectModel::Table> - This Schema class describes a single database
+B<SQL::ObjectModel::_::Table> - This Schema class describes a single database
 table, and would be used for such things as managing schema for the table (eg:
 create, alter, destroy), and describing the table's "public interface" so other
 functionality like views or various DML operations know how to use the table.
@@ -898,7 +897,7 @@ SQL::ObjectModel::Command objects having types of: 'table_verify',
 
 =item 0
 
-B<SQL::ObjectModel::View> - This Schema class describes a single database view,
+B<SQL::ObjectModel::_::View> - This Schema class describes a single database view,
 which conceptually looks like a table, but it is used differently.  Tables and
 views are similar in that they both represent or store a matrix of data, which
 has uniquely identifiable columns, and rows which can be uniquely identifiable
@@ -924,7 +923,7 @@ SQL::ObjectModel::Command objects having types of: 'data_select', 'data_insert',
 
 =item 0
 
-B<Rosetta::Engine> - This Engine class is inherited by all other Engine
+B<Rosetta::_::Engine> - This Engine class is inherited by all other Engine
 Engine classes, and it provides functionality to talk to or manage Driver modules.
 Its main task is to define the execute_command() method, which takes a Command
 object saying what should be done next and returns or throws a Result object
@@ -937,16 +936,16 @@ drivers or connections.  Subclasses include: Result, Database.
 
 =item 0
 
-B<Rosetta::Engine::Command> - This Engine class describes an action that needs
+B<Rosetta::_::Command> - This Engine class describes an action that needs
 to be done against a database; its objects encapsulate
 SQL::ObjectModel::Command objects and also encapsulates the resolved bind vars,
 or live objects like 'Cursor'.  Code using these objects should be doing
 something like both calling DBI->prepare() and DBI->execute().  I<See also
-SQL::ObjectModel::Command.>
+SQL::ObjectModel::_::Command.>
 
 =item 0
 
-B<Rosetta::Engine::Result> - This Engine class is inherited by all Engine
+B<Rosetta::_::Result> - This Engine class is inherited by all Engine
 classes that would be returned from or thrown by an execute_command() method,
 and it contains the return values or errors of a Command.  Its main task is to
 implement the is_error() and get_error() methods, which say whether the Command
@@ -956,7 +955,7 @@ Subclasses include: Database.
 
 =item 0
 
-B<Rosetta::Engine::Connection> - This Engine class represents a connection
+B<Rosetta::_::Connection> - This Engine class represents a connection
 to a database instance, and the simplest database applications use only one.
 You instantiate a Database object by executing a Command of type
 'database_open'; that command usually takes 4 arguments, the first of which
@@ -967,7 +966,7 @@ yourself against a multi-user database as; 'pass' is the associated password.
 
 =item 0
 
-B<Rosetta::Engine::Cursor> - This Engine class represents a cursor over a
+B<Rosetta::_::Cursor> - This Engine class represents a cursor over a
 rowset that is being selected from a database.  You instantiate a Cursor object
 by executing a command of type 'data_select'; that command usually takes 1
 argument, which is mandatory: 'view' is a View object that describes the select

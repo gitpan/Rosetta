@@ -1,3 +1,31 @@
+2003-06-27   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.14.
+
+	* The file ObjectModel.pm was partly rewritten from scratch, with some of
+	the old documentation being shoved to the bottom and marked "depreciated". 
+	All of the old code was replaced by newer code.
+
+	* The two test files [SQL-ObjectModel.t, Rosetta.t] were simplified so that 
+	each only tests that its respective module compiles; also synchronized the 
+	internal layout of each file.  Any tests for code that was replaced in 
+	ObjectModel.pm have been removed.
+
+	* Updated DataDictionary.pod to simplify "cct_basic_data_type" so that
+	there is only one base type for all numbers; updated "cct_standard_func"
+	and "data_type" to remain compatible with the changes.  Also updated
+	"database" and "namespace" to complete their separation into two entities. 
+	Also moved "trigger" to be under the TABLES main heading rather than under
+	BLOCKS.
+
+	* Updated BRIEF MODULE LIST in Framework.pod to more accurately reflect the
+	design details in DataDictionary.pod, and in the new ObjectModel.pm.  Also
+	updated EXPANDED MODULE LIST in a similar fashion.  Any modules whose names
+	were SQL::ObjectModel::* are now SQL::ObjectModel::_::* (with the exception 
+	of the POD only files), and those whose	names were Rosetta::Engine::* are 
+	now Rosetta::_::* (Rosetta::Engine is now Rosetta::_::Engine).  The '_' 
+	signifies an inner class which isn't meant to be instantiated directly.
+
 2003-06-14   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.132.
