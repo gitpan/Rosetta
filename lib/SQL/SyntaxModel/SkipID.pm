@@ -11,9 +11,9 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.07';
+$VERSION = '0.08';
 
-use SQL::SyntaxModel 0.07;
+use SQL::SyntaxModel::ByTree 0.08;
 
 ######################################################################
 
@@ -25,7 +25,7 @@ Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	SQL::SyntaxModel 0.07 (parent class)
+	SQL::SyntaxModel::ByTree 0.08 (parent class)
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -83,15 +83,11 @@ practical way of suggesting improvements to the standard version.
 
 package # hide this class name from PAUSE indexer
 SQL::SyntaxModel::SkipID::_::Shared; # has no properties, subclassed by main and Container and Node
-use base qw( SQL::SyntaxModel::_::Shared );
+use base qw( SQL::SyntaxModel::ByTree::_::Shared );
 
 ######################################################################
 
 # These are duplicate declarations of some properties in the SQL::SyntaxModel parent class.
-my $NPROP_NODE_TYPE   = 'node_type';
-my $NPROP_NODE_ID     = 'node_id';
-my $NPROP_CONTAINER   = 'container';
-my $NPROP_CHILD_NODES = 'child_nodes';
 my $CPROP_ALL_NODES   = 'all_nodes';
 my $MPROP_CONTAINER   = 'container';
 
@@ -304,9 +300,9 @@ sub _get_static_const_node_class_name {
 
 package # hide this class name from PAUSE indexer
 SQL::SyntaxModel::SkipID::_::Node;
-#use base qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::_::Node );
+#use base qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::ByTree::_::Node );
 use vars qw( @ISA );
-@ISA = qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::_::Node );
+@ISA = qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::ByTree::_::Node );
 
 ######################################################################
 
@@ -334,8 +330,8 @@ sub _set_node_attribute__do_when_no_id_match {
 	my ($self, $attr_name, $attr_value) = @_;
 	my $exp_node_type = $self->expected_node_attribute_type( $attr_name );
 
-	my $container = $self->{$NPROP_CONTAINER};
-	my $node_type = $self->{$NPROP_NODE_TYPE};
+	my $container = $self->get_container();
+	my $node_type = $self->get_node_type();
 
 	my $node_info_extras = $NODE_TYPES_EXTRA_DETAILS{$node_type};
 	my $search_path = $node_info_extras->{'search_paths'}->{$attr_name};
@@ -372,7 +368,7 @@ sub _set_node_attribute__do_when_no_id_match {
 
 sub _find_node_by_link_search_attr {
 	my ($self, $exp_node_type, $attr_value) = @_;
-	my $container = $self->{$NPROP_CONTAINER};
+	my $container = $self->get_container();
 	my $link_search_attr = $NODE_TYPES_EXTRA_DETAILS{$exp_node_type}->{'link_search_attr'};
 	foreach my $scn (values %{$container->{$CPROP_ALL_NODES}->{$exp_node_type}}) {
 		if( $scn->get_attribute( $link_search_attr ) eq $attr_value ) {
@@ -394,9 +390,9 @@ sub _search_for_node {
 			last;
 		} elsif( $path_seg eq $S ) {
 			# Want to progress search via consec parents of same node type to first.
-			my $start_type = $curr_node->{$NPROP_NODE_TYPE};
+			my $start_type = $curr_node->get_node_type();
 			while( $curr_node->get_parent_node() and $start_type eq
-					$curr_node->get_parent_node()->{$NPROP_NODE_TYPE} ) {
+					$curr_node->get_parent_node()->get_node_type() ) {
 				$curr_node = $curr_node->get_parent_node();
 			}
 		} elsif( $path_seg eq $P ) {
@@ -415,14 +411,12 @@ sub _search_for_node {
 			# Progress search down one child node, so curr_node becomes a 'view_src'.
 			my $to_be_curr_node = undef;
 			my ($col_name, $src_name) = @{$search_attr_value};
-			foreach my $scn (@{$curr_node->{$NPROP_CHILD_NODES}}) {
-				if( $scn->{$NPROP_NODE_TYPE} eq 'view_src' ) {
-					if( $scn->get_attribute( 'name' ) eq $src_name ) {
-						# We found a node in the correct path that we can link.
-						$to_be_curr_node = $scn;
-						$search_attr_value = $col_name;
-						last;
-					}
+			foreach my $scn (@{$curr_node->get_child_nodes( 'view_src' )}) {
+				if( $scn->get_attribute( 'name' ) eq $src_name ) {
+					# We found a node in the correct path that we can link.
+					$to_be_curr_node = $scn;
+					$search_attr_value = $col_name;
+					last;
 				}
 			}
 			$curr_node = $to_be_curr_node;
@@ -445,26 +439,24 @@ sub _search_for_node {
 		# Since curr_node is still defined, the search succeeded, 
 		# or the search path was an empty list (means search self).
 		my $link_search_attr = $NODE_TYPES_EXTRA_DETAILS{$exp_node_type}->{'link_search_attr'};
-		foreach my $scn (@{$curr_node->{$NPROP_CHILD_NODES}}) {
-			if( $scn->{$NPROP_NODE_TYPE} eq $exp_node_type ) {
-				if( $recurse_next ) {
-					my ($i_exp_node_type, $i_search_path) = @{$recurse_next};
-					my $i_node_to_link = undef;
-					$i_node_to_link = $self->_search_for_node( 
-						$search_attr_value, $i_exp_node_type, $i_search_path, $scn );
+		foreach my $scn (@{$curr_node->get_child_nodes( $exp_node_type )}) {
+			if( $recurse_next ) {
+				my ($i_exp_node_type, $i_search_path) = @{$recurse_next};
+				my $i_node_to_link = undef;
+				$i_node_to_link = $self->_search_for_node( 
+					$search_attr_value, $i_exp_node_type, $i_search_path, $scn );
 
-					if( $i_node_to_link ) {
-						if( $scn->get_attribute( $link_search_attr ) eq $i_node_to_link ) {
-							$node_to_link = $scn;
-							last;
-						}
-					}
-				} else {
-					if( $scn->get_attribute( $link_search_attr ) eq $search_attr_value ) {
-						# We found a node in the correct path that we can link.
+				if( $i_node_to_link ) {
+					if( $scn->get_attribute( $link_search_attr ) eq $i_node_to_link ) {
 						$node_to_link = $scn;
 						last;
 					}
+				}
+			} else {
+				if( $scn->get_attribute( $link_search_attr ) eq $search_attr_value ) {
+					# We found a node in the correct path that we can link.
+					$node_to_link = $scn;
+					last;
 				}
 			}
 		}
@@ -479,7 +471,7 @@ sub set_attributes {
 	my ($node, $attrs) = @_;
 	defined( $attrs ) or $attrs = {};
 
-	my $node_type = $node->{$NPROP_NODE_TYPE};
+	my $node_type = $node->get_node_type();
 	my $node_info_extras = $NODE_TYPES_EXTRA_DETAILS{$node_type};
 
 	unless( ref($attrs) eq 'HASH' ) {
@@ -498,7 +490,7 @@ sub set_attributes {
 	my $attr_defaults = $node_info_extras && $node_info_extras->{'attr_defaults'};
 	# This is placed here so that default strs can be processed into nodes below.
 	if( $attr_defaults ) {
-		my $container = $node->{$NPROP_CONTAINER};
+		my $container = $node->get_container();
 		foreach my $attr_name (keys %{$attr_defaults}) {
 			unless( defined( $node->get_attribute( $attr_name ) ) ) {
 				unless( exists( $attrs->{$attr_name} ) ) {
@@ -538,11 +530,12 @@ sub create_child_node_tree {
 
 	my $new_child = $node->create_empty_node( $args->{$ARG_NODE_TYPE} );
 
-	my $child_node_type = $new_child->{$NPROP_NODE_TYPE};
+	my $child_node_type = $new_child->get_node_type();
 
-	my $container = $node->{$NPROP_CONTAINER};
+	my $container = $node->get_container();
 
-	$new_child->{$NPROP_NODE_ID} ||= 1 + $container->{$CPROP_HIGH_IDS}->{$child_node_type};
+	$new_child->get_node_id() or 
+		$new_child->set_node_id( 1 + $container->{$CPROP_HIGH_IDS}->{$child_node_type} );
 
 	$new_child->put_in_container( $container );
 	$new_child->add_reciprocal_links();
@@ -554,7 +547,7 @@ sub create_child_node_tree {
 	$new_child->test_mandatory_attributes();
 
 	$container->{$CPROP_LAST_NODES}->{$child_node_type} = $new_child; # assign reference
-	my $child_node_id = $new_child->{$NPROP_NODE_ID};
+	my $child_node_id = $new_child->get_node_id();
 	if( $child_node_id > $container->{$CPROP_HIGH_IDS}->{$child_node_type} ) {
 		$container->{$CPROP_HIGH_IDS}->{$child_node_type} = $child_node_id;
 	}
@@ -569,9 +562,9 @@ sub create_child_node_tree {
 
 package # hide this class name from PAUSE indexer
 SQL::SyntaxModel::SkipID::_::Container;
-#use base qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::_::Container );
+#use base qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::ByTree::_::Container );
 use vars qw( @ISA );
-@ISA = qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::_::Container );
+@ISA = qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::ByTree::_::Container );
 
 ######################################################################
 
@@ -585,9 +578,9 @@ sub create_node_tree {
 
 	my $node = $container->create_empty_node( $args->{$ARG_NODE_TYPE} );
 
-	my $node_type = $node->{$NPROP_NODE_TYPE};
+	my $node_type = $node->get_node_type();
 
-	$node->{$NPROP_NODE_ID} ||= 1 + $container->{$CPROP_HIGH_IDS}->{$node_type};
+	$node->get_node_id() or $node->set_node_id( 1 + $container->{$CPROP_HIGH_IDS}->{$node_type} );
 
 	$node->put_in_container( $container );
 	$node->add_reciprocal_links();
@@ -601,7 +594,7 @@ sub create_node_tree {
 	$node->test_mandatory_attributes();
 
 	$container->{$CPROP_LAST_NODES}->{$node_type} = $node; # assign reference
-	my $node_id = $node->{$NPROP_NODE_ID};
+	my $node_id = $node->get_node_id();
 	if( $node_id > $container->{$CPROP_HIGH_IDS}->{$node_type} ) {
 		$container->{$CPROP_HIGH_IDS}->{$node_type} = $node_id;
 	}
@@ -614,7 +607,7 @@ sub create_node_tree {
 sub _create_node_tree__do_when_parent_not_set {
 	# Called either if a PARENT arg not given, or if it matched nothing.
 	my ($container, $node) = @_;
-	my $node_type = $node->{$NPROP_NODE_TYPE};
+	my $node_type = $node->get_node_type();
 	$node->node_types_with_pseudonode_parents( $node_type ) and return( 1 );
 	foreach my $attr_name (@{$node->valid_node_type_parent_attribute_names( $node_type )}) {
 		my $exp_node_type = $node->valid_node_type_node_attributes( $node_type, $attr_name );
@@ -627,7 +620,7 @@ sub _create_node_tree__do_when_parent_not_set {
 	}
 	unless( $node->get_parent_node() ) {
 		$container->_throw_error_message( 'SSMSID_C_CR_NODE_TREE_NO_PRIMARY_P', 
-			{ 'TYPE' => $node_type, 'ID' => $node->{$NPROP_NODE_ID} } );
+			{ 'TYPE' => $node_type, 'ID' => $node->get_node_id() } );
 		# create_node_tree(): invalid argument list; 
 		# the Node you are trying to create, of type '$TYPE' and id 
 		# '$ID', has no primary parent Node, and one is required
@@ -639,9 +632,9 @@ sub _create_node_tree__do_when_parent_not_set {
 
 package # hide this class name from PAUSE indexer
 SQL::SyntaxModel::SkipID;
-#use base qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel );
+#use base qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::ByTree );
 use vars qw( @ISA );
-@ISA = qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel );
+@ISA = qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::ByTree );
 
 ######################################################################
 
@@ -759,7 +752,8 @@ easy).
 
 =head1 SEE ALSO
 
-SQL::SyntaxModel, and other items in its SEE ALSO documentation.
+SQL::SyntaxModel, and other items in its SEE ALSO documentation; also
+SQL::SyntaxModel::ByTree.
 
 =head1 CONTRIVED EXAMPLE
 
@@ -777,7 +771,7 @@ with the parent class against this class and get the same output.
 
 	my $model = SQL::SyntaxModel::SkipID->new();
 
-	$model->create_nodes( [ map { { 'NODE_TYPE' => 'data_type', 'ATTRS' => $_ } } (
+	$model->create_node_trees( [ map { { 'NODE_TYPE' => 'data_type', 'ATTRS' => $_ } } (
 		{ 'name' => 'bin1k' , 'basic_type' => 'bin', 'size_in_bytes' =>  1_000, },
 		{ 'name' => 'bin32k', 'basic_type' => 'bin', 'size_in_bytes' => 32_000, },
 		{ 'name' => 'str4'  , 'basic_type' => 'str', 'size_in_chars' =>  4, 'store_fixed' => 1, 
@@ -816,9 +810,9 @@ with the parent class against this class and get the same output.
 		{ 'name' => 'generic' , 'basic_type' => 'str', 'size_in_chars' => 250, },
 	) ] );
 
-	$model->create_nodes( ['database', 'namespace'] );
+	$model->create_node_trees( ['database', 'namespace'] );
 
-	my $tbl_person = $model->create_node( { 'NODE_TYPE' => 'table', 
+	my $tbl_person = $model->create_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'name' => 'person', 'public_syn' => 'person', 
 			'storage_file' => 'person', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
@@ -843,10 +837,10 @@ with the parent class against this class and get the same output.
 		) ),
 	] } );
 
-	my $vw_person = $model->create_node( { 'NODE_TYPE' => 'view', 
+	my $vw_person = $model->create_node_tree( { 'NODE_TYPE' => 'view', 
 			'ATTRS' => { 'name' => 'person', 'may_write' => 1, 'match_table' => 'person' }, } );
 
-	my $vw_person_with_parents = $model->create_node( { 'NODE_TYPE' => 'view', 
+	my $vw_person_with_parents = $model->create_node_tree( { 'NODE_TYPE' => 'view', 
 			'ATTRS' => { 'name' => 'person_with_parents', 'may_write' => 0, }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
 			{ 'name' => 'self_id'    , 'data_type' => 'int'   , },
@@ -901,7 +895,7 @@ with the parent class against this class and get the same output.
 		] },
 	] } );
 
-	my $tbl_user_auth = $model->create_node( { 'NODE_TYPE' => 'table', 
+	my $tbl_user_auth = $model->create_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'name' => 'user_auth', 'public_syn' => 'user_auth', 
 			'storage_file' => 'user', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
@@ -927,7 +921,7 @@ with the parent class against this class and get the same output.
 		) ),
 	] } );
 
-	my $tbl_user_profile = $model->create_node( { 'NODE_TYPE' => 'table', 
+	my $tbl_user_profile = $model->create_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'name' => 'user_profile', 'public_syn' => 'user_profile', 
 			'storage_file' => 'user', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
@@ -950,7 +944,7 @@ with the parent class against this class and get the same output.
 		) ),
 	] } );
 
-	my $vw_user = $model->create_node( { 'NODE_TYPE' => 'view', 
+	my $vw_user = $model->create_node_tree( { 'NODE_TYPE' => 'view', 
 			'ATTRS' => { 'name' => 'user', 'may_write' => 1, }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
 			{ 'name' => 'user_id'      , 'data_type' => 'int'    , },
@@ -1014,7 +1008,7 @@ with the parent class against this class and get the same output.
 		] },
 	] } );
 
-	my $tbl_user_pref = $model->create_node( { 'NODE_TYPE' => 'table', 
+	my $tbl_user_pref = $model->create_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'name' => 'user_pref', 'public_syn' => 'user_pref', 
 			'storage_file' => 'user', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
@@ -1031,7 +1025,7 @@ with the parent class against this class and get the same output.
 		) ),
 	] } );
 
-	my $vw_user_theme = $model->create_node( { 'NODE_TYPE' => 'view', 
+	my $vw_user_theme = $model->create_node_tree( { 'NODE_TYPE' => 'view', 
 			'ATTRS' => { 'name' => 'user_theme', 'may_write' => 0, }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
 			{ 'name' => 'theme_name' , 'data_type' => 'generic', },
@@ -1067,6 +1061,6 @@ with the parent class against this class and get the same output.
 		] },
 	] } );
 
-	print $model->get_root_node()->get_all_properties_as_xml_str();
+	print $model->get_all_properties_as_xml_str();
 
 =cut

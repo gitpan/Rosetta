@@ -1,3 +1,39 @@
+2003-12-21   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.20.
+
+	* Fixed minor POD bug in SyntaxModel.pm regarding '>' escaping.
+
+	* Removed these deprecated shim methods from SyntaxModel.pm: create_node(),
+	create_nodes(), get_root_node().  Also removed the deprecated code from
+	add_child_node() that made it a potential shim for create_child_node_tree().  
+	Then updated the test scripts/modules to use the replacements for the above, 
+	and likewise the CONTRIVED EXAMPLE documentation.
+
+	* Split SQL::SyntaxModel into two modules, itself and a new subclass named
+	SQL::SyntaxModel::ByTree.  The split was clean, and consisted of moving the
+	following 14 methods out of the core SQL::ObjectModel, with their POD:
+	major_type_of_node_type_attribute(), expected_attribute_major_type(),
+	get_attribute(), get_attributes(), clear_attribute(), clear_attributes(),
+	set_attribute(), set_attributes(), test_mandatory_attributes(),
+	collect_inherited_attributes(), create_child_node_tree(),
+	create_child_node_trees(), create_node_tree(), create_node_trees().  In 
+	addition, the CONTRIVED EXAMPLE documentation was moved to the new module.
+
+	* Now there are 3 nested and closely related modules.  SyntaxModel.pm is
+	the core; ByTree.pm is an optional subclass of that, and SkipID.pm is now
+	an optional subclass of ByTree.pm.  All 3 of these modules are at version
+	0.08.  Related to this, t_SQL_SyntaxModel.pm was renamed to
+	t_SQL_SyntaxModel_ByTree.pm, 1_SQL_SyntaxModel.t was split into
+	10_SQL_SyntaxModel.t and 11_SQL_SyntaxModel_ByTree.t, the other two test
+	files now have '12' and '20' prefixes; the test files were also updated
+	internally.  Small updates to MANIFEST and INSTALL.
+
+	* Small updates to ByTree.pm and SkipID.pm so that they use the Node
+	property accessor methods provided by SyntaxModel.pm rather than accessing
+	properties defined by that class directly.  I could not do this for the 
+	Node and Model properties, however, as they have no appropriate methods.
+
 2003-12-18   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.19.

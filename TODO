@@ -1,18 +1,18 @@
 ONE DEVELOPMENT TRACK
 
-r0.20 - Create the Locale::KeyedText module and other Locale modules.  These
+r0.21 - Create the Locale::KeyedText module and other Locale modules.  These
 will be needed by the other code modules.  In release 0.19 SQL::SyntaxModel
 contains code for invoking the prospective Locale::KeyedText, but that is
 commented out; this code will be enabled in 0.20.  The french language module
 will only contain mock text (to be replaced later) since I'm not fluent in
 non-english languages.
 
-r0.21 - Update DataDictionary.pod and SyntaxModel.pm so they describe the main 
+r0.22 - Update DataDictionary.pod and SyntaxModel.pm so they describe the main 
 yet-missing features, such as applications, commands, and command vars.  Also 
 update the SYNOPSIS POD (and test script) so that the views go in the application 
 space rather than the database space, where they actually belong.
 
-r0.22 - Create modules Rosetta, Rosetta::_::Engine, Rosetta::_::Connection, as
+r0.23 - Create modules Rosetta, Rosetta::_::Engine, Rosetta::_::Connection, as
 well as Rosetta::Driver::Null.  Or alternately, make what these become,
 following the inevitable major design updates started at the same time.
 

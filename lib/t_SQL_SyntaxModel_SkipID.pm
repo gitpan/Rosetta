@@ -13,7 +13,7 @@ sub create_and_populate_model {
 
 	my $model = $class->new();
 
-	$model->create_nodes( [ map { { 'NODE_TYPE' => 'data_type', 'ATTRS' => $_ } } (
+	$model->create_node_trees( [ map { { 'NODE_TYPE' => 'data_type', 'ATTRS' => $_ } } (
 		{ 'name' => 'bin1k' , 'basic_type' => 'bin', 'size_in_bytes' =>  1_000, },
 		{ 'name' => 'bin32k', 'basic_type' => 'bin', 'size_in_bytes' => 32_000, },
 		{ 'name' => 'str4'  , 'basic_type' => 'str', 'size_in_chars' =>  4, 'store_fixed' => 1, 
@@ -52,9 +52,9 @@ sub create_and_populate_model {
 		{ 'name' => 'generic' , 'basic_type' => 'str', 'size_in_chars' => 250, },
 	) ] );
 
-	$model->create_nodes( ['database', 'namespace'] );
+	$model->create_node_trees( ['database', 'namespace'] );
 
-	my $tbl_person = $model->create_node( { 'NODE_TYPE' => 'table', 
+	my $tbl_person = $model->create_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'name' => 'person', 'public_syn' => 'person', 
 			'storage_file' => 'person', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
@@ -79,10 +79,10 @@ sub create_and_populate_model {
 		) ),
 	] } );
 
-	my $vw_person = $model->create_node( { 'NODE_TYPE' => 'view', 
+	my $vw_person = $model->create_node_tree( { 'NODE_TYPE' => 'view', 
 			'ATTRS' => { 'name' => 'person', 'may_write' => 1, 'match_table' => 'person' }, } );
 
-	my $vw_person_with_parents = $model->create_node( { 'NODE_TYPE' => 'view', 
+	my $vw_person_with_parents = $model->create_node_tree( { 'NODE_TYPE' => 'view', 
 			'ATTRS' => { 'name' => 'person_with_parents', 'may_write' => 0, }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
 			{ 'name' => 'self_id'    , 'data_type' => 'int'   , },
@@ -137,7 +137,7 @@ sub create_and_populate_model {
 		] },
 	] } );
 
-	my $tbl_user_auth = $model->create_node( { 'NODE_TYPE' => 'table', 
+	my $tbl_user_auth = $model->create_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'name' => 'user_auth', 'public_syn' => 'user_auth', 
 			'storage_file' => 'user', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
@@ -163,7 +163,7 @@ sub create_and_populate_model {
 		) ),
 	] } );
 
-	my $tbl_user_profile = $model->create_node( { 'NODE_TYPE' => 'table', 
+	my $tbl_user_profile = $model->create_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'name' => 'user_profile', 'public_syn' => 'user_profile', 
 			'storage_file' => 'user', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
@@ -186,7 +186,7 @@ sub create_and_populate_model {
 		) ),
 	] } );
 
-	my $vw_user = $model->create_node( { 'NODE_TYPE' => 'view', 
+	my $vw_user = $model->create_node_tree( { 'NODE_TYPE' => 'view', 
 			'ATTRS' => { 'name' => 'user', 'may_write' => 1, }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
 			{ 'name' => 'user_id'      , 'data_type' => 'int'    , },
@@ -250,7 +250,7 @@ sub create_and_populate_model {
 		] },
 	] } );
 
-	my $tbl_user_pref = $model->create_node( { 'NODE_TYPE' => 'table', 
+	my $tbl_user_pref = $model->create_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'name' => 'user_pref', 'public_syn' => 'user_pref', 
 			'storage_file' => 'user', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
@@ -267,7 +267,7 @@ sub create_and_populate_model {
 		) ),
 	] } );
 
-	my $vw_user_theme = $model->create_node( { 'NODE_TYPE' => 'view', 
+	my $vw_user_theme = $model->create_node_tree( { 'NODE_TYPE' => 'view', 
 			'ATTRS' => { 'name' => 'user_theme', 'may_write' => 0, }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
 			{ 'name' => 'theme_name' , 'data_type' => 'generic', },

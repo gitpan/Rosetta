@@ -1,8 +1,8 @@
 # This module contains test input and output data which is used in common 
-# between SQL-SyntaxModel.t and SQL-SyntaxModel-SkipID.t.
+# between SQL-SyntaxModel-ByTree.t and SQL-SyntaxModel-SkipID.t.
 
 package # hide this class name from PAUSE indexer
-t_SQL_SyntaxModel;
+t_SQL_SyntaxModel_ByTree;
 use strict;
 use warnings;
 
@@ -13,7 +13,7 @@ sub create_and_populate_model {
 
 	my $model = $class->new();
 
-	$model->create_nodes( [ map { { 'NODE_TYPE' => 'data_type', 'ATTRS' => $_ } } (
+	$model->create_node_trees( [ map { { 'NODE_TYPE' => 'data_type', 'ATTRS' => $_ } } (
 		{ 'id' =>  1, 'name' => 'bin1k' , 'basic_type' => 'bin', 'size_in_bytes' =>  1_000, },
 		{ 'id' =>  2, 'name' => 'bin32k', 'basic_type' => 'bin', 'size_in_bytes' => 32_000, },
 		{ 'id' =>  3, 'name' => 'str4'  , 'basic_type' => 'str', 'size_in_chars' =>  4, 'store_fixed' => 1, 
@@ -52,11 +52,11 @@ sub create_and_populate_model {
 		{ 'id' => 27, 'name' => 'generic' , 'basic_type' => 'str', 'size_in_chars' => 250, },
 	) ] );
 
-	my $database = $model->create_node( { 'NODE_TYPE' => 'database', 'ATTRS' => { 'id' => 1, } } ); 
+	my $database = $model->create_node_tree( { 'NODE_TYPE' => 'database', 'ATTRS' => { 'id' => 1, } } ); 
 
-	my $namespace = $database->add_child_node( { 'NODE_TYPE' => 'namespace', 'ATTRS' => { 'id' => 1, } } ); 
+	my $namespace = $database->create_child_node_tree( { 'NODE_TYPE' => 'namespace', 'ATTRS' => { 'id' => 1, } } ); 
 
-	my $tbl_person = $namespace->add_child_node( { 'NODE_TYPE' => 'table', 
+	my $tbl_person = $namespace->create_child_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'id' => 4, 'name' => 'person', 'order' => 4, 'public_syn' => 'person', 
 			'storage_file' => 'person', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
@@ -83,10 +83,10 @@ sub create_and_populate_model {
 		) ),
 	] } );
 
-	my $vw_person = $namespace->add_child_node( { 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 4, 
+	my $vw_person = $namespace->create_child_node_tree( { 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 4, 
 			'name' => 'person', 'may_write' => 1, 'view_type' => 'caller', 'match_table' => 4 }, } );
 
-	my $vw_person_with_parents = $namespace->add_child_node( { 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 2, 
+	my $vw_person_with_parents = $namespace->create_child_node_tree( { 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 2, 
 			'name' => 'person_with_parents', 'may_write' => 0, 'view_type' => 'caller', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
 			{ 'id' => 16, 'name' => 'self_id'    , 'order' => 1, 'data_type' =>  9, },
@@ -150,7 +150,7 @@ sub create_and_populate_model {
 		] },
 	] } );
 
-	my $tbl_user_auth = $namespace->add_child_node( { 'NODE_TYPE' => 'table', 
+	my $tbl_user_auth = $namespace->create_child_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'id' => 1, 'name' => 'user_auth', 'order' => 1, 'public_syn' => 'user_auth', 
 			'storage_file' => 'user', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
@@ -179,7 +179,7 @@ sub create_and_populate_model {
 		) ),
 	] } );
 
-	my $tbl_user_profile = $namespace->add_child_node( { 'NODE_TYPE' => 'table', 
+	my $tbl_user_profile = $namespace->create_child_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'id' => 2, 'name' => 'user_profile', 'order' => 2, 'public_syn' => 'user_profile', 
 			'storage_file' => 'user', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
@@ -204,7 +204,7 @@ sub create_and_populate_model {
 		) ),
 	] } );
 
-	my $vw_user = $namespace->add_child_node( { 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 1, 
+	my $vw_user = $namespace->create_child_node_tree( { 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 1, 
 			'name' => 'user', 'may_write' => 1, 'view_type' => 'caller', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
 			{ 'id' =>  1, 'name' => 'user_id'      , 'order' =>  1, 'data_type' =>  9, },
@@ -277,7 +277,7 @@ sub create_and_populate_model {
 		] },
 	] } );
 
-	my $tbl_user_pref = $namespace->add_child_node( { 'NODE_TYPE' => 'table', 
+	my $tbl_user_pref = $namespace->create_child_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'id' => 3, 'name' => 'user_pref', 'order' => 3, 'public_syn' => 'user_pref', 
 			'storage_file' => 'user', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
@@ -298,7 +298,7 @@ sub create_and_populate_model {
 		) ),
 	] } );
 
-	my $vw_user_theme = $namespace->add_child_node( { 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 3, 
+	my $vw_user_theme = $namespace->create_child_node_tree( { 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 3, 
 			'name' => 'user_theme', 'may_write' => 0, 'view_type' => 'caller', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
 			{ 'id' => 22, 'name' => 'theme_name' , 'order' => 1, 'data_type' => 27, },
