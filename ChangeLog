@@ -1,3 +1,117 @@
+2004-03-08   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.26.
+
+	* This is primarily a "clean up" release where many relatively small or
+	medium sized changes were made to a large number of files.  In other words,
+	the changes for this release were spread out widely rather than being
+	concentrated in just a few files.  Some changes make this distribution
+	incompatible with previous ones; caveat early adopter.
+
+	* Updated the external dependency of this distribution on Locale::KeyedText
+	so that v0.03 of that module is now required.  Corresponding to this, every
+	reference to Locale::KeyedText::_::[Message/Translator] is changed to refer
+	to Locale::KeyedText::[Message/Translator]; the classes	were renamed.
+
+	* Updated SyntaxModel.pm (now v0.13), and Rosetta.pm (now v0.10), and both
+	ByTree.pm and SkipID.pm (each now v0.12), to reorganize and more properly
+	document each of their component class/package sets.  The packages
+	[*]::_::[Container/Node] were each renamed to [*]::[Container/Node], and
+	[*]::_::[Interface/Engine] were each renamed to [*]::[Interface/Engine];
+	the packages [*]::_::Shared were merged into the module name-sake packages.
+
+	* Added new POD documentation section CLASSES IN THIS MODULE to each of the
+	above 4 modules which outlines the reality of the multiple package/classes
+	in each single module, and their relation.  It also says that you should
+	never make your own modules with any of the same package or module names.
+
+	* Minor update to the DESCRIPTION of all *.pm files to replace "The ...
+	Perl 5 object class" with the more accurate "The [...] Perl 5 module".
+
+	* The multiple package declarations in the same 4 modules are no longer
+	obfuscated (split over 2 lines each) to prevent PAUSE from indexing them.
+
+	* SyntaxModel.pm no longer has separate actual "Container" and "Model"
+	classes, where the latter was a wrapper for the first and took care of the
+	first's automatic destruction.  Instead, you must now explicitly call a
+	Container's new "destroy()" method (renamed from the private
+	"_destroy_properties" method) when you are done with it, so you don't leak
+	memory; see also the new POD section CAVEATS in that module, which explains
+	the change.  The middle 3 BUGS paragraphs were removed from that module
+	also, as they described problems related to the now-removed wrapper.  The
+	SYNOPSIS was updated to show destroy() in use.  Related to these changes,
+	put_in_container() no longer checks for two class names.
+
+	* In all 3 SSM modules (as appropriate), the stateless new() and
+	create_empty_node() functions were respectively moved into the Container
+	and Node packages, and both have the name "new()"; each now uses its first
+	argument as the package name (or object) to bless into as is usual with
+	Perl classes, and unlike the hard-coded bless it had before.  The
+	SQL::SyntaxModel package now has two new methods "new_container()" and
+	"new_node()" that exist in the place of the old functions, and these simply
+	call the moved functions; aside from the name changes, you can still invoke
+	them like you did before.  Related to this change, the 3 private methods
+	"_get_static_const_[model/container/node]_class_name()" were removed.  The
+	Container method "initialize()" was also removed.  The private Container 
+	method "_initialize_properties" was merged into its "new()" method.
+
+	* The code and property declarations in the SSM modules for Containers have
+	now been moved above those for Nodes; the module name-sake package code is
+	above both.  The POD already had Container leading, so it wasn't changed.
+
+	* The SkipID.pm module is now developmentally severed from ByTree.pm.  The
+	first now subclasses SyntaxModel.pm directly like the second does.  All 4
+	ByTree.pm methods are now fully and independantly implemented in SkipID.pm,
+	so the latter is not dependant on the former.  The two larger methods were
+	already separate code copies before, as that is where the modules differ,
+	but the two smaller ones were copied over to complete the separation.  As
+	for POD, SkipID.pm used to have no method descriptions at all, but now it
+	has its own complete set for said 4 methods.  These changes allow ByTree.pm
+	and SkipID.pm to diverge further from each other in all ways; SkipID.pm no
+	longer has to be backwards compatible with ByTree.pm, although in the short
+	term it still will be.
+
+	* Updated all 3 "en.pm" SSM localization files (each now v0.03) to account 
+	for the above mentioned name changes and declaration orders.
+
+	* All of the test files received small updates to account for the package
+	name changes and constructor function name changes in the main modules and
+	their localization files.  Also, all 3 of the SSM test files were updated
+	to explicitly destroy() the objects they create, and test that it worked.
+
+	* Changed the COPYRIGHT AND LICENSE for SyntaxModel.pm, its en.pm file,
+	Language.pod, and API_C.pod, as well as Rosetta.pm, Framework.pod,
+	SimilarModules.pod, and ReadMe.  Mainly this was to make the text less
+	verbose.  The license is essentially the same, still being the GPL v2 with
+	exceptions, but the exceptions have also been expanded; you may now link
+	with any independant modules without those having to be GPL, where
+	previously only independant modules that implemented or interfaced to
+	databases had that exception.
+
+	* Changed the COPYRIGHT AND LICENSE for ByTree.pm, SkipID.pm, and each of
+	their en.pm files.  These 4 files are now licensed "under the same terms as
+	Perl 5.8 itself" instead of being licensed under the GPL with exceptions. 
+	The 4 files also don't say they are "part of the SQL::SyntaxModel library".
+
+	* Added a new short documentation section named AN ALTERNATIVE SECOND
+	VERSION to both Framework.pod and API_C.pod, suggesting that my upcoming
+	second major versions of Rosetta and SQL::SyntaxModel may be implemented
+	using Parrot IMC rather than C.  Inspired by dbdi-dev@perl.org.
+
+	* All 4 of the t/*.t files were renamed so that they no longer have the
+	numerical prefix (10_,11_,12_,20_); all references to those files by name
+	have been likewise updated, such as MANIFEST and INSTALL.
+
+	* Added new English Localization file lib/Rosetta/L/en.pm (v0.01) for
+	Rosetta, and refactored some error message generation code in Rosetta.pm.
+
+	* Added new file lib/Rosetta/Engine/Null.pm (v0.01) which is a mock Engine
+	whose only purpose in life is to help test the core Rosetta module.
+
+	* Added a large chunk of documentation to Rosetta.pm, mainly consisting of
+	a complete function/method list.  Some other code and documentation changes
+	were made in Rosetta.pm.
+
 2004-03-03   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.25.
@@ -622,7 +736,7 @@
 	split into itself and a new Tree private class; the latter now contains all
 	of the internal cross-references with the Node private class, and the
 	former now never has any internal references to it.  The change was 
-	implemented this way so that users never have to explicitely call a 
+	implemented this way so that users never have to explicitly call a 
 	destructor method; the module will "do the right thing" and destroy itself 
 	when external refs go out of scope.
 
@@ -702,7 +816,7 @@
 	values from parent nodes, in addition to setting static literal values. 
 	The 'id' attribute for all nodes is both mandatory and serially generated,
 	so it is technically possible (as shown by the example code) to use this
-	module without explicitely giving any 'id' values as input.
+	module without explicitly giving any 'id' values as input.
 
 	* Added feature to ObjectModel.pm where, if you simply create a node
 	without indicating a parent to attach it to, the module will make a logical
@@ -1105,7 +1219,7 @@
 
 	* The STRUCTURE, BRIEF MODULE LIST, and EXPANDED MODULE LIST have been
 	expanded, and the diagram in STRUCTURE improved:  1. The list of Driver
-	modules has been rewritten to explicitely show several dozen databases, and
+	modules has been rewritten to explicitly show several dozen databases, and
 	the expanded module descriptions for all drivers and driver utilities was
 	rewritten.  2. A new set of Validator modules has been added to be a common
 	test bed for all the drivers (akin to Sun's validation suite for JVMs).  3.

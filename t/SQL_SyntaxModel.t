@@ -1,14 +1,13 @@
 # Before `make install' is performed this script should be runnable with
-# `make test'. After `make install' it should work as `perl 11_SQL_SyntaxModel_ByTree.t'
+# `make test'. After `make install' it should work as `perl SQL_SyntaxModel.t'
 
 ######################### We start with some black magic to print on failure.
 
-BEGIN { $| = 1; print "1..5\n"; }
+BEGIN { $| = 1; print "1..4\n"; }
 END {print "not ok 1\n" unless $loaded;}
 use t_SQL_SyntaxModel;
-use t_SQL_SyntaxModel_ByTree;
-use SQL::SyntaxModel::ByTree 0.111;
-use SQL::SyntaxModel::ByTree::L::en 0.02;
+use SQL::SyntaxModel 0.13;
+use SQL::SyntaxModel::L::en 0.03;
 $loaded = 1;
 print "ok 1\n";
 use strict;
@@ -40,8 +39,7 @@ sub message {
 sub error_to_string {
 	my ($message) = @_;
 	ref($message) or return( $message ); # if this isn't an object
-	my $translator = Locale::KeyedText->new_translator( 
-		['SQL::SyntaxModel::ByTree::L::', 'SQL::SyntaxModel::L::'], ['en'] );
+	my $translator = Locale::KeyedText->new_translator( ['SQL::SyntaxModel::L::'], ['en'] );
 	my $user_text = $translator->translate_message( $message );
 	unless( $user_text ) {
 		return( "internal error: can't find user text for a message: ".
@@ -52,15 +50,15 @@ sub error_to_string {
 
 ######################################################################
 
-message( "START TESTING SQL::SyntaxModel::ByTree Parent Compatibility (SSM)" );
+message( "START TESTING SQL::SyntaxModel" );
 
 ######################################################################
 
 eval {
 	message( "First populate some objects ..." );
 
-	my $model = t_SQL_SyntaxModel->create_and_populate_model( 'SQL::SyntaxModel::ByTree' );
-	result( ref($model) eq 'SQL::SyntaxModel::ByTree', "creation of all objects" );
+	my $model = t_SQL_SyntaxModel->create_and_populate_model( 'SQL::SyntaxModel' );
+	result( ref($model) eq 'SQL::SyntaxModel::Container', "creation of all objects" );
 
 	message( "Now see if the output is correct ..." );
 
@@ -68,28 +66,10 @@ eval {
 	my $actual_output = $model->get_all_properties_as_xml_str();
 	result( $actual_output eq $expected_output, "verify serialization of objects" );
 
-	message( "Other functional tests are not written yet; they will come later" );
-};
-$@ and result( 0, "TESTS ABORTED: ".error_to_string( $@ ) );
+	message( "Now destroy the objects ..." );
 
-######################################################################
-
-message( "DONE TESTING SQL::SyntaxModel::ByTree Parent Compatibility (SSM)" );
-message( "START TESTING SQL::SyntaxModel::ByTree Added Functionality" );
-
-######################################################################
-
-eval {
-	message( "First populate some objects ..." );
-
-	my $model = t_SQL_SyntaxModel_ByTree->create_and_populate_model( 'SQL::SyntaxModel::ByTree' );
-	result( ref($model) eq 'SQL::SyntaxModel::ByTree', "creation of all objects" );
-
-	message( "Now see if the output is correct ..." );
-
-	my $expected_output = t_SQL_SyntaxModel_ByTree->expected_model_xml_output();
-	my $actual_output = $model->get_all_properties_as_xml_str();
-	result( $actual_output eq $expected_output, "verify serialization of objects" );
+	$model->destroy();
+	result( (keys %{$model}) eq '0', "destruction of all objects" );
 
 	message( "Other functional tests are not written yet; they will come later" );
 };
@@ -97,7 +77,7 @@ $@ and result( 0, "TESTS ABORTED: ".error_to_string( $@ ) );
 
 ######################################################################
 
-message( "DONE TESTING SQL::SyntaxModel::ByTree Added Functionality" );
+message( "DONE TESTING SQL::SyntaxModel" );
 
 ######################################################################
 

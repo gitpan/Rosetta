@@ -11,9 +11,9 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.121';
+$VERSION = '0.13';
 
-use Locale::KeyedText 0.02;
+use Locale::KeyedText 0.03;
 
 ######################################################################
 
@@ -25,16 +25,15 @@ Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	Locale::KeyedText 0.02 (for error messages)
+	Locale::KeyedText 0.03 (for error messages)
 
 =head1 COPYRIGHT AND LICENSE
 
 This file is part of the SQL::SyntaxModel library (libSQLSM).
 
-SQL::SyntaxModel is Copyright (c) 1999-2004, Darren R. Duncan.  All rights
-reserved.  Address comments, suggestions, and bug reports to
-B<perl@DarrenDuncan.net>, or visit "http://www.DarrenDuncan.net" for more
-information.
+SQL::SyntaxModel is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved.
+Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
+visit "http://www.DarrenDuncan.net" for more information.
 
 SQL::SyntaxModel is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License (GPL) version 2 as published
@@ -43,33 +42,25 @@ received a copy of the GPL as part of the SQL::SyntaxModel distribution, in the
 file named "LICENSE"; if not, write to the Free Software Foundation, Inc., 59
 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 
+Linking SQL::SyntaxModel statically or dynamically with other modules is making
+a combined work based on SQL::SyntaxModel.  Thus, the terms and conditions of
+the GPL cover the whole combination.  As a special exception, the copyright
+holders of SQL::SyntaxModel give you permission to link SQL::SyntaxModel with
+independent modules, regardless of the license terms of these independent
+modules, and to copy and distribute the resulting combined work under terms of
+your choice, provided that every copy of the combined work is accompanied by a
+complete copy of the source code of SQL::SyntaxModel (the version of
+SQL::SyntaxModel used to produce the combined work), being distributed under
+the terms of the GPL plus this exception.  An independent module is a module
+which is not derived from or based on SQL::SyntaxModel, and which is fully
+useable when not linked to SQL::SyntaxModel in any form.
+
 Any versions of SQL::SyntaxModel that you modify and distribute must carry
 prominent notices stating that you changed the files and the date of any
 changes, in addition to preserving this original copyright notice and other
 credits. SQL::SyntaxModel is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-or FITNESS FOR A PARTICULAR PURPOSE.  See the GPL for more details.
-
-Linking SQL::SyntaxModel statically or dynamically with other modules is making
-a combined work based on SQL::SyntaxModel.  Thus, the terms and conditions of
-the GPL cover the whole combination.
-
-As a special exception, the copyright holders of SQL::SyntaxModel give you
-permission to link SQL::SyntaxModel with independent modules that are
-interfaces to or implementations of databases, regardless of the license terms
-of these independent modules, and to copy and distribute the resulting combined
-work under terms of your choice, provided that every copy of the combined work
-is accompanied by a complete copy of the source code of SQL::SyntaxModel (the
-version of SQL::SyntaxModel used to produce the combined work), being
-distributed under the terms of the GPL plus this exception.  An independent
-module is a module which is not derived from or based on SQL::SyntaxModel, and
-which is fully useable when not linked to SQL::SyntaxModel in any form.
-
-Note that people who make modified versions of SQL::SyntaxModel are not
-obligated to grant this special exception for their modified versions; it is
-their choice whether to do so.  The GPL gives permission to release a modified
-version without this exception; this exception also makes it possible to
-release a modified version which carries forward this exception.
+or FITNESS FOR A PARTICULAR PURPOSE.
 
 While it is by no means required, the copyright holders of SQL::SyntaxModel
 would appreciate being informed any time you create a modified version of
@@ -81,12 +72,20 @@ practical way of suggesting improvements to the standard version.
 ######################################################################
 ######################################################################
 
-package # hide this class name from PAUSE indexer
-SQL::SyntaxModel::_::Shared; # has no properties, subclassed by main and Container and Node
+# Names of properties for objects of the SQL::SyntaxModel::Container class are declared here:
+my $CPROP_ALL_NODES = 'all_nodes'; # hash of hashes of Node refs; find any Node by node_type:node_id quickly
+my $CPROP_PSEUDONODES = 'pseudonodes'; # hash of arrays of Node refs
+	# This property is for remembering the insert order of Nodes having hardwired pseudonode parents
+#my $CPROP_CURR_NODE = 'curr_node'; # ref to a Node; used when "streaming" to or from XML
+# To do: have attribute to indicate an edit in progress 
+	# or that there was a failure resulting in inconsistant data;
+	# this may be set by a method which partly implements a data change 
+	# which is not backed out of, before that function throws an exception;
+	# this property may best just be inside the thrown Locale::KeyedText object;
+	# OTOH, if users have coarse-grained locks on Containers for threads, we could have a property,
+	# since a call to an editing method would check and clear that before the thread releases lock
 
-######################################################################
-
-# Names of properties for objects of the SQL::SyntaxModel::_::Node class are declared here:
+# Names of properties for objects of the SQL::SyntaxModel::Node class are declared here:
 	# The C version will have the following comprise fields in a Node struct;
 	# all fields will be integers or memory references or enums; none will be strings.
 my $NPROP_NODE_TYPE   = 'node_type'; # str (enum) - what type of Node this is, can not change once set
@@ -130,24 +129,6 @@ my $NPROP_CHILD_NODES = 'child_nodes'; # array - list of refs to other Nodes hav
 	# adjacent to each other; add_reciprocal_links() will do this, but subsequent calls to 
 	# set_node_ref_attribute() might not.  In the interest of simplicity, any method that wants to 
 	# change the order of a child list should also normalize any multiple same-child occurrances.
-
-# Names of properties for objects of the SQL::SyntaxModel::_::Container class are declared here:
-my $CPROP_ALL_NODES = 'all_nodes'; # hash of hashes of Node refs; find any Node by node_type:node_id quickly
-my $CPROP_PSEUDONODES = 'pseudonodes'; # hash of arrays of Node refs
-	# This property is for remembering the insert order of Nodes having hardwired pseudonode parents
-#my $CPROP_CURR_NODE = 'curr_node'; # ref to a Node; used when "streaming" to or from XML
-# To do: have attribute to indicate an edit in progress 
-	# or that there was a failure resulting in inconsistant data;
-	# this may be set by a method which partly implements a data change 
-	# which is not backed out of, before that function throws an exception;
-	# this property may best just be inside the thrown Locale::KeyedText object;
-	# OTOH, if users have coarse-grained locks on Containers for threads, we could have a property,
-	# since a call to an editing method would check and clear that before the thread releases lock
-
-# Names of properties for objects of the SQL::SyntaxModel class are declared here:
-my $MPROP_CONTAINER = 'container'; # holds all the actual Container properties for this class
-	# We use two classes internally where user sees one so that no internal refs point to the 
-	# parentmost object, and hence DESTROY() will be called properly when all external refs go away.
 
 # These are programmatically recognized enumerations of values that 
 # particular Node attributes are allowed to have.  They are given names 
@@ -968,27 +949,6 @@ my $DBG_GAP_ATTRS     = 'ATTRS'; # hash - our attributes, including refs/ids of 
 my $DBG_GAP_CHILDREN  = 'CHILDREN'; # list of refs to new Nodes we will become primary parent of
 
 ######################################################################
-# These are 'protected' methods; only sub-classes should invoke them.
-
-sub _get_static_const_model_class_name {
-	# This function is intended to be overridden by sub-classes.
-	# It is intended only to be used when making new objects.
-	return( 'SQL::SyntaxModel' );
-}
-
-sub _get_static_const_container_class_name {
-	# This function is intended to be overridden by sub-classes.
-	# It is intended only to be used when making new objects.
-	return( 'SQL::SyntaxModel::_::Container' );
-}
-
-sub _get_static_const_node_class_name {
-	# This function is intended to be overridden by sub-classes.
-	# It is intended only to be used when making new objects.
-	return( 'SQL::SyntaxModel::_::Node' );
-}
-
-######################################################################
 
 sub valid_enumerated_types {
 	my ($self, $type) = @_;
@@ -1168,25 +1128,113 @@ sub _throw_error_message {
 }
 
 ######################################################################
+# These are convenience wrapper methods.
 
-sub new {
-	my ($self) = @_;
-	my $model = bless( {}, $self->_get_static_const_model_class_name() );
-	$model->{$MPROP_CONTAINER} = bless( {}, $self->_get_static_const_container_class_name() );
-	$model->{$MPROP_CONTAINER}->_initialize_properties();
-	return( $model );
+sub new_container {
+	return( SQL::SyntaxModel::Container->new() );
 }
 
-sub create_empty_node {
-	my ($self, $node_type) = @_;
-	defined( $node_type ) or $self->_throw_error_message( 'SSM_S_CR_EMP_NODE_NO_ARGS' );
+sub new_node {
+	return( SQL::SyntaxModel::Node->new( $_[1] ) );
+}
 
+######################################################################
+######################################################################
+
+package SQL::SyntaxModel::Container;
+use base qw( SQL::SyntaxModel );
+
+######################################################################
+
+sub new {
+	my ($class) = @_;
+	my $container = bless( {}, ref($class) || $class );
+	$container->{$CPROP_ALL_NODES} = { map { ($_ => {}) } keys %NODE_TYPES };
+	$container->{$CPROP_PSEUDONODES} = { map { ($_ => []) } @L2_PSEUDONODE_LIST };
+	return( $container );
+}
+
+######################################################################
+
+sub destroy {
+	# Since we probably have circular refs, we must explicitly be destroyed.
+	my ($container) = @_;
+	foreach my $nodes_by_type (values %{$container->{$CPROP_ALL_NODES}}) {
+		foreach my $node (values %{$nodes_by_type}) {
+			%{$node} = ();
+		}
+	}
+	%{$container} = ();
+}
+
+######################################################################
+
+sub get_node {
+	my ($container, $node_type, $node_id) = @_;
+	defined( $node_type ) or $container->_throw_error_message( 'SSM_C_GET_NODE_NO_ARG_TYPE' );
+	defined( $node_id ) or $container->_throw_error_message( 'SSM_C_GET_NODE_NO_ARG_ID' );
+	unless( $NODE_TYPES{$node_type} ) {
+		$container->_throw_error_message( 'SSM_C_GET_NODE_BAD_TYPE', { 'TYPE' => $node_type } );
+	}
+	return( $container->{$CPROP_ALL_NODES}->{$node_type}->{$node_id} );
+}
+
+######################################################################
+
+sub with_all_nodes_test_mandatory_attributes {
+	my ($container) = @_;
+	foreach my $nodes_by_type (values %{$container->{$CPROP_ALL_NODES}}) {
+		foreach my $node (values %{$nodes_by_type}) {
+			$node->test_mandatory_attributes();
+		}
+	}
+}
+
+######################################################################
+
+sub get_all_properties {
+	return( $_[0]->_get_all_properties() );
+}
+
+sub _get_all_properties {
+	my ($container) = @_;
+	my $pseudonodes = $container->{$CPROP_PSEUDONODES};
+	return( {
+		$DBG_GAP_NODE_TYPE => $SQLSM_L1_ROOT_PSND,
+		$DBG_GAP_ATTRS => {},
+		$DBG_GAP_CHILDREN => [map { {
+			$DBG_GAP_NODE_TYPE => $_,
+			$DBG_GAP_ATTRS => {},
+			$DBG_GAP_CHILDREN => [map { $_->_get_all_properties() } @{$pseudonodes->{$_}}],
+		} } @L2_PSEUDONODE_LIST],
+	} );
+}
+
+sub get_all_properties_as_perl_str {
+	return( $_[0]->_serialize_as_perl( $_[1], $_[0]->_get_all_properties() ) );
+}
+
+sub get_all_properties_as_xml_str {
+	return( $_[0]->_serialize_as_xml( $_[1], $_[0]->_get_all_properties() ) );
+}
+
+######################################################################
+######################################################################
+
+package SQL::SyntaxModel::Node;
+use base qw( SQL::SyntaxModel );
+
+######################################################################
+
+sub new {
+	my ($class, $node_type) = @_;
+	my $node = bless( {}, ref($class) || $class );
+
+	defined( $node_type ) or $node->_throw_error_message( 'SSM_N_NEW_NODE_NO_ARGS' );
 	my $type_info = $NODE_TYPES{$node_type};
 	unless( $type_info ) {
-		$self->_throw_error_message( 'SSM_S_CR_EMP_NODE_BAD_TYPE', { 'TYPE' => $node_type } );
+		$node->_throw_error_message( 'SSM_N_NEW_NODE_BAD_TYPE', { 'TYPE' => $node_type } );
 	}
-
-	my $node = bless( {}, $self->_get_static_const_node_class_name() );
 
 	$node->{$NPROP_NODE_TYPE} = $node_type;
 	$node->{$NPROP_NODE_ID} = undef;
@@ -1200,13 +1248,6 @@ sub create_empty_node {
 
 	return( $node );
 }
-
-######################################################################
-######################################################################
-
-package # hide this class name from PAUSE indexer
-SQL::SyntaxModel::_::Node;
-use base qw( SQL::SyntaxModel::_::Shared );
 
 ######################################################################
 
@@ -1704,11 +1745,7 @@ sub put_in_container {
 	my ($node, $new_container) = @_;
 	defined( $new_container ) or $node->_throw_error_message( 'SSM_N_PI_CONT_NO_ARGS' );
 
-	if( UNIVERSAL::isa( $new_container, 'SQL::SyntaxModel' ) ) {
-		# The user sees SQL::SyntaxModel and SQL::SyntaxModel::_::Container as same thing.
-		$new_container = $new_container->{$MPROP_CONTAINER};
-	}
-	unless( UNIVERSAL::isa( $new_container, 'SQL::SyntaxModel::_::Container' ) ) {
+	unless( UNIVERSAL::isa( $new_container, 'SQL::SyntaxModel::Container' ) ) {
 		$node->_throw_error_message( 'SSM_N_PI_CONT_BAD_ARG', { 'ARG' => $new_container } );
 	}
 
@@ -2027,130 +2064,6 @@ sub get_all_properties_as_xml_str {
 ######################################################################
 ######################################################################
 
-package # hide this class name from PAUSE indexer
-SQL::SyntaxModel::_::Container;
-use base qw( SQL::SyntaxModel::_::Shared );
-
-######################################################################
-
-sub _initialize_properties {
-	my ($container) = @_;
-	$container->{$CPROP_ALL_NODES} = { map { ($_ => {}) } keys %NODE_TYPES };
-	$container->{$CPROP_PSEUDONODES} = { map { ($_ => []) } @L2_PSEUDONODE_LIST };
-}
-
-sub _destroy_properties {
-	my ($container) = @_;
-	foreach my $nodes_by_type (values %{$container->{$CPROP_ALL_NODES}}) {
-		foreach my $node (values %{$nodes_by_type}) {
-			%{$node} = ();
-		}
-	}
-	%{$container} = ();
-}
-
-######################################################################
-
-sub initialize {
-	my ($self) = @_;
-	$self->_destroy_container_props();
-	$self->_destroy_properties();
-}
-
-######################################################################
-
-sub get_node {
-	my ($container, $node_type, $node_id) = @_;
-	defined( $node_type ) or $container->_throw_error_message( 'SSM_C_GET_NODE_NO_ARG_TYPE' );
-	defined( $node_id ) or $container->_throw_error_message( 'SSM_C_GET_NODE_NO_ARG_ID' );
-	unless( $NODE_TYPES{$node_type} ) {
-		$container->_throw_error_message( 'SSM_C_GET_NODE_BAD_TYPE', { 'TYPE' => $node_type } );
-	}
-	return( $container->{$CPROP_ALL_NODES}->{$node_type}->{$node_id} );
-}
-
-######################################################################
-
-sub with_all_nodes_test_mandatory_attributes {
-	my ($container) = @_;
-	foreach my $nodes_by_type (values %{$container->{$CPROP_ALL_NODES}}) {
-		foreach my $node (values %{$nodes_by_type}) {
-			$node->test_mandatory_attributes();
-		}
-	}
-}
-
-######################################################################
-
-sub get_all_properties {
-	return( $_[0]->_get_all_properties() );
-}
-
-sub _get_all_properties {
-	my ($container) = @_;
-	my $pseudonodes = $container->{$CPROP_PSEUDONODES};
-	return( {
-		$DBG_GAP_NODE_TYPE => $SQLSM_L1_ROOT_PSND,
-		$DBG_GAP_ATTRS => {},
-		$DBG_GAP_CHILDREN => [map { {
-			$DBG_GAP_NODE_TYPE => $_,
-			$DBG_GAP_ATTRS => {},
-			$DBG_GAP_CHILDREN => [map { $_->_get_all_properties() } @{$pseudonodes->{$_}}],
-		} } @L2_PSEUDONODE_LIST],
-	} );
-}
-
-sub get_all_properties_as_perl_str {
-	return( $_[0]->_serialize_as_perl( $_[1], $_[0]->_get_all_properties() ) );
-}
-
-sub get_all_properties_as_xml_str {
-	return( $_[0]->_serialize_as_xml( $_[1], $_[0]->_get_all_properties() ) );
-}
-
-######################################################################
-######################################################################
-
-package # hide this class name from PAUSE indexer
-SQL::SyntaxModel;
-use base qw( SQL::SyntaxModel::_::Shared );
-
-######################################################################
-
-sub DESTROY {
-	$_[0]->{$MPROP_CONTAINER}->_destroy_properties();
-}
-
-######################################################################
-# Shims for methods declared in Container class.
-
-sub initialize {
-	return( $_[0]->{$MPROP_CONTAINER}->initialize() );
-}
-
-sub get_node {
-	return( $_[0]->{$MPROP_CONTAINER}->get_node( $_[1], $_[2] ) );
-}
-
-sub with_all_nodes_test_mandatory_attributes {
-	return( $_[0]->{$MPROP_CONTAINER}->with_all_nodes_test_mandatory_attributes() );
-}
-
-sub get_all_properties {
-	$_[0]->{$MPROP_CONTAINER}->get_all_properties( $_[1] );
-}
-
-sub get_all_properties_as_perl_str {
-	$_[0]->{$MPROP_CONTAINER}->get_all_properties_as_perl_str( $_[1] );
-}
-
-sub get_all_properties_as_xml_str {
-	$_[0]->{$MPROP_CONTAINER}->get_all_properties_as_xml_str( $_[1] );
-}
-
-######################################################################
-######################################################################
-
 1;
 __END__
 
@@ -2164,10 +2077,10 @@ included.)  However, here are a few example usage lines:
 	use SQL::SyntaxModel;
 
 	eval {
-		my $model = SQL::SyntaxModel->new();
+		my $model = SQL::SyntaxModel->new_container();
 
 		# Create user-defined data type domain that our database record primary keys are:
-		my $dom_entity_id = SQL::SyntaxModel->create_empty_node( 'domain' );
+		my $dom_entity_id = SQL::SyntaxModel->new_node( 'domain' );
 		$dom_entity_id->set_node_id( 1 );
 		$dom_entity_id->put_in_container( $model );
 		$dom_entity_id->add_reciprocal_links();
@@ -2178,7 +2091,7 @@ included.)  However, here are a few example usage lines:
 		# ... add a few more Nodes
 
 		# Define the table that holds our data:
-		my $tb_person = $pp_node->create_empty_node( 'table' );
+		my $tb_person = $pp_node->new_node( 'table' );
 		$tb_person->set_node_id( 1 );
 		$tb_person->put_in_container( $model );
 		$tb_person->add_reciprocal_links();
@@ -2187,7 +2100,7 @@ included.)  However, here are a few example usage lines:
 		$tb_person->set_literal_attribute( 'name', 'person' );
 
 		# Define the 'person id' column of that table:
-		my $tbc_person_id = $pp_node->create_empty_node( 'table_col' );
+		my $tbc_person_id = $pp_node->new_node( 'table_col' );
 		$tbc_person_id->set_node_id( 1 );
 		$tbc_person_id->put_in_container( $model );
 		$tbc_person_id->add_reciprocal_links();
@@ -2206,6 +2119,9 @@ included.)  However, here are a few example usage lines:
 
 		# Now serialize all our Nodes to see if we stored what we expected:
 		print $model->get_all_properties_as_xml_str();
+
+		# Now explicitly destroy our Container so we don't leak memory:
+		$model->destroy();
 	};
 
 	if( $@ ) {
@@ -2215,7 +2131,7 @@ included.)  However, here are a few example usage lines:
 	}
 
 The above code sample is taken and slightly altered from a longer set of code
-in this module's test script/module: 't/10_SQL_SyntaxModel.t' and
+in this module's test script/module: 't/SQL_SyntaxModel.t' and
 'lib/t_SQL_SyntaxModel.pm'.  Even that code is an incomplete sample, but it 
 also demonstrates the use of a couple simple wrapper functions.
 
@@ -2359,7 +2275,7 @@ make for much more compact code.
 
 =head1 DESCRIPTION
 
-The SQL::SyntaxModel Perl 5 object class is intended to be a powerful but easy
+The SQL::SyntaxModel Perl 5 module is intended to be a powerful but easy
 to use replacement for SQL strings (including support for placeholders), which
 you can use to make queries against a database.  Each SQL::SyntaxModel object
 can represent a non-ambiguous structured command for a database to execute, or
@@ -2464,6 +2380,24 @@ improving their products or lower prices to keep their customers, and users in
 general would benefit.  So I do have reasons for trying to tackle the advanced
 database features in SQL::SyntaxModel.
 
+=head1 CLASSES IN THIS MODULE
+
+This module is implemented by several object-oriented Perl 5 packages, each of
+which is referred to as a class.  They are: B<SQL::SyntaxModel> (the module's
+name-sake), B<SQL::SyntaxModel::Container> (aka B<Container>, aka B<Model>),
+and B<SQL::SyntaxModel::Node> (aka B<Node>).
+
+I<While all 3 of the above classes are implemented in one module for
+convenience, you should consider all 3 names as being "in use"; do not create
+any modules or packages yourself that have the same names.>
+
+The Container and Node classes do most of the work and are what you mainly use.
+ The name-sake class mainly exists to guide CPAN in indexing the whole module,
+but it also provides a set of stateless utility methods and constants that the
+other two classes inherit, and it provides a few wrapper functions over the
+other classes for your convenience; you never instantiate an object of
+SQL::SyntaxModel itself.
+
 =head1 STRUCTURE
 
 The internal structure of a SQL::SyntaxModel object is conceptually a cross
@@ -2550,7 +2484,7 @@ I<Disclaimer: The following claims assume that only this module's published API
 is used, and that you do not set object properties directly or call private
 methods, which Perl does not prevent.  It also assumes that the module is bug
 free, and that any errors or warnings which appear while the code is running
-are thrown explicitely by this module as part of its normal functioning.>
+are thrown explicitly by this module as part of its normal functioning.>
 
 SQL::SyntaxModel is designed to ensure that the objects it produces are always
 internally consistant, and that the data they contain is always well-formed,
@@ -2578,7 +2512,7 @@ set and/or its Node links are validated, no references will be made to this
 Node from other Nodes; from their point of view it doesn't exist, and hence the
 other Nodes are all consistant.
 
-SQL::SyntaxModel is explicitely not thread-aware (thread-safe); it contains no
+SQL::SyntaxModel is explicitly not thread-aware (thread-safe); it contains no
 code to synchronize access to its objects' properties, such as semaphores or
 locks or mutexes.  To internalize such things in an effective manner would have
 made the code a lot more complex than it is now, without any clear benefits.  
@@ -2624,8 +2558,8 @@ rhymes!)  The set of legal operations you can perform on a Node are different
 depending on its state, and a Node can only transition between
 adjacent-numbered states one at a time.
 
-When a new Node is created, using create_empty_node(), it starts out "Alone";
-it does *not* live in a Container, and it is illegal to have any actual (Perl)
+When a new Node is created, using new_node(), it starts out "Alone"; it does
+*not* live in a Container, and it is illegal to have any actual (Perl)
 references between it and any other Node.  Nodes in this state can be built
 (have their Node Id and other attributes set or changed) piecemeal with the
 least processing overhead, and can be moved or exist independently of anything
@@ -2717,53 +2651,62 @@ in what input it accepts, then you will have to bear the burden of cleaning up
 or interpreting that input, or delegating such work elsewhere.  (Or perhaps 
 someone may want to make a wrapper module to do this?)
 
-=head1 CONSTRUCTOR FUNCTIONS AND METHODS
+=head1 CONSTRUCTOR WRAPPER FUNCTIONS
 
-These functions/methods are for creating the various SQL::SyntaxModel objects
-(or, if they are appropriately subclassed, the will create objects of the
-subclasses instead).  They are all stateless and deterministic; you can invoke
-them with the same results under any circumstance and off of either this class
-itself or any other objects that this class makes.
+These functions are stateless and can be invoked off of either the module name,
+or any package name in this module, or any object created by this module; they
+are thin wrappers over other methods and exist strictly for convenience.
+
+=head2 new_container()
+
+	my $model = SQL::SyntaxModel->new_container();
+	my $model2 = SQL::SyntaxModel::Container->new_container();
+	my $model3 = SQL::SyntaxModel::Node->new_container();
+	my $model4 = $model->new_container();
+	my $model5 = $node->new_container();
+
+This function wraps SQL::SyntaxModel::Container->new().
+
+=head2 new_node( NODE_TYPE )
+
+	my $node = SQL::SyntaxModel->new_node( 'table' );
+	my $node2 = SQL::SyntaxModel::Container->new_node( 'table' );
+	my $node3 = SQL::SyntaxModel::Node->new_node( 'table' );
+	my $node4 = $model->new_node( 'table' );
+	my $node5 = $node->new_node( 'table' );
+
+This function wraps SQL::SyntaxModel::Node->new( NODE_TYPE ).
+
+=head1 CONTAINER CONSTRUCTOR FUNCTIONS AND METHODS
+
+This function/method is stateless and can be invoked off of either the Container
+class name or an existing Container object, with the same result.
 
 =head2 new()
 
-	my $model = SQL::SyntaxModel->new();
-	my $model = $model->new();
-	my $model = $node->new();
+	my $model = SQL::SyntaxModel::Container->new();
+	my $model2 = $model->new();
 
-This "getter" function/method will create and return a single Model/Container
-(or subclass) object.
-
-=head2 create_empty_node( NODE_TYPE )
-
-	my $node = SQL::SyntaxModel->create_empty_node( 'table' );
-	my $node = $model->create_empty_node( 'table' );
-	my $node = $node->create_empty_node( 'table' );
-
-This "getter" function/method will create and return a single Node (or
-subclass) object whose Node Type is given in the NODE_TYPE (enum) argument, and
-all of whose other properties are defaulted to an "empty" state.  A Node's type
-can only be set on instantiation and can not be changed afterwards; only
-specific values are allowed, which you can see in the
-SQL::SyntaxModel::Language documentation file.  This new Node does not yet live
-in a Container, and will have to be put in one later before you can make full
-use of it.  However, you can read or set or clear any or all of this new Node's
-attributes (including the Node Id) prior to putting it in a Container, making
-it easy to build one piecemeal before it is actually "used".  A Node can not
-have any actual Perl references between it and other Nodes until it is in a
-Container, and as such you can delete it simply by letting your own reference
-to it be garbage collected.
+This "getter" function/method will create and return a single
+SQL::SyntaxModel::Container (or subclass) object.
 
 =head1 CONTAINER OBJECT METHODS
 
 These methods are stateful and may only be invoked off of Container objects.
 
-=head2 initialize()
+=head2 destroy()
 
-	my $model->initialize();
+	$model->destroy();
 
-This "setter" method resets the Container to the state it was in when it was
-returned by new().  All of its member Nodes are destroyed.
+This "setter" method will destroy the Container object that it is invoked from,
+and it will also destroy all of the Nodes inside that Container.  This method
+exists because all Container objects (having 1 or more Node) contain circular
+references between the Container and all of its Nodes.  You need to invoke this
+method when you are done with a Container, or you will leak the memory it uses
+when your external references to it go out of scope.  This method can be
+invoked at any time and will not throw any exceptions.  When it has completed,
+all external references to the Container or any of its Nodes will each point to
+an empty (but still blessed) Perl hash.  I<See the CAVEATS documentation.>
 
 =head2 get_node( NODE_TYPE, NODE_ID )
 
@@ -2787,6 +2730,30 @@ which this method doesn't catch; any untested Nodes could also have failed.
 Only when you can call this method without any exceptions being thrown will all
 Nodes have passed the tests.
 
+=head1 NODE CONSTRUCTOR FUNCTIONS AND METHODS
+
+This function/method is stateless and can be invoked off of either the Node
+class name or an existing Node object, with the same result.
+
+=head2 new( NODE_TYPE )
+
+	my $node = SQL::SyntaxModel::Node->new( 'table' );
+	my $node2 = $node->new( 'table' );
+
+This "getter" function/method will create and return a single
+SQL::SyntaxModel::Node (or subclass) object whose Node Type is given in the
+NODE_TYPE (enum) argument, and all of whose other properties are defaulted to
+an "empty" state.  A Node's type can only be set on instantiation and can not
+be changed afterwards; only specific values are allowed, which you can see in
+the SQL::SyntaxModel::Language documentation file.  This new Node does not yet
+live in a Container, and will have to be put in one later before you can make
+full use of it.  However, you can read or set or clear any or all of this new
+Node's attributes (including the Node Id) prior to putting it in a Container,
+making it easy to build one piecemeal before it is actually "used".  A Node can
+not have any actual Perl references between it and other Nodes until it is in a
+Container, and as such you can delete it simply by letting your own reference
+to it be garbage collected.
+
 =head1 NODE OBJECT METHODS
 
 These methods are stateful and may only be invoked off of Node objects.  For
@@ -2798,7 +2765,7 @@ it will throw an exception (like for bad input).
 =head2 delete_node()
 
 This "setter" method will destroy the Node object that it is invoked from, if
-it can. You are only allowed to delete Nodes that are not inside Containers,
+it can.  You are only allowed to delete Nodes that are not inside Containers,
 and which don't have child Nodes; failing this, you must remove the children
 and then take this Node from its Container first.  Technically, this method
 doesn't actually do anything (pure-Perl version) other than validate that you
@@ -3282,36 +3249,23 @@ data.  All of this said, I plan to move this module into alpha development
 status within the next few releases, once I start using it in a production
 environment myself.
 
-The 'Container' object that you work with when you call a Node's
-get_container() or put_in_container() methods is not the same type of object
-that you get when calling SQL::SyntaxModel->new().  The first is an actual
-Container, and the second is a special thin wrapper object called 'Model' which
-makes sure the Container object inside is auto-garbage-collected properly.  The
-situation is that every Node living in a Container has a reference to the
-Container object, which itself has references to the Nodes.  Also, the Nodes
-inside Containers can have circular Perl references to each other
-(parent-to-child and child-to-parent).  The Model object has a Perl reference
-to its Container, but the Container does not refer back.  This means that when
-references to the Model go away, its DESTROY() method will break all the
-circular Perl refs mentioned above so they are also garbage collected properly.
-
-What this also means is, if you lose your reference to the Model object while 
-still holding references to any Container objects, those objects will become 
-invalid, as they get destroyed when the Model is garbage-collected.  So with 
-the current version of this class you must keep a hold on what new() gives you.
-
-Now, one way to eliminate this not-the-same-object problem is to require users
-of SQL::SyntaxModel to explicitely call a Container's destructor method before
-tossing the reference to it, such as how C does things.  But then explicit
-destruction of in-memory data structures isn't so Perlish.  Note that once the
-core is reimplemented in C and the Perl is just a wrapper, there will no longer
-be any Perl circular references, so the object can be auto-destructed without
-the current compatability issues.
-
 This module currently does not prevent the user from creating circular virtual
 references between Nodes, such as "A is the child of B and B is the child of
 A"; however, only a few types of Nodes (such as 'view' and 'routine' and
 '*_expr') even make this possible.
+
+=head1 CAVEATS
+
+All SQL::SyntaxModel::Container objects contain circular references by design
+(or more specifically, when 1 or more Node is in one).  When you are done with
+a Container object, you should explicitly call its "destroy()" method prior to
+letting your references to it go out of scope, or you will leak the memory it
+used.  I<Up to and including SQL::SyntaxModel v0.12 I had implemented a cludge
+that wrapped the actual Container object in a second object that would
+automatically destroy its contents when it went out of scope.  While that saved
+users from doing manual destruction, it introduced potentially worse problems,
+such as the Container being destroyed too early (and it added complexity
+regardless); as of v0.13 I did away with the cludge.>
 
 =head1 SEE ALSO
 

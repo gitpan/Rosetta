@@ -37,10 +37,10 @@ this:
 Then you would want to run the included test programs to make sure the modules
 are installed correctly.  Call them like this:
 
-        perl -w t/10_SQL_SyntaxModel.t
-        perl -w t/11_SQL_SyntaxModel_ByTree.t
-        perl -w t/12_SQL_SyntaxModel_SkipID.t
-        perl -w t/20_Rosetta.t
+        perl -w t/SQL_SyntaxModel.t
+        perl -w t/SQL_SyntaxModel_ByTree.t
+        perl -w t/SQL_SyntaxModel_SkipID.t
+        perl -w t/Rosetta.t
 
 Any existing POD is embedded in the module itself.  The Makefile probably 
 extracted it for you in the usual manner, or you can run a POD extractor on it 

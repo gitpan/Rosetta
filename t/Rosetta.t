@@ -1,13 +1,13 @@
 # Before `make install' is performed this script should be runnable with
-# `make test'. After `make install' it should work as `perl 10_SQL_SyntaxModel.t'
+# `make test'. After `make install' it should work as `perl Rosetta.t'
 
 ######################### We start with some black magic to print on failure.
 
-BEGIN { $| = 1; print "1..3\n"; }
+BEGIN { $| = 1; print "1..1\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use t_SQL_SyntaxModel;
-use SQL::SyntaxModel 0.12;
-use SQL::SyntaxModel::L::en 0.021;
+use Rosetta 0.10;
+use Rosetta::L::en 0.01;
+use Rosetta::Engine::Null 0.01;
 $loaded = 1;
 print "ok 1\n";
 use strict;
@@ -39,7 +39,8 @@ sub message {
 sub error_to_string {
 	my ($message) = @_;
 	ref($message) or return( $message ); # if this isn't an object
-	my $translator = Locale::KeyedText->new_translator( ['SQL::SyntaxModel::L::'], ['en'] );
+	my $translator = Locale::KeyedText->new_translator( 
+		['Rosetta::L::', 'SQL::SyntaxModel::L::'], ['en'] );
 	my $user_text = $translator->translate_message( $message );
 	unless( $user_text ) {
 		return( "internal error: can't find user text for a message: ".
@@ -50,29 +51,18 @@ sub error_to_string {
 
 ######################################################################
 
-message( "START TESTING SQL::SyntaxModel" );
+message( "START TESTING Rosetta" );
 
 ######################################################################
 
 eval {
-	message( "First populate some objects ..." );
-
-	my $model = t_SQL_SyntaxModel->create_and_populate_model( 'SQL::SyntaxModel' );
-	result( ref($model) eq 'SQL::SyntaxModel', "creation of all objects" );
-
-	message( "Now see if the output is correct ..." );
-
-	my $expected_output = t_SQL_SyntaxModel->expected_model_xml_output();
-	my $actual_output = $model->get_all_properties_as_xml_str();
-	result( $actual_output eq $expected_output, "verify serialization of objects" );
-
-	message( "Other functional tests are not written yet; they will come later" );
+	message( "No functional tests are written yet; they will come later" );
 };
 $@ and result( 0, "TESTS ABORTED: ".error_to_string( $@ ) );
 
 ######################################################################
 
-message( "DONE TESTING SQL::SyntaxModel" );
+message( "DONE TESTING Rosetta" );
 
 ######################################################################
 

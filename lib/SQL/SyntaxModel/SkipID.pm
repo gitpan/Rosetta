@@ -11,9 +11,11 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.112';
+$VERSION = '0.12';
 
-use SQL::SyntaxModel::ByTree 0.111;
+use SQL::SyntaxModel 0.13;
+
+use base qw( SQL::SyntaxModel );
 
 ######################################################################
 
@@ -25,71 +27,31 @@ Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	SQL::SyntaxModel::ByTree 0.111 (parent class)
+	SQL::SyntaxModel 0.13 (parent class)
 
 =head1 COPYRIGHT AND LICENSE
 
-This file is an optional part of the SQL::SyntaxModel library (libSQLSM).
+This module is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved.
+Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
+visit "http://www.DarrenDuncan.net" for more information.
 
-SQL::SyntaxModel is Copyright (c) 1999-2004, Darren R. Duncan.  All rights
-reserved.  Address comments, suggestions, and bug reports to
-B<perl@DarrenDuncan.net>, or visit "http://www.DarrenDuncan.net" for more
-information.
+This module is free software; you can redistribute it and/or modify it under
+the same terms as Perl 5.8 itself.
 
-SQL::SyntaxModel is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License (GPL) version 2 as published
-by the Free Software Foundation (http://www.fsf.org/).  You should have
-received a copy of the GPL as part of the SQL::SyntaxModel distribution, in the
-file named "LICENSE"; if not, write to the Free Software Foundation, Inc., 59
-Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-
-Any versions of SQL::SyntaxModel that you modify and distribute must carry
-prominent notices stating that you changed the files and the date of any
-changes, in addition to preserving this original copyright notice and other
-credits. SQL::SyntaxModel is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-or FITNESS FOR A PARTICULAR PURPOSE.  See the GPL for more details.
-
-Linking SQL::SyntaxModel statically or dynamically with other modules is making
-a combined work based on SQL::SyntaxModel.  Thus, the terms and conditions of
-the GPL cover the whole combination.
-
-As a special exception, the copyright holders of SQL::SyntaxModel give you
-permission to link SQL::SyntaxModel with independent modules that are
-interfaces to or implementations of databases, regardless of the license terms
-of these independent modules, and to copy and distribute the resulting combined
-work under terms of your choice, provided that every copy of the combined work
-is accompanied by a complete copy of the source code of SQL::SyntaxModel (the
-version of SQL::SyntaxModel used to produce the combined work), being
-distributed under the terms of the GPL plus this exception.  An independent
-module is a module which is not derived from or based on SQL::SyntaxModel, and
-which is fully useable when not linked to SQL::SyntaxModel in any form.
-
-Note that people who make modified versions of SQL::SyntaxModel are not
-obligated to grant this special exception for their modified versions; it is
-their choice whether to do so.  The GPL gives permission to release a modified
-version without this exception; this exception also makes it possible to
-release a modified version which carries forward this exception.
-
-While it is by no means required, the copyright holders of SQL::SyntaxModel
-would appreciate being informed any time you create a modified version of
-SQL::SyntaxModel that you are willing to distribute, because that is a
-practical way of suggesting improvements to the standard version.
+Any versions of this module that you modify and distribute must carry prominent
+notices stating that you changed the files and the date of any changes, in
+addition to preserving this original copyright notice and other credits.  This
+module is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
 
 =cut
 
 ######################################################################
 ######################################################################
 
-package # hide this class name from PAUSE indexer
-SQL::SyntaxModel::SkipID::_::Shared; # has no properties, subclassed by main and Container and Node
-use base qw( SQL::SyntaxModel::ByTree::_::Shared );
-
-######################################################################
-
 # These are duplicate declarations of some properties in the SQL::SyntaxModel parent class.
 my $CPROP_ALL_NODES   = 'all_nodes';
-my $MPROP_CONTAINER   = 'container';
 
 # These are Container properties that SQL::SyntaxModel::SkipID added:
 my $CPROP_LAST_NODES = 'last_nodes'; # hash of node refs; find last node created of each node type
@@ -98,7 +60,7 @@ my $CPROP_HIGH_IDS   = 'last_id'; # hash of int; = highest node_id num currently
 # More duplicate declarations:
 my $ATTR_ID      = 'id'; # attribute name to use for the node id
 
-# More duplicate declarations:
+# These named arguments are used with the create_[/child_]node_tree[/s]() methods:
 my $ARG_NODE_TYPE = 'NODE_TYPE'; # str - what type of Node we are
 my $ARG_ATTRS     = 'ATTRS'; # hash - our attributes, including refs/ids of parents we will have
 my $ARG_CHILDREN  = 'CHILDREN'; # list of refs to new Nodes we will become primary parent of
@@ -244,33 +206,110 @@ my %NODE_TYPES_EXTRA_DETAILS = (
 );
 
 ######################################################################
+# Overload these wrapper methods of parent so created objects blessed into subclasses.
 
-sub _get_static_const_model_class_name {
-	# This function is intended to be overridden by sub-classes.
-	# It is intended only to be used when making new objects.
-	return( 'SQL::SyntaxModel::SkipID' );
+sub new_container {
+	return( SQL::SyntaxModel::SkipID::Container->new() );
 }
 
-sub _get_static_const_container_class_name {
-	# This function is intended to be overridden by sub-classes.
-	# It is intended only to be used when making new objects.
-	return( 'SQL::SyntaxModel::SkipID::_::Container' );
-}
-
-sub _get_static_const_node_class_name {
-	# This function is intended to be overridden by sub-classes.
-	# It is intended only to be used when making new objects.
-	return( 'SQL::SyntaxModel::SkipID::_::Node' );
+sub new_node {
+	return( SQL::SyntaxModel::SkipID::Node->new( $_[1] ) );
 }
 
 ######################################################################
 ######################################################################
 
-package # hide this class name from PAUSE indexer
-SQL::SyntaxModel::SkipID::_::Node;
-#use base qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::ByTree::_::Node );
+package SQL::SyntaxModel::SkipID::Container;
+#use base qw( SQL::SyntaxModel::SkipID SQL::SyntaxModel::Container );
 use vars qw( @ISA );
-@ISA = qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::ByTree::_::Node );
+@ISA = qw( SQL::SyntaxModel::SkipID SQL::SyntaxModel::Container );
+
+######################################################################
+
+sub new {
+	my ($class) = @_;
+	my $container = $class->SUPER::new();
+	my $node_types = $container->valid_node_types();
+	$container->{$CPROP_LAST_NODES} = { map { ($_ => undef) } keys %{$node_types} };
+	$container->{$CPROP_HIGH_IDS} = { map { ($_ => 0) } keys %{$node_types} };
+	return( $container );
+}
+
+######################################################################
+
+sub create_node_tree {
+	my ($container, $args) = @_;
+	defined( $args ) or $container->_throw_error_message( 'SSMSID_C_CR_NODE_TREE_NO_ARGS' ); # same er as p
+
+	unless( ref( $args ) eq 'HASH' ) {
+		$args = { $ARG_NODE_TYPE => $args };
+	}
+
+	my $node = $container->new_node( $args->{$ARG_NODE_TYPE} );
+
+	my $node_type = $node->get_node_type();
+
+	$node->get_node_id() or $node->set_node_id( 1 + $container->{$CPROP_HIGH_IDS}->{$node_type} );
+
+	$node->put_in_container( $container );
+	$node->add_reciprocal_links();
+	$node->set_attributes( $args->{$ARG_ATTRS} ); # handles all attribute types; may override autogen node id
+
+	unless( $node->get_parent_node() ) {
+		$container->_create_node_tree__do_when_parent_not_set( $node );
+	}
+
+	$node->test_mandatory_attributes();
+
+	$container->{$CPROP_LAST_NODES}->{$node_type} = $node; # assign reference
+	my $node_id = $node->get_node_id();
+	if( $node_id > $container->{$CPROP_HIGH_IDS}->{$node_type} ) {
+		$container->{$CPROP_HIGH_IDS}->{$node_type} = $node_id;
+	}
+
+	$node->create_child_node_trees( $args->{$ARG_CHILDREN} );
+
+	return( $node );
+}
+
+sub _create_node_tree__do_when_parent_not_set {
+	# Called either if a PARENT arg not given, or if it matched nothing.
+	my ($container, $node) = @_;
+	my $node_type = $node->get_node_type();
+	$node->node_types_with_pseudonode_parents( $node_type ) and return( 1 );
+	foreach my $attr_name (@{$node->valid_node_type_parent_attribute_names( $node_type )}) {
+		my $exp_node_type = $node->valid_node_type_node_ref_attributes( $node_type, $attr_name );
+		if( my $parent = $container->{$CPROP_LAST_NODES}->{$exp_node_type} ) {
+			# The following two lines is what the old _make_child_to_parent_link did.
+			$node->set_node_ref_attribute( $attr_name, $parent );
+			$node->set_parent_node_attribute_name( $attr_name );
+			last;
+		}
+	}
+	unless( $node->get_parent_node() ) {
+		$container->_throw_error_message( 'SSMSID_C_CR_NODE_TREE_NO_PRIMARY_P', 
+			{ 'TYPE' => $node_type, 'ID' => $node->get_node_id() } );
+	}
+}
+
+sub create_node_trees {
+	my ($container, $list) = @_;
+	$list or return( undef );
+	unless( ref($list) eq 'ARRAY' ) {
+		$list = [ $list ];
+	}
+	foreach my $element (@{$list}) {
+		$container->create_node_tree( $element );
+	}
+}
+
+######################################################################
+######################################################################
+
+package SQL::SyntaxModel::SkipID::Node;
+#use base qw( SQL::SyntaxModel::SkipID SQL::SyntaxModel::Node );
+use vars qw( @ISA );
+@ISA = qw( SQL::SyntaxModel::SkipID SQL::SyntaxModel::Node );
 
 ######################################################################
 
@@ -489,15 +528,14 @@ sub set_attributes {
 ######################################################################
 
 sub create_child_node_tree {
-	# this function is deprecated, probably
 	my ($node, $args) = @_;
-	defined( $args ) or $node->_throw_error_message( 'SSMBTR_N_CR_NODE_TREE_NO_ARGS' ); # same er as p
+	defined( $args ) or $node->_throw_error_message( 'SSMSID_N_CR_NODE_TREE_NO_ARGS' ); # same er as p
 
 	unless( ref( $args ) eq 'HASH' ) {
 		$args = { $ARG_NODE_TYPE => $args };
 	}
 
-	my $new_child = $node->create_empty_node( $args->{$ARG_NODE_TYPE} );
+	my $new_child = $node->new_node( $args->{$ARG_NODE_TYPE} );
 
 	my $child_node_type = $new_child->get_node_type();
 
@@ -525,90 +563,20 @@ sub create_child_node_tree {
 	return( $new_child );
 }
 
-######################################################################
-######################################################################
-
-package # hide this class name from PAUSE indexer
-SQL::SyntaxModel::SkipID::_::Container;
-#use base qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::ByTree::_::Container );
-use vars qw( @ISA );
-@ISA = qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::ByTree::_::Container );
-
-######################################################################
-
-sub _initialize_properties {
-	my ($container) = @_;
-	my $node_types = $container->valid_node_types();
-	$container->{$CPROP_LAST_NODES} = { map { ($_ => undef) } keys %{$node_types} };
-	$container->{$CPROP_HIGH_IDS} = { map { ($_ => 0) } keys %{$node_types} };
-	$container->SUPER::_initialize_properties();
-}
-
-######################################################################
-
-sub create_node_tree {
-	my ($container, $args) = @_;
-	defined( $args ) or $container->_throw_error_message( 'SSMBTR_C_CR_NODE_TREE_NO_ARGS' ); # same er as p
-
-	unless( ref( $args ) eq 'HASH' ) {
-		$args = { $ARG_NODE_TYPE => $args };
+sub create_child_node_trees {
+	my ($node, $list) = @_;
+	$list or return( undef );
+	unless( ref($list) eq 'ARRAY' ) {
+		$list = [ $list ];
 	}
-
-	my $node = $container->create_empty_node( $args->{$ARG_NODE_TYPE} );
-
-	my $node_type = $node->get_node_type();
-
-	$node->get_node_id() or $node->set_node_id( 1 + $container->{$CPROP_HIGH_IDS}->{$node_type} );
-
-	$node->put_in_container( $container );
-	$node->add_reciprocal_links();
-	$node->set_attributes( $args->{$ARG_ATTRS} ); # handles all attribute types; may override autogen node id
-
-	unless( $node->get_parent_node() ) {
-		$container->_create_node_tree__do_when_parent_not_set( $node );
-	}
-
-	$node->test_mandatory_attributes();
-
-	$container->{$CPROP_LAST_NODES}->{$node_type} = $node; # assign reference
-	my $node_id = $node->get_node_id();
-	if( $node_id > $container->{$CPROP_HIGH_IDS}->{$node_type} ) {
-		$container->{$CPROP_HIGH_IDS}->{$node_type} = $node_id;
-	}
-
-	$node->create_child_node_trees( $args->{$ARG_CHILDREN} );
-
-	return( $node );
-}
-
-sub _create_node_tree__do_when_parent_not_set {
-	# Called either if a PARENT arg not given, or if it matched nothing.
-	my ($container, $node) = @_;
-	my $node_type = $node->get_node_type();
-	$node->node_types_with_pseudonode_parents( $node_type ) and return( 1 );
-	foreach my $attr_name (@{$node->valid_node_type_parent_attribute_names( $node_type )}) {
-		my $exp_node_type = $node->valid_node_type_node_ref_attributes( $node_type, $attr_name );
-		if( my $parent = $container->{$CPROP_LAST_NODES}->{$exp_node_type} ) {
-			# The following two lines is what the old _make_child_to_parent_link did.
-			$node->set_node_ref_attribute( $attr_name, $parent );
-			$node->set_parent_node_attribute_name( $attr_name );
-			last;
+	foreach my $element (@{$list}) {
+		if( ref($element) eq ref($node) ) {
+			$node->add_child_node( $element ); # will die if not same Container
+		} else {
+			$node->create_child_node_tree( $element );
 		}
 	}
-	unless( $node->get_parent_node() ) {
-		$container->_throw_error_message( 'SSMSID_C_CR_NODE_TREE_NO_PRIMARY_P', 
-			{ 'TYPE' => $node_type, 'ID' => $node->get_node_id() } );
-	}
 }
-
-######################################################################
-######################################################################
-
-package # hide this class name from PAUSE indexer
-SQL::SyntaxModel::SkipID;
-#use base qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::ByTree );
-use vars qw( @ISA );
-@ISA = qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::ByTree );
 
 ######################################################################
 ######################################################################
@@ -622,19 +590,40 @@ I<See the CONTRIVED EXAMPLE documentation section at the end.>
 
 =head1 DESCRIPTION
 
-This Perl 5 object class is a completely optional extension to
-SQL::SyntaxModel::ByTree, and is implemented as a sub-class of that module.  The public
-interface to this module is essentially the same as the other one, with the
-difference being that SQL::SyntaxModel::SkipID will accept a wider variety of
-input data formats into its methods.  Therefore, this module's documentation 
-does not list or explain its methods (see the parent class for that), but it 
+The SQL::SyntaxModel::SkipID Perl 5 module is a completely optional extension
+to SQL::SyntaxModel, and is implemented as a sub-class of that module.  This 
+module implements two distinct sets of additional features.
+
+=head2 The First Set of Additional Features
+
+This module adds a set of 4 new public methods which you can use to make some
+tasks involving SQL::SyntaxModel less labour-intensive, depending on how you
+like to use the module.
+
+Using them, you can create a Node, set all of its attributes, put it in a
+Container, and likewise recursively create all of its child Nodes, all with a
+single method call.  In the context of this module, the set of Nodes consisting
+of one starting Node and all of its "descendants" is called a "tree".  You can
+create a tree of Nodes in mainly two contexts; one context will assign the
+starting Node of the new tree as a child of an already existing Node; the other
+will not explicitly attach the tree to an existing Node.
+
+All of the added methods are wrappers over existing parent class methods, and
+this module does not define any new class properties that are used by them.
+
+=head2 The Second Set of Additional Features
+
+The public interface to this module is essentially the same as its parent, with
+the difference being that SQL::SyntaxModel::SkipID will accept a wider variety
+of input data formats into its methods.  Therefore, this module's documentation
+does not list or explain its methods (see the parent class for that), but it
 will mention any differences from the parent.
 
-The extension is intended to be fully parent-compatible, meaning that if
-you provide it input which would be acceptable to the stricter bare parent
-class, then you will get the same behaviour.  Where you will see the difference
-is when you provide certain kinds of input which would cause the parent class
-to return an error and/or throw an exception.
+The extension is intended to be fully parent-compatible, meaning that if you
+provide it input which would be acceptable to the stricter bare parent class,
+then you will get the same behaviour.  Where you will see the difference is
+when you provide certain kinds of input which would cause the parent class to
+return an error and/or throw an exception.
 
 One significant added feature, which is part of this module's name-sake, is
 that it will automatically generate (by serial number) a new Node's "id"
@@ -643,10 +632,10 @@ that, when you want to refer to an earlier created Node by a later one, for
 purposes of linking them, you can refer to the earlier Node by a more
 human-readable attribute than the Node's "id" (or Node ref), such as its 'name'
 (which is also what actual SQL uses).  Between these two name-sake features, it
-is possible to use SQL::SyntaxModel::ByTree without ever having to explicitely see a
-Node's "id" attribute.
+is possible to use SQL::SyntaxModel::SkipID without ever having to explicitly
+see a Node's "id" attribute.
 
-Note that, for the sake of avoiding conflicts, you should not be explicitely
+Note that, for the sake of avoiding conflicts, you should not be explicitly
 setting ids for some Nodes of a type, and having others auto-generated, unless
 you take extra precautions.  This is because while auto-generated Node ids will
 not conflict with prior explicit ones, later provided explicit ones may
@@ -658,15 +647,16 @@ between id and non-id ref types without further consequence, because they don't
 change the id of a Node.
 
 Another added feature is that this class can automatically assign a parent Node
-for a newly created Node that doesn't explicitely specify a parent in some way,
+for a newly created Node that doesn't explicitly specify a parent in some way,
 such as in a create_node() argument or by the fact you are calling
 add_child_node().  This automatic assignment is context-sensitive, whereby the
 most recent previously-created Node which is capable of becoming the new one's
 parent will do so.
 
 This module's added features can make it "easier to use" in some circumstances
-than the bare-bones SQL::SyntaxModel::ByTree, including an appearance more like actual
-SQL strings, because matching descriptive terms can be used in multiple places.
+than the bare-bones SQL::SyntaxModel::SkipID, including an appearance more like
+actual SQL strings, because matching descriptive terms can be used in multiple
+places.
 
 However, the functionality has its added cost in code complexity and
 reliability; for example, since non-id attributes are not unique, the module
@@ -678,10 +668,63 @@ continue to match; this is unlike the bare parent class, which always uses
 non-descriptive attributes for links, which you are unlikely to ever change.
 The added logic also makes the code slower and use more memory.
 
+=head1 CONTAINER OBJECT METHODS
+
+=head2 create_node_tree( { NODE_TYPE[, ATTRS][, CHILDREN] } )
+
+	my $node = $model->create_node_tree( 
+		{ 'NODE_TYPE' => 'catalog', 'ATTRS' => { 'id' => 1, } } ); 
+
+This "setter" method creates a new Node object within the context of the
+current Container and returns it.  It takes a hash ref containing up to 3 named
+arguments: NODE_TYPE, ATTRS, CHILDREN.  The first argument, NODE_TYPE, is a
+string (enum) which specifies the Node Type of the new Node.  The second
+(optional) argument, ATTRS, is a hash ref whose elements will go in the various
+"attributes" properties of the new Node (and the "node id" property if
+applicable).  Any attributes which will refer to another Node can be passed in
+as either a Node object reference or an integer which matches the 'id'
+attribute of an already created Node.  The third (optional) argument, CHILDREN,
+is an array ref whose elements will also be recursively made into new Nodes,
+for which their primary parent is the Node you have just made here.  Elements
+in CHILDREN are always processed after the other arguments. If the root Node
+you are about to make should have a primary parent Node, then you would be
+better to use said parent's create_child_node_tree[/s] method instead of this
+one.  This method is actually a "wrapper" for a set of other, simpler
+function/method calls that you could call directly instead if you wanted more
+control over the process.
+
+=head2 create_node_trees( LIST )
+
+	$model->create_nodes( [{ ... }, { ... }] );
+	$model->create_nodes( { ... } );
+
+This "setter" method takes an array ref in its single LIST argument, and calls
+create_node_tree() for each element found in it.
+
+=head1 NODE OBJECT METHODS
+
+=head2 create_child_node_tree( { NODE_TYPE[, ATTRS][, CHILDREN] } )
+
+	my $new_child = $node->add_child_node( 
+		{ 'NODE_TYPE' => 'schema', 'ATTRS' => { 'id' => 1, } } ); 
+
+This "setter" method will create a new Node, following the same semantics (and
+taking the same arguments) as the Container->create_node_tree(), except that 
+create_child_node_tree() will also set the primary parent of the new Node to 
+be the current Node.  This method also returns the new child Node.
+
+=head2 create_child_node_trees( LIST )
+
+	$model->create_child_node_tree( [$child1,$child2] );
+	$model->create_child_node_tree( $child );
+
+This "setter" method takes an array ref in its single LIST argument, and calls
+create_child_node_tree() for each element found in it.
+
 =head1 BUGS
 
-First of all, see the BUGS main documentation section of the SQL::SyntaxModel::ByTree,
-as everything said there applies to this module also.  Exceptions are below.
+See the BUGS main documentation section of SQL::SyntaxModel since everything
+said there applies to this module also.
 
 The "use base ..." pragma doesn't seem to work properly (with Perl 5.6 at
 least) when I want to inherit from multiple classes, with some required parent
@@ -693,6 +736,11 @@ for resolving parent-child node relationships, are under-developed (somewhat
 hackish) at the moment and probably won't work properly in all situations.
 However, they do work for the CONTRIVED EXAMPLE code.  This linking code may 
 gradually be improved if there is a need.  
+
+=head1 CAVEATS
+
+See the CAVEATS main documentation section of SQL::SyntaxModel since everything
+said there applies to this module also.
 
 Please note that SkipID.pm is not a priority for me in further development, and
 it mainly exists for historical sake, so that some older functionality that I
@@ -709,10 +757,9 @@ wouldn't appear during that module's own (incomplete) testing.
 
 In the long run, if you would like to adopt SQL::SyntaxModel::SkipID with
 respect to CPAN and become the primary maintainer, then please write me to
-arrange it. The main things that I ask in return are to be credited as the
+arrange it.  The main things that I ask in return are to be credited as the
 original author, and for you to keep the module functionally compatible with
-new versions of the parent module as they are released (I will try to make it
-easy).
+new versions of the parent module as they are released (It should be easy).
 
 =head1 SEE ALSO
 
@@ -725,15 +772,14 @@ The following demonstrates input that can be provided to
 SQL::SyntaxModel::SkipID, along with a way to debug the result; it is a
 contrived example since the class normally wouldn't get used this way.  This
 code is exactly the same (except for framing) as that run by this module's
-current test script.  You can also run the CONTRIVED EXAMPLE code that comes
-with the parent class against this class and get the same output.
+current test script.
 
 	use strict;
 	use warnings;
 
 	use SQL::SyntaxModel::SkipID;
 
-	my $model = SQL::SyntaxModel::SkipID->new();
+	my $model = SQL::SyntaxModel::SkipID->new_container();
 
 	$model->create_node_trees( [ map { { 'NODE_TYPE' => 'domain', 'ATTRS' => $_ } } (
 		{ 'name' => 'bin1k' , 'base_type' => 'STR_BIT', 'max_octets' =>  1_000, },
@@ -1014,5 +1060,7 @@ with the parent class against this class and get the same output.
 	] } );
 
 	print $model->get_all_properties_as_xml_str();
+
+	$model->destroy();
 
 =cut

@@ -10,7 +10,7 @@ use warnings;
 
 sub make_a_node {
 	my ($node_type, $node_id, $model) = @_;
-	my $node = $model->create_empty_node( $node_type );
+	my $node = $model->new_node( $node_type );
 	$node->set_node_id( $node_id );
 	$node->put_in_container( $model );
 	$node->add_reciprocal_links();
@@ -19,7 +19,7 @@ sub make_a_node {
 
 sub make_a_child_node {
 	my ($node_type, $node_id, $pp_node, $pp_attr) = @_;
-	my $node = $pp_node->create_empty_node( $node_type );
+	my $node = $pp_node->new_node( $node_type );
 	$node->set_node_id( $node_id );
 	$node->put_in_container( $pp_node->get_container() );
 	$node->add_reciprocal_links();
@@ -31,7 +31,7 @@ sub make_a_child_node {
 sub create_and_populate_model {
 	my (undef, $class) = @_;
 
-	my $model = $class->new();
+	my $model = $class->new_container();
 
 	##### FIRST SET ELEMENT-TYPE DETAILS #####
 

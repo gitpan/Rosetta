@@ -6,10 +6,9 @@ SQL::SyntaxModel::Language - What language or grammar SQL::SyntaxModel speaks
 
 This file is part of the SQL::SyntaxModel library (libSQLSM).
 
-SQL::SyntaxModel is Copyright (c) 1999-2004, Darren R. Duncan.  All rights
-reserved.  Address comments, suggestions, and bug reports to
-B<perl@DarrenDuncan.net>, or visit "http://www.DarrenDuncan.net" for more
-information.
+SQL::SyntaxModel is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved.
+Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
+visit "http://www.DarrenDuncan.net" for more information.
 
 SQL::SyntaxModel is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License (GPL) version 2 as published
@@ -18,33 +17,25 @@ received a copy of the GPL as part of the SQL::SyntaxModel distribution, in the
 file named "LICENSE"; if not, write to the Free Software Foundation, Inc., 59
 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 
+Linking SQL::SyntaxModel statically or dynamically with other modules is making
+a combined work based on SQL::SyntaxModel.  Thus, the terms and conditions of
+the GPL cover the whole combination.  As a special exception, the copyright
+holders of SQL::SyntaxModel give you permission to link SQL::SyntaxModel with
+independent modules, regardless of the license terms of these independent
+modules, and to copy and distribute the resulting combined work under terms of
+your choice, provided that every copy of the combined work is accompanied by a
+complete copy of the source code of SQL::SyntaxModel (the version of
+SQL::SyntaxModel used to produce the combined work), being distributed under
+the terms of the GPL plus this exception.  An independent module is a module
+which is not derived from or based on SQL::SyntaxModel, and which is fully
+useable when not linked to SQL::SyntaxModel in any form.
+
 Any versions of SQL::SyntaxModel that you modify and distribute must carry
 prominent notices stating that you changed the files and the date of any
 changes, in addition to preserving this original copyright notice and other
 credits. SQL::SyntaxModel is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-or FITNESS FOR A PARTICULAR PURPOSE.  See the GPL for more details.
-
-Linking SQL::SyntaxModel statically or dynamically with other modules is making
-a combined work based on SQL::SyntaxModel.  Thus, the terms and conditions of
-the GPL cover the whole combination.
-
-As a special exception, the copyright holders of SQL::SyntaxModel give you
-permission to link SQL::SyntaxModel with independent modules that are
-interfaces to or implementations of databases, regardless of the license terms
-of these independent modules, and to copy and distribute the resulting combined
-work under terms of your choice, provided that every copy of the combined work
-is accompanied by a complete copy of the source code of SQL::SyntaxModel (the
-version of SQL::SyntaxModel used to produce the combined work), being
-distributed under the terms of the GPL plus this exception.  An independent
-module is a module which is not derived from or based on SQL::SyntaxModel, and
-which is fully useable when not linked to SQL::SyntaxModel in any form.
-
-Note that people who make modified versions of SQL::SyntaxModel are not
-obligated to grant this special exception for their modified versions; it is
-their choice whether to do so.  The GPL gives permission to release a modified
-version without this exception; this exception also makes it possible to
-release a modified version which carries forward this exception.
+or FITNESS FOR A PARTICULAR PURPOSE.
 
 While it is by no means required, the copyright holders of SQL::SyntaxModel
 would appreciate being informed any time you create a modified version of
@@ -457,7 +448,7 @@ also have its own "Execute" method when the object can be considered a context
 for future commands; eg: the object returned from an "open database" command
 should represent that database for further queries against it.
 
-The SQL::SyntaxModel language does not require you to explicitely run a
+The SQL::SyntaxModel language does not require you to explicitly run a
 connect/open/attach command before running SQL against a database.  Since the
 info it needs to do this is provided in 'catalog link' definitions that are
 already related to the SQL definitions, an implementer can just implicitely
@@ -990,7 +981,7 @@ The mandatory-flag indicates whether the attribute is mandatory.  If it is
 absent, then the attribute is optional under all local (considering only that
 same Node and not other Nodes) circumstances.  If the flag says "MA", then the
 attribute must be populated (not be null) in all circumstances; in some cases,
-it means you explicitely provide a 'default' value such as zero.  If the flag
+it means you explicitly provide a 'default' value such as zero.  If the flag
 says "MC(...)" then the attribute is only mandatory when the other attribute
 named in the parenthesis is populated, or if the expression in the parenthesis
 is true.
@@ -1313,7 +1304,7 @@ Unique Constraint List:
 
 This type of Node describes a simple named sequence number generator, which
 will produce integers (normal purpose) but not fractional numbers.  Apparently
-sequence generators are not explicitely part of the SQL standard, but many
+sequence generators are not explicitly part of the SQL standard, but many
 database products have them.
 
 Attribute List:
@@ -2239,7 +2230,7 @@ prefix), or does it combine the multiple schemas into a single schema where
 each schema object has a common name prefix.  Such information is said to be
 lost because, for example, if one were to scan an existing such database,
 second case, to build a new model, all it could do is create a single schema
-containing all of the longer-name objects, unless it was explicitely told
+containing all of the longer-name objects, unless it was explicitly told
 through external data like these Nodes to treat the first parts of each
 implemented object name as a schema name and hence put multiple schemas in the
 model.  Or in the first case, whether multiple catalogs should get combined.
@@ -2345,7 +2336,7 @@ SQL::SyntaxModel is designed such that they are separate, and one user may own
 multiple schemas.
 
 Most database products have a granular security system where each user must be
-explicitely granted the rights to do certain kinds of tasks there, such as read
+explicitly granted the rights to do certain kinds of tasks there, such as read
 data or write data or edit a schema or even connect to the database.  In
 SQL::SyntaxModel, you create "role" Nodes and assign them privileges (roles are
 named groups of privileges); you then allocate roles to the users that may have
@@ -2424,7 +2415,7 @@ first release of the Rosetta distribution, and up until release 0.22 inclusive.
  They are here in Language.pod as of release 0.23.  Some details you see here
 shouldn't be considered accurate.
 
-B<SQL::SyntaxModel::_::Command> - This Schema class describes an action that needs
+B<SQL::SyntaxModel::Command> - This Schema class describes an action that needs
 to be done against a database; the action may include several steps, and all of
 them must be done when executing the Command.  A Command object has one
 mandatory string property named 'type' (eg: 'database_open', 'table_create',
@@ -2436,16 +2427,16 @@ to code like DBI->prepare().   While bind vars are often used with them (such
 as values to insert or update, or record matching conditions), it is always up
 to the calling code to resolve the bind vars such as with a user prompt (as
 SQL*Plus does), and pass those to code like DBI->execute().  I<See also
-Rosetta::_::Command.>
+Rosetta::Command.>
 
-B<SQL::SyntaxModel::_::DataType> - This Schema class describes a simple data type,
+B<SQL::SyntaxModel::DataType> - This Schema class describes a simple data type,
 which serves as metadata for a single atomic or scalar unit of data, or a
 column whose members are all of the same data type, such as in a regular
 database table or in row sets read from or to be written to one.  This class
 would be used both when manipulating database schema and when manipulating
 database data.
 
-B<SQL::SyntaxModel::_::Table> - This Schema class describes a single database
+B<SQL::SyntaxModel::Table> - This Schema class describes a single database
 table, and would be used for such things as managing schema for the table (eg:
 create, alter, destroy), and describing the table's "public interface" so other
 functionality like views or various DML operations know how to use the table.
@@ -2458,7 +2449,7 @@ schema and when manipulating database data.  This class can generate
 SQL::SyntaxModel::Command objects having types of: 'table_verify',
 'table_create', 'table_alter', 'table_destroy'.
 
-B<SQL::SyntaxModel::_::View> - This Schema class describes a single database view,
+B<SQL::SyntaxModel::View> - This Schema class describes a single database view,
 which conceptually looks like a table, but it is used differently.  Tables and
 views are similar in that they both represent or store a matrix of data, which
 has uniquely identifiable columns, and rows which can be uniquely identifiable

@@ -11,9 +11,11 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.111';
+$VERSION = '0.12';
 
-use SQL::SyntaxModel 0.12;
+use SQL::SyntaxModel 0.13;
+
+use base qw( SQL::SyntaxModel );
 
 ######################################################################
 
@@ -25,70 +27,28 @@ Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	SQL::SyntaxModel 0.12 (parent class)
+	SQL::SyntaxModel 0.13 (parent class)
 
 =head1 COPYRIGHT AND LICENSE
 
-This file is an optional part of the SQL::SyntaxModel library (libSQLSM).
+This module is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved.
+Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
+visit "http://www.DarrenDuncan.net" for more information.
 
-SQL::SyntaxModel is Copyright (c) 1999-2004, Darren R. Duncan.  All rights
-reserved.  Address comments, suggestions, and bug reports to
-B<perl@DarrenDuncan.net>, or visit "http://www.DarrenDuncan.net" for more
-information.
+This module is free software; you can redistribute it and/or modify it under
+the same terms as Perl 5.8 itself.
 
-SQL::SyntaxModel is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License (GPL) version 2 as published
-by the Free Software Foundation (http://www.fsf.org/).  You should have
-received a copy of the GPL as part of the SQL::SyntaxModel distribution, in the
-file named "LICENSE"; if not, write to the Free Software Foundation, Inc., 59
-Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-
-Any versions of SQL::SyntaxModel that you modify and distribute must carry
-prominent notices stating that you changed the files and the date of any
-changes, in addition to preserving this original copyright notice and other
-credits. SQL::SyntaxModel is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-or FITNESS FOR A PARTICULAR PURPOSE.  See the GPL for more details.
-
-Linking SQL::SyntaxModel statically or dynamically with other modules is making
-a combined work based on SQL::SyntaxModel.  Thus, the terms and conditions of
-the GPL cover the whole combination.
-
-As a special exception, the copyright holders of SQL::SyntaxModel give you
-permission to link SQL::SyntaxModel with independent modules that are
-interfaces to or implementations of databases, regardless of the license terms
-of these independent modules, and to copy and distribute the resulting combined
-work under terms of your choice, provided that every copy of the combined work
-is accompanied by a complete copy of the source code of SQL::SyntaxModel (the
-version of SQL::SyntaxModel used to produce the combined work), being
-distributed under the terms of the GPL plus this exception.  An independent
-module is a module which is not derived from or based on SQL::SyntaxModel, and
-which is fully useable when not linked to SQL::SyntaxModel in any form.
-
-Note that people who make modified versions of SQL::SyntaxModel are not
-obligated to grant this special exception for their modified versions; it is
-their choice whether to do so.  The GPL gives permission to release a modified
-version without this exception; this exception also makes it possible to
-release a modified version which carries forward this exception.
-
-While it is by no means required, the copyright holders of SQL::SyntaxModel
-would appreciate being informed any time you create a modified version of
-SQL::SyntaxModel that you are willing to distribute, because that is a
-practical way of suggesting improvements to the standard version.
+Any versions of this module that you modify and distribute must carry prominent
+notices stating that you changed the files and the date of any changes, in
+addition to preserving this original copyright notice and other credits.  This
+module is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
 
 =cut
 
 ######################################################################
 ######################################################################
-
-package # hide this class name from PAUSE indexer
-SQL::SyntaxModel::ByTree::_::Shared; # has no properties, subclassed by main and Container and Node
-use base qw( SQL::SyntaxModel::_::Shared );
-
-######################################################################
-
-# These are duplicate declarations of some properties in the SQL::SyntaxModel parent class.
-my $MPROP_CONTAINER   = 'container';
 
 # These named arguments are used with the create_[/child_]node_tree[/s]() methods:
 my $ARG_NODE_TYPE = 'NODE_TYPE'; # str - what type of Node we are
@@ -96,33 +56,62 @@ my $ARG_ATTRS     = 'ATTRS'; # hash - our attributes, including refs/ids of pare
 my $ARG_CHILDREN  = 'CHILDREN'; # list of refs to new Nodes we will become primary parent of
 
 ######################################################################
+# Overload these wrapper methods of parent so created objects blessed into subclasses.
 
-sub _get_static_const_model_class_name {
-	# This function is intended to be overridden by sub-classes.
-	# It is intended only to be used when making new objects.
-	return( 'SQL::SyntaxModel::ByTree' );
+sub new_container {
+	return( SQL::SyntaxModel::ByTree::Container->new() );
 }
 
-sub _get_static_const_container_class_name {
-	# This function is intended to be overridden by sub-classes.
-	# It is intended only to be used when making new objects.
-	return( 'SQL::SyntaxModel::ByTree::_::Container' );
-}
-
-sub _get_static_const_node_class_name {
-	# This function is intended to be overridden by sub-classes.
-	# It is intended only to be used when making new objects.
-	return( 'SQL::SyntaxModel::ByTree::_::Node' );
+sub new_node {
+	return( SQL::SyntaxModel::ByTree::Node->new( $_[1] ) );
 }
 
 ######################################################################
 ######################################################################
 
-package # hide this class name from PAUSE indexer
-SQL::SyntaxModel::ByTree::_::Node;
-#use base qw( SQL::SyntaxModel::ByTree::_::Shared SQL::SyntaxModel::_::Node );
+package SQL::SyntaxModel::ByTree::Container;
+#use base qw( SQL::SyntaxModel::ByTree SQL::SyntaxModel::Container );
 use vars qw( @ISA );
-@ISA = qw( SQL::SyntaxModel::ByTree::_::Shared SQL::SyntaxModel::_::Node );
+@ISA = qw( SQL::SyntaxModel::ByTree SQL::SyntaxModel::Container );
+
+######################################################################
+
+sub create_node_tree {
+	my ($container, $args) = @_;
+	defined( $args ) or $container->_throw_error_message( 'SSMBTR_C_CR_NODE_TREE_NO_ARGS' );
+
+	unless( ref($args) eq 'HASH' ) {
+		$container->_throw_error_message( 'SSMBTR_C_CR_NODE_TREE_BAD_ARGS', { 'ARG' => $args } );
+	}
+
+	my $node = $container->new_node( $args->{$ARG_NODE_TYPE} );
+	$node->set_attributes( $args->{$ARG_ATTRS} ); # handles node id and all attribute types
+	$node->put_in_container( $container );
+	$node->add_reciprocal_links();
+	$node->test_mandatory_attributes();
+	$node->create_child_node_trees( $args->{$ARG_CHILDREN} );
+
+	return( $node );
+}
+
+sub create_node_trees {
+	my ($container, $list) = @_;
+	$list or return( undef );
+	unless( ref($list) eq 'ARRAY' ) {
+		$list = [ $list ];
+	}
+	foreach my $element (@{$list}) {
+		$container->create_node_tree( $element );
+	}
+}
+
+######################################################################
+######################################################################
+
+package SQL::SyntaxModel::ByTree::Node;
+#use base qw( SQL::SyntaxModel::ByTree SQL::SyntaxModel::Node );
+use vars qw( @ISA );
+@ISA = qw( SQL::SyntaxModel::ByTree SQL::SyntaxModel::Node );
 
 ######################################################################
 
@@ -134,7 +123,7 @@ sub create_child_node_tree {
 		$node->_throw_error_message( 'SSMBTR_N_CR_NODE_TREE_BAD_ARGS', { 'ARG' => $args } );
 	}
 
-	my $new_child = $node->create_empty_node( $args->{$ARG_NODE_TYPE} );
+	my $new_child = $node->new_node( $args->{$ARG_NODE_TYPE} );
 	$new_child->set_attributes( $args->{$ARG_ATTRS} ); # handles node id and all attribute types
 	$new_child->put_in_container( $node->get_container() );
 	$new_child->add_reciprocal_links();
@@ -165,65 +154,6 @@ sub create_child_node_trees {
 ######################################################################
 ######################################################################
 
-package # hide this class name from PAUSE indexer
-SQL::SyntaxModel::ByTree::_::Container;
-#use base qw( SQL::SyntaxModel::ByTree::_::Shared SQL::SyntaxModel::_::Container );
-use vars qw( @ISA );
-@ISA = qw( SQL::SyntaxModel::ByTree::_::Shared SQL::SyntaxModel::_::Container );
-
-######################################################################
-
-sub create_node_tree {
-	my ($container, $args) = @_;
-	defined( $args ) or $container->_throw_error_message( 'SSMBTR_C_CR_NODE_TREE_NO_ARGS' );
-
-	unless( ref($args) eq 'HASH' ) {
-		$container->_throw_error_message( 'SSMBTR_C_CR_NODE_TREE_BAD_ARGS', { 'ARG' => $args } );
-	}
-
-	my $node = $container->create_empty_node( $args->{$ARG_NODE_TYPE} );
-	$node->set_attributes( $args->{$ARG_ATTRS} ); # handles node id and all attribute types
-	$node->put_in_container( $container );
-	$node->add_reciprocal_links();
-	$node->test_mandatory_attributes();
-	$node->create_child_node_trees( $args->{$ARG_CHILDREN} );
-
-	return( $node );
-}
-
-sub create_node_trees {
-	my ($container, $list) = @_;
-	$list or return( undef );
-	unless( ref($list) eq 'ARRAY' ) {
-		$list = [ $list ];
-	}
-	foreach my $element (@{$list}) {
-		$container->create_node_tree( $element );
-	}
-}
-
-######################################################################
-######################################################################
-
-package # hide this class name from PAUSE indexer
-SQL::SyntaxModel::ByTree;
-#use base qw( SQL::SyntaxModel::ByTree::_::Shared SQL::SyntaxModel );
-use vars qw( @ISA );
-@ISA = qw( SQL::SyntaxModel::ByTree::_::Shared SQL::SyntaxModel );
-
-######################################################################
-
-sub create_node_tree {
-	return( $_[0]->{$MPROP_CONTAINER}->create_node_tree( $_[1] ) );
-}
-
-sub create_node_trees {
-	$_[0]->{$MPROP_CONTAINER}->create_node_trees( $_[1] );
-}
-
-######################################################################
-######################################################################
-
 1;
 __END__
 
@@ -233,7 +163,7 @@ I<See the CONTRIVED EXAMPLE documentation section at the end.>
 
 =head1 DESCRIPTION
 
-The SQL::SyntaxModel::ByTree Perl 5 object class is a completely optional
+The SQL::SyntaxModel::ByTree Perl 5 module is a completely optional
 extension to SQL::SyntaxModel, and is implemented as a sub-class of that
 module.  This module adds a set of new public methods which you can use to make
 some tasks involving SQL::SyntaxModel less labour-intensive, depending on how
@@ -309,13 +239,18 @@ create_child_node_tree() for each element found in it.
 
 =head1 BUGS
 
-First of all, see the BUGS main documentation section of the SQL::SyntaxModel,
-as everything said there applies to this module also.  Exceptions are below.
+See the BUGS main documentation section of SQL::SyntaxModel since everything
+said there applies to this module also.
 
 The "use base ..." pragma doesn't seem to work properly (with Perl 5.6 at
 least) when I want to inherit from multiple classes, with some required parent
 class methods not being seen; I had to use the analagous "use vars @ISA; @ISA =
 ..." syntax instead.
+
+=head1 CAVEATS
+
+See the CAVEATS main documentation section of SQL::SyntaxModel since everything
+said there applies to this module also.
 
 =head1 SEE ALSO
 
@@ -335,7 +270,7 @@ current test script.
 
 	use SQL::SyntaxModel::ByTree;
 
-	my $model = SQL::SyntaxModel::ByTree->new();
+	my $model = SQL::SyntaxModel::ByTree->new_container();
 
 	$model->create_node_trees( [ map { { 'NODE_TYPE' => 'domain', 'ATTRS' => $_ } } (
 		{ 'id' =>  1, 'name' => 'bin1k' , 'base_type' => 'STR_BIT', 'max_octets' =>  1_000, },
@@ -687,5 +622,7 @@ current test script.
 	] } );
 
 	print $model->get_all_properties_as_xml_str();
+
+	$model->destroy();
 
 =cut

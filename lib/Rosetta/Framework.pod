@@ -69,7 +69,7 @@ Note: the file Language.pod should be read next, after Framework.pod.
 
 This file is part of the Rosetta database abstraction framework.
 
-Rosetta is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved. 
+Rosetta is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved.
 Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
 visit "http://www.DarrenDuncan.net" for more information.
 
@@ -78,39 +78,30 @@ terms of the GNU General Public License (GPL) version 2 as published by the
 Free Software Foundation (http://www.fsf.org/).  You should have received a
 copy of the GPL as part of the Rosetta distribution, in the file named
 "LICENSE"; if not, write to the Free Software Foundation, Inc., 59 Temple
-Place, Suite 330, Boston, MA 02111-1307 USA.  
-
-Any versions of Rosetta that you modify and distribute must carry prominent
-notices stating that you changed the files and the date of any changes, in
-addition to preserving this original copyright notice and other credits. 
-Rosetta is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE.  See the GPL for more details.
+Place, Suite 330, Boston, MA 02111-1307 USA.
 
 Linking Rosetta statically or dynamically with other modules is making a
 combined work based on Rosetta.  Thus, the terms and conditions of the GPL
-cover the whole combination.
+cover the whole combination.  As a special exception, the copyright holders of
+Rosetta give you permission to link Rosetta with independent modules,
+regardless of the license terms of these independent modules, and to copy and
+distribute the resulting combined work under terms of your choice, provided
+that every copy of the combined work is accompanied by a complete copy of the
+source code of Rosetta (the version of Rosetta used to produce the combined
+work), being distributed under the terms of the GPL plus this exception.  An
+independent module is a module which is not derived from or based on Rosetta,
+and which is fully useable when not linked to Rosetta in any form.
 
-As a special exception, the copyright holders of Rosetta give you permission to
-link Rosetta with independent modules that are interfaces to or implementations
-of databases, regardless of the license terms of these independent modules, and
-to copy and distribute the resulting combined work under terms of your choice,
-provided that every copy of the combined work is accompanied by a complete copy
-of the source code of Rosetta (the version of Rosetta used to produce the
-combined work), being distributed under the terms of the GPL plus this
-exception.  An independent module is a module which is not derived from or
-based on Rosetta, and which is fully useable when not linked to Rosetta in any
-form.
-
-Note that people who make modified versions of Rosetta are not obligated to
-grant this special exception for their modified versions; it is their choice
-whether to do so.  The GPL gives permission to release a modified version
-without this exception; this exception also makes it possible to release a
-modified version which carries forward this exception.
+Any versions of Rosetta that you modify and distribute must carry prominent
+notices stating that you changed the files and the date of any changes, in
+addition to preserving this original copyright notice and other credits.
+Rosetta is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
 
 While it is by no means required, the copyright holders of Rosetta would
 appreciate being informed any time you create a modified version of Rosetta
-that you are willing to distribute, because that is a practical way of 
+that you are willing to distribute, because that is a practical way of
 suggesting improvements to the standard version.
 
 =head1 SYNOPSIS
@@ -360,7 +351,7 @@ specification.  Since not all databases are alike, each engine is expected to
 report programmatically which kinds of features it supports, and the validator
 suite will only test interface compliance for those features; this way, a
 missing feature does not mean the engine will fail its tests unless it
-explicitely says it has said feature.
+explicitly says it has said feature.
 
 The Emulator modules are extensions that are purely optional for use, and they
 are intended to facilitate rapid adaption (hot-swapping) of Rosetta into an
@@ -392,6 +383,16 @@ useful, but it won't have as large of a database support.  I have no plans to
 make a pure Java version, but rather, the C version would bind to Java
 environments using a Java Bean.
 
+=head1 AN ALTERNATIVE SECOND VERSION
+
+Inspired by the recent (February 2004) formation of dbdi-dev@perl.org, a group
+which aims to make a Parrot-native database access framework for all Parrot
+hosted languages, and that can talk to native database drivers through Parrot's
+Native Call Interface, meaning that the Parrot database project doesn't need
+any parts written in C, I may decide to take the same approach with the next
+major version of Rosetta and related projects, implementing it in IMC
+instead of C.
+
 =head1 BRIEF MODULE LIST
 
 The following module names and descriptions are undergoing a state of
@@ -413,8 +414,8 @@ I<Any indented package names represent inner classes of what they are beneath.>
 To become "SQL-SyntaxModel" or similar:
 
 	SQL::SyntaxModel (An abstract syntax tree for all types of SQL)
-		SQL::SyntaxModel::_::Container (a context for Nodes, one of these per parent)
-		SQL::SyntaxModel::_::Node (a semi-atomic model component)
+		SQL::SyntaxModel::Container (a context for Nodes, one of these per parent)
+		SQL::SyntaxModel::Node (a semi-atomic model component)
 	SQL::SyntaxModel::L::en (Localization of SQL::SyntaxModel for English)
 	SQL::SyntaxModel::L::fr (Localization of SQL::SyntaxModel for French)
 	SQL::SyntaxModel::L::* ... like German, Spanish, Dutch, Chinese, etc
@@ -435,8 +436,8 @@ To become "SQL-SyntaxModel-SkipID" or similar:
 To stay "Rosetta":
 
 	Rosetta (Framework for RDBMS-generic apps and schemas)
-		Rosetta::_::Interface (defines the whole Rosetta public API, is largely a shim)
-		Rosetta::_::Engine (common base class for Engine modules that implement the Rosetta API)
+		Rosetta::Interface (defines the whole Rosetta public API, is largely a shim)
+		Rosetta::Engine (common base class for Engine modules that implement the Rosetta API)
 	Rosetta::L::en (Localization of Rosetta core for English)
 	Rosetta::L::fr (Localization of Rosetta core for French)
 	Rosetta::L::* ... like German, Spanish, Dutch, Chinese, etc
@@ -444,7 +445,7 @@ To stay "Rosetta":
 	Rosetta::Framework (Documentation on the Rosetta framework at large)
 	Rosetta::SimilarModules (Compare and contrast Rosetta with other modules)
 
-	Rosetta::Engine::Null (an engine with no functionality, for testing core)
+	Rosetta::Engine::Null (An Engine with no functionality, for testing the Rosetta core)
 
 =head2 In distribution "Rosetta-Engines" or a multiplicity of similarly named
 
@@ -494,9 +495,9 @@ I<Note: more databases (and data access protocols) can be found listed at
 	Rosetta::Engine::Common::* ... other code for sharing between multiple engines
 
 Note that DBIWrapper and/or SQLBuilder may get implemented as a
-Rosetta::_::Engine subclass which the normal Engine modules that use them (or
+Rosetta::Engine subclass which the normal Engine modules that use them (or
 "it" if they're combined) would subclass; that may work better than the normals
-subclassing Rosetta::_::Engine and using DBIWrapper or SQLBuilder.
+subclassing Rosetta::Engine and using DBIWrapper or SQLBuilder.
 
 =head2 In distribution "Rosetta-Proxy"
 
@@ -561,7 +562,7 @@ considered accurate.  One portion that was here as late as release 0.22,
 
 =item
 
-B<Rosetta::_::Interface> - This Interface class is inherited by all other Interface
+B<Rosetta::Interface> - This Interface class is inherited by all other Interface
 Interface classes, and it provides functionality to talk to or manage Engine modules.
 Its main task is to define the execute_command() method, which takes a Command
 object saying what should be done next and returns or throws a Result object
@@ -574,16 +575,16 @@ engines or connections.  Subclasses include: Result, Connection.
 
 =item
 
-B<Rosetta::_::Command> - This Interface class describes an action that needs
+B<Rosetta::Command> - This Interface class describes an action that needs
 to be done against a database; its objects encapsulate
 SQL::SyntaxModel::Command objects and also encapsulates the resolved bind vars,
 or live objects like 'Cursor'.  Code using these objects should be doing
 something like both calling DBI->prepare() and DBI->execute().  I<See also
-SQL::SyntaxModel::_::Command.>
+SQL::SyntaxModel::Command.>
 
 =item
 
-B<Rosetta::_::Result> - This Interface class is inherited by all Interface
+B<Rosetta::Result> - This Interface class is inherited by all Interface
 classes that would be returned from or thrown by an execute_command() method,
 and it contains the return values or errors of a Command.  Its main task is to
 implement the is_error() and get_error() methods, which say whether the Command
@@ -593,7 +594,7 @@ Subclasses include: Connection.
 
 =item
 
-B<Rosetta::_::Connection> - This Interface class represents a connection
+B<Rosetta::Connection> - This Interface class represents a connection
 to a database instance, and the simplest database applications use only one.
 You instantiate a Connection object by executing a Command of type
 'database_open'; that command usually takes 4 arguments, the first of which
@@ -604,7 +605,7 @@ yourself against a multi-user database as; 'pass' is the associated password.
 
 =item
 
-B<Rosetta::_::Cursor> - This Interface class represents a cursor over a
+B<Rosetta::Cursor> - This Interface class represents a cursor over a
 rowset that is being selected from a database.  You instantiate a Cursor object
 by executing a command of type 'data_select'; that command usually takes 1
 argument, which is mandatory: 'view' is a View object that describes the select
@@ -628,7 +629,7 @@ subselects.  This engine is intended mainly for programs that are used by one
 person at a time, as locks will grab the whole database.  Given that the actual
 database is embedded into the engine, we simply use the latest version
 available at the time of each engine update, so mention of version ranges being
-supported or not is not applicable.  (However, 2.8.12 is the newest right now.)
+supported or not is not applicable.  (However, 2.8.13 is the newest right now.)
 
 =item
 
@@ -640,7 +641,7 @@ before 8.x, like 7.3, will not be supported unless there is a great demand.
 =item
 
 B<Rosetta::Engine::PostgreSQL> - This class implements an engine for talking to
-PostgreSQL 7.4.1 databases, with 7.3.5 support likely present but deprecated. 
+PostgreSQL 7.4.1 databases, with 7.3.6 support likely present but deprecated. 
 Versions 7.2 and earlier won't be supported without demand.
 
 =item

@@ -11,7 +11,7 @@ use warnings;
 sub create_and_populate_model {
 	my (undef, $class) = @_;
 
-	my $model = $class->new();
+	my $model = $class->new_container();
 
 	$model->create_node_trees( [ map { { 'NODE_TYPE' => 'domain', 'ATTRS' => $_ } } (
 		{ 'name' => 'bin1k' , 'base_type' => 'STR_BIT', 'max_octets' =>  1_000, },
