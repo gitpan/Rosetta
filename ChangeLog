@@ -1,3 +1,13 @@
+2003-04-27   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.08.
+
+	* Added new file lib/Rosetta/API_C.pod, which contains the start of my C
+	API documentation for Rosetta.  It contains yet-incomplete contents for
+	these 3 C header files: rosetta.h, rosetta_types.h,
+	rosetta_schema_datatype.h.  Also added the new filename to the SEE ALSO of
+	Framework.pod.  No other changes were made in this release.
+
 2003-04-15   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.07.

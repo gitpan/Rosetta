@@ -1428,7 +1428,7 @@ This stuff is an older draft of the previous section, in a way.
 
 =head1 SEE ALSO
 
-perl(1), Rosetta::SimilarModules, Rosetta, Rosetta::Schema::DataType,
+perl(1), Rosetta::API_C, Rosetta::SimilarModules, Rosetta, Rosetta::Schema::DataType,
 Rosetta::Schema::Table, Rosetta::Schema::View.
 
 =cut

@@ -1,6 +1,7 @@
 ChangeLog
 INSTALL
 lib/Rosetta.pm
+lib/Rosetta/API_C.pod
 lib/Rosetta/Framework.pod
 lib/Rosetta/Schema/DataType.pm
 lib/Rosetta/Schema/Table.pm
