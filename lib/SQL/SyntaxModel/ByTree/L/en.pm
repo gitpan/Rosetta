@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ######################################################################
 
@@ -79,18 +79,6 @@ practical way of suggesting improvements to the standard version.
 ######################################################################
 
 my %text_strings = (
-	'SSMBTR_N_EXP_AT_MT_NO_ARGS' => 
-		"expected_attribute_major_type(): missing ATTR_NAME argument",
-	'SSMBTR_N_EXP_AT_MT_INVAL_NM' => 
-		"expected_attribute_major_type(): invalid ATTR_NAME argument; ".
-		"there is no attribute named '{NAME}' in '{HOSTTYPE}' Nodes",
-
-	'SSMBTR_N_SET_ATS_NO_ARGS' => 
-		"set_attributes(): missing ATTRS argument",
-	'SSMBTR_N_SET_ATS_BAD_ARGS' => 
-		"set_attributes(): invalid ATTRS argument; ".
-		"it is not a hash ref, but rather is '{ARG}'",
-
 	'SSMBTR_N_CR_NODE_TREE_NO_ARGS' => 
 		"create_child_node_tree(): missing argument",
 	'SSMBTR_N_CR_NODE_TREE_BAD_ARGS' => 

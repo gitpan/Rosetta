@@ -177,7 +177,7 @@ a type of documentation.  They will be improved.
 		union { /* when 'container' is null, use 'id'; when it isn't null, use 'ref' */
 			sqlsm_dt_scale id ; /* id that has to be resolved to point to a Node */
 			sqlsm_dt_node* ref; /* pointer to a Node */
-		} id_or_ref*        at_nodes   ; /* (array of id_or_ref) attrs of Node which are Nodes */
+		} id_or_ref*        at_nrefs   ; /* (array of id_or_ref) attrs of Node which are Nodes */
 			/* Note: if it would be better, we may combine all at* into one longer union list */
 		sqlsm_dt_node_atnm  p_node_atnm; /* name of at_nodes attribute which is our primary parent */
 		sqlsm_dt_flag       is_linked  ; /* true when actual refs in at_nodes are recipricated */
@@ -207,7 +207,6 @@ a type of documentation.  They will be improved.
 
 =head1 SEE ALSO
 
-perl(1), SQL::SyntaxModel, SQL::SyntaxModel::DataDictionary,
-SQL::SyntaxModel::XMLSchema, Rosetta, Rosetta::Framework.
+perl(1), SQL::SyntaxModel, SQL::SyntaxModel::Language, Rosetta, Rosetta::Framework.
 
 =cut

@@ -1,3 +1,71 @@
+2004-02-04   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.22.
+
+	* Renamed the SQL::SyntaxModel Node object property (and accessor methods)
+	'node_attributes' to 'node_ref_attributes'; the corresponding attribute
+	type is now called 'node_ref' (to complement 'literal' and 'enumerated'). 
+	Practically every SSM code or doc file was updated to correspond.  All SSM 
+	code modules are now at version 0.10, and their locale files are at 0.02.
+
+	* Fixed a bug in the put_in_container() Node method of SQL::SyntaxModel so
+	that it now prevents you from adding a Node with the same Id as one already
+	in the Container.  The set_node_id() method was already correct.
+
+	* Created new documentation file lib/SQL/SyntaxModel/Language.pod, which is
+	a heavily edited combination of the also-removed DataDictionary.pod and
+	XMLSchema.pod files.  The documentation sections in SyntaxModel.pm named
+	BRIEF NODE RELATIONSHIP LIST and BRIEF NODE TYPE LIST were also removed in
+	favor of the new file.  After these changes, Language.pod is now *the* main
+	documentation for SQL::SyntaxModel, besides the POD in that module itself.
+
+	* Corresponding to the above change, SyntaxModel.pm v0.10 now recognizes a
+	significantly different and very much incompatible list of Nodes, Node
+	attributes, enumerated types, and literal types than it did before.  So do
+	ByTree.pm v0.10 and SkipID.pm v0.10.  The test code was edited to work with
+	the new module and became a bit simpler in the process (and the CONTRIVED
+	EXAMPLE documentation is the same code that the tests use).
+
+	* Added new method move_before_sibling() to SyntaxModel.pm, which lets you
+	change the order of a child Node under its parent after they are linked.
+
+	* There are no longer any 'order' attributes for any Node type; the
+	sequence of a set of Nodes is now determined entirely by their order in the
+	model (under a common parent), just like XML nodes are.  You will now have 
+	to add a sequencing column yourself if saving Nodes as RDBMS records, which 
+	is the only place where the old 'order' attributes would have been useful.
+
+	* Removed deprecated method collect_inherited_attributes() from ByTree.pm;
+	the paradigm it supports, where redundant attributes are stored in parent
+	and child Nodes, is no longer in use.  Removed calls to it from SkipID.pm.
+
+	* Moved half of the functionality of ByTree.pm into SyntaxModel.pm,
+	specifically the generic attribute accessor methods and related information
+	function.  All of these are wrappers around existing SyntaxModel.pm
+	methods, letting you access Node attributes without knowing what their
+	major types are.  They are meant to be a convenience only, and you should
+	generally avoid them for performance reasons.  After the change, ByTree.pm
+	only contains the 4 public methods which are its namesake.
+
+	* Consolidated all of the test_mandatory_*_attributes() methods into a 
+	single test_mandatory_attributes() method.
+
+	* Updated the get_all_properties_as_*_str() methods so that they output
+	Node attributes in a different order than before.  Attributes now appear in
+	the same order as they do in the Language.pod documentation, which is a
+	reasonable conceptual order.  Previously, they were output in alphabetical
+	order by attribute name, except that 'id' was always first.
+
+	* Updated the 1*_SQL_SyntaxMode*.t test files so that they now trap any
+	exceptions thrown by the SSM modules and display their corresponding
+	localized error message.  Of course, the current tests should never run 
+	the exception handler if they pass, but the messages were very helpful 
+	when I was *editing* the SSM modules (and they also serve as a practical 
+	example of Locale::KeyedText in use).
+
+	* Made small documentation changes, largely related to the above changes,
+	in these files: Framework.pod, API_C.pod, MANIFEST.
+
 2004-01-18   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.21.

@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ######################################################################
 
@@ -113,20 +113,20 @@ my %text_strings = (
 		"set_literal_attribute(): invalid ATTR_VALUE argument; ".
 		"the literal attribute named '{NAME}' in '{HOSTTYPE}' Nodes may only be a ".
 		"boolean value, as expressed by '0' or '1'; you tried to set it to '{VAL}'",
-	'SSM_N_SET_LIT_AT_INVAL_V_INT' => 
+	'SSM_N_SET_LIT_AT_INVAL_V_UINT' => 
 		"set_literal_attribute(): invalid ATTR_VALUE argument; ".
 		"the literal attribute named '{NAME}' in '{HOSTTYPE}' Nodes may only be a ".
 		"non-negative integer; you tried to set it to '{VAL}'",
+	'SSM_N_SET_LIT_AT_INVAL_V_SINT' => 
+		"set_literal_attribute(): invalid ATTR_VALUE argument; ".
+		"the literal attribute named '{NAME}' in '{HOSTTYPE}' Nodes may only be an ".
+		"integer; you tried to set it to '{VAL}'",
 
 	'SSM_N_SET_LIT_ATS_NO_ARGS' => 
 		"set_literal_attributes(): missing ATTRS argument",
 	'SSM_N_SET_LIT_ATS_BAD_ARGS' => 
 		"set_literal_attributes(): invalid ATTRS argument; ".
 		"it is not a hash ref, but rather is '{ARG}",
-
-	'SSM_N_TEMA_LIT_ATS_NO_VAL_SET' => 
-		"test_mandatory_literal_attributes(): this '{HOSTTYPE}' Node has failed a test; ".
-		"the literal attribute named '{NAME}' must be given a value",
 
 	'SSM_N_EXP_ENUM_AT_NO_ARGS' => 
 		"expected_enumerated_attribute_type(): missing ATTR_NAME argument",
@@ -147,50 +147,54 @@ my %text_strings = (
 		"set_enumerated_attributes(): invalid ATTRS argument; ".
 		"it is not a hash ref, but rather is '{ARG}'",
 
-	'SSM_N_TEMA_ENUM_ATS_NO_VAL_SET' => 
-		"test_mandatory_enumerated_attributes(): this '{HOSTTYPE}' Node has failed a test; ".
-		"the enumerated attribute named '{attr_name}' must be given a value",
-
-	'SSM_N_EXP_NODE_AT_NO_ARGS' => 
-		"expected_node_attribute_type(): missing ATTR_NAME argument",
-	'SSM_N_EXP_NODE_AT_INVAL_NM' => 
-		"expected_node_attribute_type(): invalid ATTR_NAME argument; ".
+	'SSM_N_EXP_NREF_AT_NO_ARGS' => 
+		"expected_node_ref_attribute_type(): missing ATTR_NAME argument",
+	'SSM_N_EXP_NREF_AT_INVAL_NM' => 
+		"expected_node_ref_attribute_type(): invalid ATTR_NAME argument; ".
 		"there is no Node attribute named '{NAME}' in '{HOSTTYPE}' Nodes",
 
-	'SSM_N_SET_NODE_AT_NO_ARG_VAL' => 
-		"set_node_attribute(): missing ATTR_VALUE argument",
-	'SSM_N_SET_NODE_AT_WRONG_NODE_TYPE' => 
-		"set_node_attribute(): invalid ATTR_VALUE argument; the attribute named ".
+	'SSM_N_SET_NREF_AT_NO_ARG_VAL' => 
+		"set_node_ref_attribute(): missing ATTR_VALUE argument",
+	'SSM_N_SET_NREF_AT_WRONG_NODE_TYPE' => 
+		"set_node_ref_attribute(): invalid ATTR_VALUE argument; the attribute named ".
 		"'{NAME}' in '{HOSTTYPE}' Nodes may only reference a '{EXPTYPE}' Node, but ".
 		"you tried to set it to a '{GIVEN}' Node",
-	'SSM_N_SET_NODE_AT_DIFF_CONT' => 
-		"set_node_attribute(): invalid ATTR_VALUE argument; that Node is not in ".
+	'SSM_N_SET_NREF_AT_DIFF_CONT' => 
+		"set_node_ref_attribute(): invalid ATTR_VALUE argument; that Node is not in ".
 		"the same Container as the current Node, so they can not be linked",
-	'SSM_N_SET_NODE_AT_ONE_CONT' => 
-		"set_node_attribute(): invalid ATTR_VALUE argument; a Node that is in a ".
+	'SSM_N_SET_NREF_AT_ONE_CONT' => 
+		"set_node_ref_attribute(): invalid ATTR_VALUE argument; a Node that is in a ".
 		"Container can not be linked to one that is not",
-	'SSM_N_SET_NODE_AT_MISS_NID' => 
-		"set_node_attribute(): invalid ATTR_VALUE argument; the given Node ".
+	'SSM_N_SET_NREF_AT_MISS_NID' => 
+		"set_node_ref_attribute(): invalid ATTR_VALUE argument; the given Node ".
 		"lacks a Node Id, and one is required to link to it from this one",
-	'SSM_N_SET_NODE_AT_BAD_ARG_VAL' => 
-		"set_node_attribute(): invalid ATTR_VALUE argument; '{ARG}' is not a Node ref, ".
+	'SSM_N_SET_NREF_AT_BAD_ARG_VAL' => 
+		"set_node_ref_attribute(): invalid ATTR_VALUE argument; '{ARG}' is not a Node ref, ".
 		"and a Node Id may only be a positive integer",
-	'SSM_N_SET_NODE_AT_NONEX_NID' => 
-		"set_node_attribute(): invalid ATTR_VALUE argument; '{ARG}' is not a Node ref, ".
+	'SSM_N_SET_NREF_AT_NONEX_NID' => 
+		"set_node_ref_attribute(): invalid ATTR_VALUE argument; '{ARG}' is not a Node ref, ".
 		"and it does not match the Id of any '{EXPTYPE}' Node in this Container",
-	'SSM_N_SET_NODE_AT_RECIP_LINKS' => 
-		"set_node_attribute(): invalid ATTR_VALUE argument; the given Node is not yet ".
+	'SSM_N_SET_NREF_AT_RECIP_LINKS' => 
+		"set_node_ref_attribute(): invalid ATTR_VALUE argument; the given Node is not yet ".
 		"in reciprocating status, so the current Node can not yet become a child of it",
 
-	'SSM_N_SET_NODE_ATS_NO_ARGS' => 
-		"set_node_attributes(): missing ATTRS argument",
-	'SSM_N_SET_NODE_ATS_BAD_ARGS' => 
-		"set_node_attributes(): invalid ATTRS argument; ".
+	'SSM_N_SET_NREF_ATS_NO_ARGS' => 
+		"set_node_ref_attributes(): missing ATTRS argument",
+	'SSM_N_SET_NREF_ATS_BAD_ARGS' => 
+		"set_node_ref_attributes(): invalid ATTRS argument; ".
 		"it is not a hash ref, but rather is '{ARG}'",
 
-	'SSM_N_TEMA_NODE_ATS_NO_VAL_SET' => 
-		"test_mandatory_node_attributes(): this '{HOSTTYPE}' Node has failed a test; ".
-		"the node attribute named '{NAME}' must be given a value",
+	'SSM_N_EXP_AT_MT_NO_ARGS' => 
+		"expected_attribute_major_type(): missing ATTR_NAME argument",
+	'SSM_N_EXP_AT_MT_INVAL_NM' => 
+		"expected_attribute_major_type(): invalid ATTR_NAME argument; ".
+		"there is no attribute named '{NAME}' in '{HOSTTYPE}' Nodes",
+
+	'SSM_N_SET_ATS_NO_ARGS' => 
+		"set_attributes(): missing ATTRS argument",
+	'SSM_N_SET_ATS_BAD_ARGS' => 
+		"set_attributes(): invalid ATTRS argument; ".
+		"it is not a hash ref, but rather is '{ARG}'",
 
 	'SSM_N_SET_P_NODE_ATNM_NO_ARGS' => 
 		"set_parent_node_attribute_name(): missing ATTR_NAME argument",
@@ -216,6 +220,10 @@ my %text_strings = (
 	'SSM_N_PI_CONT_HAVE_ALREADY' => 
 		"put_in_container(): this Node already lives in a Container; you ".
 		"must take this Node from there before putting it in a different one",
+	'SSM_N_PI_CONT_DUPL_ID' => 
+		"put_in_container(): this Node can not be put into the given Container ".
+		"because its Node Id value of '{ID}' is already in use by another '{TYPE}' Node ".
+		"in the same Container; one of them needs to be changed first",
 	'SSM_N_PI_CONT_NONEX_AT_NODE' => 
 		"put_in_container(): this Node can not be put into the given Container ".
 		"because the Node attribute named '{ATNM}' expects to link to a '{TYPE}' Node ".
@@ -233,6 +241,36 @@ my %text_strings = (
 		"remove_reciprocal_links(): this Node has child Nodes of its ".
 		"own, so it can not be removed from reciprocating status",
 
+	'SSM_N_MOVE_PRE_SIB_NO_RL' => 
+		"move_before_sibling(): this Node is not in reciprocating ".
+		"status and therefore it is not present in any child list; it has no siblings",
+	'SSM_N_MOVE_PRE_SIB_NO_S_ARG' => 
+		"move_before_sibling(): missing SIBLING argument",
+	'SSM_N_MOVE_PRE_SIB_BAD_S_ARG' => 
+		"move_before_sibling(): invalid SIBLING argument; ".
+		"it is not a Node object, but rather is '{ARG}'",
+	'SSM_N_MOVE_PRE_SIB_S_NO_RL' => 
+		"move_before_sibling(): invalid SIBLING argument; that Node is not in reciprocating ".
+		"status and therefore it is not present in any child list; it has no siblings",
+	'SSM_N_MOVE_PRE_SIB_S_DIFF_CONT' => 
+		"move_before_sibling(): invalid SIBLING argument; that Node is not in ".
+		"the same Container (if any) as the current Node, so they can not be siblings",
+	'SSM_N_MOVE_PRE_SIB_BAD_P_ARG' => 
+		"move_before_sibling(): invalid PARENT argument; ".
+		"it is not a Node object, but rather is '{ARG}'",
+	'SSM_N_MOVE_PRE_SIB_P_DIFF_CONT' => 
+		"move_before_sibling(): invalid PARENT argument; that Node is not in ".
+		"the same Container (if any) as the current Node, so they can not be related",
+	'SSM_N_MOVE_PRE_SIB_NO_P_ARG_OR_PP' => 
+		"move_before_sibling(): no PARENT argument was given, and the current Node ".
+		"has no primary parent Node for it to default to",
+	'SSM_N_MOVE_PRE_SIB_P_NOT_P' => 
+		"move_before_sibling(): invalid PARENT argument; ".
+		"the current Node is not a child of that Node",
+	'SSM_N_MOVE_PRE_SIB_S_NOT_S' => 
+		"move_before_sibling(): invalid SIBLING argument; ".
+		"the current Node does not share PARENT (or its primary parent) with that Node",
+
 	'SSM_N_ADD_CH_NODE_NO_ARGS' => 
 		"add_child_node(): missing NEW_CHILD argument",
 	'SSM_N_ADD_CH_NODE_BAD_ARG' => 
@@ -247,6 +285,19 @@ my %text_strings = (
 		"get_node(): missing NODE_ID argument",
 	'SSM_C_GET_NODE_BAD_TYPE' => 
 		"get_node(): invalid NODE_TYPE argument; there is no Node Type named '{TYPE}'",
+
+	'SSM_N_TEMA_ATS_NID_VAL_NO_SET' => 
+		"test_mandatory_attributes(): this '{HOSTTYPE}' Node has failed a test; ".
+		"the Node ID must be given a value",
+	'SSM_N_TEMA_ATS_LIT_VAL_NO_SET' => 
+		"test_mandatory_attributes(): this '{HOSTTYPE}' Node has failed a test; ".
+		"the literal attribute named '{NAME}' must be given a value",
+	'SSM_N_TEMA_ATS_ENUM_VAL_NO_SET' => 
+		"test_mandatory_attributes(): this '{HOSTTYPE}' Node has failed a test; ".
+		"the enumerated attribute named '{NAME}' must be given a value",
+	'SSM_N_TEMA_ATS_NREF_VAL_NO_SET' => 
+		"test_mandatory_attributes(): this '{HOSTTYPE}' Node has failed a test; ".
+		"the node attribute named '{NAME}' must be given a value",
 );
 
 ######################################################################

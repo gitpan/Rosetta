@@ -1,10 +1,5 @@
 ONE DEVELOPMENT TRACK
 
-r0.22 - Update DataDictionary.pod and SyntaxModel.pm so they describe the main 
-yet-missing features, such as applications, commands, and command vars.  Also 
-update the SYNOPSIS POD (and test script) so that the views go in the application 
-space rather than the database space, where they actually belong.
-
 r0.23 - Create modules Rosetta, Rosetta::_::Engine, Rosetta::_::Connection, as
 well as Rosetta::Driver::Null.  Or alternately, make what these become,
 following the inevitable major design updates started at the same time.

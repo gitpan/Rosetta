@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ######################################################################
 
@@ -79,8 +79,8 @@ practical way of suggesting improvements to the standard version.
 ######################################################################
 
 my %text_strings = (
-	'SSMSID_N_SET_AT_NODE_NO_ID_MATCH' => 
-		"set_node_attribute(): invalid ATTRS argument element; ".
+	'SSMSID_N_SET_AT_NREF_NO_ID_MATCH' => 
+		"set_node_ref_attribute(): invalid ATTRS argument element; ".
 		"when trying to set '{ATNM}' attribute of a '{HOSTTYPE}' Node; ".
 		"'{ARG}' is not a Node ref and it does not ".
 		"match the id of any existing '{EXPTYPE}' Node",

@@ -6,8 +6,8 @@
 BEGIN { $| = 1; print "1..3\n"; }
 END {print "not ok 1\n" unless $loaded;}
 use t_SQL_SyntaxModel_ByTree;
-use SQL::SyntaxModel::ByTree 0.09;
-use SQL::SyntaxModel::ByTree::L::en 0.01;
+use SQL::SyntaxModel::ByTree 0.10;
+use SQL::SyntaxModel::ByTree::L::en 0.02;
 $loaded = 1;
 print "ok 1\n";
 use strict;
@@ -36,24 +36,40 @@ sub message {
 	print "-- $detail\n";
 }
 
+sub error_to_string {
+	my ($message) = @_;
+	ref($message) or return( $message ); # if this isn't an object
+	my $translator = Locale::KeyedText->new_translator( 
+		['SQL::SyntaxModel::ByTree::L::', 'SQL::SyntaxModel::L::'], ['en'] );
+	my $user_text = $translator->translate_message( $message );
+	unless( $user_text ) {
+		return( "internal error: can't find user text for a message: ".
+			$message->as_string()." ".$translator->as_string() );
+	}
+	return( $user_text );
+}
+
 ######################################################################
 
 message( "START TESTING SQL::SyntaxModel::ByTree" );
 
 ######################################################################
 
-message( "First populate some objects ..." );
+eval {
+	message( "First populate some objects ..." );
 
-my $model = t_SQL_SyntaxModel_ByTree->create_and_populate_model( 'SQL::SyntaxModel::ByTree' );
-result( ref($model) eq 'SQL::SyntaxModel::ByTree', "creation of all objects" );
+	my $model = t_SQL_SyntaxModel_ByTree->create_and_populate_model( 'SQL::SyntaxModel::ByTree' );
+	result( ref($model) eq 'SQL::SyntaxModel::ByTree', "creation of all objects" );
 
-message( "Now see if the output is correct ..." );
+	message( "Now see if the output is correct ..." );
 
-my $expected_output = t_SQL_SyntaxModel_ByTree->expected_model_xml_output();
-my $actual_output = $model->get_all_properties_as_xml_str();
-result( $actual_output eq $expected_output, "verify serialization of objects" );
+	my $expected_output = t_SQL_SyntaxModel_ByTree->expected_model_xml_output();
+	my $actual_output = $model->get_all_properties_as_xml_str();
+	result( $actual_output eq $expected_output, "verify serialization of objects" );
 
-message( "Other functional tests are not written yet; they will come later" );
+	message( "Other functional tests are not written yet; they will come later" );
+};
+$@ and result( 0, "TESTS ABORTED: ".error_to_string( $@ ) );
 
 ######################################################################
 

@@ -11,9 +11,9 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.09';
+$VERSION = '0.10';
 
-use SQL::SyntaxModel::ByTree 0.09;
+use SQL::SyntaxModel::ByTree 0.10;
 
 ######################################################################
 
@@ -25,7 +25,7 @@ Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	SQL::SyntaxModel::ByTree 0.08 (parent class)
+	SQL::SyntaxModel::ByTree 0.10 (parent class)
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -110,45 +110,49 @@ my $P = '..'; # means go up one parent level
 my $HACK1 = '[]'; # means use [view_src.name+table_col.name] to find a view_src_col in current view_rowset
 
 my %NODE_TYPES_EXTRA_DETAILS = (
-	'data_type' => {
+	'domain' => {
 		'link_search_attr' => 'name',
-		'def_attr' => 'basic_type',
+		'def_attr' => 'base_type',
 		'attr_defaults' => {
-			'basic_type' => ['lit','str'],
+			'base_type' => ['lit','STR_CHAR'],
 		},
 	},
-	'database' => {
+	'catalog' => {
 		'link_search_attr' => 'name',
 		'def_attr' => 'id',
 	},
-	'namespace' => {
+	'user' => {
 		'link_search_attr' => 'name',
 		'def_attr' => 'id',
+	},
+	'schema' => {
+		'link_search_attr' => 'name',
+		'def_attr' => 'id',
+		'attr_defaults' => {
+			'owner' => ['last'],
+		},
+	},
+	'sequence' => {
+		'link_search_attr' => 'name',
+		'def_attr' => 'name',
 	},
 	'table' => {
 		'link_search_attr' => 'name',
 		'def_attr' => 'name',
-		'attr_defaults' => {
-			'order' => ['uid'],
-		},
 	},
 	'table_col' => {
 		'link_search_attr' => 'name',
 		'def_attr' => 'name',
 		'attr_defaults' => {
-			'order' => ['uid'],
-			'required_val' => ['lit',0],
+			'mandatory' => ['lit',0],
 		},
 	},
 	'table_ind' => {
 		'search_paths' => {
-			'f_table' => [$P,$P], # match child table in current namespace
+			'f_table' => [$P,$P], # match child table in current schema
 		},
 		'link_search_attr' => 'name',
 		'def_attr' => 'name',
-		'attr_defaults' => {
-			'order' => ['uid'],
-		},
 	},
 	'table_ind_col' => {
 		'search_paths' => {
@@ -156,43 +160,30 @@ my %NODE_TYPES_EXTRA_DETAILS = (
 			'f_table_col' => [$P,'f_table'], # match child col in foreign table
 		},
 		'def_attr' => 'table_col',
-		'attr_defaults' => {
-			'order' => ['uid'],
-		},
 	},
 	'view' => {
 		'search_paths' => {
-			'match_table' => [$P], # match child table in current namespace
+			'match_table' => [$P], # match child table in current schema
 		},
 		'link_search_attr' => 'name',
 		'def_attr' => 'name',
 		'attr_defaults' => {
-			'view_type' => ['lit','caller'],
+			'view_context' => ['lit','SCHEMA'],
+			'view_type' => ['lit','SIMPLE'],
 			'may_write' => ['lit',0],
 		},
 	},
 	'view_col' => {
 		'link_search_attr' => 'name',
 		'def_attr' => 'name',
-		'attr_defaults' => {
-			'order' => ['uid'],
-		},
-	},
-	'view_rowset' => {
-		'attr_defaults' => {
-			'p_rowset_order' => ['uid'],
-		},
 	},
 	'view_src' => {
 		'search_paths' => {
-			'match_table' => [$P,$S,$P,$P], # match child table in current namespace
-			'match_view' => [$P,$S,$P,$P], # match child view in current namespace
+			'match_table' => [$P,$S,$P], # match child table in current schema
+			'match_view' => [$P,$S,$P], # match child view in current schema
 		},
 		'link_search_attr' => 'name',
 		'def_attr' => 'name',
-		'attr_defaults' => {
-			'order' => ['uid'],
-		},
 	},
 	'view_src_col' => {
 		'search_paths' => {
@@ -214,70 +205,45 @@ my %NODE_TYPES_EXTRA_DETAILS = (
 			'rhs_src_col' => [$P,'rhs_src',['table_col',[$P,'match_table']]], # ... recursive code
 		},
 	},
-	'view_col_def' => {
+	'view_expr' => {
 		'search_paths' => {
-			'view_col' => [$S,$P,$S,$P], # match child col in current view
-			'src_col' => [$S,$P,$HACK1,['table_col',[$P,'match_table']]], # match a src+table_col in current namespace
-			'f_view' => [$S,$P,$S,$P,$P], # match child view in current namespace
-			'ufunc' => [$S,$P,$S,$P,$P], # match child block in current namespace
-		},
-		'attr_defaults' => {
-			'p_expr_order' => ['uid'],
+			'view_col' => [$S,$P,$S], # match child col in current view
+			'src_col' => [$S,$P,$HACK1,['table_col',[$P,'match_table']]], # match a src+table_col in current schema
+			'f_view' => [$S,$P,$S,$P], # match child view in current schema
+			'ufunc' => [$S,$P,$S,$P], # match child routine in current schema
 		},
 	},
-	'view_part_def' => {
-		'search_paths' => {
-			'src_col' => [$S,$P,$HACK1,['table_col',[$P,'match_table']]], # match a src+table_col in current namespace
-			'f_view' => [$S,$P,$S,$P,$P], # match child view in current namespace
-			'ufunc' => [$S,$P,$S,$P,$P], # match child block in current namespace
-		},
-		'attr_defaults' => {
-			'p_expr_order' => ['uid'],
-		},
-	},
-	'sequence' => {
+	'routine' => {
 		'link_search_attr' => 'name',
 		'def_attr' => 'name',
 	},
-	'block' => {
+	'routine_arg' => {
 		'link_search_attr' => 'name',
 		'def_attr' => 'name',
 	},
-	'block_var' => {
+	'routine_var' => {
 		'search_paths' => {
-			'data_type' => [$P,$S,$P,$P,$P], # match child datatype of root
-			'c_view' => [$P,$S,$P], # match child view in current namespace
+			'domain' => [$P,$S,$P,$P,$P], # match child datatype of root
+			'curs_view' => [$P,$S,$P], # match child view in current schema
 		},
 		'link_search_attr' => 'name',
 		'def_attr' => 'name',
 	},
-	'block_stmt' => {
+	'command' => {
 		'search_paths' => {
-			'dest_var' => [$P], # match child block_var in current block
-			'c_block' => [$P], # link to child block of current block
+			'dest_var' => [$P], # match child routine_var in current routine
+			'c_routine' => [$P], # link to child routine of current routine
 		},
 	},
-	'block_expr' => {
+	'routine_expr' => {
 		'search_paths' => {
-			'src_var' => [$S,$P,$P], # match child block_var in current block
-			'ufunc' => [$S,$P,$S,$P,$P], # match child block in current namespace
+			'src_var' => [$S,$P,$P], # match child routine_var in current routine
+			'ufunc' => [$S,$P,$S,$P,$P], # match child routine in current schema
 		},
-	},
-	'user' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'name',
-	},
-	'privilege' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'name',
 	},
 	'application' => {
 		'link_search_attr' => 'name',
 		'def_attr' => 'id',
-	},
-	'command_var' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'name',
 	},
 );
 
@@ -306,29 +272,29 @@ use vars qw( @ISA );
 
 ######################################################################
 
-sub set_node_attribute {
+sub set_node_ref_attribute {
 	my ($node, $attr_name, $attr_value) = @_;
 	eval {
-		$node->SUPER::set_node_attribute( $attr_name, $attr_value );
+		$node->SUPER::set_node_ref_attribute( $attr_name, $attr_value );
 	};
 	if( my $exception = $@ ) {
-		if( $exception->get_message_key() eq 'SSM_N_SET_NODE_AT_BAD_ARG_VAL' ) {
+		if( $exception->get_message_key() eq 'SSM_N_SET_NREF_AT_BAD_ARG_VAL' ) {
 			# We were given a non-Node and non-Id $attr_value.
 			# Now look for something we can actually use for a value.
-			$attr_value = $node->_set_node_attribute__do_when_no_id_match( $attr_name, $attr_value );
+			$attr_value = $node->_set_node_ref_attribute__do_when_no_id_match( $attr_name, $attr_value );
 			# Since we got here, $attr_value contains a positive search result.
 			# Try calling superclass method again with new value.
-			return( $node->SUPER::set_node_attribute( $attr_name, $attr_value ) );
+			return( $node->SUPER::set_node_ref_attribute( $attr_name, $attr_value ) );
 		}
 		die $exception; # We can't do anything with this type of exception, so re-throw it.
 	}
 	return( 1 ); # The superclass was able to handle the input without error.
 }
 
-sub _set_node_attribute__do_when_no_id_match {
+sub _set_node_ref_attribute__do_when_no_id_match {
 	# Method only gets called when $attr_value is valued and doesn't match an id or Node.
 	my ($self, $attr_name, $attr_value) = @_;
-	my $exp_node_type = $self->expected_node_attribute_type( $attr_name );
+	my $exp_node_type = $self->expected_node_ref_attribute_type( $attr_name );
 
 	my $container = $self->get_container();
 	my $node_type = $self->get_node_type();
@@ -356,7 +322,7 @@ sub _set_node_attribute__do_when_no_id_match {
 	if( $attr_value_out ) {
 		return( $attr_value_out );
 	} else {
-		$self->_throw_error_message( 'SSMSID_N_SET_AT_NODE_NO_ID_MATCH', 
+		$self->_throw_error_message( 'SSMSID_N_SET_AT_NREF_NO_ID_MATCH', 
 			{ 'ATNM' => $attr_name, 'HOSTTYPE' => $node_type, 
 			'ARG' => $attr_value, 'EXPTYPE' => $exp_node_type } );
 	}
@@ -487,8 +453,15 @@ sub set_attributes {
 			unless( defined( $node->get_attribute( $attr_name ) ) ) {
 				unless( exists( $attrs->{$attr_name} ) ) {
 					my ($def_type,$arg) = @{$attr_defaults->{$attr_name}};
-					if( $def_type eq 'uid' ) { # used for 'id' elsewhere; values given to 'order' here
-						$attrs->{$attr_name} = 1 + $container->{$CPROP_HIGH_IDS}->{$node_type};
+					if( $def_type eq 'last' ) {
+						# This 'last' feature, currently, should only be used with attributes that can not 
+						# be primary parent attributes; pp attributes are sort of taken care 
+						# of in _create_node_tree__do_when_parent_not_set(); 
+						# however, that method's functionality may be moved here in the future
+						my $exp_node_type = $node->valid_node_type_node_ref_attributes( $node_type, $attr_name );
+						if( my $last_node = $container->{$CPROP_LAST_NODES}->{$exp_node_type} ) {
+							$attrs->{$attr_name} = $last_node;
+						}
 					} else { # $def_type eq 'lit'
 						$attrs->{$attr_name} = $arg;
 					}
@@ -497,16 +470,18 @@ sub set_attributes {
 		}
 	}
 
+	# Here we isolate and set any input-provided Node ID or possible parent refs first
 	if( my $new_node_id = delete( $attrs->{$ATTR_ID} ) ) {
 		$node->set_node_id( $new_node_id );
 	}
 	my $valid_p_node_atnms = $node->valid_node_type_parent_attribute_names( $node_type );
 	foreach my $attr_name (@{$valid_p_node_atnms}) {
 		my $attr_value = delete( $attrs->{$attr_name} ) or next;
-		my $exp_node_type = $node->valid_node_type_node_attributes( $node_type, $attr_name );
-		$node->set_node_attribute( $attr_name, $attr_value );
+		$node->set_node_ref_attribute( $attr_name, $attr_value );
 	}
-	$node->SUPER::set_attributes( $attrs ); # set other attributes
+
+	# Here we set any attributes not set by the previous code block
+	$node->SUPER::set_attributes( $attrs );
 }
 
 ######################################################################
@@ -534,7 +509,6 @@ sub create_child_node_tree {
 
 	$node->add_child_node( $new_child ); # sets more attributes in new_child
 
-	$new_child->collect_inherited_attributes();
 	$new_child->set_attributes( $args->{$ARG_ATTRS} ); # handles node id and all attribute types
 	$new_child->test_mandatory_attributes();
 
@@ -582,7 +556,6 @@ sub create_node_tree {
 		$container->_create_node_tree__do_when_parent_not_set( $node );
 	}
 
-	$node->collect_inherited_attributes();
 	$node->test_mandatory_attributes();
 
 	$container->{$CPROP_LAST_NODES}->{$node_type} = $node; # assign reference
@@ -602,10 +575,10 @@ sub _create_node_tree__do_when_parent_not_set {
 	my $node_type = $node->get_node_type();
 	$node->node_types_with_pseudonode_parents( $node_type ) and return( 1 );
 	foreach my $attr_name (@{$node->valid_node_type_parent_attribute_names( $node_type )}) {
-		my $exp_node_type = $node->valid_node_type_node_attributes( $node_type, $attr_name );
+		my $exp_node_type = $node->valid_node_type_node_ref_attributes( $node_type, $attr_name );
 		if( my $parent = $container->{$CPROP_LAST_NODES}->{$exp_node_type} ) {
 			# The following two lines is what the old _make_child_to_parent_link did.
-			$node->set_node_attribute( $attr_name, $parent );
+			$node->set_node_ref_attribute( $attr_name, $parent );
 			$node->set_parent_node_attribute_name( $attr_name );
 			last;
 		}
@@ -648,7 +621,7 @@ I<See the CONTRIVED EXAMPLE documentation section at the end.>
 =head1 DESCRIPTION
 
 This Perl 5 object class is a completely optional extension to
-SQL::SyntaxModel, and is implemented as a sub-class of that module.  The public
+SQL::SyntaxModel::ByTree, and is implemented as a sub-class of that module.  The public
 interface to this module is essentially the same as the other one, with the
 difference being that SQL::SyntaxModel::SkipID will accept a wider variety of
 input data formats into its methods.  Therefore, this module's documentation 
@@ -668,7 +641,7 @@ that, when you want to refer to an earlier created Node by a later one, for
 purposes of linking them, you can refer to the earlier Node by a more
 human-readable attribute than the Node's "id" (or Node ref), such as its 'name'
 (which is also what actual SQL uses).  Between these two name-sake features, it
-is possible to use SQL::SyntaxModel without ever having to explicitely see a
+is possible to use SQL::SyntaxModel::ByTree without ever having to explicitely see a
 Node's "id" attribute.
 
 Note that, for the sake of avoiding conflicts, you should not be explicitely
@@ -690,7 +663,7 @@ most recent previously-created Node which is capable of becoming the new one's
 parent will do so.
 
 This module's added features can make it "easier to use" in some circumstances
-than the bare-bones SQL::SyntaxModel, including an appearance more like actual
+than the bare-bones SQL::SyntaxModel::ByTree, including an appearance more like actual
 SQL strings, because matching descriptive terms can be used in multiple places.
 
 However, the functionality has its added cost in code complexity and
@@ -705,7 +678,7 @@ The added logic also makes the code slower and use more memory.
 
 =head1 BUGS
 
-First of all, see the BUGS main documentation section of the SQL::SyntaxModel,
+First of all, see the BUGS main documentation section of the SQL::SyntaxModel::ByTree,
 as everything said there applies to this module also.  Exceptions are below.
 
 The "use base ..." pragma doesn't seem to work properly (with Perl 5.6 at
@@ -760,84 +733,142 @@ with the parent class against this class and get the same output.
 
 	my $model = SQL::SyntaxModel::SkipID->new();
 
-	$model->create_node_trees( [ map { { 'NODE_TYPE' => 'data_type', 'ATTRS' => $_ } } (
-		{ 'name' => 'bin1k' , 'basic_type' => 'bin', 'size_in_bytes' =>  1_000, },
-		{ 'name' => 'bin32k', 'basic_type' => 'bin', 'size_in_bytes' => 32_000, },
-		{ 'name' => 'str4'  , 'basic_type' => 'str', 'size_in_chars' =>  4, 'store_fixed' => 1, 
-			'str_encoding' => 'asc', 'str_trim_white' => 1, 'str_latin_case' => 'uc', 
-			'str_pad_char' => ' ', 'str_trim_pad' => 1, },
-		{ 'name' => 'str10' , 'basic_type' => 'str', 'size_in_chars' => 10, 'store_fixed' => 1, 
-			'str_encoding' => 'asc', 'str_trim_white' => 1, 'str_latin_case' => 'pr', 
-			'str_pad_char' => ' ', 'str_trim_pad' => 1, },
-		{ 'name' => 'str30' , 'basic_type' => 'str', 'size_in_chars' =>    30, 
-			'str_encoding' => 'asc', 'str_trim_white' => 1, },
-		{ 'name' => 'str2k' , 'basic_type' => 'str', 'size_in_chars' => 2_000, 'str_encoding' => 'u16', },
-		{ 'name' => 'byte' , 'basic_type' => 'num', 'size_in_bytes' => 1, 'num_precision' => 0, }, #  3 digits
-		{ 'name' => 'short', 'basic_type' => 'num', 'size_in_bytes' => 2, 'num_precision' => 0, }, #  5 digits
-		{ 'name' => 'int'  , 'basic_type' => 'num', 'size_in_bytes' => 4, 'num_precision' => 0, }, # 10 digits
-		{ 'name' => 'long' , 'basic_type' => 'num', 'size_in_bytes' => 8, 'num_precision' => 0, }, # 19 digits
-		{ 'name' => 'ubyte' , 'basic_type' => 'num', 'size_in_bytes' => 1, 
-			'num_unsigned' => 1, 'num_precision' => 0, }, #  3 digits
-		{ 'name' => 'ushort', 'basic_type' => 'num', 'size_in_bytes' => 2, 
-			'num_unsigned' => 1, 'num_precision' => 0, }, #  5 digits
-		{ 'name' => 'uint'  , 'basic_type' => 'num', 'size_in_bytes' => 4, 
-			'num_unsigned' => 1, 'num_precision' => 0, }, # 10 digits
-		{ 'name' => 'ulong' , 'basic_type' => 'num', 'size_in_bytes' => 8, 
-			'num_unsigned' => 1, 'num_precision' => 0, }, # 19 digits
-		{ 'name' => 'float' , 'basic_type' => 'num', 'size_in_bytes' => 4, },
-		{ 'name' => 'double', 'basic_type' => 'num', 'size_in_bytes' => 8, },
-		{ 'name' => 'dec10p2', 'basic_type' => 'num', 'size_in_digits' =>  10, 'num_precision' => 2, },
-		{ 'name' => 'dec255' , 'basic_type' => 'num', 'size_in_digits' => 255, },
-		{ 'name' => 'boolean', 'basic_type' => 'bool', },
-		{ 'name' => 'datetime', 'basic_type' => 'datetime', 'datetime_calendar' => 'abs', },
-		{ 'name' => 'dtchines', 'basic_type' => 'datetime', 'datetime_calendar' => 'chi', },
-		{ 'name' => 'str1'  , 'basic_type' => 'str', 'size_in_chars' =>     1, },
-		{ 'name' => 'str20' , 'basic_type' => 'str', 'size_in_chars' =>    20, },
-		{ 'name' => 'str100', 'basic_type' => 'str', 'size_in_chars' =>   100, },
-		{ 'name' => 'str250', 'basic_type' => 'str', 'size_in_chars' =>   250, },
-		{ 'name' => 'entitynm', 'basic_type' => 'str', 'size_in_chars' =>  30, },
-		{ 'name' => 'generic' , 'basic_type' => 'str', 'size_in_chars' => 250, },
+	$model->create_node_trees( [ map { { 'NODE_TYPE' => 'domain', 'ATTRS' => $_ } } (
+		{ 'name' => 'bin1k' , 'base_type' => 'STR_BIT', 'max_octets' =>  1_000, },
+		{ 'name' => 'bin32k', 'base_type' => 'STR_BIT', 'max_octets' => 32_000, },
+		{ 'name' => 'str4'  , 'base_type' => 'STR_CHAR', 'max_chars' =>  4, 'store_fixed' => 1, 
+			'char_enc' => 'ASCII', 'trim_white' => 1, 'uc_latin' => 1, 
+			'pad_char' => ' ', 'trim_pad' => 1, },
+		{ 'name' => 'str10' , 'base_type' => 'STR_CHAR', 'max_chars' => 10, 'store_fixed' => 1, 
+			'char_enc' => 'ASCII', 'trim_white' => 1, 
+			'pad_char' => ' ', 'trim_pad' => 1, },
+		{ 'name' => 'str30' , 'base_type' => 'STR_CHAR', 'max_chars' =>    30, 
+			'char_enc' => 'ASCII', 'trim_white' => 1, },
+		{ 'name' => 'str2k' , 'base_type' => 'STR_CHAR', 'max_chars' => 2_000, 'char_enc' => 'UTF8', },
+		{ 'name' => 'byte' , 'base_type' => 'NUM_INT', 'num_scale' =>  3, },
+		{ 'name' => 'short', 'base_type' => 'NUM_INT', 'num_scale' =>  5, },
+		{ 'name' => 'int'  , 'base_type' => 'NUM_INT', 'num_scale' => 10, },
+		{ 'name' => 'long' , 'base_type' => 'NUM_INT', 'num_scale' => 19, },
+		{ 'name' => 'ubyte' , 'base_type' => 'NUM_INT', 'num_scale' =>  3, 'num_unsigned' => 1, },
+		{ 'name' => 'ushort', 'base_type' => 'NUM_INT', 'num_scale' =>  5, 'num_unsigned' => 1, },
+		{ 'name' => 'uint'  , 'base_type' => 'NUM_INT', 'num_scale' => 10, 'num_unsigned' => 1, },
+		{ 'name' => 'ulong' , 'base_type' => 'NUM_INT', 'num_scale' => 19, 'num_unsigned' => 1, },
+		{ 'name' => 'float' , 'base_type' => 'NUM_APR', 'num_octets' => 4, },
+		{ 'name' => 'double', 'base_type' => 'NUM_APR', 'num_octets' => 8, },
+		{ 'name' => 'dec10p2', 'base_type' => 'NUM_EXA', 'num_scale' =>  10, 'num_precision' => 2, },
+		{ 'name' => 'dec255' , 'base_type' => 'NUM_EXA', 'num_scale' => 255, },
+		{ 'name' => 'boolean', 'base_type' => 'BOOLEAN', },
+		{ 'name' => 'datetime', 'base_type' => 'DATETIME', 'calendar' => 'ABS', },
+		{ 'name' => 'dtchines', 'base_type' => 'DATETIME', 'calendar' => 'CHI', },
+		{ 'name' => 'sex'   , 'base_type' => 'STR_CHAR', 'max_chars' =>     1, },
+		{ 'name' => 'str20' , 'base_type' => 'STR_CHAR', 'max_chars' =>    20, },
+		{ 'name' => 'str100', 'base_type' => 'STR_CHAR', 'max_chars' =>   100, },
+		{ 'name' => 'str250', 'base_type' => 'STR_CHAR', 'max_chars' =>   250, },
+		{ 'name' => 'entitynm', 'base_type' => 'STR_CHAR', 'max_chars' =>  30, },
+		{ 'name' => 'generic' , 'base_type' => 'STR_CHAR', 'max_chars' => 250, },
 	) ] );
 
-	$model->create_node_trees( ['database', 'namespace'] );
+	$model->create_node_trees( ['catalog', 'schema'] );
 
-	my $tbl_person = $model->create_node_tree( { 'NODE_TYPE' => 'table', 
-			'ATTRS' => { 'name' => 'person', 'public_syn' => 'person', 
-			'storage_file' => 'person', }, 'CHILDREN' => [ 
+	$model->create_node_tree( { 'NODE_TYPE' => 'table', 
+			'ATTRS' => { 'name' => 'person', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
 			{
-				'name' => 'person_id', 'data_type' => 'int', 'required_val' => 1,
+				'name' => 'person_id', 'domain' => 'int', 'mandatory' => 1,
 				'default_val' => 1, 'auto_inc' => 1,
 			},
-			{ 'name' => 'alternate_id', 'data_type' => 'str20' , },
-			{ 'name' => 'name'        , 'data_type' => 'str100', 'required_val' => 1, },
-			{ 'name' => 'sex'         , 'data_type' => 'str1'  , },
-			{ 'name' => 'father_id'   , 'data_type' => 'int'   , },
-			{ 'name' => 'mother_id'   , 'data_type' => 'int'   , },
+			{ 'name' => 'alternate_id', 'domain' => 'str20' , },
+			{ 'name' => 'name'        , 'domain' => 'str100', 'mandatory' => 1, },
+			{ 'name' => 'sex'         , 'domain' => 'sex'   , },
+			{ 'name' => 'father_id'   , 'domain' => 'int'   , },
+			{ 'name' => 'mother_id'   , 'domain' => 'int'   , },
 		) ),
 		( map { { 'NODE_TYPE' => 'table_ind', 'ATTRS' => $_->[0], 
 				'CHILDREN' => { 'NODE_TYPE' => 'table_ind_col', 'ATTRS' => $_->[1] } } } (
-			[ { 'name' => 'primary'        , 'ind_type' => 'unique', }, 'person_id'    ], 
-			[ { 'name' => 'ak_alternate_id', 'ind_type' => 'unique', }, 'alternate_id' ], 
-			[ { 'name' => 'fk_father', 'ind_type' => 'foreign', 'f_table' => 'person', }, 
+			[ { 'name' => 'primary'        , 'ind_type' => 'UNIQUE', }, 'person_id'    ], 
+			[ { 'name' => 'ak_alternate_id', 'ind_type' => 'UNIQUE', }, 'alternate_id' ], 
+			[ { 'name' => 'fk_father', 'ind_type' => 'FOREIGN', 'f_table' => 'person', }, 
 				{ 'table_col' => 'father_id', 'f_table_col' => 'person_id' } ], 
-			[ { 'name' => 'fk_mother', 'ind_type' => 'foreign', 'f_table' => 'person', }, 
+			[ { 'name' => 'fk_mother', 'ind_type' => 'FOREIGN', 'f_table' => 'person', }, 
 				{ 'table_col' => 'mother_id', 'f_table_col' => 'person_id' } ], 
 		) ),
 	] } );
 
-	my $vw_person = $model->create_node_tree( { 'NODE_TYPE' => 'view', 
+	$model->create_node_tree( { 'NODE_TYPE' => 'table', 
+			'ATTRS' => { 'name' => 'user_auth', }, 'CHILDREN' => [ 
+		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
+			{
+				'name' => 'user_id', 'domain' => 'int', 'mandatory' => 1,
+				'default_val' => 1, 'auto_inc' => 1,
+			},
+			{ 'name' => 'login_name'   , 'domain' => 'str20'  , 'mandatory' => 1, },
+			{ 'name' => 'login_pass'   , 'domain' => 'str20'  , 'mandatory' => 1, },
+			{ 'name' => 'private_name' , 'domain' => 'str100' , 'mandatory' => 1, },
+			{ 'name' => 'private_email', 'domain' => 'str100' , 'mandatory' => 1, },
+			{ 'name' => 'may_login'    , 'domain' => 'boolean', 'mandatory' => 1, },
+			{ 
+				'name' => 'max_sessions', 'domain' => 'byte', 'mandatory' => 1, 
+				'default_val' => 3, 
+			},
+		) ),
+		( map { { 'NODE_TYPE' => 'table_ind', 'ATTRS' => $_->[0], 
+				'CHILDREN' => { 'NODE_TYPE' => 'table_ind_col', 'ATTRS' => $_->[1] } } } (
+			[ { 'name' => 'primary'         , 'ind_type' => 'UNIQUE', }, 'user_id'       ],
+			[ { 'name' => 'ak_login_name'   , 'ind_type' => 'UNIQUE', }, 'login_name'    ],
+			[ { 'name' => 'ak_private_email', 'ind_type' => 'UNIQUE', }, 'private_email' ],
+		) ),
+	] } );
+
+	$model->create_node_tree( { 'NODE_TYPE' => 'table', 
+			'ATTRS' => { 'name' => 'user_profile', }, 'CHILDREN' => [ 
+		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
+			{ 'name' => 'user_id'     , 'domain' => 'int'   , 'mandatory' => 1, },
+			{ 'name' => 'public_name' , 'domain' => 'str250', 'mandatory' => 1, },
+			{ 'name' => 'public_email', 'domain' => 'str250', 'mandatory' => 0, },
+			{ 'name' => 'web_url'     , 'domain' => 'str250', 'mandatory' => 0, },
+			{ 'name' => 'contact_net' , 'domain' => 'str250', 'mandatory' => 0, },
+			{ 'name' => 'contact_phy' , 'domain' => 'str250', 'mandatory' => 0, },
+			{ 'name' => 'bio'         , 'domain' => 'str250', 'mandatory' => 0, },
+			{ 'name' => 'plan'        , 'domain' => 'str250', 'mandatory' => 0, },
+			{ 'name' => 'comments'    , 'domain' => 'str250', 'mandatory' => 0, },
+		) ),
+		( map { { 'NODE_TYPE' => 'table_ind', 'ATTRS' => $_->[0], 
+				'CHILDREN' => { 'NODE_TYPE' => 'table_ind_col', 'ATTRS' => $_->[1] } } } (
+			[ { 'name' => 'primary'       , 'ind_type' => 'UNIQUE', }, 'user_id'     ],
+			[ { 'name' => 'ak_public_name', 'ind_type' => 'UNIQUE', }, 'public_name' ],
+			[ { 'name' => 'fk_user', 'ind_type' => 'FOREIGN', 'f_table' => 'user_auth', }, 
+				{ 'table_col' => 'user_id', 'f_table_col' => 'user_id' } ], 
+		) ),
+	] } );
+
+	$model->create_node_tree( { 'NODE_TYPE' => 'table', 
+			'ATTRS' => { 'name' => 'user_pref', }, 'CHILDREN' => [ 
+		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
+			{ 'name' => 'user_id'   , 'domain' => 'int'     , 'mandatory' => 1, },
+			{ 'name' => 'pref_name' , 'domain' => 'entitynm', 'mandatory' => 1, },
+			{ 'name' => 'pref_value', 'domain' => 'generic' , 'mandatory' => 0, },
+		) ),
+		( map { { 'NODE_TYPE' => 'table_ind', 'ATTRS' => $_->[0], 'CHILDREN' => [ 
+				map { { 'NODE_TYPE' => 'table_ind_col', 'ATTRS' => $_ } } @{$_->[1]}
+				] } } (
+			[ { 'name' => 'primary', 'ind_type' => 'UNIQUE', }, [ 'user_id', 'pref_name', ], ], 
+			[ { 'name' => 'fk_user', 'ind_type' => 'FOREIGN', 'f_table' => 'user_auth', }, 
+				[ { 'table_col' => 'user_id', 'f_table_col' => 'user_id' }, ], ], 
+		) ),
+	] } );
+
+	$model->create_node_tree( { 'NODE_TYPE' => 'view', 
 			'ATTRS' => { 'name' => 'person', 'may_write' => 1, 'match_table' => 'person' }, } );
 
-	my $vw_person_with_parents = $model->create_node_tree( { 'NODE_TYPE' => 'view', 
+	$model->create_node_tree( { 'NODE_TYPE' => 'view', 
 			'ATTRS' => { 'name' => 'person_with_parents', 'may_write' => 0, }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
-			{ 'name' => 'self_id'    , 'data_type' => 'int'   , },
-			{ 'name' => 'self_name'  , 'data_type' => 'str100', },
-			{ 'name' => 'father_id'  , 'data_type' => 'int'   , },
-			{ 'name' => 'father_name', 'data_type' => 'str100', },
-			{ 'name' => 'mother_id'  , 'data_type' => 'int'   , },
-			{ 'name' => 'mother_name', 'data_type' => 'str100', },
+			{ 'name' => 'self_id'    , 'domain' => 'int'   , },
+			{ 'name' => 'self_name'  , 'domain' => 'str100', },
+			{ 'name' => 'father_id'  , 'domain' => 'int'   , },
+			{ 'name' => 'father_name', 'domain' => 'str100', },
+			{ 'name' => 'mother_id'  , 'domain' => 'int'   , },
+			{ 'name' => 'mother_name', 'domain' => 'str100', },
 		) ),
 		{ 'NODE_TYPE' => 'view_rowset', 'CHILDREN' => [ 
 			( map { { 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'name' => $_, 'match_table' => 'person', }, 
@@ -871,86 +902,37 @@ with the parent class against this class and get the same output.
 					{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
 						'expr_type' => 'col', 'src_col' => ['name','father'], }, },
 					{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
-						'expr_type' => 'var', 'command_var' => 'srchw_fa', }, },
+						'expr_type' => 'var', 'routine_var' => 'srchw_fa', }, },
 				] },
 				{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
 						'expr_type' => 'sfunc', 'sfunc' => 'like', }, 'CHILDREN' => [ 
 					{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
 						'expr_type' => 'col', 'src_col' => ['name','mother'], }, },
 					{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
-						'expr_type' => 'var', 'command_var' => 'srchw_mo', }, },
+						'expr_type' => 'var', 'routine_var' => 'srchw_mo', }, },
 				] },
 			] },
 		] },
 	] } );
 
-	my $tbl_user_auth = $model->create_node_tree( { 'NODE_TYPE' => 'table', 
-			'ATTRS' => { 'name' => 'user_auth', 'public_syn' => 'user_auth', 
-			'storage_file' => 'user', }, 'CHILDREN' => [ 
-		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
-			{
-				'name' => 'user_id', 'data_type' => 'int', 'required_val' => 1,
-				'default_val' => 1, 'auto_inc' => 1,
-			},
-			{ 'name' => 'login_name'   , 'data_type' => 'str20'  , 'required_val' => 1, },
-			{ 'name' => 'login_pass'   , 'data_type' => 'str20'  , 'required_val' => 1, },
-			{ 'name' => 'private_name' , 'data_type' => 'str100' , 'required_val' => 1, },
-			{ 'name' => 'private_email', 'data_type' => 'str100' , 'required_val' => 1, },
-			{ 'name' => 'may_login'    , 'data_type' => 'boolean', 'required_val' => 1, },
-			{ 
-				'name' => 'max_sessions', 'data_type' => 'byte', 'required_val' => 1, 
-				'default_val' => 3, 
-			},
-		) ),
-		( map { { 'NODE_TYPE' => 'table_ind', 'ATTRS' => $_->[0], 
-				'CHILDREN' => { 'NODE_TYPE' => 'table_ind_col', 'ATTRS' => $_->[1] } } } (
-			[ { 'name' => 'primary'         , 'ind_type' => 'unique', }, 'user_id'       ],
-			[ { 'name' => 'ak_login_name'   , 'ind_type' => 'unique', }, 'login_name'    ],
-			[ { 'name' => 'ak_private_email', 'ind_type' => 'unique', }, 'private_email' ],
-		) ),
-	] } );
-
-	my $tbl_user_profile = $model->create_node_tree( { 'NODE_TYPE' => 'table', 
-			'ATTRS' => { 'name' => 'user_profile', 'public_syn' => 'user_profile', 
-			'storage_file' => 'user', }, 'CHILDREN' => [ 
-		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
-			{ 'name' => 'user_id'     , 'data_type' => 'int'   , 'required_val' => 1, },
-			{ 'name' => 'public_name' , 'data_type' => 'str250', 'required_val' => 1, },
-			{ 'name' => 'public_email', 'data_type' => 'str250', 'required_val' => 0, },
-			{ 'name' => 'web_url'     , 'data_type' => 'str250', 'required_val' => 0, },
-			{ 'name' => 'contact_net' , 'data_type' => 'str250', 'required_val' => 0, },
-			{ 'name' => 'contact_phy' , 'data_type' => 'str250', 'required_val' => 0, },
-			{ 'name' => 'bio'         , 'data_type' => 'str250', 'required_val' => 0, },
-			{ 'name' => 'plan'        , 'data_type' => 'str250', 'required_val' => 0, },
-			{ 'name' => 'comments'    , 'data_type' => 'str250', 'required_val' => 0, },
-		) ),
-		( map { { 'NODE_TYPE' => 'table_ind', 'ATTRS' => $_->[0], 
-				'CHILDREN' => { 'NODE_TYPE' => 'table_ind_col', 'ATTRS' => $_->[1] } } } (
-			[ { 'name' => 'primary'       , 'ind_type' => 'unique', }, 'user_id'     ],
-			[ { 'name' => 'ak_public_name', 'ind_type' => 'unique', }, 'public_name' ],
-			[ { 'name' => 'fk_user', 'ind_type' => 'foreign', 'f_table' => 'user_auth', }, 
-				{ 'table_col' => 'user_id', 'f_table_col' => 'user_id' } ], 
-		) ),
-	] } );
-
-	my $vw_user = $model->create_node_tree( { 'NODE_TYPE' => 'view', 
+	$model->create_node_tree( { 'NODE_TYPE' => 'view', 
 			'ATTRS' => { 'name' => 'user', 'may_write' => 1, }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
-			{ 'name' => 'user_id'      , 'data_type' => 'int'    , },
-			{ 'name' => 'login_name'   , 'data_type' => 'str20'  , },
-			{ 'name' => 'login_pass'   , 'data_type' => 'str20'  , },
-			{ 'name' => 'private_name' , 'data_type' => 'str100' , },
-			{ 'name' => 'private_email', 'data_type' => 'str100' , },
-			{ 'name' => 'may_login'    , 'data_type' => 'boolean', },
-			{ 'name' => 'max_sessions' , 'data_type' => 'byte'   , },
-			{ 'name' => 'public_name'  , 'data_type' => 'str250' , },
-			{ 'name' => 'public_email' , 'data_type' => 'str250' , },
-			{ 'name' => 'web_url'      , 'data_type' => 'str250' , },
-			{ 'name' => 'contact_net'  , 'data_type' => 'str250' , },
-			{ 'name' => 'contact_phy'  , 'data_type' => 'str250' , },
-			{ 'name' => 'bio'          , 'data_type' => 'str250' , },
-			{ 'name' => 'plan'         , 'data_type' => 'str250' , },
-			{ 'name' => 'comments'     , 'data_type' => 'str250' , },
+			{ 'name' => 'user_id'      , 'domain' => 'int'    , },
+			{ 'name' => 'login_name'   , 'domain' => 'str20'  , },
+			{ 'name' => 'login_pass'   , 'domain' => 'str20'  , },
+			{ 'name' => 'private_name' , 'domain' => 'str100' , },
+			{ 'name' => 'private_email', 'domain' => 'str100' , },
+			{ 'name' => 'may_login'    , 'domain' => 'boolean', },
+			{ 'name' => 'max_sessions' , 'domain' => 'byte'   , },
+			{ 'name' => 'public_name'  , 'domain' => 'str250' , },
+			{ 'name' => 'public_email' , 'domain' => 'str250' , },
+			{ 'name' => 'web_url'      , 'domain' => 'str250' , },
+			{ 'name' => 'contact_net'  , 'domain' => 'str250' , },
+			{ 'name' => 'contact_phy'  , 'domain' => 'str250' , },
+			{ 'name' => 'bio'          , 'domain' => 'str250' , },
+			{ 'name' => 'plan'         , 'domain' => 'str250' , },
+			{ 'name' => 'comments'     , 'domain' => 'str250' , },
 		) ),
 		{ 'NODE_TYPE' => 'view_rowset', 'CHILDREN' => [ 
 			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'name' => 'user_auth', 
@@ -992,33 +974,16 @@ with the parent class against this class and get the same output.
 				{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
 					'expr_type' => 'col', 'src_col' => ['user_id','user_auth'], }, },
 				{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
-					'expr_type' => 'var', 'command_var' => 'curr_uid', }, },
+					'expr_type' => 'var', 'routine_var' => 'curr_uid', }, },
 			] },
 		] },
 	] } );
 
-	my $tbl_user_pref = $model->create_node_tree( { 'NODE_TYPE' => 'table', 
-			'ATTRS' => { 'name' => 'user_pref', 'public_syn' => 'user_pref', 
-			'storage_file' => 'user', }, 'CHILDREN' => [ 
-		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
-			{ 'name' => 'user_id'   , 'data_type' => 'int'     , 'required_val' => 1, },
-			{ 'name' => 'pref_name' , 'data_type' => 'entitynm', 'required_val' => 1, },
-			{ 'name' => 'pref_value', 'data_type' => 'generic' , 'required_val' => 0, },
-		) ),
-		( map { { 'NODE_TYPE' => 'table_ind', 'ATTRS' => $_->[0], 'CHILDREN' => [ 
-				map { { 'NODE_TYPE' => 'table_ind_col', 'ATTRS' => $_ } } @{$_->[1]}
-				] } } (
-			[ { 'name' => 'primary', 'ind_type' => 'unique', }, [ 'user_id', 'pref_name', ], ], 
-			[ { 'name' => 'fk_user', 'ind_type' => 'foreign', 'f_table' => 'user_auth', }, 
-				[ { 'table_col' => 'user_id', 'f_table_col' => 'user_id' }, ], ], 
-		) ),
-	] } );
-
-	my $vw_user_theme = $model->create_node_tree( { 'NODE_TYPE' => 'view', 
+	$model->create_node_tree( { 'NODE_TYPE' => 'view', 
 			'ATTRS' => { 'name' => 'user_theme', 'may_write' => 0, }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
-			{ 'name' => 'theme_name' , 'data_type' => 'generic', },
-			{ 'name' => 'theme_count', 'data_type' => 'int'    , },
+			{ 'name' => 'theme_name' , 'domain' => 'generic', },
+			{ 'name' => 'theme_count', 'domain' => 'int'    , },
 		) ),
 		{ 'NODE_TYPE' => 'view_rowset', 'CHILDREN' => [ 
 			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'name' => 'user_pref', 'match_table' => 'user_pref', }, 

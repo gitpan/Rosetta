@@ -64,7 +64,7 @@ with Rosetta (but support can be added).  Rosetta does not automate
 installation of any separate database software or configure it (like a package
 manager); you will have to do that yourself.
 
-Note: the file DataDictionary.pod should be read next, after Framework.pod.
+Note: the file Language.pod should be read next, after Framework.pod.
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -550,7 +550,7 @@ categories, which can be called: "Locale", "Schema" (SQL::SyntaxModel),
 "Engine", "Driver", "Proxy" (Server/Client), "Validator", "Emulator", and
 others.
 
-Note: the file DataDictionary.pod should be read next, after Framework.pod.
+Note: the file Language.pod should be read next, after Framework.pod.
 
 These classes do not export any functions or methods, so you need to call them
 using object notation.  This means using B<Class-E<gt>function()> for functions
@@ -713,23 +713,22 @@ To become "SQL-SyntaxModel" or similar:
 	SQL::SyntaxModel (An abstract syntax tree for all types of SQL)
 		SQL::SyntaxModel::_::Container (a context for Nodes, one of these per parent)
 		SQL::SyntaxModel::_::Node (a semi-atomic model component)
-	SQL::SyntaxModel::L::en (English localization of input error messages)
-	SQL::SyntaxModel::L::fr (French localization of input error messages)
+	SQL::SyntaxModel::L::en (Localization of SQL::SyntaxModel for English)
+	SQL::SyntaxModel::L::fr (Localization of SQL::SyntaxModel for French)
 	SQL::SyntaxModel::L::* ... like German, Spanish, Dutch, Chinese, etc
 
-	SQL::SyntaxModel::DataDictionary (POD only, describes a db suitable for storing SQL::SyntaxModels)
-	SQL::SyntaxModel::XMLSchema (POD only, describes an XML schema suitable for storing SQL::SyntaxModels)
-	SQL::SyntaxModel::API_C (POD only, describes the core C API for SQL::SyntaxModel)
+	SQL::SyntaxModel::Language (What language or grammar SQL::SyntaxModel speaks)
+	SQL::SyntaxModel::API_C (Describe the core C API for SQL::SyntaxModel)
 
 To become "SQL-SyntaxModel-ByTree" or similar:
 
 	SQL::SyntaxModel::ByTree (Build SQL::SyntaxModels from multi-dimensional Perl hashes and arrays)
-	SQL::SyntaxModel::ByTree::L::en (English localization of input error messages)
+	SQL::SyntaxModel::ByTree::L::en (Localization of SQL::SyntaxModel::ByTree for English)
 
 To become "SQL-SyntaxModel-SkipID" or similar:
 
 	SQL::SyntaxModel::SkipID (Use SQL::SyntaxModels without inputting Node IDs)
-	SQL::SyntaxModel::SkipID::L::en (English localization of input error messages)
+	SQL::SyntaxModel::SkipID::L::en (Localization of SQL::SyntaxModel::SkipID for English)
 
 To stay "Rosetta":
 
@@ -745,8 +744,8 @@ To stay "Rosetta":
 	Rosetta::L::fr (French localization of execution/input error messages)
 	Rosetta::L::* ... like German, Spanish, Dutch, Chinese, etc
 
-	Rosetta::Framework (POD only, holds main framework documentation)
-	Rosetta::SimilarModules (POD only, compares and contrasts Rosetta with other modules)
+	Rosetta::Framework (Main Rosetta purpose and design documentation)
+	Rosetta::SimilarModules (Compare and contrast Rosetta with other modules)
 
 	Rosetta::Driver::Null (a driver with no functionality, for testing core)
 
@@ -1105,7 +1104,6 @@ it.
 =head1 SEE ALSO
 
 perl(1), Rosetta, Rosetta::SimilarModules, SQL::SyntaxModel,
-SQL::SyntaxModel::DataDictionary, SQL::SyntaxModel::XMLSchema,
-SQL::SyntaxModel::API_C, DBI.
+SQL::SyntaxModel::Language, SQL::SyntaxModel::API_C, DBI.
 
 =cut
