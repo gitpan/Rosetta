@@ -11,7 +11,7 @@ require 5.004;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.011';
+$VERSION = '0.012';
 
 ######################################################################
 
@@ -603,7 +603,8 @@ your own modules, then that often means something like B<$self-E<gt>method()>.
 
 ######################################################################
 
-package SQL::ObjectModel::DataType;
+{	package # hide from PAUSE, experiment 1
+SQL::ObjectModel::DataType;
 require 5.004;
 use strict;
 use warnings;
@@ -847,6 +848,11 @@ sub valid_types {
 
 ######################################################################
 
+} # end of hide from PAUSE, experiment 1
+
+######################################################################
+
+{ # hide from PAUSE, experiment 2
 package SQL::ObjectModel::Table;
 require 5.004;
 use strict;
@@ -918,7 +924,12 @@ sub clone {
 
 ######################################################################
 
-package SQL::ObjectModel::View;
+} # end of hide from PAUSE, experiment 2
+
+######################################################################
+
+package # hide from PAUSE, experiment 3
+SQL::ObjectModel::View;
 require 5.004;
 use strict;
 use warnings;
@@ -986,6 +997,10 @@ sub clone {
 
 	return( $clone );
 }
+
+######################################################################
+
+# end of hide from PAUSE, experiment 3
 
 ######################################################################
 

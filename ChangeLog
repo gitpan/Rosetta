@@ -1,3 +1,15 @@
+2003-06-14   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.132.
+
+	* This release is mainly a test to see how CPAN indexes handle a module
+	which contains inner classes that we are trying to hide.  The module in
+	question is SQL::ObjectModel.  I saw a certain trick employed in DBI 1.37
+	which I am now trying 3 variations on (each with a different inner class),
+	the first one being done the same way as DBI.  After seeing the results, 
+	all the inner classes will be standardized on one method, in the next 
+	distribution release.
+
 2003-06-11   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.131.
