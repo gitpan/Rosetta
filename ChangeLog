@@ -1,3 +1,23 @@
+2003-07-07   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.15.
+
+	* The file lib/SQL/ObjectModel.pm was fully rewritten from scratch.  All of
+	the old code and documentation was replaced by newer code and
+	documentation.  This module is now in alpha development status (was
+	pre-alpha), which means that it is now fundamentally complete.  This also
+	means that you can start actually using it in your code as if it were
+	released, except for the fact that I still reserve the right to make
+	incompatible changes to it (but any changes will still closely resemble the
+	current version).
+
+	* The file t/SQL-ObjectModel.t had actual tests put into it, which are basically 
+	the same as the tested module's SYNOPSIS.  While not every single feature 
+	is tested exhaustively, most of the code and data is.  The SYNOPSIS code 
+	has been executed and works properly.
+
+	* No other modules were changed for this release.
+
 2003-06-27   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.14.
@@ -22,7 +42,7 @@
 	design details in DataDictionary.pod, and in the new ObjectModel.pm.  Also
 	updated EXPANDED MODULE LIST in a similar fashion.  Any modules whose names
 	were SQL::ObjectModel::* are now SQL::ObjectModel::_::* (with the exception 
-	of the POD only files), and those whose	names were Rosetta::Engine::* are 
+	of the POD only files), and those whose names were Rosetta::Engine::* are 
 	now Rosetta::_::* (Rosetta::Engine is now Rosetta::_::Engine).  The '_' 
 	signifies an inner class which isn't meant to be instantiated directly.
 
