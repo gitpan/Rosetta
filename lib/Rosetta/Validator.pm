@@ -3,9 +3,9 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta::Validator;
-our $VERSION = '0.41';
+our $VERSION = '0.42';
 
-use Rosetta '0.41';
+use Rosetta '0.42';
 
 ######################################################################
 
@@ -23,7 +23,7 @@ Core Modules: I<none>
 
 Non-Core Modules: 
 
-	Rosetta 0.41
+	Rosetta 0.42
 
 =head1 COPYRIGHT AND LICENSE
 

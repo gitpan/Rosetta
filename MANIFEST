@@ -1,6 +1,7 @@
 ChangeLog
 INSTALL
 lib/Rosetta.pm
+lib/Rosetta/Details.pod
 lib/Rosetta/Features.pod
 lib/Rosetta/Framework.pod
 lib/Rosetta/L/en.pm

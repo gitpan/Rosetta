@@ -1,3 +1,6 @@
+* Consider using Scalar::Util::weaken in Rosetta to alleviate the need for 
+an explicit destroy() by users of the module.
+
 * Add a /demos folder, starting with a trivial cmd-line genealogy app.
 
 * Perhaps split prepare() into compile() and prepare(); the first produces
@@ -14,5 +17,5 @@ engine that it runs under; later it will run under the "Parrot" engine.
 * The primary initial development of the Rosetta core (that which is in the
 'Rosetta' distribution) [was thought to be but in fact wasn't] done.  While
 further improvements are planned, they will be implemented over time as they are
-needed.  See the separately released "Rosetta-Extensions" distribution for a
+needed.  See the separately released "Rosetta-Engine-Generic" distribution for a
 clue as it is the initial main dependent of the Rosetta core.

@@ -7,9 +7,9 @@ BEGIN { $| = 1; print "1..1\n"; }
 ######################################################################
 # First ensure the modules to test will compile, are correct versions:
 
-use Rosetta '0.41';
+use Rosetta '0.42';
 use Rosetta::L::en '0.15';
-use Rosetta::Validator '0.41';
+use Rosetta::Validator '0.42';
 use Rosetta::Validator::L::en '0.09';
 
 ######################################################################

@@ -1,11 +1,53 @@
+2005-03-22   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Rosetta Release 0.42.
+
+	* New code file versions are: Rosetta.pm and Validator.pm v0.42.
+
+	* The main purpose of this release is to split up a large documentation file
+	into smaller ones, so they are less intimidating to users.  This split is
+	rough and very little if any editing has been done to the resulting pieces;
+	cleaning them up can happen in later releases.  Note that the COPYRIGHT AND
+	LICENSE was copied and is identical in both	parts.
+
+	* Split lib/Rosetta.pm into itself and lib/Rosetta/Details.pod.  The
+	original file retains all of the executable code plus these original POD
+	documentation sections: NAME, DEPENDENCIES, SYNOPSIS, DESCRIPTION, CLASSES
+	IN THIS MODULE, BUGS, SEE ALSO; it also gains a new BRIEF FUNCTION AND
+	METHOD LIST section.  The new all-POD file has a new and different NAME and
+	DESCRIPTION and SEE ALSO; otherwise it has these sections that were in the
+	original file: STRUCTURE, FEATURE SUPPORT VALIDATION, SYNTAX, and every
+	*FUNCTION* and *METHOD* section.  The new Rosetta.pm makes up about 2/3 of
+	the pair's combined file size; it is internally 5/6 executable code (or code
+	comments) and 1/6 POD; the new Details.pod makes about 1/3 of the pair and
+	is 100% POD.
+
+	* In Framework.pod, large update to the BRIEF MODULE LIST section that
+	brings it inline with recent changes in the observed distributions.  To
+	summarize: 1. The "SQL-Routine" distribution had 2 files split into 5; 2.
+	The "Rosetta" distribution had 1 file split into 2; 3. The nonexistant
+	"Rosetta-Utilities" distribution was split 3 ways into itself and
+	"SQL-Routine-SQLBuilder" and "SQL-Routine-SQLParser"; 4. The
+	"Rosetta-Extensions" temporary distribution ceased to exist and two other
+	previously nonexistent distributions that it was foreshadowing then became
+	actual distributions, "SQL-Routine-SQLBuilder" and "Rosetta-Engine-Generic".
+
+	* Rewrote the PREFACE of the ReadMe file.
+
+	* There were zero changes to Rosetta/L/en.pm, Validator/L/en.pm and
+	Features.pod.  There were zero code changes in Rosetta.pm and Validator.pm,
+	except for the version number increments, and likewise zero changes in the
+	test suite.  This distribution will behave identically to the previous
+	release.
+
 2005-03-18   Darren Duncan <perl@DarrenDuncan.net>
 
-	* Release 0.41.
+	* Rosetta Release 0.41.
 
 	* New code file versions are: Rosetta.pm and Validator.pm v0.41,
 	Rosetta/L/en.pm v0.15, and Validator/L/en.pm v0.09.
 
-	* Updated external dependencies Locale::KeyedText to v1.02 and on
+	* Updated external dependencies on Locale::KeyedText to v1.02 and on
 	SQL::Routine to v0.56.
 
 	* Corrected a few spelling mistakes in the documentation.
@@ -40,7 +82,7 @@
 
 2004-12-18   Darren Duncan <perl@DarrenDuncan.net>
 
-	* Release 0.40.
+	* Rosetta Release 0.40.
 
 	* This distribution now requires Perl 5.008001 or higher; it was 5.006.
 
@@ -77,7 +119,7 @@
 
 2004-11-23   Darren Duncan <perl@DarrenDuncan.net>
 
-	* Release 0.39.
+	* Rosetta Release 0.39.
 
 	* New code file versions are: Rosetta.pm and Validator.pm v0.39,
 	Rosetta/L/en.pm v0.13, and Validator/L/en.pm v0.07.  There were zero changes
@@ -158,7 +200,7 @@
 
 2004-11-06   Darren Duncan <perl@DarrenDuncan.net>
 
-	* Release 0.38.
+	* Rosetta Release 0.38.
 
 	* New code file versions are: Rosetta.pm and Validator.pm v0.38, and
 	Validator/L/en.pm v0.06.
@@ -215,7 +257,7 @@
 
 2004-10-26   Darren Duncan <perl@DarrenDuncan.net>
 
-	* Release 0.37.
+	* Rosetta Release 0.37.
 
 	* From now on, Rosetta::Validator will have the same version number as
 	Rosetta itself (and the distribution), because they are by design always 
@@ -344,7 +386,7 @@
 
 2004-10-04   Darren Duncan <perl@DarrenDuncan.net>
 
-	* Release 0.36.
+	* Rosetta Release 0.36.
 
 	* New code file versions are: Rosetta.pm v0.36, Rosetta/L/en.pm v0.11, 
 	Validator.pm v0.06, and Validator/L/en.pm v0.05.
@@ -371,7 +413,7 @@
 
 2004-09-09   Darren Duncan <perl@DarrenDuncan.net>
 
-	* Release 0.35.
+	* Rosetta Release 0.35.
 
 	* New code file versions are: Rosetta.pm v0.35, Rosetta/L/en.pm v0.10, 
 	Validator.pm v0.05, and Validator/L/en.pm v0.04.
@@ -396,7 +438,7 @@
 
 2004-08-19   Darren Duncan <perl@DarrenDuncan.net>
 
-	* Release 0.34.
+	* Rosetta Release 0.34.
 
 	* New code file versions are: Rosetta.pm v0.34, Rosetta/L/en.pm v0.09, and
 	Validator.pm v0.04.  (Validator/L/en.pm was not changed at all.)
@@ -435,7 +477,7 @@
 
 2004-08-16   Darren Duncan <perl@DarrenDuncan.net>
 
-	* Release 0.33.
+	* Rosetta Release 0.33.
 
 	* From now on, Rosetta and its primary distribution will have identical
 	version/release numbers, to help avoid public confusion as to which
@@ -535,7 +577,7 @@
 
 2004-08-06   Darren Duncan <perl@DarrenDuncan.net>
 
-	* Release 0.32.
+	* Rosetta Release 0.32.
 
 	* Updated external dependencies on Locale::KeyedText to v0.06 and on
 	SQL::SyntaxModel to v0.24.
@@ -632,7 +674,7 @@
 
 2004-07-05   Darren Duncan <perl@DarrenDuncan.net>
 
-	* Release 0.31.
+	* Rosetta Release 0.31.
 
 	* This is mainly a documentation update and file reorganizing release; there 
 	are no significant code changes.
@@ -666,7 +708,7 @@
 
 2004-04-10   Darren Duncan <perl@DarrenDuncan.net>
 
-	* Release 0.30.
+	* Rosetta Release 0.30.
 
 	* Made a change that would mainly affect those people making Rosetta
 	Engines, but not other users; I am now dictating one aspect of how every
@@ -698,7 +740,7 @@
 
 2004-03-25   Darren Duncan <perl@DarrenDuncan.net>
 
-	* Release 0.29.
+	* Rosetta Release 0.29.
 
 	* Updates in this release consist mainly of shunting some detail work out
 	of the 'Rosetta' distribution and towards the upcoming new
@@ -732,7 +774,7 @@
 
 2004-03-22   Darren Duncan <perl@DarrenDuncan.net>
 
-	* Release 0.28.
+	* Rosetta Release 0.28.
 
 	* There are 4 distributions being released simultaneously that all have the
 	same release number of 0.28; this is one of them.  They are:

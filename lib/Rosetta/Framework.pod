@@ -404,7 +404,7 @@ is made, it will be done later for the sake of better performance.
 =head1 BRIEF MODULE LIST
 
 The following module names and descriptions are undergoing a state of
-transition, mainly in the 'Extensions' arena.  See below for details.  Many of
+transition, mainly in the 'Engine' arena.  See below for details.  Many of
 these modules don't exist yet, but are being planned to exist, as they are
 implemented over time.
 
@@ -425,7 +425,10 @@ I<Any indented package names represent inner classes of what they are beneath.>
 	SQL::Routine::L::fr (Localization of SQL::Routine for French)
 	SQL::Routine::L::* ... like German, Spanish, Dutch, Chinese, etc
 
+	SQL::Routine::Details (Main structural and API documentation for SQL::Routine)
 	SQL::Routine::Language (What language or grammar SQL::Routine speaks)
+	SQL::Routine::EnumTypes (What enumerated types are part of SQL::Routine's language or grammar)
+	SQL::Routine::NodeTypes (What Node types are part of SQL::Routine's language or grammar)
 	SQL::Routine::API_C (Describe the API for a C version of SQL::Routine)
 
 =head2 In distribution "Rosetta"
@@ -439,6 +442,7 @@ I<Any indented package names represent inner classes of what they are beneath.>
 	Rosetta::L::fr (Localization of Rosetta core for French)
 	Rosetta::L::* ... like German, Spanish, Dutch, Chinese, etc
 
+	Rosetta::Details (Main structural and API documentation for Rosetta)
 	Rosetta::Features (What RNI features a Rosetta Engine can possibly implement)
 	Rosetta::Framework (Documentation on the Rosetta framework at large)
 
@@ -447,27 +451,16 @@ I<Any indented package names represent inner classes of what they are beneath.>
 	Rosetta::Validator::L::fr (Localization of Rosetta::Validator for French)
 	Rosetta::Validator::L::* ... like German, Spanish, Dutch, Chinese, etc
 
-=head2 In temporary distribution "Rosetta-Extensions"
+=head2 In distribution "SQL-Routine-SQLBuilder"
 
-During the short term, these following modules will have their first
-versions, both v0.01 and several later, released all as part of a single
-distribution, Extensions.  The idea here is to keep down the number of
-distributions that are always being released in tandem, because each saw major
-changes in each update round.  Once these are modestly stable I will probably
-split them up such as is seen in the other module blocks, below.
+	SQL::Routine::SQLBuilder (Generate ANSI/ISO SQL:2003 and other SQL variants)
 
-	Rosetta::Extensions (Reference implementations of fundamental Rosetta features)
-		(File is a small place-holder POD file to represent the distribution on CPAN)
-	Rosetta::Engine::Generic (A catch-all Engine for any DBI-supported SQL database)
-	Rosetta::Engine::Generic::L::en (Localization of Rosetta::Engine::Generic for English)
-	Rosetta::Utility::SQLBuilder (Generate ANSI/ISO SQL:2003 and other SQL variants)
-	Rosetta::Utility::SQLParser (Parse ANSI/ISO SQL:2003 and other SQL variants)
-	Rosetta::Emulator::DBI (emulates DBI/DBD::*, but result is more portable)
+=head2 In distribution "SQL-Routine-SQLParser"
+
+	SQL::Routine::SQLParser (Parse ANSI/ISO SQL:2003 and other SQL variants)
 
 =head2 In distribution "Rosetta-Utilities" or a multiplicity of similarly named
 
-	Rosetta::Utility::SQLBuilder (Generate ANSI/ISO SQL:2003 and other SQL variants)
-	Rosetta::Utility::SQLParser (Parse ANSI/ISO SQL:2003 and other SQL variants)
 	Rosetta::Utility::RWViews (convert IUD against views into IUD against tables)
 	Rosetta::Utility::* ... other non-core utility modules usable by several non-core distros
 
@@ -638,7 +631,7 @@ corresponding actions against the underlying tables that the view interfaces.
 
 =item
 
-B<Rosetta::Utility::SQLBuilder> - This is a utility class containing
+B<SQL::Routine::SQLBuilder> - This is a utility class containing
 common functionality for multiple Engines.  Given that a majority of commonly
 used RDBMS systems use SQL as their primary command language, this class will
 take care of translating RNI commands into SQL commands.  While a large part of
@@ -677,7 +670,7 @@ at the time of each Engine update, so mention of version ranges being supported
 or not is not applicable.  That said, given that SQLite recently went through a
 major revision that involves a file format change, where the current version
 can't read files of the older version, this class will temporarily embed both
-main versions, v3.1.5 and v2.8.16 (both of which are declared stable); the 2.x
+main versions, v3.2.0 and v2.8.16 (both of which are declared stable); the 2.x
 support is deprecated.
 
 =item
