@@ -5,7 +5,7 @@
 
 BEGIN { $| = 1; print "1..1\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use Rosetta 0.073;
+use Rosetta 0.08;
 $loaded = 1;
 print "ok 1\n";
 use strict;
@@ -34,28 +34,17 @@ sub message {
 	print "-- $detail\n";
 }
 
-sub vis {
-	my ($str) = @_;
-	$str =~ s/\n/\\n/g;  # make newlines visible
-	$str =~ s/\t/\\t/g;  # make tabs visible
-	return( $str );
-}
-
-sub serialize {
-	my ($input,$is_key) = @_;
-	return( join( '', 
-		ref($input) eq 'HASH' ? 
-			( '{ ', ( map { 
-				( serialize( $_, 1 ), serialize( $input->{$_} ) ) 
-			} sort keys %{$input} ), '}, ' ) 
-		: ref($input) eq 'ARRAY' ? 
-			( '[ ', ( map { 
-				( serialize( $_ ) ) 
-			} @{$input} ), '], ' ) 
-		: defined($input) ?
-			"'$input'".($is_key ? ' => ' : ', ')
-		: "undef".($is_key ? ' => ' : ', ')
-	) );
+sub error_to_string {
+	my ($message) = @_;
+	ref($message) or return( $message ); # if this isn't an object
+	my $translator = Locale::KeyedText->new_translator( 
+		['Rosetta::L::', 'SQL::SyntaxModel::L::'], ['en'] );
+	my $user_text = $translator->translate_message( $message );
+	unless( $user_text ) {
+		return( "internal error: can't find user text for a message: ".
+			$message->as_string()." ".$translator->as_string() );
+	}
+	return( $user_text );
 }
 
 ######################################################################

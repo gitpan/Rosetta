@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.11';
+$VERSION = '0.12';
 
 use Locale::KeyedText 0.02;
 
@@ -170,7 +170,7 @@ my %ENUMERATED_TYPES = (
 		ATOMIC FULLTEXT UNIQUE FOREIGN UFOREIGN
 	) },
 	'view_context' => { map { ($_ => 1) } qw(
-		SCHEMA APPLIC CURSOR INSIDE
+		SCHEMA APPLIC ROUTINE INSIDE
 	) },
 	'view_type' => { map { ($_ => 1) } qw(
 		MATCH SINGLE MULTIPLE COMPOUND SUBQUERY RECURSIVE
@@ -203,31 +203,34 @@ my %ENUMERATED_TYPES = (
 		ANONYMOUS PACKAGE TRIGGER PROCEDURE FUNCTION LOOP CONDITION
 	) },
 	'basic_stmt_type' => { map { ($_ => 1) } qw(
-		COMMAND SPROC UPROC ASSIG LOGIC
+		SPROC UPROC ASSIGN LOGIC
 	) },
 	'standard_proc' => { map { ($_ => 1) } qw(
+		RETURN 
+		CURSOR_OPEN CURSOR_CLOSE CURSOR_FETCH SELECT_INTO
+		INSERT UPDATE DELETE COMMIT ROLLBACK
+		ROUTINE THROW 
+		PLAIN THROW TRY CATCH IF ELSEIF ELSE SWITCH CASE OTHERWISE FOREACH 
+		FOR WHILE UNTIL MAP GREP REGEXP 
+	) },
+	'user_type' => { map { ($_ => 1) } qw(
+		ROOT SCHEMA_OWNER DATA_EDITOR ANONYMOUS
 	) },
 	'command_type' => { map { ($_ => 1) } qw(
-		DB_LIST DB_INFO DB_VERIFY DB_ATTACH DB_DETACH DB_PING 
+		DB_LIST DB_INFO DB_VERIFY DB_OPEN DB_CLOSE DB_ATTACH DB_DETACH DB_PING 
 		DB_CREATE DB_DELETE DB_CLONE DB_MOVE
-		USER_LIST USER_INFO USER_VERIFY
-		USER_CREATE USER_DELETE USER_CLONE USER_UPDATE USER_GRANT USER_REVOKE
 		TABLE_LIST TABLE_INFO TABLE_VERIFY
 		TABLE_CREATE TABLE_DELETE TABLE_CLONE TABLE_UPDATE
 		VIEW_LIST VIEW_INFO VIEW_VERIFY
 		VIEW_CREATE VIEW_DELETE VIEW_CLONE VIEW_UPDATE
 		ROUTINE_LIST ROUTINE_INFO ROUTINE_VERIFY 
 		ROUTINE_CREATE ROUTINE_DELETE ROUTINE_CLONE ROUTINE_UPDATE
+		USER_LIST USER_INFO USER_VERIFY
+		USER_CREATE USER_DELETE USER_CLONE USER_UPDATE USER_GRANT USER_REVOKE
 		REC_FETCH REC_VERIFY REC_INSERT REC_UPDATE 
 		REC_DELETE REC_REPLACE REC_CLONE REC_LOCK REC_UNLOCK
 		TRA_START TRA_COMMIT TRA_ROLLBACK
 		CALL_PROC CALL_FUNC
-	) },
-	'result_type' => { map { ($_ => 1) } qw(
-		ERROR CONN TRANS CURS REC VAR LIT
-	) },
-	'user_type' => { map { ($_ => 1) } qw(
-		ROOT SCHEMA_OWNER DATA_EDITOR ANONYMOUS
 	) },
 );
 
@@ -501,7 +504,8 @@ my %NODE_TYPES = (
 	},
 	'view' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id view_context view_type schema name routine p_view match_all_cols c_merge_type may_write 
+			id view_context view_type schema name application routine p_view 
+			match_all_cols c_merge_type may_write 
 		)],
 		$TPI_AT_LITERALS => {
 			'name' => 'cstr',
@@ -515,11 +519,11 @@ my %NODE_TYPES = (
 		},
 		$TPI_AT_NREFS => {
 			'schema' => 'schema',
+			'application' => 'application',
 			'routine' => 'routine',
 			'p_view' => 'view',
 		},
-		$TPI_P_NODE_ATNMS => [qw( schema routine p_view )],
-		$TPI_MA_LITERALS => {map { ($_ => 1) } qw( may_write )},
+		$TPI_P_NODE_ATNMS => [qw( schema application routine p_view )],
 		$TPI_MA_ENUMS => {map { ($_ => 1) } qw( view_context view_type )},
 	},
 	'view_arg' => {
@@ -653,7 +657,7 @@ my %NODE_TYPES = (
 			'p_expr' => 'view_expr',
 			'view' => 'view',
 			'view_col' => 'view_col',
-			'set_view_col' => 'view_col',
+			'set_view_col' => 'view_src_col',
 			'src_col' => 'view_src_col',
 			'match_col' => 'view_col',
 			'view_arg' => 'view_arg',
@@ -731,14 +735,10 @@ my %NODE_TYPES = (
 	},
 	'routine_stmt' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id routine stmt_type command command_arg dest_arg dest_var call_sproc call_uproc catalog_link c_routine 
+			id routine stmt_type dest_arg dest_var call_sproc call_uproc catalog_link c_routine c_view 
 		)],
-		$TPI_AT_LITERALS => {
-			'command_arg' => 'uint',
-		},
 		$TPI_AT_ENUMS => {
 			'stmt_type' => 'basic_stmt_type',
-			'command' => 'command_type',
 			'call_sproc' => 'standard_proc',
 		},
 		$TPI_AT_NREFS => {
@@ -748,6 +748,7 @@ my %NODE_TYPES = (
 			'call_uproc' => 'routine',
 			'catalog_link' => 'catalog_link',
 			'c_routine' => 'routine',
+			'c_view' => 'view',
 		},
 		$TPI_P_NODE_ATNMS => [qw( routine )],
 		$TPI_MA_ENUMS => {map { ($_ => 1) } qw( stmt_type )},
@@ -777,7 +778,26 @@ my %NODE_TYPES = (
 		$TPI_P_NODE_ATNMS => [qw( p_stmt p_expr )],
 		$TPI_MA_ENUMS => {map { ($_ => 1) } qw( expr_type )},
 	},
-	'database_product' => {
+	'command' => {
+		$TPI_AT_SEQUENCE => [qw( 
+			id application name command_type command_arg 
+		)],
+		$TPI_AT_LITERALS => {
+			'name' => 'cstr',
+			'command_arg' => 'uint',
+		},
+		$TPI_AT_ENUMS => {
+			'command_type' => 'command_type',
+		},
+		$TPI_AT_NREFS => {
+			'application' => 'application',
+		},
+		$TPI_P_NODE_ATNMS => [qw( application )],
+		$TPI_MA_LITERALS => {map { ($_ => 1) } qw( command_arg )},
+		$TPI_MA_ENUMS => {map { ($_ => 1) } qw( command_type )},
+		$TPI_MA_NREFS => {map { ($_ => 1) } qw( application )},
+	},
+	'data_storage_product' => {
 		$TPI_AT_SEQUENCE => [qw( 
 			id name product_code is_file_based is_local_proc is_network_svc
 		)],
@@ -791,9 +811,21 @@ my %NODE_TYPES = (
 		$TPI_P_PSEUDONODE => $SQLSM_L2_TOOL_PSND,
 		$TPI_MA_LITERALS => {map { ($_ => 1) } qw( product_code )},
 	},
+	'data_link_product' => {
+		$TPI_AT_SEQUENCE => [qw( 
+			id name product_code is_proxy
+		)],
+		$TPI_AT_LITERALS => {
+			'name' => 'cstr',
+			'product_code' => 'cstr',
+			'is_proxy' => 'bool',
+		},
+		$TPI_P_PSEUDONODE => $SQLSM_L2_TOOL_PSND,
+		$TPI_MA_LITERALS => {map { ($_ => 1) } qw( product_code )},
+	},
 	'catalog_instance' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id blueprint name product server_ip server_domain server_port file_path
+			id product blueprint name server_ip server_domain server_port file_path
 		)],
 		$TPI_AT_LITERALS => {
 			'name' => 'cstr',
@@ -803,11 +835,26 @@ my %NODE_TYPES = (
 			'file_path' => 'cstr',
 		},
 		$TPI_AT_NREFS => {
+			'product' => 'data_storage_product',
 			'blueprint' => 'catalog',
-			'product' => 'database_product',
 		},
 		$TPI_P_PSEUDONODE => $SQLSM_L2_SITE_PSND,
-		$TPI_MA_NREFS => {map { ($_ => 1) } qw( blueprint product )},
+		$TPI_MA_NREFS => {map { ($_ => 1) } qw( product blueprint )},
+	},
+	'catalog_instance_opt' => {
+		$TPI_AT_SEQUENCE => [qw( 
+			id catalog key value 
+		)],
+		$TPI_AT_LITERALS => {
+			'key' => 'cstr',
+			'value' => 'misc',
+		},
+		$TPI_AT_NREFS => {
+			'catalog' => 'catalog_instance',
+		},
+		$TPI_P_NODE_ATNMS => [qw( catalog )],
+		$TPI_MA_LITERALS => {map { ($_ => 1) } qw( key value )},
+		$TPI_MA_NREFS => {map { ($_ => 1) } qw( catalog )},
 	},
 	'application_instance' => {
 		$TPI_AT_SEQUENCE => [qw( 
@@ -824,19 +871,38 @@ my %NODE_TYPES = (
 	},
 	'catalog_link_instance' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id unrealized catalog application target local_dsn
+			id product p_link catalog application unrealized target local_dsn login_user login_pass
 		)],
 		$TPI_AT_LITERALS => {
 			'local_dsn' => 'cstr',
+			'login_user' => 'cstr',
+			'login_pass' => 'cstr',
 		},
 		$TPI_AT_NREFS => {
-			'unrealized' => 'catalog_link',
+			'product' => 'data_link_product',
+			'p_link' => 'catalog_link_instance',
 			'catalog' => 'catalog_instance',
 			'application' => 'application_instance',
+			'unrealized' => 'catalog_link',
 			'target' => 'catalog_instance',
 		},
-		$TPI_P_NODE_ATNMS => [qw( catalog application )],
-		$TPI_MA_NREFS => {map { ($_ => 1) } qw( unrealized target )},
+		$TPI_P_NODE_ATNMS => [qw( p_link catalog application )],
+		$TPI_MA_NREFS => {map { ($_ => 1) } qw( product )},
+	},
+	'catalog_link_instance_opt' => {
+		$TPI_AT_SEQUENCE => [qw( 
+			id link key value 
+		)],
+		$TPI_AT_LITERALS => {
+			'key' => 'cstr',
+			'value' => 'misc',
+		},
+		$TPI_AT_NREFS => {
+			'link' => 'catalog_link_instance',
+		},
+		$TPI_P_NODE_ATNMS => [qw( link )],
+		$TPI_MA_LITERALS => {map { ($_ => 1) } qw( key value )},
+		$TPI_MA_NREFS => {map { ($_ => 1) } qw( link )},
 	},
 	'user' => {
 		$TPI_AT_SEQUENCE => [qw( 
@@ -882,7 +948,7 @@ my %NODE_TYPES = (
 			'fragment' => 'cstr',
 		},
 		$TPI_AT_NREFS => {
-			'product' => 'database_product',
+			'product' => 'data_storage_product',
 		},
 		$TPI_P_PSEUDONODE => $SQLSM_L2_CIRC_PSND,
 	},
@@ -1107,7 +1173,7 @@ sub new {
 	my ($self) = @_;
 	my $model = bless( {}, $self->_get_static_const_model_class_name() );
 	$model->{$MPROP_CONTAINER} = bless( {}, $self->_get_static_const_container_class_name() );
-	$model->{$MPROP_CONTAINER}->_set_initial_container_props();
+	$model->{$MPROP_CONTAINER}->_initialize_properties();
 	return( $model );
 }
 
@@ -1967,13 +2033,13 @@ use base qw( SQL::SyntaxModel::_::Shared );
 
 ######################################################################
 
-sub _set_initial_container_props {
+sub _initialize_properties {
 	my ($container) = @_;
 	$container->{$CPROP_ALL_NODES} = { map { ($_ => {}) } keys %NODE_TYPES };
 	$container->{$CPROP_PSEUDONODES} = { map { ($_ => []) } @L2_PSEUDONODE_LIST };
 }
 
-sub _destroy_container_props {
+sub _destroy_properties {
 	my ($container) = @_;
 	foreach my $nodes_by_type (values %{$container->{$CPROP_ALL_NODES}}) {
 		foreach my $node (values %{$nodes_by_type}) {
@@ -1988,7 +2054,7 @@ sub _destroy_container_props {
 sub initialize {
 	my ($self) = @_;
 	$self->_destroy_container_props();
-	$self->_set_initial_container_props();
+	$self->_destroy_properties();
 }
 
 ######################################################################
@@ -2052,7 +2118,7 @@ use base qw( SQL::SyntaxModel::_::Shared );
 ######################################################################
 
 sub DESTROY {
-	$_[0]->{$MPROP_CONTAINER}->_destroy_container_props();
+	$_[0]->{$MPROP_CONTAINER}->_destroy_properties();
 }
 
 ######################################################################
@@ -2184,38 +2250,105 @@ give you a better idea what kind of information is stored in a SQL::SynaxModel:
 			</catalog>
 			<application id="1" name="Setup">
 				<catalog_link id="1" application="1" name="admin_link" target="1" />
-				<routine id="1" routine_type="ANONYMOUS" application="1" name="install_app_schema">
-					<routine_stmt id="1" routine="1" stmt_type="COMMAND" command="DB_CREATE" command_arg="1" />
-				</routine>
-				<routine id="2" routine_type="ANONYMOUS" application="1" name="remove_app_schema">
-					<routine_stmt id="2" routine="2" stmt_type="COMMAND" command="DB_DELETE" command_arg="1" />
-				</routine>
+				<command id="1" application="1" name="install_app_schema" command_type="DB_CREATE" command_arg="1" />
+				<command id="2" application="1" name="remove_app_schema" command_type="DB_DELETE" command_arg="1" />
 			</application>
 			<application id="2" name="People Watcher">
 				<catalog_link id="2" application="2" name="editor_link" target="1" />
-				<routine id="3" routine_type="ANONYMOUS" application="2" name="fetch_all_persons">
-					<view id="1" view_context="APPLIC" view_type="MATCH" routine="3" match_all_cols="1" may_write="1">
-						<view_src id="1" view="1" name="person" match_table="1" />
+				<routine id="1" routine_type="ANONYMOUS" application="2" name="fetch_all_persons" return_var_type="CURSOR">
+					<view id="2" view_context="ROUTINE" view_type="MATCH" routine="1" match_all_cols="1">
+						<view_src id="3" view="2" name="person" match_table="1" />
 					</view>
+					<routine_var id="4" routine="1" name="person_cursor" var_type="CURSOR" curs_view="2" />
+					<routine_stmt id="5" routine="1" stmt_type="SPROC" call_sproc="CURSOR_OPEN">
+						<routine_expr id="6" expr_type="VAR" p_stmt="5" src_var="4" />
+					</routine_stmt>
+					<routine_stmt id="7" routine="1" stmt_type="SPROC" call_sproc="RETURN">
+						<routine_expr id="8" expr_type="VAR" p_stmt="7" src_var="4" />
+					</routine_stmt>
 				</routine>
-				<routine id="4" routine_type="ANONYMOUS" application="2" name="insert_a_person" />
-				<routine id="5" routine_type="ANONYMOUS" application="2" name="update_a_person" />
-				<routine id="6" routine_type="ANONYMOUS" application="2" name="delete_a_person" />
+				<routine id="9" routine_type="ANONYMOUS" application="2" name="insert_a_person">
+					<routine_arg id="10" routine="9" name="arg_person_id" var_type="SCALAR" domain="1" />
+					<routine_arg id="11" routine="9" name="arg_person_name" var_type="SCALAR" domain="2" />
+					<routine_arg id="12" routine="9" name="arg_father_id" var_type="SCALAR" domain="1" />
+					<routine_arg id="13" routine="9" name="arg_mother_id" var_type="SCALAR" domain="1" />
+					<view id="14" view_context="ROUTINE" view_type="MATCH" routine="9">
+						<view_src id="15" view="14" name="person" match_table="1">
+							<view_src_col id="16" src="15" match_table_col="1" />
+							<view_src_col id="17" src="15" match_table_col="2" />
+							<view_src_col id="18" src="15" match_table_col="3" />
+							<view_src_col id="19" src="15" match_table_col="4" />
+						</view_src>
+						<view_expr id="20" expr_type="ARG" view="14" view_part="SET" set_view_col="16" routine_arg="10" />
+						<view_expr id="21" expr_type="ARG" view="14" view_part="SET" set_view_col="17" routine_arg="11" />
+						<view_expr id="22" expr_type="ARG" view="14" view_part="SET" set_view_col="18" routine_arg="12" />
+						<view_expr id="23" expr_type="ARG" view="14" view_part="SET" set_view_col="19" routine_arg="13" />
+					</view>
+					<routine_stmt id="24" routine="9" stmt_type="SPROC" call_sproc="INSERT" c_view="14" />
+				</routine>
+				<routine id="25" routine_type="ANONYMOUS" application="2" name="update_a_person">
+					<routine_arg id="26" routine="25" name="arg_person_id" var_type="SCALAR" domain="1" />
+					<routine_arg id="27" routine="25" name="arg_person_name" var_type="SCALAR" domain="2" />
+					<routine_arg id="28" routine="25" name="arg_father_id" var_type="SCALAR" domain="1" />
+					<routine_arg id="29" routine="25" name="arg_mother_id" var_type="SCALAR" domain="1" />
+					<view id="30" view_context="ROUTINE" view_type="MATCH" routine="25">
+						<view_src id="31" view="30" name="person" match_table="1">
+							<view_src_col id="32" src="31" match_table_col="1" />
+							<view_src_col id="33" src="31" match_table_col="2" />
+							<view_src_col id="34" src="31" match_table_col="3" />
+							<view_src_col id="35" src="31" match_table_col="4" />
+						</view_src>
+						<view_expr id="36" expr_type="ARG" view="30" view_part="SET" set_view_col="33" routine_arg="27" />
+						<view_expr id="37" expr_type="ARG" view="30" view_part="SET" set_view_col="34" routine_arg="28" />
+						<view_expr id="38" expr_type="ARG" view="30" view_part="SET" set_view_col="35" routine_arg="29" />
+						<view_expr id="39" expr_type="SFUNC" view="30" view_part="WHERE">
+							<view_expr id="40" expr_type="COL" p_expr="39" src_col="32" />
+							<view_expr id="41" expr_type="ARG" p_expr="39" routine_arg="26" />
+						</view_expr>
+					</view>
+					<routine_stmt id="42" routine="25" stmt_type="SPROC" call_sproc="UPDATE" c_view="30" />
+				</routine>
+				<routine id="43" routine_type="ANONYMOUS" application="2" name="delete_a_person">
+					<routine_arg id="44" routine="43" name="arg_person_id" var_type="SCALAR" domain="1" />
+					<view id="45" view_context="ROUTINE" view_type="MATCH" routine="43">
+						<view_src id="46" view="45" name="person" match_table="1">
+							<view_src_col id="47" src="46" match_table_col="1" />
+						</view_src>
+						<view_expr id="48" expr_type="SFUNC" view="45" view_part="WHERE">
+							<view_expr id="49" expr_type="COL" p_expr="48" src_col="47" />
+							<view_expr id="50" expr_type="ARG" p_expr="48" routine_arg="44" />
+						</view_expr>
+					</view>
+					<routine_stmt id="51" routine="43" stmt_type="SPROC" call_sproc="DELETE" c_view="45" />
+				</routine>
 			</application>
 		</blueprints>
 		<tools>
-			<database_product id="1" product_code="SQLite_2_8_12" is_file_based="1" />
-			<database_product id="2" product_code="Oracle_9_i" is_network_svc="1" />
+			<data_storage_product id="1" product_code="SQLite_2_8_12" is_file_based="1" />
+			<data_storage_product id="2" product_code="Oracle_9_i" is_network_svc="1" />
+			<data_link_product id="1" product_code="ODBC" />
 		</tools>
 		<sites>
-			<catalog_instance id="1" blueprint="1" name="test" product="1">
+			<catalog_instance id="1" product="1" blueprint="1" name="test">
 				<user id="1" catalog="1" user_type="SCHEMA_OWNER" match_owner="1" name="ronsealy" password="K34dsD" />
 				<user id="2" catalog="1" user_type="DATA_EDITOR" name="joesmith" password="fdsKJ4" />
 			</catalog_instance>
-			<catalog_instance id="2" blueprint="1" name="demo" product="2">
+			<application_instance id="1" blueprint="1" name="test Setup">
+				<catalog_link_instance id="1" product="1" application="1" unrealized="1" target="1" local_dsn="test" />
+			</application_instance>
+			<application_instance id="2" blueprint="2" name="test People Watcher">
+				<catalog_link_instance id="2" product="1" application="2" unrealized="2" target="1" local_dsn="test" />
+			</application_instance>
+			<catalog_instance id="2" product="2" blueprint="1" name="demo">
 				<user id="3" catalog="2" user_type="SCHEMA_OWNER" match_owner="1" name="florence" password="0sfs8G" />
 				<user id="4" catalog="2" user_type="DATA_EDITOR" name="thainuff" password="9340sd" />
 			</catalog_instance>
+			<application_instance id="3" blueprint="1" name="demo Setup">
+				<catalog_link_instance id="3" product="1" application="3" unrealized="1" target="2" local_dsn="demo" />
+			</application_instance>
+			<application_instance id="4" blueprint="2" name="demo People Watcher">
+				<catalog_link_instance id="4" product="1" application="4" unrealized="2" target="2" local_dsn="demo" />
+			</application_instance>
 		</sites>
 		<circumventions />
 	</root>
@@ -2394,9 +2527,10 @@ of, forming the top 2 levels of the Node tree, and can not be removed.  They
 are: 'root' (the single level-1 Node which is parent to the other pseudo-nodes
 but no normal Nodes), 'elements' (parent to 'domain' Nodes), 'blueprints'
 (parent to 'catalog' and 'application' Nodes), 'tools' (parent to
-'database_product' Nodes), 'sites' (parent to 'catalog_instance' and
-'application_instance' Nodes), and 'circumventions' (parent to 'sql_fragment'
-nodes).  All other Node types have normal Nodes as parents.
+'data_storage_product' and 'data_link_product' Nodes), 'sites' (parent to
+'catalog_instance' and 'application_instance' Nodes), and 'circumventions'
+(parent to 'sql_fragment' nodes).  All other Node types have normal Nodes as
+parents.
 
 You should look at the POD-only file named SQL::SyntaxModel::Language, which
 comes with this distribution.  It serves to document all of the possible Node
@@ -2585,34 +2719,40 @@ someone may want to make a wrapper module to do this?)
 
 =head1 CONSTRUCTOR FUNCTIONS AND METHODS
 
-These functions/methods are for creating new Container or Node objects.
+These functions/methods are for creating the various SQL::SyntaxModel objects
+(or, if they are appropriately subclassed, the will create objects of the
+subclasses instead).  They are all stateless and deterministic; you can invoke
+them with the same results under any circumstance and off of either this class
+itself or any other objects that this class makes.
 
 =head2 new()
 
 	my $model = SQL::SyntaxModel->new();
+	my $model = $model->new();
+	my $model = $node->new();
 
-This function creates a new SQL::SyntaxModel (or subclass) Model/Container
-object and returns it.
+This "getter" function/method will create and return a single Model/Container
+(or subclass) object.
 
 =head2 create_empty_node( NODE_TYPE )
 
+	my $node = SQL::SyntaxModel->create_empty_node( 'table' );
 	my $node = $model->create_empty_node( 'table' );
+	my $node = $node->create_empty_node( 'table' );
 
-This "getter" function/method will create and return a single Node object whose
-Node Type is given in the NODE_TYPE (enum) argument, and all of whose other
-properties are defaulted to an "empty" state.  A Node's type can only be set on
-instantiation and can not be changed afterwards; only specific values are
-allowed, which you can see in the SQL::SyntaxModel::Language documentation file.
-This new Node does not yet live in a Container, and will have to be put in one
-later before you can make full use of it.  However, you can read or set or
-clear any or all of this new Node's attributes (including the Node Id) prior to
-putting it in a Container, making it easy to build one piecemeal before it is
-actually "used".  A Node can not have any actual Perl references between it and
-other Nodes until it is in a Container, and as such you can delete it simply by
-letting your own reference to it be garbage collected. This function/method is
-stateless and deterministic; you can invoke it with the same results under any
-circumstance and off of either this class itself or any other objects that this
-class makes.
+This "getter" function/method will create and return a single Node (or
+subclass) object whose Node Type is given in the NODE_TYPE (enum) argument, and
+all of whose other properties are defaulted to an "empty" state.  A Node's type
+can only be set on instantiation and can not be changed afterwards; only
+specific values are allowed, which you can see in the
+SQL::SyntaxModel::Language documentation file.  This new Node does not yet live
+in a Container, and will have to be put in one later before you can make full
+use of it.  However, you can read or set or clear any or all of this new Node's
+attributes (including the Node Id) prior to putting it in a Container, making
+it easy to build one piecemeal before it is actually "used".  A Node can not
+have any actual Perl references between it and other Nodes until it is in a
+Container, and as such you can delete it simply by letting your own reference
+to it be garbage collected.
 
 =head1 CONTAINER OBJECT METHODS
 

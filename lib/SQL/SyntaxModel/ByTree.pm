@@ -11,9 +11,9 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.11';
+$VERSION = '0.111';
 
-use SQL::SyntaxModel 0.11;
+use SQL::SyntaxModel 0.12;
 
 ######################################################################
 
@@ -25,7 +25,7 @@ Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	SQL::SyntaxModel 0.11 (parent class)
+	SQL::SyntaxModel 0.12 (parent class)
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -409,6 +409,44 @@ current test script.
 		) ),
 	] } );
 
+	$schema->create_child_node_tree( { 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 2, 
+			'view_context' => 'SCHEMA', 'view_type' => 'MULTIPLE', 
+			'name' => 'person_with_parents', }, 'CHILDREN' => [ 
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 3, 'name' => 'self'  , 
+				'match_table' => 4, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 17, 'match_table_col' => 20, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 18, 'match_table_col' => 22, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 25, 'match_table_col' => 24, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 26, 'match_table_col' => 25, }, },
+		] },
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 4, 'name' => 'father', 
+				'match_table' => 4, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 19, 'match_table_col' => 20, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 20, 'match_table_col' => 22, }, },
+		] },
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 5, 'name' => 'mother', 
+				'match_table' => 4, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 21, 'match_table_col' => 20, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 22, 'match_table_col' => 22, }, },
+		] },
+		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
+			{ 'id' => 16, 'name' => 'self_id'    , 'domain' =>  9, 'src_col' => 17, },
+			{ 'id' => 17, 'name' => 'self_name'  , 'domain' => 24, 'src_col' => 18, },
+			{ 'id' => 18, 'name' => 'father_id'  , 'domain' =>  9, 'src_col' => 19, },
+			{ 'id' => 19, 'name' => 'father_name', 'domain' => 24, 'src_col' => 20, },
+			{ 'id' => 20, 'name' => 'mother_id'  , 'domain' =>  9, 'src_col' => 21, },
+			{ 'id' => 21, 'name' => 'mother_name', 'domain' => 24, 'src_col' => 22, },
+		) ),
+		{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'id' => 2, 'lhs_src' => 3, 
+				'rhs_src' => 4, 'join_type' => 'LEFT', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'id' => 2, 'lhs_src_col' => 25, 'rhs_src_col' => 19, } },
+		] },
+		{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'id' => 3, 'lhs_src' => 3, 
+				'rhs_src' => 5, 'join_type' => 'LEFT', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'id' => 3, 'lhs_src_col' => 26, 'rhs_src_col' => 21, } },
+		] },
+	] } );
+
 	$schema->create_child_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'id' => 1, 'name' => 'user_auth', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
@@ -461,6 +499,54 @@ current test script.
 		) ),
 	] } );
 
+	$schema->create_child_node_tree( { 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 1, 
+			'view_context' => 'SCHEMA', 'view_type' => 'MULTIPLE', 
+			'name' => 'user', }, 'CHILDREN' => [ 
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 1, 'name' => 'user_auth', 
+				'match_table' => 1, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  1, 'match_table_col' =>  1, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  2, 'match_table_col' =>  2, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  3, 'match_table_col' =>  3, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  4, 'match_table_col' =>  4, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  5, 'match_table_col' =>  5, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  6, 'match_table_col' =>  6, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  7, 'match_table_col' =>  7, }, },
+		] },
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 2, 'name' => 'user_profile', 
+				'match_table' => 2, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  8, 'match_table_col' =>  8, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  9, 'match_table_col' =>  9, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 10, 'match_table_col' => 10, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 11, 'match_table_col' => 11, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 12, 'match_table_col' => 12, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 13, 'match_table_col' => 13, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 14, 'match_table_col' => 14, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 15, 'match_table_col' => 15, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 16, 'match_table_col' => 16, }, },
+		] },
+		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
+			{ 'id' =>  1, 'name' => 'user_id'      , 'domain' =>  9, 'src_col' =>  1, },
+			{ 'id' =>  2, 'name' => 'login_name'   , 'domain' => 23, 'src_col' =>  2, },
+			{ 'id' =>  3, 'name' => 'login_pass'   , 'domain' => 23, 'src_col' =>  3, },
+			{ 'id' =>  4, 'name' => 'private_name' , 'domain' => 24, 'src_col' =>  4, },
+			{ 'id' =>  5, 'name' => 'private_email', 'domain' => 24, 'src_col' =>  5, },
+			{ 'id' =>  6, 'name' => 'may_login'    , 'domain' => 19, 'src_col' =>  6, },
+			{ 'id' =>  7, 'name' => 'max_sessions' , 'domain' =>  7, 'src_col' =>  7, },
+			{ 'id' =>  8, 'name' => 'public_name'  , 'domain' => 25, 'src_col' =>  9, },
+			{ 'id' =>  9, 'name' => 'public_email' , 'domain' => 25, 'src_col' => 10, },
+			{ 'id' => 10, 'name' => 'web_url'      , 'domain' => 25, 'src_col' => 11, },
+			{ 'id' => 11, 'name' => 'contact_net'  , 'domain' => 25, 'src_col' => 12, },
+			{ 'id' => 12, 'name' => 'contact_phy'  , 'domain' => 25, 'src_col' => 13, },
+			{ 'id' => 13, 'name' => 'bio'          , 'domain' => 25, 'src_col' => 14, },
+			{ 'id' => 14, 'name' => 'plan'         , 'domain' => 25, 'src_col' => 15, },
+			{ 'id' => 15, 'name' => 'comments'     , 'domain' => 25, 'src_col' => 16, },
+		) ),
+		{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'id' => 1, 'lhs_src' => 1, 
+				'rhs_src' => 2, 'join_type' => 'LEFT', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'id' => 1, 'lhs_src_col' => 1, 'rhs_src_col' => 8, } },
+		] },
+	] } );
+
 	$schema->create_child_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'id' => 3, 'name' => 'user_pref', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
@@ -483,205 +569,121 @@ current test script.
 
 	my $application = $model->create_node_tree( { 'NODE_TYPE' => 'application', 'ATTRS' => { 'id' => 1, }, } ); 
 
-	$application->create_child_node_tree( { 'NODE_TYPE' => 'routine', 
-			'ATTRS' => { 'id' => 4, 'routine_type' => 'ANONYMOUS', 'name' => 'person', }, 'CHILDREN' => [ 
-		{ 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 4, 'view_context' => 'APPLIC', 'view_type' => 'MATCH', 
-			'may_write' => 1, }, 'CHILDREN' => [ 
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 7, 'name' => 'person', 'match_table' => 4, }, },
-		] }
+	$application->create_child_node_tree( { 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 3, 
+			'view_context' => 'APPLIC', 'view_type' => 'SINGLE', 
+			'name' => 'user_theme', }, 'CHILDREN' => [ 
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 6, 'name' => 'user_pref', 
+			'match_table' => 3, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 23, 'match_table_col' => 18, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 24, 'match_table_col' => 19, }, },
+		] },
+		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
+			{ 'id' => 22, 'name' => 'theme_name' , 'domain' => 27, },
+			{ 'id' => 23, 'name' => 'theme_count', 'domain' =>  9, },
+		) ),
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'RESULT', 
+			'id' => 42, 'view_col' => 22, 'expr_type' => 'COL', 'src_col' => 24, }, },
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'RESULT', 
+			'id' => 43, 'view_col' => 23, 'expr_type' => 'SFUNC', 'sfunc' => 'GCOUNT', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'id' => 44, 'expr_type' => 'COL', 'src_col' => 24, }, },
+		] },
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'WHERE', 
+				'id' => 11, 'expr_type' => 'SFUNC', 'sfunc' => 'EQ', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'id' => 12, 'expr_type' => 'COL', 'src_col' => 23, }, },
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'id' => 13, 'expr_type' => 'LIT', 'lit_val' => 'theme', }, },
+		] },
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'GROUP', 
+			'id' => 14, 'expr_type' => 'COL', 'src_col' => 24, }, },
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'HAVING', 
+				'id' => 15, 'expr_type' => 'SFUNC', 'sfunc' => 'GT', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'id' => 16, 'expr_type' => 'SFUNC', 'sfunc' => 'GCOUNT', }, },
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'id' => 17, 'expr_type' => 'LIT', 'lit_val' => '1', }, },
+		] },
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
+			'id' => 55, 'expr_type' => 'MCOL', 'match_col' => 23, }, },
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
+			'id' => 56, 'expr_type' => 'MCOL', 'match_col' => 22, }, },
 	] } );
 
 	$application->create_child_node_tree( { 'NODE_TYPE' => 'routine', 
-			'ATTRS' => { 'id' => 2, 'routine_type' => 'ANONYMOUS', 'name' => 'person_with_parents', }, 'CHILDREN' => [ 
+			'ATTRS' => { 'id' => 1, 'routine_type' => 'ANONYMOUS', 'name' => 'get_user', }, 'CHILDREN' => [ 
+		{ 'NODE_TYPE' => 'routine_arg', 'ATTRS' => { 'id' => 1, 'name' => 'curr_uid', }, },
+		{ 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 5, 'view_context' => 'ROUTINE', 
+				'view_type' => 'MATCH', 'match_all_cols' => 1, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 8, 'name' => 'm', 'match_view' => 1, }, 
+					'CHILDREN' => [ 
+				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 30, 'match_view_col' => 1, }, },
+				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 31, 'match_view_col' => 2, }, },
+			] },
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'WHERE', 
+					'id' => 1, 'expr_type' => 'SFUNC', 'sfunc' => 'EQ', }, 'CHILDREN' => [ 
+				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+					'id' => 2, 'expr_type' => 'COL', 'src_col' => 30, }, },
+				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+					'id' => 3, 'expr_type' => 'VAR', 'routine_arg' => 1, }, },
+			] },
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
+				'id' => 51, 'expr_type' => 'COL', 'src_col' => 31, }, },
+		] },
+	] } );
+
+	$application->create_child_node_tree( { 'NODE_TYPE' => 'routine', 
+			'ATTRS' => { 'id' => 2, 'routine_type' => 'ANONYMOUS', 'name' => 'get_pwp', }, 'CHILDREN' => [ 
 		{ 'NODE_TYPE' => 'routine_arg', 'ATTRS' => { 'id' => 2, 'name' => 'srchw_fa', }, },
 		{ 'NODE_TYPE' => 'routine_arg', 'ATTRS' => { 'id' => 3, 'name' => 'srchw_mo', }, },
-		{ 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 2, 'view_context' => 'APPLIC', 'view_type' => 'MULTIPLE', 
-				'may_write' => 0, }, 'CHILDREN' => [ 
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 3, 'name' => 'self'  , 
-					'match_table' => 4, }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 17, 'match_table_col' => 20, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 18, 'match_table_col' => 22, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 25, 'match_table_col' => 24, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 26, 'match_table_col' => 25, }, },
+		{ 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 6, 'view_context' => 'ROUTINE', 
+				'view_type' => 'MATCH', 'match_all_cols' => 1, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 9, 'name' => 'm', 'match_view' => 2, }, 
+					'CHILDREN' => [ 
+				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 27, 'match_view_col' => 17, }, },
+				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 28, 'match_view_col' => 19, }, },
+				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 29, 'match_view_col' => 21, }, },
 			] },
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 4, 'name' => 'father', 
-					'match_table' => 4, }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 19, 'match_table_col' => 20, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 20, 'match_table_col' => 22, }, },
-			] },
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 5, 'name' => 'mother', 
-					'match_table' => 4, }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 21, 'match_table_col' => 20, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 22, 'match_table_col' => 22, }, },
-			] },
-			( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
-				{ 'id' => 16, 'name' => 'self_id'    , 'domain' =>  9, },
-				{ 'id' => 17, 'name' => 'self_name'  , 'domain' => 24, },
-				{ 'id' => 18, 'name' => 'father_id'  , 'domain' =>  9, },
-				{ 'id' => 19, 'name' => 'father_name', 'domain' => 24, },
-				{ 'id' => 20, 'name' => 'mother_id'  , 'domain' =>  9, },
-				{ 'id' => 21, 'name' => 'mother_name', 'domain' => 24, },
-			) ),
-			{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'id' => 2, 'lhs_src' => 3, 
-					'rhs_src' => 4, 'join_type' => 'LEFT', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'id' => 2, 'lhs_src_col' => 25, 'rhs_src_col' => 19, } },
-			] },
-			{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'id' => 3, 'lhs_src' => 3, 
-					'rhs_src' => 5, 'join_type' => 'LEFT', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'id' => 3, 'lhs_src_col' => 26, 'rhs_src_col' => 21, } },
-			] },
-			( map { { 'NODE_TYPE' => 'view_expr', 'ATTRS' => $_ } } (
-				{ 'view_part' => 'RESULT', 'id' => 36, 'view_col' => 16, 'expr_type' => 'COL', 'src_col' => 17, },
-				{ 'view_part' => 'RESULT', 'id' => 37, 'view_col' => 17, 'expr_type' => 'COL', 'src_col' => 18, },
-				{ 'view_part' => 'RESULT', 'id' => 38, 'view_col' => 18, 'expr_type' => 'COL', 'src_col' => 19, },
-				{ 'view_part' => 'RESULT', 'id' => 39, 'view_col' => 19, 'expr_type' => 'COL', 'src_col' => 20, },
-				{ 'view_part' => 'RESULT', 'id' => 40, 'view_col' => 20, 'expr_type' => 'COL', 'src_col' => 21, },
-				{ 'view_part' => 'RESULT', 'id' => 41, 'view_col' => 21, 'expr_type' => 'COL', 'src_col' => 22, },
-			) ),
 			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'WHERE', 
 					'id' => 4, 'expr_type' => 'SFUNC', 'sfunc' => 'AND', }, 'CHILDREN' => [ 
 				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
 						'id' => 5, 'expr_type' => 'SFUNC', 'sfunc' => 'LIKE', }, 'CHILDREN' => [ 
 					{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-						'id' => 6, 'expr_type' => 'COL', 'src_col' => 20, }, },
+						'id' => 6, 'expr_type' => 'COL', 'src_col' => 28, }, },
 					{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
 						'id' => 7, 'expr_type' => 'VAR', 'routine_arg' => 2, }, },
 				] },
 				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
 						'id' => 8, 'expr_type' => 'SFUNC', 'sfunc' => 'LIKE', }, 'CHILDREN' => [ 
 					{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-						'id' => 9, 'expr_type' => 'COL', 'src_col' => 22, }, },
+						'id' => 9, 'expr_type' => 'COL', 'src_col' => 29, }, },
 					{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
 						'id' => 10, 'expr_type' => 'VAR', 'routine_arg' => 3, }, },
 				] },
 			] },
 			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
-				'id' => 52, 'expr_type' => 'MCOL', 'match_col' => 17, }, },
+				'id' => 52, 'expr_type' => 'COL', 'src_col' => 27, }, },
 			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
-				'id' => 53, 'expr_type' => 'MCOL', 'match_col' => 19, }, },
+				'id' => 53, 'expr_type' => 'COL', 'src_col' => 28, }, },
 			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
-				'id' => 54, 'expr_type' => 'MCOL', 'match_col' => 21, }, },
+				'id' => 54, 'expr_type' => 'COL', 'src_col' => 29, }, },
 		] },
 	] } );
 
 	$application->create_child_node_tree( { 'NODE_TYPE' => 'routine', 
-			'ATTRS' => { 'id' => 1, 'routine_type' => 'ANONYMOUS', 'name' => 'user', }, 'CHILDREN' => [ 
-		{ 'NODE_TYPE' => 'routine_arg', 'ATTRS' => { 'id' => 1, 'name' => 'curr_uid', }, },
-		{ 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 1, 'view_context' => 'APPLIC', 'view_type' => 'MULTIPLE', 
-				'may_write' => 1, }, 'CHILDREN' => [ 
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 1, 'name' => 'user_auth', 
-					'match_table' => 1, }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  1, 'match_table_col' =>  1, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  2, 'match_table_col' =>  2, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  3, 'match_table_col' =>  3, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  4, 'match_table_col' =>  4, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  5, 'match_table_col' =>  5, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  6, 'match_table_col' =>  6, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  7, 'match_table_col' =>  7, }, },
-			] },
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 2, 'name' => 'user_profile', 
-					'match_table' => 2, }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  8, 'match_table_col' =>  8, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  9, 'match_table_col' =>  9, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 10, 'match_table_col' => 10, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 11, 'match_table_col' => 11, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 12, 'match_table_col' => 12, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 13, 'match_table_col' => 13, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 14, 'match_table_col' => 14, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 15, 'match_table_col' => 15, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 16, 'match_table_col' => 16, }, },
-			] },
-			( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
-				{ 'id' =>  1, 'name' => 'user_id'      , 'domain' =>  9, },
-				{ 'id' =>  2, 'name' => 'login_name'   , 'domain' => 23, },
-				{ 'id' =>  3, 'name' => 'login_pass'   , 'domain' => 23, },
-				{ 'id' =>  4, 'name' => 'private_name' , 'domain' => 24, },
-				{ 'id' =>  5, 'name' => 'private_email', 'domain' => 24, },
-				{ 'id' =>  6, 'name' => 'may_login'    , 'domain' => 19, },
-				{ 'id' =>  7, 'name' => 'max_sessions' , 'domain' =>  7, },
-				{ 'id' =>  8, 'name' => 'public_name'  , 'domain' => 25, },
-				{ 'id' =>  9, 'name' => 'public_email' , 'domain' => 25, },
-				{ 'id' => 10, 'name' => 'web_url'      , 'domain' => 25, },
-				{ 'id' => 11, 'name' => 'contact_net'  , 'domain' => 25, },
-				{ 'id' => 12, 'name' => 'contact_phy'  , 'domain' => 25, },
-				{ 'id' => 13, 'name' => 'bio'          , 'domain' => 25, },
-				{ 'id' => 14, 'name' => 'plan'         , 'domain' => 25, },
-				{ 'id' => 15, 'name' => 'comments'     , 'domain' => 25, },
-			) ),
-			{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'id' => 1, 'lhs_src' => 1, 
-					'rhs_src' => 2, 'join_type' => 'LEFT', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'id' => 1, 'lhs_src_col' => 1, 'rhs_src_col' => 8, } },
-			] },
-			( map { { 'NODE_TYPE' => 'view_expr', 'ATTRS' => $_ } } (
-				{ 'view_part' => 'RESULT', 'id' => 21, 'view_col' =>  1, 'expr_type' => 'COL', 'src_col' =>  1, },
-				{ 'view_part' => 'RESULT', 'id' => 22, 'view_col' =>  2, 'expr_type' => 'COL', 'src_col' =>  2, },
-				{ 'view_part' => 'RESULT', 'id' => 23, 'view_col' =>  3, 'expr_type' => 'COL', 'src_col' =>  3, },
-				{ 'view_part' => 'RESULT', 'id' => 24, 'view_col' =>  4, 'expr_type' => 'COL', 'src_col' =>  4, },
-				{ 'view_part' => 'RESULT', 'id' => 25, 'view_col' =>  5, 'expr_type' => 'COL', 'src_col' =>  5, },
-				{ 'view_part' => 'RESULT', 'id' => 26, 'view_col' =>  6, 'expr_type' => 'COL', 'src_col' =>  6, },
-				{ 'view_part' => 'RESULT', 'id' => 27, 'view_col' =>  7, 'expr_type' => 'COL', 'src_col' =>  7, },
-				{ 'view_part' => 'RESULT', 'id' => 28, 'view_col' =>  8, 'expr_type' => 'COL', 'src_col' =>  9, },
-				{ 'view_part' => 'RESULT', 'id' => 29, 'view_col' =>  9, 'expr_type' => 'COL', 'src_col' => 10, },
-				{ 'view_part' => 'RESULT', 'id' => 30, 'view_col' => 10, 'expr_type' => 'COL', 'src_col' => 11, },
-				{ 'view_part' => 'RESULT', 'id' => 31, 'view_col' => 11, 'expr_type' => 'COL', 'src_col' => 12, },
-				{ 'view_part' => 'RESULT', 'id' => 32, 'view_col' => 12, 'expr_type' => 'COL', 'src_col' => 13, },
-				{ 'view_part' => 'RESULT', 'id' => 33, 'view_col' => 13, 'expr_type' => 'COL', 'src_col' => 14, },
-				{ 'view_part' => 'RESULT', 'id' => 34, 'view_col' => 14, 'expr_type' => 'COL', 'src_col' => 15, },
-				{ 'view_part' => 'RESULT', 'id' => 35, 'view_col' => 15, 'expr_type' => 'COL', 'src_col' => 16, },
-			) ),
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'WHERE', 
-					'id' => 1, 'expr_type' => 'SFUNC', 'sfunc' => 'EQ', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-					'id' => 2, 'expr_type' => 'COL', 'src_col' => 1, }, },
-				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-					'id' => 3, 'expr_type' => 'VAR', 'routine_arg' => 1, }, },
-			] },
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
-				'id' => 51, 'expr_type' => 'MCOL', 'match_col' => 2, }, },
+			'ATTRS' => { 'id' => 3, 'routine_type' => 'ANONYMOUS', 'name' => 'get_theme', }, 'CHILDREN' => [ 
+		{ 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 7, 'view_context' => 'ROUTINE', 
+				'view_type' => 'MATCH', 'match_all_cols' => 1, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 10, 'name' => 'm', 'match_view' => 3, }, },
 		] },
 	] } );
 
 	$application->create_child_node_tree( { 'NODE_TYPE' => 'routine', 
-			'ATTRS' => { 'id' => 3, 'routine_type' => 'ANONYMOUS', 'name' => 'user_theme', }, 'CHILDREN' => [ 
-		{ 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 3, 'view_context' => 'APPLIC', 'view_type' => 'SINGLE', 
-				'may_write' => 0, }, 'CHILDREN' => [ 
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 6, 'name' => 'user_pref', 
-				'match_table' => 3, }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 23, 'match_table_col' => 18, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 24, 'match_table_col' => 19, }, },
-			] },
-			( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
-				{ 'id' => 22, 'name' => 'theme_name' , 'domain' => 27, },
-				{ 'id' => 23, 'name' => 'theme_count', 'domain' =>  9, },
-			) ),
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'RESULT', 
-				'id' => 42, 'view_col' => 22, 'expr_type' => 'COL', 'src_col' => 24, }, },
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'RESULT', 
-				'id' => 43, 'view_col' => 23, 'expr_type' => 'SFUNC', 'sfunc' => 'GCOUNT', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-					'id' => 44, 'expr_type' => 'COL', 'src_col' => 24, }, },
-			] },
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'WHERE', 
-					'id' => 11, 'expr_type' => 'SFUNC', 'sfunc' => 'EQ', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-					'id' => 12, 'expr_type' => 'COL', 'src_col' => 23, }, },
-				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-					'id' => 13, 'expr_type' => 'LIT', 'lit_val' => 'theme', }, },
-			] },
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'GROUP', 
-				'id' => 14, 'expr_type' => 'COL', 'src_col' => 24, }, },
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'HAVING', 
-					'id' => 15, 'expr_type' => 'SFUNC', 'sfunc' => 'GT', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-					'id' => 16, 'expr_type' => 'SFUNC', 'sfunc' => 'GCOUNT', }, },
-				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-					'id' => 17, 'expr_type' => 'LIT', 'lit_val' => '1', }, },
-			] },
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
-				'id' => 55, 'expr_type' => 'MCOL', 'match_col' => 23, }, },
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
-				'id' => 56, 'expr_type' => 'MCOL', 'match_col' => 22, }, },
-		] },
+			'ATTRS' => { 'id' => 4, 'routine_type' => 'ANONYMOUS', 'name' => 'get_person', }, 'CHILDREN' => [ 
+		{ 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 4, 'view_context' => 'ROUTINE', 'view_type' => 'MATCH', 
+				'match_all_cols' => 1, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 7, 'name' => 'person', 'match_table' => 4, }, },
+		] }
 	] } );
 
 	print $model->get_all_properties_as_xml_str();

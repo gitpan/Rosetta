@@ -1,3 +1,50 @@
+2004-02-23   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.24.
+
+	* Made a design simplification in Language.pod (and SyntaxModel.pm, which
+	is now v0.12) that makes my short term development process easier, and
+	makes SQL::SyntaxModel / Rosetta easier to adapt.  For the present,
+	"routines" may only do DML-type actions, whether implemented on the
+	database side or the application side.  The pre-existing but poorly used
+	"commands" are now formally separate from "routines"; "commands" are
+	pseudo-routines that handle the DDL functions for now, plus database
+	"connect"/"disconnect", and they may only be run on the application side. 
+	Other design improvements were made as well, such as adding "instance
+	options", and splitting 'database product' into 'data [storage/link]
+	product'.  Other small fixes in SyntaxModel.pm included some method
+	documentation updates.
+
+	* Fleshed out the example code in t_SQL_SyntaxModel.pm so that it is now
+	correct/realistic and inline with the Language.pod improvements; the
+	SYNOPSIS POD in SyntaxModel.pm was correspondingly updated.
+
+	* The example Nodes lists in Language.pod that pertained to views, and the
+	corresponding test/example code in t_SQL_SyntaxModel_ByTree.pm, was
+	simplified in places so that fewer Nodes were necessary to express the same
+	concepts.  Corresponding ByTree.pm (now v0.111) CONTRIVED EXAMPLE update.
+
+	* Minor data update in SkipID.pm (now v0.111).
+
+	* Some updates in Framework.pod.  One of the most significant is that the
+	"module group" called "Engine" has been re-named to "Interface" and the
+	group named "Driver" has been re-named to "Engine".  The Rosetta core now
+	has just 2 inner classes, which are "Rosetta::_::Interface" and
+	"Rosetta::_::Engine"; the first is all that applications talk to, and the
+	second is a mandatory super-class for all prospective Engine plug-in
+	modules.  The SYNOPSIS section was moved to the end of the file and 
+	renamed to OLDER EXAMPLE PROGRAM.  Also renamed the EXPANDED MODULE LIST 
+	docs to OLDER DOCUMENTATION.  The module's NAME was changed, and a few other 
+	changes were made.
+
+	* Began first major implementation of Rosetta.pm, bringing it up to version
+	0.08 from 0.073; both the code and documentation were almost entirely
+	re-written.  The new version isn't functionally complete yet, but it does
+	have complete property declarations, a few functions, and a fully written
+	SYNOPSIS, a full DESCRIPTION, a partial SYNTAX and STRUCTURE.  The NAME,
+	DEPENDENCIES, COPYRIGHT, SEE ALSO are unchanged or mostly unchanged from
+	before.  It is not tested aside from that it compiles.
+
 2004-02-12   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.23.

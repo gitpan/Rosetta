@@ -7,7 +7,7 @@ BEGIN { $| = 1; print "1..5\n"; }
 END {print "not ok 1\n" unless $loaded;}
 use t_SQL_SyntaxModel;
 use t_SQL_SyntaxModel_ByTree;
-use SQL::SyntaxModel::ByTree 0.11;
+use SQL::SyntaxModel::ByTree 0.111;
 use SQL::SyntaxModel::ByTree::L::en 0.02;
 $loaded = 1;
 print "ok 1\n";

@@ -11,9 +11,9 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.11';
+$VERSION = '0.111';
 
-use SQL::SyntaxModel::ByTree 0.11;
+use SQL::SyntaxModel::ByTree 0.111;
 
 ######################################################################
 
@@ -25,7 +25,7 @@ Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	SQL::SyntaxModel::ByTree 0.11 (parent class)
+	SQL::SyntaxModel::ByTree 0.111 (parent class)
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -171,7 +171,6 @@ my %NODE_TYPES_EXTRA_DETAILS = (
 		'attr_defaults' => {
 			'view_context' => ['lit','SCHEMA'],
 			'view_type' => ['lit','MULTIPLE'],
-			'may_write' => ['lit',0],
 		},
 	},
 	'view_src' => {

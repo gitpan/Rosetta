@@ -85,6 +85,44 @@ sub create_and_populate_model {
 		) ),
 	] } );
 
+	$schema->create_child_node_tree( { 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 2, 
+			'view_context' => 'SCHEMA', 'view_type' => 'MULTIPLE', 
+			'name' => 'person_with_parents', }, 'CHILDREN' => [ 
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 3, 'name' => 'self'  , 
+				'match_table' => 4, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 17, 'match_table_col' => 20, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 18, 'match_table_col' => 22, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 25, 'match_table_col' => 24, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 26, 'match_table_col' => 25, }, },
+		] },
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 4, 'name' => 'father', 
+				'match_table' => 4, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 19, 'match_table_col' => 20, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 20, 'match_table_col' => 22, }, },
+		] },
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 5, 'name' => 'mother', 
+				'match_table' => 4, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 21, 'match_table_col' => 20, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 22, 'match_table_col' => 22, }, },
+		] },
+		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
+			{ 'id' => 16, 'name' => 'self_id'    , 'domain' =>  9, 'src_col' => 17, },
+			{ 'id' => 17, 'name' => 'self_name'  , 'domain' => 24, 'src_col' => 18, },
+			{ 'id' => 18, 'name' => 'father_id'  , 'domain' =>  9, 'src_col' => 19, },
+			{ 'id' => 19, 'name' => 'father_name', 'domain' => 24, 'src_col' => 20, },
+			{ 'id' => 20, 'name' => 'mother_id'  , 'domain' =>  9, 'src_col' => 21, },
+			{ 'id' => 21, 'name' => 'mother_name', 'domain' => 24, 'src_col' => 22, },
+		) ),
+		{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'id' => 2, 'lhs_src' => 3, 
+				'rhs_src' => 4, 'join_type' => 'LEFT', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'id' => 2, 'lhs_src_col' => 25, 'rhs_src_col' => 19, } },
+		] },
+		{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'id' => 3, 'lhs_src' => 3, 
+				'rhs_src' => 5, 'join_type' => 'LEFT', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'id' => 3, 'lhs_src_col' => 26, 'rhs_src_col' => 21, } },
+		] },
+	] } );
+
 	$schema->create_child_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'id' => 1, 'name' => 'user_auth', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
@@ -137,6 +175,54 @@ sub create_and_populate_model {
 		) ),
 	] } );
 
+	$schema->create_child_node_tree( { 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 1, 
+			'view_context' => 'SCHEMA', 'view_type' => 'MULTIPLE', 
+			'name' => 'user', }, 'CHILDREN' => [ 
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 1, 'name' => 'user_auth', 
+				'match_table' => 1, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  1, 'match_table_col' =>  1, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  2, 'match_table_col' =>  2, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  3, 'match_table_col' =>  3, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  4, 'match_table_col' =>  4, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  5, 'match_table_col' =>  5, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  6, 'match_table_col' =>  6, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  7, 'match_table_col' =>  7, }, },
+		] },
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 2, 'name' => 'user_profile', 
+				'match_table' => 2, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  8, 'match_table_col' =>  8, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  9, 'match_table_col' =>  9, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 10, 'match_table_col' => 10, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 11, 'match_table_col' => 11, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 12, 'match_table_col' => 12, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 13, 'match_table_col' => 13, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 14, 'match_table_col' => 14, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 15, 'match_table_col' => 15, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 16, 'match_table_col' => 16, }, },
+		] },
+		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
+			{ 'id' =>  1, 'name' => 'user_id'      , 'domain' =>  9, 'src_col' =>  1, },
+			{ 'id' =>  2, 'name' => 'login_name'   , 'domain' => 23, 'src_col' =>  2, },
+			{ 'id' =>  3, 'name' => 'login_pass'   , 'domain' => 23, 'src_col' =>  3, },
+			{ 'id' =>  4, 'name' => 'private_name' , 'domain' => 24, 'src_col' =>  4, },
+			{ 'id' =>  5, 'name' => 'private_email', 'domain' => 24, 'src_col' =>  5, },
+			{ 'id' =>  6, 'name' => 'may_login'    , 'domain' => 19, 'src_col' =>  6, },
+			{ 'id' =>  7, 'name' => 'max_sessions' , 'domain' =>  7, 'src_col' =>  7, },
+			{ 'id' =>  8, 'name' => 'public_name'  , 'domain' => 25, 'src_col' =>  9, },
+			{ 'id' =>  9, 'name' => 'public_email' , 'domain' => 25, 'src_col' => 10, },
+			{ 'id' => 10, 'name' => 'web_url'      , 'domain' => 25, 'src_col' => 11, },
+			{ 'id' => 11, 'name' => 'contact_net'  , 'domain' => 25, 'src_col' => 12, },
+			{ 'id' => 12, 'name' => 'contact_phy'  , 'domain' => 25, 'src_col' => 13, },
+			{ 'id' => 13, 'name' => 'bio'          , 'domain' => 25, 'src_col' => 14, },
+			{ 'id' => 14, 'name' => 'plan'         , 'domain' => 25, 'src_col' => 15, },
+			{ 'id' => 15, 'name' => 'comments'     , 'domain' => 25, 'src_col' => 16, },
+		) ),
+		{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'id' => 1, 'lhs_src' => 1, 
+				'rhs_src' => 2, 'join_type' => 'LEFT', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'id' => 1, 'lhs_src_col' => 1, 'rhs_src_col' => 8, } },
+		] },
+	] } );
+
 	$schema->create_child_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'id' => 3, 'name' => 'user_pref', }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
@@ -159,205 +245,121 @@ sub create_and_populate_model {
 
 	my $application = $model->create_node_tree( { 'NODE_TYPE' => 'application', 'ATTRS' => { 'id' => 1, }, } ); 
 
-	$application->create_child_node_tree( { 'NODE_TYPE' => 'routine', 
-			'ATTRS' => { 'id' => 4, 'routine_type' => 'ANONYMOUS', 'name' => 'person', }, 'CHILDREN' => [ 
-		{ 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 4, 'view_context' => 'APPLIC', 'view_type' => 'MATCH', 
-			'may_write' => 1, }, 'CHILDREN' => [ 
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 7, 'name' => 'person', 'match_table' => 4, }, },
-		] }
+	$application->create_child_node_tree( { 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 3, 
+			'view_context' => 'APPLIC', 'view_type' => 'SINGLE', 
+			'name' => 'user_theme', }, 'CHILDREN' => [ 
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 6, 'name' => 'user_pref', 
+			'match_table' => 3, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 23, 'match_table_col' => 18, }, },
+			{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 24, 'match_table_col' => 19, }, },
+		] },
+		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
+			{ 'id' => 22, 'name' => 'theme_name' , 'domain' => 27, },
+			{ 'id' => 23, 'name' => 'theme_count', 'domain' =>  9, },
+		) ),
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'RESULT', 
+			'id' => 42, 'view_col' => 22, 'expr_type' => 'COL', 'src_col' => 24, }, },
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'RESULT', 
+			'id' => 43, 'view_col' => 23, 'expr_type' => 'SFUNC', 'sfunc' => 'GCOUNT', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'id' => 44, 'expr_type' => 'COL', 'src_col' => 24, }, },
+		] },
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'WHERE', 
+				'id' => 11, 'expr_type' => 'SFUNC', 'sfunc' => 'EQ', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'id' => 12, 'expr_type' => 'COL', 'src_col' => 23, }, },
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'id' => 13, 'expr_type' => 'LIT', 'lit_val' => 'theme', }, },
+		] },
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'GROUP', 
+			'id' => 14, 'expr_type' => 'COL', 'src_col' => 24, }, },
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'HAVING', 
+				'id' => 15, 'expr_type' => 'SFUNC', 'sfunc' => 'GT', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'id' => 16, 'expr_type' => 'SFUNC', 'sfunc' => 'GCOUNT', }, },
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'id' => 17, 'expr_type' => 'LIT', 'lit_val' => '1', }, },
+		] },
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
+			'id' => 55, 'expr_type' => 'MCOL', 'match_col' => 23, }, },
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
+			'id' => 56, 'expr_type' => 'MCOL', 'match_col' => 22, }, },
 	] } );
 
 	$application->create_child_node_tree( { 'NODE_TYPE' => 'routine', 
-			'ATTRS' => { 'id' => 2, 'routine_type' => 'ANONYMOUS', 'name' => 'person_with_parents', }, 'CHILDREN' => [ 
+			'ATTRS' => { 'id' => 1, 'routine_type' => 'ANONYMOUS', 'name' => 'get_user', }, 'CHILDREN' => [ 
+		{ 'NODE_TYPE' => 'routine_arg', 'ATTRS' => { 'id' => 1, 'name' => 'curr_uid', }, },
+		{ 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 5, 'view_context' => 'ROUTINE', 
+				'view_type' => 'MATCH', 'match_all_cols' => 1, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 8, 'name' => 'm', 'match_view' => 1, }, 
+					'CHILDREN' => [ 
+				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 30, 'match_view_col' => 1, }, },
+				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 31, 'match_view_col' => 2, }, },
+			] },
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'WHERE', 
+					'id' => 1, 'expr_type' => 'SFUNC', 'sfunc' => 'EQ', }, 'CHILDREN' => [ 
+				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+					'id' => 2, 'expr_type' => 'COL', 'src_col' => 30, }, },
+				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+					'id' => 3, 'expr_type' => 'ARG', 'routine_arg' => 1, }, },
+			] },
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
+				'id' => 51, 'expr_type' => 'COL', 'src_col' => 31, }, },
+		] },
+	] } );
+
+	$application->create_child_node_tree( { 'NODE_TYPE' => 'routine', 
+			'ATTRS' => { 'id' => 2, 'routine_type' => 'ANONYMOUS', 'name' => 'get_pwp', }, 'CHILDREN' => [ 
 		{ 'NODE_TYPE' => 'routine_arg', 'ATTRS' => { 'id' => 2, 'name' => 'srchw_fa', }, },
 		{ 'NODE_TYPE' => 'routine_arg', 'ATTRS' => { 'id' => 3, 'name' => 'srchw_mo', }, },
-		{ 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 2, 'view_context' => 'APPLIC', 'view_type' => 'MULTIPLE', 
-				'may_write' => 0, }, 'CHILDREN' => [ 
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 3, 'name' => 'self'  , 
-					'match_table' => 4, }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 17, 'match_table_col' => 20, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 18, 'match_table_col' => 22, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 25, 'match_table_col' => 24, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 26, 'match_table_col' => 25, }, },
+		{ 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 6, 'view_context' => 'ROUTINE', 
+				'view_type' => 'MATCH', 'match_all_cols' => 1, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 9, 'name' => 'm', 'match_view' => 2, }, 
+					'CHILDREN' => [ 
+				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 27, 'match_view_col' => 17, }, },
+				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 28, 'match_view_col' => 19, }, },
+				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 29, 'match_view_col' => 21, }, },
 			] },
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 4, 'name' => 'father', 
-					'match_table' => 4, }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 19, 'match_table_col' => 20, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 20, 'match_table_col' => 22, }, },
-			] },
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 5, 'name' => 'mother', 
-					'match_table' => 4, }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 21, 'match_table_col' => 20, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 22, 'match_table_col' => 22, }, },
-			] },
-			( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
-				{ 'id' => 16, 'name' => 'self_id'    , 'domain' =>  9, },
-				{ 'id' => 17, 'name' => 'self_name'  , 'domain' => 24, },
-				{ 'id' => 18, 'name' => 'father_id'  , 'domain' =>  9, },
-				{ 'id' => 19, 'name' => 'father_name', 'domain' => 24, },
-				{ 'id' => 20, 'name' => 'mother_id'  , 'domain' =>  9, },
-				{ 'id' => 21, 'name' => 'mother_name', 'domain' => 24, },
-			) ),
-			{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'id' => 2, 'lhs_src' => 3, 
-					'rhs_src' => 4, 'join_type' => 'LEFT', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'id' => 2, 'lhs_src_col' => 25, 'rhs_src_col' => 19, } },
-			] },
-			{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'id' => 3, 'lhs_src' => 3, 
-					'rhs_src' => 5, 'join_type' => 'LEFT', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'id' => 3, 'lhs_src_col' => 26, 'rhs_src_col' => 21, } },
-			] },
-			( map { { 'NODE_TYPE' => 'view_expr', 'ATTRS' => $_ } } (
-				{ 'view_part' => 'RESULT', 'id' => 36, 'view_col' => 16, 'expr_type' => 'COL', 'src_col' => 17, },
-				{ 'view_part' => 'RESULT', 'id' => 37, 'view_col' => 17, 'expr_type' => 'COL', 'src_col' => 18, },
-				{ 'view_part' => 'RESULT', 'id' => 38, 'view_col' => 18, 'expr_type' => 'COL', 'src_col' => 19, },
-				{ 'view_part' => 'RESULT', 'id' => 39, 'view_col' => 19, 'expr_type' => 'COL', 'src_col' => 20, },
-				{ 'view_part' => 'RESULT', 'id' => 40, 'view_col' => 20, 'expr_type' => 'COL', 'src_col' => 21, },
-				{ 'view_part' => 'RESULT', 'id' => 41, 'view_col' => 21, 'expr_type' => 'COL', 'src_col' => 22, },
-			) ),
 			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'WHERE', 
 					'id' => 4, 'expr_type' => 'SFUNC', 'sfunc' => 'AND', }, 'CHILDREN' => [ 
 				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
 						'id' => 5, 'expr_type' => 'SFUNC', 'sfunc' => 'LIKE', }, 'CHILDREN' => [ 
 					{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-						'id' => 6, 'expr_type' => 'COL', 'src_col' => 20, }, },
+						'id' => 6, 'expr_type' => 'COL', 'src_col' => 28, }, },
 					{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-						'id' => 7, 'expr_type' => 'VAR', 'routine_arg' => 2, }, },
+						'id' => 7, 'expr_type' => 'ARG', 'routine_arg' => 2, }, },
 				] },
 				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
 						'id' => 8, 'expr_type' => 'SFUNC', 'sfunc' => 'LIKE', }, 'CHILDREN' => [ 
 					{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-						'id' => 9, 'expr_type' => 'COL', 'src_col' => 22, }, },
+						'id' => 9, 'expr_type' => 'COL', 'src_col' => 29, }, },
 					{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-						'id' => 10, 'expr_type' => 'VAR', 'routine_arg' => 3, }, },
+						'id' => 10, 'expr_type' => 'ARG', 'routine_arg' => 3, }, },
 				] },
 			] },
 			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
-				'id' => 52, 'expr_type' => 'MCOL', 'match_col' => 17, }, },
+				'id' => 52, 'expr_type' => 'COL', 'src_col' => 27, }, },
 			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
-				'id' => 53, 'expr_type' => 'MCOL', 'match_col' => 19, }, },
+				'id' => 53, 'expr_type' => 'COL', 'src_col' => 28, }, },
 			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
-				'id' => 54, 'expr_type' => 'MCOL', 'match_col' => 21, }, },
+				'id' => 54, 'expr_type' => 'COL', 'src_col' => 29, }, },
 		] },
 	] } );
 
 	$application->create_child_node_tree( { 'NODE_TYPE' => 'routine', 
-			'ATTRS' => { 'id' => 1, 'routine_type' => 'ANONYMOUS', 'name' => 'user', }, 'CHILDREN' => [ 
-		{ 'NODE_TYPE' => 'routine_arg', 'ATTRS' => { 'id' => 1, 'name' => 'curr_uid', }, },
-		{ 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 1, 'view_context' => 'APPLIC', 'view_type' => 'MULTIPLE', 
-				'may_write' => 1, }, 'CHILDREN' => [ 
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 1, 'name' => 'user_auth', 
-					'match_table' => 1, }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  1, 'match_table_col' =>  1, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  2, 'match_table_col' =>  2, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  3, 'match_table_col' =>  3, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  4, 'match_table_col' =>  4, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  5, 'match_table_col' =>  5, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  6, 'match_table_col' =>  6, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  7, 'match_table_col' =>  7, }, },
-			] },
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 2, 'name' => 'user_profile', 
-					'match_table' => 2, }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  8, 'match_table_col' =>  8, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' =>  9, 'match_table_col' =>  9, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 10, 'match_table_col' => 10, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 11, 'match_table_col' => 11, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 12, 'match_table_col' => 12, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 13, 'match_table_col' => 13, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 14, 'match_table_col' => 14, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 15, 'match_table_col' => 15, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 16, 'match_table_col' => 16, }, },
-			] },
-			( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
-				{ 'id' =>  1, 'name' => 'user_id'      , 'domain' =>  9, },
-				{ 'id' =>  2, 'name' => 'login_name'   , 'domain' => 23, },
-				{ 'id' =>  3, 'name' => 'login_pass'   , 'domain' => 23, },
-				{ 'id' =>  4, 'name' => 'private_name' , 'domain' => 24, },
-				{ 'id' =>  5, 'name' => 'private_email', 'domain' => 24, },
-				{ 'id' =>  6, 'name' => 'may_login'    , 'domain' => 19, },
-				{ 'id' =>  7, 'name' => 'max_sessions' , 'domain' =>  7, },
-				{ 'id' =>  8, 'name' => 'public_name'  , 'domain' => 25, },
-				{ 'id' =>  9, 'name' => 'public_email' , 'domain' => 25, },
-				{ 'id' => 10, 'name' => 'web_url'      , 'domain' => 25, },
-				{ 'id' => 11, 'name' => 'contact_net'  , 'domain' => 25, },
-				{ 'id' => 12, 'name' => 'contact_phy'  , 'domain' => 25, },
-				{ 'id' => 13, 'name' => 'bio'          , 'domain' => 25, },
-				{ 'id' => 14, 'name' => 'plan'         , 'domain' => 25, },
-				{ 'id' => 15, 'name' => 'comments'     , 'domain' => 25, },
-			) ),
-			{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'id' => 1, 'lhs_src' => 1, 
-					'rhs_src' => 2, 'join_type' => 'LEFT', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'id' => 1, 'lhs_src_col' => 1, 'rhs_src_col' => 8, } },
-			] },
-			( map { { 'NODE_TYPE' => 'view_expr', 'ATTRS' => $_ } } (
-				{ 'view_part' => 'RESULT', 'id' => 21, 'view_col' =>  1, 'expr_type' => 'COL', 'src_col' =>  1, },
-				{ 'view_part' => 'RESULT', 'id' => 22, 'view_col' =>  2, 'expr_type' => 'COL', 'src_col' =>  2, },
-				{ 'view_part' => 'RESULT', 'id' => 23, 'view_col' =>  3, 'expr_type' => 'COL', 'src_col' =>  3, },
-				{ 'view_part' => 'RESULT', 'id' => 24, 'view_col' =>  4, 'expr_type' => 'COL', 'src_col' =>  4, },
-				{ 'view_part' => 'RESULT', 'id' => 25, 'view_col' =>  5, 'expr_type' => 'COL', 'src_col' =>  5, },
-				{ 'view_part' => 'RESULT', 'id' => 26, 'view_col' =>  6, 'expr_type' => 'COL', 'src_col' =>  6, },
-				{ 'view_part' => 'RESULT', 'id' => 27, 'view_col' =>  7, 'expr_type' => 'COL', 'src_col' =>  7, },
-				{ 'view_part' => 'RESULT', 'id' => 28, 'view_col' =>  8, 'expr_type' => 'COL', 'src_col' =>  9, },
-				{ 'view_part' => 'RESULT', 'id' => 29, 'view_col' =>  9, 'expr_type' => 'COL', 'src_col' => 10, },
-				{ 'view_part' => 'RESULT', 'id' => 30, 'view_col' => 10, 'expr_type' => 'COL', 'src_col' => 11, },
-				{ 'view_part' => 'RESULT', 'id' => 31, 'view_col' => 11, 'expr_type' => 'COL', 'src_col' => 12, },
-				{ 'view_part' => 'RESULT', 'id' => 32, 'view_col' => 12, 'expr_type' => 'COL', 'src_col' => 13, },
-				{ 'view_part' => 'RESULT', 'id' => 33, 'view_col' => 13, 'expr_type' => 'COL', 'src_col' => 14, },
-				{ 'view_part' => 'RESULT', 'id' => 34, 'view_col' => 14, 'expr_type' => 'COL', 'src_col' => 15, },
-				{ 'view_part' => 'RESULT', 'id' => 35, 'view_col' => 15, 'expr_type' => 'COL', 'src_col' => 16, },
-			) ),
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'WHERE', 
-					'id' => 1, 'expr_type' => 'SFUNC', 'sfunc' => 'EQ', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-					'id' => 2, 'expr_type' => 'COL', 'src_col' => 1, }, },
-				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-					'id' => 3, 'expr_type' => 'VAR', 'routine_arg' => 1, }, },
-			] },
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
-				'id' => 51, 'expr_type' => 'MCOL', 'match_col' => 2, }, },
+			'ATTRS' => { 'id' => 3, 'routine_type' => 'ANONYMOUS', 'name' => 'get_theme', }, 'CHILDREN' => [ 
+		{ 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 7, 'view_context' => 'ROUTINE', 
+				'view_type' => 'MATCH', 'match_all_cols' => 1, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 10, 'name' => 'm', 'match_view' => 3, }, },
 		] },
 	] } );
 
 	$application->create_child_node_tree( { 'NODE_TYPE' => 'routine', 
-			'ATTRS' => { 'id' => 3, 'routine_type' => 'ANONYMOUS', 'name' => 'user_theme', }, 'CHILDREN' => [ 
-		{ 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 3, 'view_context' => 'APPLIC', 'view_type' => 'SINGLE', 
-				'may_write' => 0, }, 'CHILDREN' => [ 
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 6, 'name' => 'user_pref', 
-				'match_table' => 3, }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 23, 'match_table_col' => 18, }, },
-				{ 'NODE_TYPE' => 'view_src_col', 'ATTRS' => { 'id' => 24, 'match_table_col' => 19, }, },
-			] },
-			( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
-				{ 'id' => 22, 'name' => 'theme_name' , 'domain' => 27, },
-				{ 'id' => 23, 'name' => 'theme_count', 'domain' =>  9, },
-			) ),
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'RESULT', 
-				'id' => 42, 'view_col' => 22, 'expr_type' => 'COL', 'src_col' => 24, }, },
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'RESULT', 
-				'id' => 43, 'view_col' => 23, 'expr_type' => 'SFUNC', 'sfunc' => 'GCOUNT', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-					'id' => 44, 'expr_type' => 'COL', 'src_col' => 24, }, },
-			] },
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'WHERE', 
-					'id' => 11, 'expr_type' => 'SFUNC', 'sfunc' => 'EQ', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-					'id' => 12, 'expr_type' => 'COL', 'src_col' => 23, }, },
-				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-					'id' => 13, 'expr_type' => 'LIT', 'lit_val' => 'theme', }, },
-			] },
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'GROUP', 
-				'id' => 14, 'expr_type' => 'COL', 'src_col' => 24, }, },
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'HAVING', 
-					'id' => 15, 'expr_type' => 'SFUNC', 'sfunc' => 'GT', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-					'id' => 16, 'expr_type' => 'SFUNC', 'sfunc' => 'GCOUNT', }, },
-				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
-					'id' => 17, 'expr_type' => 'LIT', 'lit_val' => '1', }, },
-			] },
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
-				'id' => 55, 'expr_type' => 'MCOL', 'match_col' => 23, }, },
-			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'ORDER', 
-				'id' => 56, 'expr_type' => 'MCOL', 'match_col' => 22, }, },
-		] },
+			'ATTRS' => { 'id' => 4, 'routine_type' => 'ANONYMOUS', 'name' => 'get_person', }, 'CHILDREN' => [ 
+		{ 'NODE_TYPE' => 'view', 'ATTRS' => { 'id' => 4, 'view_context' => 'ROUTINE', 'view_type' => 'MATCH', 
+				'match_all_cols' => 1, }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'id' => 7, 'name' => 'person', 'match_table' => 4, }, },
+		] }
 	] } );
 
 	return( $model );
@@ -424,6 +426,34 @@ sub expected_model_xml_output {
 						<table_ind_col id="13" table_ind="12" table_col="25" f_table_col="20" />
 					</table_ind>
 				</table>
+				<view id="2" view_context="SCHEMA" view_type="MULTIPLE" schema="1" name="person_with_parents">
+					<view_src id="3" view="2" name="self" match_table="4">
+						<view_src_col id="17" src="3" match_table_col="20" />
+						<view_src_col id="18" src="3" match_table_col="22" />
+						<view_src_col id="25" src="3" match_table_col="24" />
+						<view_src_col id="26" src="3" match_table_col="25" />
+					</view_src>
+					<view_src id="4" view="2" name="father" match_table="4">
+						<view_src_col id="19" src="4" match_table_col="20" />
+						<view_src_col id="20" src="4" match_table_col="22" />
+					</view_src>
+					<view_src id="5" view="2" name="mother" match_table="4">
+						<view_src_col id="21" src="5" match_table_col="20" />
+						<view_src_col id="22" src="5" match_table_col="22" />
+					</view_src>
+					<view_col id="16" view="2" name="self_id" domain="9" src_col="17" />
+					<view_col id="17" view="2" name="self_name" domain="24" src_col="18" />
+					<view_col id="18" view="2" name="father_id" domain="9" src_col="19" />
+					<view_col id="19" view="2" name="father_name" domain="24" src_col="20" />
+					<view_col id="20" view="2" name="mother_id" domain="9" src_col="21" />
+					<view_col id="21" view="2" name="mother_name" domain="24" src_col="22" />
+					<view_join id="2" view="2" lhs_src="3" rhs_src="4" join_type="LEFT">
+						<view_join_col id="2" join="2" lhs_src_col="25" rhs_src_col="19" />
+					</view_join>
+					<view_join id="3" view="2" lhs_src="3" rhs_src="5" join_type="LEFT">
+						<view_join_col id="3" join="3" lhs_src_col="26" rhs_src_col="21" />
+					</view_join>
+				</view>
 				<table id="1" schema="1" name="user_auth">
 					<table_col id="1" table="1" name="user_id" domain="9" mandatory="1" default_val="1" auto_inc="1" />
 					<table_col id="2" table="1" name="login_name" domain="23" mandatory="1" />
@@ -462,80 +492,7 @@ sub expected_model_xml_output {
 						<table_ind_col id="6" table_ind="6" table_col="8" f_table_col="1" />
 					</table_ind>
 				</table>
-				<table id="3" schema="1" name="user_pref">
-					<table_col id="17" table="3" name="user_id" domain="9" mandatory="1" />
-					<table_col id="18" table="3" name="pref_name" domain="26" mandatory="1" />
-					<table_col id="19" table="3" name="pref_value" domain="27" mandatory="0" />
-					<table_ind id="7" table="3" name="primary" ind_type="UNIQUE">
-						<table_ind_col id="7" table_ind="7" table_col="17" />
-						<table_ind_col id="8" table_ind="7" table_col="18" />
-					</table_ind>
-					<table_ind id="8" table="3" name="fk_user" ind_type="FOREIGN" f_table="1">
-						<table_ind_col id="9" table_ind="8" table_col="17" f_table_col="1" />
-					</table_ind>
-				</table>
-			</schema>
-		</catalog>
-		<application id="1">
-			<routine id="4" routine_type="ANONYMOUS" application="1" name="person">
-				<view id="4" view_context="APPLIC" view_type="MATCH" routine="4" may_write="1">
-					<view_src id="7" view="4" name="person" match_table="4" />
-				</view>
-			</routine>
-			<routine id="2" routine_type="ANONYMOUS" application="1" name="person_with_parents">
-				<routine_arg id="2" routine="2" name="srchw_fa" />
-				<routine_arg id="3" routine="2" name="srchw_mo" />
-				<view id="2" view_context="APPLIC" view_type="MULTIPLE" routine="2" may_write="0">
-					<view_src id="3" view="2" name="self" match_table="4">
-						<view_src_col id="17" src="3" match_table_col="20" />
-						<view_src_col id="18" src="3" match_table_col="22" />
-						<view_src_col id="25" src="3" match_table_col="24" />
-						<view_src_col id="26" src="3" match_table_col="25" />
-					</view_src>
-					<view_src id="4" view="2" name="father" match_table="4">
-						<view_src_col id="19" src="4" match_table_col="20" />
-						<view_src_col id="20" src="4" match_table_col="22" />
-					</view_src>
-					<view_src id="5" view="2" name="mother" match_table="4">
-						<view_src_col id="21" src="5" match_table_col="20" />
-						<view_src_col id="22" src="5" match_table_col="22" />
-					</view_src>
-					<view_col id="16" view="2" name="self_id" domain="9" />
-					<view_col id="17" view="2" name="self_name" domain="24" />
-					<view_col id="18" view="2" name="father_id" domain="9" />
-					<view_col id="19" view="2" name="father_name" domain="24" />
-					<view_col id="20" view="2" name="mother_id" domain="9" />
-					<view_col id="21" view="2" name="mother_name" domain="24" />
-					<view_join id="2" view="2" lhs_src="3" rhs_src="4" join_type="LEFT">
-						<view_join_col id="2" join="2" lhs_src_col="25" rhs_src_col="19" />
-					</view_join>
-					<view_join id="3" view="2" lhs_src="3" rhs_src="5" join_type="LEFT">
-						<view_join_col id="3" join="3" lhs_src_col="26" rhs_src_col="21" />
-					</view_join>
-					<view_expr id="36" expr_type="COL" view="2" view_part="RESULT" view_col="16" src_col="17" />
-					<view_expr id="37" expr_type="COL" view="2" view_part="RESULT" view_col="17" src_col="18" />
-					<view_expr id="38" expr_type="COL" view="2" view_part="RESULT" view_col="18" src_col="19" />
-					<view_expr id="39" expr_type="COL" view="2" view_part="RESULT" view_col="19" src_col="20" />
-					<view_expr id="40" expr_type="COL" view="2" view_part="RESULT" view_col="20" src_col="21" />
-					<view_expr id="41" expr_type="COL" view="2" view_part="RESULT" view_col="21" src_col="22" />
-					<view_expr id="4" expr_type="SFUNC" view="2" view_part="WHERE">
-						<view_expr id="5" expr_type="SFUNC" p_expr="4">
-							<view_expr id="6" expr_type="COL" p_expr="5" src_col="20" />
-							<view_expr id="7" expr_type="VAR" p_expr="5" routine_arg="2" />
-						</view_expr>
-						<view_expr id="8" expr_type="SFUNC" p_expr="4">
-							<view_expr id="9" expr_type="COL" p_expr="8" src_col="22" />
-							<view_expr id="10" expr_type="VAR" p_expr="8" routine_arg="3" />
-						</view_expr>
-					</view_expr>
-					<view_expr id="52" expr_type="MCOL" view="2" view_part="ORDER" match_col="17" />
-					<view_expr id="53" expr_type="MCOL" view="2" view_part="ORDER" match_col="19" />
-					<view_expr id="54" expr_type="MCOL" view="2" view_part="ORDER" match_col="21" />
-				</view>
-			</routine>
-			<routine id="1" routine_type="ANONYMOUS" application="1" name="user">
-				<routine_arg id="1" routine="1" name="curr_uid" />
-				<view id="1" view_context="APPLIC" view_type="MULTIPLE" routine="1" may_write="1">
+				<view id="1" view_context="SCHEMA" view_type="MULTIPLE" schema="1" name="user">
 					<view_src id="1" view="1" name="user_auth" match_table="1">
 						<view_src_col id="1" src="1" match_table_col="1" />
 						<view_src_col id="2" src="1" match_table_col="2" />
@@ -556,69 +513,109 @@ sub expected_model_xml_output {
 						<view_src_col id="15" src="2" match_table_col="15" />
 						<view_src_col id="16" src="2" match_table_col="16" />
 					</view_src>
-					<view_col id="1" view="1" name="user_id" domain="9" />
-					<view_col id="2" view="1" name="login_name" domain="23" />
-					<view_col id="3" view="1" name="login_pass" domain="23" />
-					<view_col id="4" view="1" name="private_name" domain="24" />
-					<view_col id="5" view="1" name="private_email" domain="24" />
-					<view_col id="6" view="1" name="may_login" domain="19" />
-					<view_col id="7" view="1" name="max_sessions" domain="7" />
-					<view_col id="8" view="1" name="public_name" domain="25" />
-					<view_col id="9" view="1" name="public_email" domain="25" />
-					<view_col id="10" view="1" name="web_url" domain="25" />
-					<view_col id="11" view="1" name="contact_net" domain="25" />
-					<view_col id="12" view="1" name="contact_phy" domain="25" />
-					<view_col id="13" view="1" name="bio" domain="25" />
-					<view_col id="14" view="1" name="plan" domain="25" />
-					<view_col id="15" view="1" name="comments" domain="25" />
+					<view_col id="1" view="1" name="user_id" domain="9" src_col="1" />
+					<view_col id="2" view="1" name="login_name" domain="23" src_col="2" />
+					<view_col id="3" view="1" name="login_pass" domain="23" src_col="3" />
+					<view_col id="4" view="1" name="private_name" domain="24" src_col="4" />
+					<view_col id="5" view="1" name="private_email" domain="24" src_col="5" />
+					<view_col id="6" view="1" name="may_login" domain="19" src_col="6" />
+					<view_col id="7" view="1" name="max_sessions" domain="7" src_col="7" />
+					<view_col id="8" view="1" name="public_name" domain="25" src_col="9" />
+					<view_col id="9" view="1" name="public_email" domain="25" src_col="10" />
+					<view_col id="10" view="1" name="web_url" domain="25" src_col="11" />
+					<view_col id="11" view="1" name="contact_net" domain="25" src_col="12" />
+					<view_col id="12" view="1" name="contact_phy" domain="25" src_col="13" />
+					<view_col id="13" view="1" name="bio" domain="25" src_col="14" />
+					<view_col id="14" view="1" name="plan" domain="25" src_col="15" />
+					<view_col id="15" view="1" name="comments" domain="25" src_col="16" />
 					<view_join id="1" view="1" lhs_src="1" rhs_src="2" join_type="LEFT">
 						<view_join_col id="1" join="1" lhs_src_col="1" rhs_src_col="8" />
 					</view_join>
-					<view_expr id="21" expr_type="COL" view="1" view_part="RESULT" view_col="1" src_col="1" />
-					<view_expr id="22" expr_type="COL" view="1" view_part="RESULT" view_col="2" src_col="2" />
-					<view_expr id="23" expr_type="COL" view="1" view_part="RESULT" view_col="3" src_col="3" />
-					<view_expr id="24" expr_type="COL" view="1" view_part="RESULT" view_col="4" src_col="4" />
-					<view_expr id="25" expr_type="COL" view="1" view_part="RESULT" view_col="5" src_col="5" />
-					<view_expr id="26" expr_type="COL" view="1" view_part="RESULT" view_col="6" src_col="6" />
-					<view_expr id="27" expr_type="COL" view="1" view_part="RESULT" view_col="7" src_col="7" />
-					<view_expr id="28" expr_type="COL" view="1" view_part="RESULT" view_col="8" src_col="9" />
-					<view_expr id="29" expr_type="COL" view="1" view_part="RESULT" view_col="9" src_col="10" />
-					<view_expr id="30" expr_type="COL" view="1" view_part="RESULT" view_col="10" src_col="11" />
-					<view_expr id="31" expr_type="COL" view="1" view_part="RESULT" view_col="11" src_col="12" />
-					<view_expr id="32" expr_type="COL" view="1" view_part="RESULT" view_col="12" src_col="13" />
-					<view_expr id="33" expr_type="COL" view="1" view_part="RESULT" view_col="13" src_col="14" />
-					<view_expr id="34" expr_type="COL" view="1" view_part="RESULT" view_col="14" src_col="15" />
-					<view_expr id="35" expr_type="COL" view="1" view_part="RESULT" view_col="15" src_col="16" />
-					<view_expr id="1" expr_type="SFUNC" view="1" view_part="WHERE">
-						<view_expr id="2" expr_type="COL" p_expr="1" src_col="1" />
-						<view_expr id="3" expr_type="VAR" p_expr="1" routine_arg="1" />
+				</view>
+				<table id="3" schema="1" name="user_pref">
+					<table_col id="17" table="3" name="user_id" domain="9" mandatory="1" />
+					<table_col id="18" table="3" name="pref_name" domain="26" mandatory="1" />
+					<table_col id="19" table="3" name="pref_value" domain="27" mandatory="0" />
+					<table_ind id="7" table="3" name="primary" ind_type="UNIQUE">
+						<table_ind_col id="7" table_ind="7" table_col="17" />
+						<table_ind_col id="8" table_ind="7" table_col="18" />
+					</table_ind>
+					<table_ind id="8" table="3" name="fk_user" ind_type="FOREIGN" f_table="1">
+						<table_ind_col id="9" table_ind="8" table_col="17" f_table_col="1" />
+					</table_ind>
+				</table>
+			</schema>
+		</catalog>
+		<application id="1">
+			<view id="3" view_context="APPLIC" view_type="SINGLE" name="user_theme" application="1">
+				<view_src id="6" view="3" name="user_pref" match_table="3">
+					<view_src_col id="23" src="6" match_table_col="18" />
+					<view_src_col id="24" src="6" match_table_col="19" />
+				</view_src>
+				<view_col id="22" view="3" name="theme_name" domain="27" />
+				<view_col id="23" view="3" name="theme_count" domain="9" />
+				<view_expr id="42" expr_type="COL" view="3" view_part="RESULT" view_col="22" src_col="24" />
+				<view_expr id="43" expr_type="SFUNC" view="3" view_part="RESULT" view_col="23">
+					<view_expr id="44" expr_type="COL" p_expr="43" src_col="24" />
+				</view_expr>
+				<view_expr id="11" expr_type="SFUNC" view="3" view_part="WHERE">
+					<view_expr id="12" expr_type="COL" p_expr="11" src_col="23" />
+					<view_expr id="13" expr_type="LIT" p_expr="11" lit_val="theme" />
+				</view_expr>
+				<view_expr id="14" expr_type="COL" view="3" view_part="GROUP" src_col="24" />
+				<view_expr id="15" expr_type="SFUNC" view="3" view_part="HAVING">
+					<view_expr id="16" expr_type="SFUNC" p_expr="15" />
+					<view_expr id="17" expr_type="LIT" p_expr="15" lit_val="1" />
+				</view_expr>
+				<view_expr id="55" expr_type="MCOL" view="3" view_part="ORDER" match_col="23" />
+				<view_expr id="56" expr_type="MCOL" view="3" view_part="ORDER" match_col="22" />
+			</view>
+			<routine id="1" routine_type="ANONYMOUS" application="1" name="get_user">
+				<routine_arg id="1" routine="1" name="curr_uid" />
+				<view id="5" view_context="ROUTINE" view_type="MATCH" routine="1" match_all_cols="1">
+					<view_src id="8" view="5" name="m" match_view="1">
+						<view_src_col id="30" src="8" match_view_col="1" />
+						<view_src_col id="31" src="8" match_view_col="2" />
+					</view_src>
+					<view_expr id="1" expr_type="SFUNC" view="5" view_part="WHERE">
+						<view_expr id="2" expr_type="COL" p_expr="1" src_col="30" />
+						<view_expr id="3" expr_type="ARG" p_expr="1" routine_arg="1" />
 					</view_expr>
-					<view_expr id="51" expr_type="MCOL" view="1" view_part="ORDER" match_col="2" />
+					<view_expr id="51" expr_type="COL" view="5" view_part="ORDER" src_col="31" />
 				</view>
 			</routine>
-			<routine id="3" routine_type="ANONYMOUS" application="1" name="user_theme">
-				<view id="3" view_context="APPLIC" view_type="SINGLE" routine="3" may_write="0">
-					<view_src id="6" view="3" name="user_pref" match_table="3">
-						<view_src_col id="23" src="6" match_table_col="18" />
-						<view_src_col id="24" src="6" match_table_col="19" />
+			<routine id="2" routine_type="ANONYMOUS" application="1" name="get_pwp">
+				<routine_arg id="2" routine="2" name="srchw_fa" />
+				<routine_arg id="3" routine="2" name="srchw_mo" />
+				<view id="6" view_context="ROUTINE" view_type="MATCH" routine="2" match_all_cols="1">
+					<view_src id="9" view="6" name="m" match_view="2">
+						<view_src_col id="27" src="9" match_view_col="17" />
+						<view_src_col id="28" src="9" match_view_col="19" />
+						<view_src_col id="29" src="9" match_view_col="21" />
 					</view_src>
-					<view_col id="22" view="3" name="theme_name" domain="27" />
-					<view_col id="23" view="3" name="theme_count" domain="9" />
-					<view_expr id="42" expr_type="COL" view="3" view_part="RESULT" view_col="22" src_col="24" />
-					<view_expr id="43" expr_type="SFUNC" view="3" view_part="RESULT" view_col="23">
-						<view_expr id="44" expr_type="COL" p_expr="43" src_col="24" />
+					<view_expr id="4" expr_type="SFUNC" view="6" view_part="WHERE">
+						<view_expr id="5" expr_type="SFUNC" p_expr="4">
+							<view_expr id="6" expr_type="COL" p_expr="5" src_col="28" />
+							<view_expr id="7" expr_type="ARG" p_expr="5" routine_arg="2" />
+						</view_expr>
+						<view_expr id="8" expr_type="SFUNC" p_expr="4">
+							<view_expr id="9" expr_type="COL" p_expr="8" src_col="29" />
+							<view_expr id="10" expr_type="ARG" p_expr="8" routine_arg="3" />
+						</view_expr>
 					</view_expr>
-					<view_expr id="11" expr_type="SFUNC" view="3" view_part="WHERE">
-						<view_expr id="12" expr_type="COL" p_expr="11" src_col="23" />
-						<view_expr id="13" expr_type="LIT" p_expr="11" lit_val="theme" />
-					</view_expr>
-					<view_expr id="14" expr_type="COL" view="3" view_part="GROUP" src_col="24" />
-					<view_expr id="15" expr_type="SFUNC" view="3" view_part="HAVING">
-						<view_expr id="16" expr_type="SFUNC" p_expr="15" />
-						<view_expr id="17" expr_type="LIT" p_expr="15" lit_val="1" />
-					</view_expr>
-					<view_expr id="55" expr_type="MCOL" view="3" view_part="ORDER" match_col="23" />
-					<view_expr id="56" expr_type="MCOL" view="3" view_part="ORDER" match_col="22" />
+					<view_expr id="52" expr_type="COL" view="6" view_part="ORDER" src_col="27" />
+					<view_expr id="53" expr_type="COL" view="6" view_part="ORDER" src_col="28" />
+					<view_expr id="54" expr_type="COL" view="6" view_part="ORDER" src_col="29" />
+				</view>
+			</routine>
+			<routine id="3" routine_type="ANONYMOUS" application="1" name="get_theme">
+				<view id="7" view_context="ROUTINE" view_type="MATCH" routine="3" match_all_cols="1">
+					<view_src id="10" view="7" name="m" match_view="3" />
+				</view>
+			</routine>
+			<routine id="4" routine_type="ANONYMOUS" application="1" name="get_person">
+				<view id="4" view_context="ROUTINE" view_type="MATCH" routine="4" match_all_cols="1">
+					<view_src id="7" view="4" name="person" match_table="4" />
 				</view>
 			</routine>
 		</application>

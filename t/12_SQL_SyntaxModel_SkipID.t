@@ -8,7 +8,7 @@ END {print "not ok 1\n" unless $loaded;}
 use t_SQL_SyntaxModel;
 use t_SQL_SyntaxModel_ByTree;
 use t_SQL_SyntaxModel_SkipID;
-use SQL::SyntaxModel::SkipID 0.11;
+use SQL::SyntaxModel::SkipID 0.111;
 use SQL::SyntaxModel::SkipID::L::en 0.02;
 $loaded = 1;
 print "ok 1\n";
