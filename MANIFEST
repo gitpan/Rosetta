@@ -6,6 +6,7 @@ lib/Rosetta/SimilarModules.pod
 lib/SQL/ObjectModel.pm
 lib/SQL/ObjectModel/API_C.pod
 lib/SQL/ObjectModel/DataDictionary.pod
+lib/SQL/ObjectModel/XMLSchema.pod
 LICENSE
 Makefile.PL
 MANIFEST

@@ -1,14 +1,25 @@
 ONE DEVELOPMENT TRACK
 
-r0.16 - Create modules Rosetta, Rosetta::_::Engine, Rosetta::_::Connection,
-as well as Rosetta::Driver::Null.
+r0.17 - Update SQL::ObjectModel so that node attributes which refer to other 
+nodes actually hold Perl references to them internally, rather than just copies 
+of their id numbers.  This is strictly an implementation update, and the module 
+should behave identically to r0.16.  This should also be quick to do, and be 
+uploaded within a week of now.
 
-r0.17 - Update SQL::ObjectModel to not leave objects in a possibly inconsistant
+r0.18 - Split SQL::ObjectModel into two modules, one with the more reliable
+core functionality, and a subclass of that having the less reliable optional
+functionality; the latter mainly is the logic which saves a programmer from 
+having to explicitely use node ids.
+
+r0.19 - Update SQL::ObjectModel to not leave objects in a possibly inconsistant
 state when it throws exceptions on input errors; this wouldn't be a problem if
 the program died as usual, but it might if a programmer had caught the
 exception with an "eval" and then tried to use the object.
 
-r0.18 - Create the Locale::KeyedText module and other Locale modules.  These
+r0.20 - Create modules Rosetta, Rosetta::_::Engine, Rosetta::_::Connection,
+as well as Rosetta::Driver::Null.
+
+r0.21 - Create the Locale::KeyedText module and other Locale modules.  These
 will be needed by the other code modules. The french module will only contain
 mock text (to be replaced later) since I'm not fluent in non-english languages.
 

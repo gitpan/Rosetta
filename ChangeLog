@@ -1,3 +1,88 @@
+2003-09-11   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.16.
+
+	* This is a major design and functionality update release, although the 
+	changes are all focused on the SQL::ObjectModel/::* files.
+
+	* The proposed C library name "libSOM" has been changed to "libSQLOM".  The 
+	NAME for SQL::ObjectModel was also rewritten, and it now looks like this:
+
+	SQL::
+	::ObjectModel     adhOg An abstract syntax tree for all types of SQL DUNCAND
+
+	* Updated documentation in SQL::ObjectModel so each function and method
+	description now has an example line of code or two demonstrating its use.
+
+	* Updated cct_str_enc definition in DataDictionary.pod to account for UTF-8
+	and UTF-16 being variable-length encodings.
+
+	* Added new file lib/SQL/ObjectModel/XMLSchema.pod which explains
+	ObjectModels in terms of a suggested XML representation.
+
+	* Updated DataDictionary.pod and ObjectModel.pm so that every table and its
+	corresponding node now have a single-column integer primary key, whose name
+	is 'id'.  This change was to make it much easier to convert ObjectModel
+	data between in-memory data structures linked by references and database
+	records and XML nodes.  The other fields/attributes were also standardized
+	in their naming and structure, including the use of shorter field names,
+	single column foreign keys, and removal of some extra fields.  ObjectModel
+	attributes now all have the same names whether they are in a database or
+	XML or in-memory structures, and all attributes are used in each place.  As
+	a result, some attributes may appear redundant when in memory or XML, such
+	as those which say who the parent of a node is, or its order among its
+	siblings.  But this is intentional and accounted for.
+
+	* A single model or data dictionary can now manage the commands for
+	multiple applications, which helps if they have databases in common.
+
+	* SQL::ObjectModel now enforces required-attribute constraints, and will
+	throw an exception if you try to create a node where said attributes are
+	not valued.  At the same time, the logic for assigning default attribute
+	values has been improved so that it can generate serial numbers or copy
+	values from parent nodes, in addition to setting static literal values. 
+	The 'id' attribute for all nodes is both mandatory and serially generated,
+	so it is technically possible (as shown by the example code) to use this
+	module without explicitely giving any 'id' values as input.
+
+	* Added feature to ObjectModel.pm where, if you simply create a node
+	without indicating a parent to attach it to, the module will make a logical
+	intuition as to where it should go and assign it there.  Specifically, it
+	takes the last previously created node which is capable of being the new
+	one's parent.  This feature is mainly intended for adding new databases or
+	namespaces or tables or views or blocks or applications or commands, but
+	not parts of those.  See the updated SYNOPSIS for examples of the benefits.
+
+	* SQL::ObjectModel is now implemented internally as two classes, a
+	"container"/"model" and a "node" (which correspond to an XML DOM "document"
+	and "node").  All nodes now must exist within the context of a container,
+	and they currently can not be moved or copied between existing containers. 
+	However, a container with full node complement can be cloned to make a
+	second container.  Each container has a single root node that its other
+	nodes can descend from; however, nodes can still be detached from this and
+	be in other tree fragments (akin to an XML DOM "document fragment"). 
+	Working within a container context allows the module code to be a lot more
+	powerful or smarter, without being larger.
+
+	* Added a debugging method to spit out all of a node-tree's data as an XML
+	document, which is more compact and testing-reliable than the Perl-code
+	spitting function (which also still exists).  Also, for all the debugging
+	methods, the option was removed to produce/hide extra data relating to Perl
+	variables; these are now superfluous, and were always troublesome.
+
+	* Updated the test code, and the partial copy of said code in the SYNOPSIS,
+	so it works with all the module changes.  The code now uses the XML data
+	representation for testing, and this works without errors on both Perl
+	5.6.0 and 5.8.1rc4 (both under Mac OS X 10.2.6).  Note that the test
+	failures on the Solaris testbed for release 0.15x appears to be from that
+	platform using Perl 5.8, and not simply because it was Solaris.  So release
+	0.16 should test correctly on all platforms now.
+
+	* Updated the BUGS documentation in ObjectModel.pm to add/replace some
+	design flaw descriptions.  They will be eliminated in near future releases.
+
+	* Added some items to supported database list in Framework.pod.
+
 2003-07-11   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.152.

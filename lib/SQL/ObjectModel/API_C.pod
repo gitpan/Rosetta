@@ -4,7 +4,7 @@ SQL::ObjectModel::API_C - Describe the core C API for SQL::ObjectModel
 
 =head1 COPYRIGHT AND LICENSE
 
-This file is part of the SQL::ObjectModel library (libSOM).
+This file is part of the SQL::ObjectModel library (libSQLOM).
 
 SQL::ObjectModel is Copyright (c) 1999-2003, Darren R. Duncan.  All rights
 reserved.  Address comments, suggestions, and bug reports to
@@ -96,20 +96,20 @@ C. The reasoning is that my experience in writing C is rusty at the moment and
 I haven't necessarily tried to compile these yet.  For the moment they are just
 a type of documentation.  They will be improved.
 
-=head1 CONTENT OF libSOM.h
+=head1 CONTENT OF libSQLOM.h
 
-	#ifndef _libSOM_h
-	#define _libSOM_h
+	#ifndef _libSQLOM_h
+	#define _libSQLOM_h
 
-	#include "libSOM_types.h"
-	#include "libSOM_datatype.h"
+	#include "libSQLOM_types.h"
+	#include "libSQLOM_tree.h"
 
-	#endif /* _libSOM_h */
+	#endif /* _libSQLOM_h */
 
-=head1 CONTENT OF libSOM_types.h
+=head1 CONTENT OF libSQLOM_types.h
 
-	#ifndef _libSOM_types_h
-	#define _libSOM_types_h
+	#ifndef _libSQLOM_types_h
+	#define _libSQLOM_types_h
 
 	#ifdef __cplusplus
 	extern "C" {
@@ -124,55 +124,73 @@ a type of documentation.  They will be improved.
 	/************************************************************************/
 	/* define some simple data types here */
 
-	typedef unsigned char dt_lsom_boolean; /* stores only two values: 0 (false) or 1 (true) */
+	typedef unsigned char dt_sqlom_boolean; /* stores only two values: 0 (false) or 1 (true) */
 
-	typedef unsigned char     dt_lsom_uint8 ; /* a precise integer between 0 and           +255 */
-	typedef unsigned short    dt_lsom_uint16; /* a precise integer between 0 and        +65,535 */
-	typedef unsigned int      dt_lsom_uint32; /* a precise integer between 0 and +4,294,967,295 */
-	typedef unsigned longlong dt_lsom_uint64; /* a precise integer between 0 and      +(2^64)-1 */
+	typedef unsigned char     dt_sqlom_uint8 ; /* a precise integer between 0 and           +255 */
+	typedef unsigned short    dt_sqlom_uint16; /* a precise integer between 0 and        +65,535 */
+	typedef unsigned int      dt_sqlom_uint32; /* a precise integer between 0 and +4,294,967,295 */
+	typedef unsigned longlong dt_sqlom_uint64; /* a precise integer between 0 and      +(2^64)-1 */
 
-	typedef char     dt_lsom_sint8 ; /* a precise integer between           -128 and           +127 */
-	typedef short    dt_lsom_sint16; /* a precise integer between        -32,768 and        +32,767 */
-	typedef int      dt_lsom_sint32; /* a precise integer between -2,147,483,648 and +2,147,483,647 */
-	typedef longlong dt_lsom_sint64; /* a precise integer between        -(2^63) and      +(2^63)-1 */
+	typedef char     dt_sqlom_sint8 ; /* a precise integer between           -128 and           +127 */
+	typedef short    dt_sqlom_sint16; /* a precise integer between        -32,768 and        +32,767 */
+	typedef int      dt_sqlom_sint32; /* a precise integer between -2,147,483,648 and +2,147,483,647 */
+	typedef longlong dt_sqlom_sint64; /* a precise integer between        -(2^63) and      +(2^63)-1 */
 
-	typedef float  dt_lsom_float32; /* a 32-bit imprecise fractional number */
-	typedef double dt_lsom_float64; /* a 64-bit imprecise fractional number */
+	typedef float  dt_sqlom_float32; /* a 32-bit imprecise fractional number */
+	typedef double dt_sqlom_float64; /* a 64-bit imprecise fractional number */
 
-	/* a precise fractional number stored as a variable length string */
+	/* a precise fractional number stored as a variable length string, up to 65K digits */
 	typedef struct {
-		char*          data       ;
-		dt_lsom_uint16 byte_length;
-	} dt_lsom_decimal; 
+		char*           data      ;
+		dt_sqlom_uint16 used_bytes;
+		dt_sqlom_uint16 buff_bytes;
+	} dt_sqlom_decimal; 
 
-	/* an arbitrary sized unit of binary data */
+	/* an arbitrary sized unit of binary data, up to 4 gigabytes (32-bit size count) */
 	typedef struct {
-		char*          data       ;
-		dt_lsom_uint64 byte_length;
-	} dt_lsom_binary; 
+		char*           data      ;
+		dt_sqlom_uint32 used_bytes;
+		dt_sqlom_uint32 buff_bytes;
+	} dt_sqlom_binary32; 
+
+	/* an arbitrary sized unit of binary data, up to 16 exabytes (64-bit size count) */
+	typedef struct {
+		char*           data      ;
+		dt_sqlom_uint64 used_bytes;
+		dt_sqlom_uint64 buff_bytes;
+	} dt_sqlom_binary64; 
 
 	/* enumeration of character encoding types */
 	typedef enum { 
-		LSOM_STR_ENC_U8 , /* 8-bit unicode  */
-		LSOM_STR_ENC_U16, /* 16-bit unicode */
-		LSOM_STR_ENC_U32, /* 32-bit unicode */
-		LSOM_STR_ENC_ASC, /* 8-bit ascii    */
-		LSOM_STR_ENC_EBS  /* 8-bit ebsdic   */
-	} en_lsom_str_enc_type; 
+		SQLOM_STR_ENC_U8 , /* 8-bit unicode  */
+		SQLOM_STR_ENC_U16, /* 16-bit unicode */
+		SQLOM_STR_ENC_U32, /* 32-bit unicode */
+		SQLOM_STR_ENC_ASC, /* 8-bit ascii    */
+		SQLOM_STR_ENC_EBS  /* 8-bit ebsdic   */
+	} en_sqlom_str_enc_type; 
 
-	/* an arbitrary sized unit of text data that is not null terminated */
+	/* an arbitrary sized unit of text data that is not null terminated, up to 4 gigabytes */
 	typedef struct {
-		char*                data          ; /* actual string data, which may contain nulls */
-		dt_lsom_uint64       byte_length   ; /* size of memory used by data in bytes */
-		en_lsom_str_enc_type enc_type      ; /* string encoding type that data is using */
-		dt_lsom_uint8        bytes_per_char; /* (see enc_type) how many bytes each char uses, default = 1 */
-	} dt_lsom_string; 
+		char*                 data      ; /* actual string data, which may contain nulls */
+		dt_sqlom_uint32       used_bytes; /* size of memory used by data in bytes */
+		dt_sqlom_uint32       buff_bytes; /* max size of contiguous memory data could grow into */
+		en_sqlom_str_enc_type enc_type  ; /* string encoding type that data is using */
+	} dt_sqlom_string32; 
+
+	/* an arbitrary sized unit of text data that is not null terminated, up to 16 exabytes */
+	typedef struct {
+		char*                 data      ; /* actual string data, which may contain nulls */
+		dt_sqlom_uint64       used_bytes; /* size of memory used by data in bytes */
+		dt_sqlom_uint64       buff_bytes; /* max size of contiguous memory data could grow into */
+		en_sqlom_str_enc_type enc_type  ; /* string encoding type that data is using */
+	} dt_sqlom_string64; 
 
 	/* a date and time (whose representation isn't decided yet) */
 	typedef struct {
-		char*         data       ;
-		dt_lsom_uint8 byte_length;
-	} dt_lsom_datetime; 
+		char*          data      ;
+		dt_sqlom_uint8 used_bytes;
+		dt_sqlom_uint8 buff_bytes;
+	} dt_sqlom_datetime; 
 
 	/************************************************************************/
 	/* define some accessor functions here */
@@ -183,57 +201,55 @@ a type of documentation.  They will be improved.
 	}
 	#endif
 
-	#endif /* _libSOM_types_h */
+	#endif /* _libSQLOM_types_h */
 
-=head1 CONTENT OF libSOM_datatype.h
+=head1 CONTENT OF libSQLOM_tree.h
 
-	#ifndef _libSOM_datatype_h
-	#define _libSOM_datatype_h
+	#ifndef _libSQLOM_tree_h
+	#define _libSQLOM_tree_h
 
 	#ifdef __cplusplus
 	extern "C" {
 	#endif
 
-	#include "libSOM_types.h"
+	#include "libSQLOM_types.h"
 
 	/************************************************************************/
 	/* define some simple data types here */
 
 	/* enumeration of basic data types */
 	typedef enum { 
-		BOOL,    /* a boolean */
 		BIN,     /* binary data */
 		STR,     /* text data */
-		INT,     /* precise whole number */
-		FLOAT,   /* imprecise fractional number */
-		DEC,     /* precise fractional number */
+		NUM,     /* a number, either integral or fractional */
+		BOOL,    /* a boolean */
 		DATETIME /* a date and time; this may be split into more types */
 		/* may add geographical types */
 		/* may add enumerated or set types */
-	} en_lsom_sch_datatype_base; 
+	} en_sqlom_datatype_base; 
 
 	/* enumeration of ways to handle latin character data */
 	typedef enum { 
 		PRESERVE, /* preserve existing case, upper and lower */
 		TOUPPER,  /* convert to upper case */
 		TOLOWER   /* convert to lower case */
-	} en_lsom_sch_datatype_case; 
+	} en_sqlom_datatype_case; 
 
 	/* meta-data for a scalar unit of data, such as a db table column */
 	typedef struct {
-		dt_lsom_string            name          ; /* unique user-readable data type */
-		en_lsom_sch_datatype_base base_type     ; /* basic underlying data type */
-		dt_lsom_uint64            size          ; /* in bytes for BIN, INT, FLOAT; in chars for STR, DEC */
-		dt_lsom_boolean           store_fixed   ; /* true = try to store fixed size; default is var size */
-		en_lsom_str_enc_type      str_encoding  ; /* string encoding type for STR data */
-		dt_lsom_boolean           str_trim_white; /* true = trim bounding whitespace on save */
-		en_lsom_sch_datatype_case str_latin_case; /* says how to handle latin text case on save */
-		dt_lsom_string            str_pad_char  ; /* if def, use char to pad fixed-width strs on save */
-		dt_lsom_boolean           str_trim_pad  ; /* true = trim padding of fixed-width strs on read */
-		dt_lsom_boolean           int_unsigned  ; /* true = only INTs >= 0 can be stored */
-		dt_lsom_uint16            dec_precision ; /* allowed max prec for DEC nums; must be < size */
+		dt_sqlom_string32      name          ; /* unique user-readable data type */
+		en_sqlom_datatype_base base_type     ; /* basic underlying data type */
+		dt_sqlom_uint64        size          ; /* in bytes for BIN, STR, NUM */
+		dt_sqlom_boolean       store_fixed   ; /* true = try to store fixed size; default is var size */
+		en_sqlom_str_enc_type  str_encoding  ; /* string encoding type for STR data */
+		dt_sqlom_boolean       str_trim_white; /* true = trim bounding whitespace on save */
+		en_sqlom_datatype_case str_latin_case; /* says how to handle latin text case on save */
+		dt_sqlom_string32      str_pad_char  ; /* if def, use char to pad fixed-width strs on save */
+		dt_sqlom_boolean       str_trim_pad  ; /* true = trim padding of fixed-width strs on read */
+		dt_sqlom_boolean       int_unsigned  ; /* true = only INTs >= 0 can be stored */
+		dt_sqlom_uint16        dec_precision ; /* allowed max prec for DEC nums; must be < size */
 		/* others may be added such as min/max allowed num or date values or which calendar to use */
-	} st_lsom_sch_datatype; 
+	} st_sqlom_datatype; 
 
 	/************************************************************************/
 	/* define some accessor functions here */
@@ -244,10 +260,11 @@ a type of documentation.  They will be improved.
 	}
 	#endif
 
-	#endif /* _libSOM_datatype_h */
+	#endif /* _libSQLOM_tree_h */
 
 =head1 SEE ALSO
 
-perl(1), SQL::ObjectModel, SQL::ObjectModel::DataDictionary, Rosetta, Rosetta::Framework.
+perl(1), SQL::ObjectModel, SQL::ObjectModel::DataDictionary,
+SQL::ObjectModel::XMLSchema, Rosetta, Rosetta::Framework.
 
 =cut

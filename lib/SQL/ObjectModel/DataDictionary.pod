@@ -4,7 +4,7 @@ SQL::ObjectModel::DataDictionary - Describe a database suitable for storing SQL:
 
 =head1 COPYRIGHT AND LICENSE
 
-This file is part of the SQL::ObjectModel library (libSOM).
+This file is part of the SQL::ObjectModel library (libSQLOM).
 
 SQL::ObjectModel is Copyright (c) 1999-2003, Darren R. Duncan.  All rights
 reserved.  Address comments, suggestions, and bug reports to
@@ -53,17 +53,17 @@ practical way of suggesting improvements to the standard version.
 
 =head1 DESCRIPTION
 
-All concepts in a SQL::ObjectModel can be represented by a data dictionary. 
+All concepts in a SQL::ObjectModel can be represented by a data dictionary.
 Such a data dictionary can be a linked in-memory set of objects (or serialized
 version thereof), or they can be represented by records in database tables
 having specific columns and constraints.  This documentation will attempt to
 explain the components of a SQL::ObjectModel data dictionary and how they
 relate.  Since SQL::ObjectModel doesn't actually use any database tables
-internally, and that it is your application which would map such database
-tables to SQL::ObjectModel objects, you are free to modify this schema to your
-liking. However, it is recommended that you mainly just add columns, such as
-for adding user visible text descriptions of each record, rather than changing
-or removing the suggested columns.
+internally, and that it is your application (or other third party modules)
+which would map such database tables to SQL::ObjectModel objects, you are free
+to modify this schema to your liking. However, it is recommended that you
+mainly just add columns, such as for adding user visible text descriptions of
+each record, rather than changing or removing the suggested columns.
 
 =head1 STRUCTURE
 
@@ -71,6 +71,29 @@ Here is a set of diagrams that show visually how the various tables relate.  The
 structure of the individual tables themselves are explained in other sections 
 further below.  All of the relationships are either many-to-one or one to one; 
 most are optional, but for simplicity all lines are solid below.
+
+Every table shown here has a single-column primary key so that it is easy to
+convert their records into in-memory structs/objects, and their relationships
+into normal scalar references each pointing from one struct to another. 
+Likewise, the records can be easily converted into XML nodes, where each node
+has a single-value unique id, and individual attributes in one XML node can 
+refer to such on another.  There are two main kinds of tables.
+
+The tables whose names start with "cct_" have program-defined values and are
+not meant to be changed; they are "constant".  Each of those tables represents
+an enumeration, and their primary keys are all short strings of lowercased
+latin letters and sometimes numbers.  All of these primary keys are on a field
+named 'code'.  It is quite possible that these don't need to exist as tables at
+all, if the database in use supports column constraints by enumerated list,
+rather than just by foreign key.
+
+All of the other tables, which do not start with "cct_", are "normal" tables,
+and you can put all of your own records in them.  Each of these tables has a
+non-content-descriptive integer for a primary key, which is an intentional
+choice; this makes it easy for you to change values which would otherwise be
+part of your primary key, without having to worry about updating other copies
+to preserve relational integrity; it also saves on memory usage.  All of these
+primary keys are on a field named 'id'.
 
 =head2 Data Types
 
@@ -145,12 +168,12 @@ most are optional, but for simplicity all lines are solid below.
 
 	user---<=privilege
 
-=head2 Commands and Results
+=head2 Applications, Commands and Results
 
-	cct_command_type
-	      |
-	     /|\
-	   command=>---command_list
+	cct_command_type   command_var (bind variables passed from application)
+	      |                \|/
+	     /|\ |---------------
+	   command=>---application
 	    |  \|/ (a command can be executed multiple times for multiple results)
 	   /|\  |  (a result can be used as input or context for multiple commands)
 	   result
@@ -247,7 +270,9 @@ only applicable to data which is measured in characters.
 Column List:
 
 	code - str,req - name of the character encoding
-	bytes_per_char - int,req - num bytes used to store each character; typically 1
+	is_var_len_enc - bool,req - true when char encoding is variable length, false when fixed length
+	min_bytes_per_char - int,req - minimum num bytes used to store each character; typically 1
+	max_bytes_per_char - int,req - maximum bytes per char, same as minimum when fixed length
 	has_latin_chars - bool,req - true when operations like upper/lowercase have any meaning
 
 Index List:
@@ -256,13 +281,13 @@ Index List:
 
 Record List:
 
-	|cod|bpc|lat|
-	|---|---|---|
-	|u8 |  1|1  | - 8 bit unicode
-	|u16|  2|1  | - 16 bit unicode
-	|u32|  4|1  | - 32 bit unicode
-	|asc|  1|1  | - ascii
-	|ebs|  1|1  | - ebsdic
+	|cod|vle|nbpc|xbpc|lat|
+	|---|---|----|----|---|
+	|u8 |1  |   1|   6|1  | - UTF-8 (always byte-order; no big/little endian; typ 1 byte or 3 byte)
+	|u16|1  |   2|  ?4|1  | - UTF-16 (has big/little endian versions)
+	|u32|0  |   4|   4|1  | - UTF-32 (has big/little endian versions)
+	|asc|0  |   1|   1|1  | - ascii
+	|ebs|0  |   1|   1|1  | - ebsdic
 
 	Note that some of these examples may be wrong for practical use and be changed later.
 
@@ -534,7 +559,7 @@ Column List:
 	can_use_in_filter - bool,req - true when func type may be used in view filter (where)
 	can_use_in_block - bool,req - true when func type may be used in a block (eg: stored proc)
 	is_aggregate_func - bool,req - true when is an aggregate func (a grouping func, like 'count')
-	data_type - str - basic data type that function returns
+	data_type - enum - basic data type that function returns
 
 Index List:
 
@@ -854,20 +879,21 @@ table column definitions, view column definitions, and block variables.
 
 Column List:
 
+	id - int,req - unique identifier for this data type
 	name - str,req - name of the user customized data type
-	basic_type - str,req - name of the basic data type this is customized from: bin, str, num, bool, datetime
+	basic_type - enum,req - name of the basic data type this is customized from: bin, str, num, bool, datetime
 	size_in_bytes - int - maximum size in bytes data can be
 	size_in_chars - int - maximum size in chars data can be
 	size_in_digits - int - maximum size in digits data can be (aka num_scale)
 	store_fixed - bool - when true then try to reserve max size on disk even if not all used
-	str_encoding - str - which character encoding to use when data type is a string
+	str_encoding - enum - which character encoding to use when data type is a string
 	str_trim_white - bool - when true then trim lead/trailing whitespace on save into field/var
-	str_latin_case - str - when str has latin chars do we upper/lowercase them on save
+	str_latin_case - enum - when str has latin chars do we upper/lowercase them on save
 	str_pad_char - str - when store_fixed is true then pad actual value with this to max size on save
 	str_trim_pad - bool - when store_fixed is true then trim padding on read from field/var
 	num_unsigned - bool - when basic_type is 'num', true means only >= 0 may be stored
 	num_precision - int - when basic_type is 'num', num digits of fractional precision we allowed
-	datetime_calendar - str - when basic_type is 'datetime', what calendar the date and time is in
+	datetime_calendar - enum - when basic_type is 'datetime', what calendar the date and time is in
 
 Undecided Possible Extra Columns:
 
@@ -878,7 +904,8 @@ Undecided Possible Extra Columns:
 
 Index List:
 
-	primary - unique - [name]
+	primary - unique - [id]
+	ak_name - unique - [name]
 	fk_basic_type - foreign - [basic_type]->[cct_basic_data_type]:[code]
 	fk_str_encoding - foreign - [str_encoding]->[cct_str_enc]:[code]
 	fk_str_latin_case - foreign - [str_latin_case]->[cct_str_latin_case]:[code]
@@ -886,29 +913,35 @@ Index List:
 
 Example Record List:
 
-	|name    |base    |bytes|char|dig|fx|enc|tw|la|pc|tp|u|p|cal|
-	|--------|--------|-----|----|---|--|---|--|--|--|--|-|-|---|
-	|bin1k   |bin     | 1000|    |   | 0|   |  |  |  |  | | |   | - a hunk of binary data of maximum 1000 bytes
-	|bin32k  |bin     |32000|    |   | 0|   |  |  |  |  | | |   | - a hunk of binary data of maximum 32000 bytes
-	|str4    |str     |     |   4|   | 1|asc| 1|uc|20|1 | | |   | - a fix-w 4 char ascii str, uppercased, spc-pad
-	|str10   |str     |     |  10|   | 1|asc| 1|pr|20|1 | | |   | - a fix-w 10 char ascii str, case-preserve, spc-pad
-	|str30   |str     |     |  30|   | 0|asc| 1|pr|  |  | | |   | - a var-w 30 char ascii str, case-preserving
-	|str2k   |str     |     |2000|   | 0|u16| 0|pr|  |  | | |   | - a var-w 2000 char unicode str, case-preserving
-	|byte    |num     |    1|    |   | 1|   |  |  |  |  |0|0|   | - a precise int btwn           -128 and           +127
-	|short   |num     |    2|    |   | 1|   |  |  |  |  |0|0|   | - a precise int btwn        -32,768 and        +32,767
-	|int     |num     |    4|    |   | 1|   |  |  |  |  |0|0|   | - a precise int btwn -2,147,483,648 and +2,147,483,647
-	|long    |num     |    8|    |   | 1|   |  |  |  |  |0|0|   | - a precise int btwn        -(2^63) and      +(2^63)-1
-	|ubyte   |num     |    1|    |   | 1|   |  |  |  |  |1|0|   | - a precise integer between 0 and           +255
-	|ushort  |num     |    2|    |   | 1|   |  |  |  |  |1|0|   | - a precise integer between 0 and        +65,535
-	|uint    |num     |    4|    |   | 1|   |  |  |  |  |1|0|   | - a precise integer between 0 and +4,294,967,295
-	|ulong   |num     |    8|    |   | 1|   |  |  |  |  |1|0|   | - a precise integer between 0 and      +(2^64)-1
-	|float   |num     |    4|    |   | 1|   |  |  |  |  | | |   | - a 32-bit imprecise fractional number
-	|double  |num     |    8|    |   | 1|   |  |  |  |  | | |   | - a 64-bit imprecise fractional number
-	|dec10p2 |num     |     |    | 10| 0|   |  |  |  |  | |2|   | - a precise 10-digit num with hundredths precision
-	|dec255  |num     |     |    |255| 0|   |  |  |  |  | | |   | - a precise 255-digit num with arbitrary precision
-	|boolean |bool    |     |    |   |  |   |  |  |  |  | | |   | - a boolean; only 2 values of false or true
-	|datetime|datetime|     |    |   |  |   |  |  |  |  | | |abs| - a date or time or both, non-calendar specific
-	|dtchines|datetime|     |    |   |  |   |  |  |  |  | | |chi| - a date or time or both, in the Chinese calendar
+	|id|name    |base    |bytes|char|dig|fx|enc|tw|la|pc|tp|u|p|cal|
+	|--|--------|--------|-----|----|---|--|---|--|--|--|--|-|-|---|
+	| 1|bin1k   |bin     | 1000|    |   |  |   |  |  |  |  | | |   | - a hunk of binary data of maximum 1000 bytes
+	| 2|bin32k  |bin     |32000|    |   |  |   |  |  |  |  | | |   | - a hunk of binary data of maximum 32000 bytes
+	| 3|str4    |str     |     |   4|   | 1|asc| 1|uc|20|1 | | |   | - a fix-w 4 char ascii str, uppercased, spc-pad
+	| 4|str10   |str     |     |  10|   | 1|asc| 1|pr|20|1 | | |   | - a fix-w 10 char ascii str, case-preserve, spc-pad
+	| 5|str30   |str     |     |  30|   |  |asc| 1|  |  |  | | |   | - a var-w 30 char ascii str, case-preserving
+	| 6|str2k   |str     |     |2000|   |  |u16|  |  |  |  | | |   | - a var-w 2000 char unicode str, case-preserving
+	| 7|byte    |num     |    1|    |   |  |   |  |  |  |  | |0|   | - a precise int btwn           -128 and           +127
+	| 8|short   |num     |    2|    |   |  |   |  |  |  |  | |0|   | - a precise int btwn        -32,768 and        +32,767
+	| 9|int     |num     |    4|    |   |  |   |  |  |  |  | |0|   | - a precise int btwn -2,147,483,648 and +2,147,483,647
+	|10|long    |num     |    8|    |   |  |   |  |  |  |  | |0|   | - a precise int btwn        -(2^63) and      +(2^63)-1
+	|11|ubyte   |num     |    1|    |   |  |   |  |  |  |  |1|0|   | - a precise integer between 0 and           +255
+	|12|ushort  |num     |    2|    |   |  |   |  |  |  |  |1|0|   | - a precise integer between 0 and        +65,535
+	|13|uint    |num     |    4|    |   |  |   |  |  |  |  |1|0|   | - a precise integer between 0 and +4,294,967,295
+	|14|ulong   |num     |    8|    |   |  |   |  |  |  |  |1|0|   | - a precise integer between 0 and      +(2^64)-1
+	|15|float   |num     |    4|    |   |  |   |  |  |  |  | | |   | - a 32-bit imprecise fractional number
+	|16|double  |num     |    8|    |   |  |   |  |  |  |  | | |   | - a 64-bit imprecise fractional number
+	|17|dec10p2 |num     |     |    | 10|  |   |  |  |  |  | |2|   | - a precise 10-digit num with hundredths precision
+	|18|dec255  |num     |     |    |255|  |   |  |  |  |  | | |   | - a precise 255-digit num with arbitrary precision
+	|19|boolean |bool    |     |    |   |  |   |  |  |  |  | | |   | - a boolean; only 2 values of false or true
+	|20|datetime|datetime|     |    |   |  |   |  |  |  |  | | |abs| - a date or time or both, non-calendar specific
+	|21|dtchines|datetime|     |    |   |  |   |  |  |  |  | | |chi| - a date or time or both, in the Chinese calendar
+	|22|str1    |str     |     |   1|   |  |   |  |  |  |  | | |   | - a 1-char string
+	|23|str20   |str     |     |  20|   |  |   |  |  |  |  | | |   | - a 20-char string
+	|24|str100  |str     |     | 100|   |  |   |  |  |  |  | | |   | - a 100-char string
+	|25|str250  |str     |     | 250|   |  |   |  |  |  |  | | |   | - a 250-char string
+	|26|entitynm|str     |     |  30|   |  |   |  |  |  |  | | |   | - a short string suitable for naming things
+	|27|generic |str     |     | 250|   |  |   |  |  |  |  | | |   | - a longer string that most kinds of data will fit in
 
 =head1 DATABASES AND NAME SPACES
 
@@ -937,13 +970,13 @@ when one database wants to talk directly to another.
 
 Column List:
 
-	database_id - int,req - unique identifier for this database
-	database_name - str - corresponds to Oracle "Data Source" (for one db instance querying another)
+	id - int,req - unique identifier for this database
+	name - str - corresponds to Oracle "Data Source" (for one db instance querying another)
 
 Index List:
 
-	primary - unique - [database_id]
-	ak_name - unique - [database_name]
+	primary - unique - [id]
+	ak_name - unique - [name]
 
 Example Record List:
 
@@ -975,15 +1008,15 @@ to anything in the SQL::ObjectModel code.
 
 Column List:
 
-	namespace_id - int,req - unique identifier for this namespace
-	database_id - int,req - the database that this namespace is in
-	namespace_name - str - the name this namespace is identified by; corresponds to Oracle "Schema"
+	id - int,req - unique identifier for this namespace
+	database - int,req - the database that this namespace is in
+	name - str - the name this namespace is identified by; corresponds to Oracle "Schema"
 
 Index List:
 
-	primary - unique - [namespace_id]
-	ak_name - unique - [database_id,namespace_name]
-	fk_database - foreign - [database_id]->[database]:[database_id]
+	primary - unique - [id]
+	ak_name - unique - [database,name]
+	fk_database - foreign - [database]->[database]:[id]
 
 Example Record List:
 
@@ -1018,10 +1051,10 @@ some core details.
 
 Column List:
 
-	table_id - int,req - unique identifier for this table
-	namespace_id - int,req - the namespace that this table is in
-	table_name - str,req - the name this table is identified by
-	table_order - int,req - to explicitely define what order tables are declared in
+	id - int,req - unique identifier for this table
+	namespace - int,req - the namespace that this table is in
+	name - str,req - the name this table is identified by
+	order - int,req - to explicitely define what order tables are declared in
 	public_syn - str - a name for the table outside of any namespace; Oracle public synonym
 	storage_file - str - where applicable, explicitely say where to store table (aka, "tablespace")
 
@@ -1031,11 +1064,11 @@ Undecided Possible Extra Column:
 
 Index List:
 
-	primary - unique - [table_id]
-	ak_name - unique - [namespace_id,table_name]
-	ak_order - unique - [namespace_id,table_order]
+	primary - unique - [id]
+	ak_name - unique - [namespace,name]
+	ak_order - unique - [namespace,order]
 	ak_public - unique - [public_syn]
-	fk_namespace - foreign - [namespace_id]->[namespace]:[namespace_id]
+	fk_namespace - foreign - [namespace]->[namespace]:[id]
 
 Example Record List:
 
@@ -1053,10 +1086,11 @@ details that are specific to that column.
 
 Column List:
 
-	table_id - int,req - unique identifier for this table
-	col_name - str,req - unique identifier for column within table
-	col_order - int,req - what order columns are declared in (and by default returned in)
-	data_type - str,req - the user-customized data type for this column
+	id - int,req - unique identifier for this table column
+	table - int,req - unique identifier for this table
+	name - str,req - unique identifier for column within table
+	order - int,req - what order columns are declared in (and by default returned in)
+	data_type - int,req - the user-customized data type for this column
 	required_val - bool,req - true when col value is required (not null), false when not (null)
 	default_val - str - an optional default value for the column, or starting val for auto_inc
 	auto_inc - bool - when true, col val defaults from a special auto-incrementing sequence
@@ -1067,44 +1101,45 @@ Undecided Possible Extra Columns:
 
 Index List:
 
-	primary - unique - [table_id,col_name]
-	ak_order - unique - [table_id,col_order]
-	fk_table - foreign - [table_id]->[table]:[table_id]
-	fk_data_type - foreign - [data_type]->[data_type]:[name]
+	primary - unique - [id]
+	ak_name - unique - [table,name]
+	ak_order - unique - [table,order]
+	fk_table - foreign - [table]->[table]:[id]
+	fk_data_type - foreign - [data_type]->[data_type]:[id]
 
 Undecided Possible Extra Indexes:
 
-	fk_sequence - foreign - [default_seq]->[sequence]:[sequence_id]
+	fk_sequence - foreign - [default_seq]->[sequence]:[id]
 
 Example Record List:
 
-	|tbl|col_name     |ord|type    |req|def|inc|
-	|---|-------------|---|--------|---|---|---|
-	|  1|user_id      |  1|int     |1  |1  |1  | - unique internal id for user, not changeable
-	|  1|login_name   |  2|str20   |1  |   |   | - who user authenticates into app as
-	|  1|login_pass   |  3|str20   |1  |   |   | - also used with authentication
-	|  1|private_name |  4|str100  |1  |   |   | - real name that app service provider can know
-	|  1|private_email|  5|str100  |1  |   |   | - email that service provider can contact user with
-	|  1|may_login    |  6|boolean |1  |   |   | - true when user may use app at all
-	|  1|max_sessions |  7|byte    |1  |3  |   | - max concurrent app logins user may have
-	|  2|user_id      |  1|int     |1  |   |   | - unique internal id for user, not changeable
-	|  2|public_name  |  2|str250  |1  |   |   | - public name or pen name or public alias
-	|  2|public_email |  3|str250  |0  |   |   | - email address the public may use for contact
-	|  2|web_url      |  4|str250  |0  |   |   | - personal/business website address of user
-	|  2|contact_net  |  5|str250  |0  |   |   | - info like ICQ number or other internet handles
-	|  2|contact_phy  |  6|str250  |0  |   |   | - physical address or city or telephone number
-	|  2|bio          |  7|str250  |0  |   |   | - brief description of the person
-	|  2|plan         |  8|str250  |0  |   |   | - what the person plans to do next
-	|  2|comments     |  9|str250  |0  |   |   | - other comments
-	|  3|user_id      |  1|int     |1  |   |   | - unique internal id for user, not changeable
-	|  3|pref_name    |  2|entitynm|1  |   |   | - app-specific preference name
-	|  3|pref_value   |  3|generic |0  |   |   | - preference value for this user
-	|  4|person_id    |  1|int     |1  |1  |1  | - unique actual id for person, not changeable
-	|  4|alternate_id |  2|str20   |0  |   |   | - user's own way of ident people, if wanted
-	|  4|name         |  3|str100  |1  |   |   | - actual name of the person they are called by
-	|  4|sex          |  4|str1    |0  |   |   | - sex of the person, if known
-	|  4|father_id    |  5|int     |0  |   |   | - person_id of this person's father, if known
-	|  4|mother_id    |  6|int     |0  |   |   | - person_id of this person's mother, if known
+	|id|tb|name         |ord|ty|req|def|inc|
+	|--|--|-------------|---|--|---|---|---|
+	| 1| 1|user_id      |  1| 9|1  |1  |1  | - unique internal id for user, not changeable
+	| 2| 1|login_name   |  2|23|1  |   |   | - who user authenticates into app as
+	| 3| 1|login_pass   |  3|23|1  |   |   | - also used with authentication
+	| 4| 1|private_name |  4|24|1  |   |   | - real name that app service provider can know
+	| 5| 1|private_email|  5|24|1  |   |   | - email that service provider can contact user with
+	| 6| 1|may_login    |  6|19|1  |   |   | - true when user may use app at all
+	| 7| 1|max_sessions |  7| 7|1  |3  |   | - max concurrent app logins user may have
+	| 8| 2|user_id      |  1| 9|1  |   |   | - unique internal id for user, not changeable
+	| 9| 2|public_name  |  2|25|1  |   |   | - public name or pen name or public alias
+	|10| 2|public_email |  3|25|0  |   |   | - email address the public may use for contact
+	|11| 2|web_url      |  4|25|0  |   |   | - personal/business website address of user
+	|12| 2|contact_net  |  5|25|0  |   |   | - info like ICQ number or other internet handles
+	|13| 2|contact_phy  |  6|25|0  |   |   | - physical address or city or telephone number
+	|14| 2|bio          |  7|25|0  |   |   | - brief description of the person
+	|15| 2|plan         |  8|25|0  |   |   | - what the person plans to do next
+	|16| 2|comments     |  9|25|0  |   |   | - other comments
+	|17| 3|user_id      |  1| 9|1  |   |   | - unique internal id for user, not changeable
+	|18| 3|pref_name    |  2|26|1  |   |   | - app-specific preference name
+	|19| 3|pref_value   |  3|27|0  |   |   | - preference value for this user
+	|20| 4|person_id    |  1| 9|1  |1  |1  | - unique actual id for person, not changeable
+	|21| 4|alternate_id |  2|23|0  |   |   | - user's own way of ident people, if wanted
+	|22| 4|name         |  3|24|1  |   |   | - actual name of the person they are called by
+	|23| 4|sex          |  4|22|0  |   |   | - sex of the person, if known
+	|24| 4|father_id    |  5| 9|0  |   |   | - person_id of this person's father, if known
+	|25| 4|mother_id    |  6| 9|0  |   |   | - person_id of this person's mother, if known
 
 =head2 table_ind
 
@@ -1121,36 +1156,38 @@ That is, a constrained column may be empty even if the foreign column never is.
 
 Column List:
 
-	table_id - int,req - unique identifier for this table
-	ind_name - str,req - unique identifier for index within table
-	ind_order - int,req - what order indexes are declared in
-	ind_type - str,req - what type of index this is (eg: unique, foreign)
-	f_table_id - int - when the index type is a foreign key, this is the constraining table
+	id - int,req - unique identifier for this table index
+	table - int,req - unique identifier for this table
+	name - str,req - unique identifier for index within table
+	order - int,req - what order indexes are declared in
+	ind_type - enum,req - what type of index this is (eg: unique, foreign)
+	f_table - int - when the index type is a foreign key, this is the constraining table
 
 Index List:
 
-	primary - unique - [table_id,ind_name]
-	ak_order - unique - [table_id,ind_order]
-	fk_table - foreign - [table_id]->[table]:[table_id]
+	primary - unique - [id]
+	ak_name - unique - [table,name]
+	ak_order - unique - [table,order]
+	fk_table - foreign - [table]->[table]:[id]
 	fk_ind_type - foreign - [ind_type]->[cct_index_type]:[code]
-	fk_f_table - foreign - [f_table_id]->[table]:[table_id]
+	fk_f_table - foreign - [f_table]->[table]:[id]
 
 Example Record List:
 
-	|tbl|ind_name        |ord|type    |ftbl|
-	|---|----------------|---|--------|----|
-	|  1|primary         |  1|unique  |    | - ensure all [user_id] are unique
-	|  1|ak_login_name   |  2|unique  |    | - ensure all [login_name] are unique
-	|  1|ak_private_email|  3|unique  |    | - ensure all [private_email] are unique
-	|  2|primary         |  1|unique  |    | - ensure all [user_id] are unique
-	|  2|ak_public_name  |  2|unique  |    | - ensure all [public_name] are unique
-	|  2|fk_user         |  3|foreign |   1| - ensure user_profile matches user_auth
-	|  3|primary         |  1|unique  |    | - ensure all [user_id,pref_name] are unique
-	|  3|fk_user         |  2|foreign |   1| - ensure user_pref matches user_auth
-	|  4|primary         |  1|unique  |    | - ensure all [person_id] are unique
-	|  4|ak_alternate_id |  2|unique  |    | - ensure all [alternate_id] are unique
-	|  4|fk_father       |  3|foreign |   4| - link child to father
-	|  4|fk_mother       |  4|foreign |   4| - link child to mother
+	|id|tb|name            |ord|type   |ftbl|
+	|--|--|----------------|---|-------|----|
+	| 1| 1|primary         |  1|unique |    | - ensure all [user_id] are unique
+	| 2| 1|ak_login_name   |  2|unique |    | - ensure all [login_name] are unique
+	| 3| 1|ak_private_email|  3|unique |    | - ensure all [private_email] are unique
+	| 4| 2|primary         |  1|unique |    | - ensure all [user_id] are unique
+	| 5| 2|ak_public_name  |  2|unique |    | - ensure all [public_name] are unique
+	| 6| 2|fk_user         |  3|foreign|   1| - ensure user_profile matches user_auth
+	| 7| 3|primary         |  1|unique |    | - ensure all [user_id,pref_name] are unique
+	| 8| 3|fk_user         |  2|foreign|   1| - ensure user_pref matches user_auth
+	| 9| 4|primary         |  1|unique |    | - ensure all [person_id] are unique
+	|10| 4|ak_alternate_id |  2|unique |    | - ensure all [alternate_id] are unique
+	|11| 4|fk_father       |  3|foreign|   4| - link child to father
+	|12| 4|fk_mother       |  4|foreign|   4| - link child to mother
 
 =head2 table_ind_col
 
@@ -1159,38 +1196,41 @@ columns are involved in each table index.
 
 Column List:
 
-	table_id - int,req - unique identifier for this table
-	ind_name - str,req - unique identifier for index within table
-	col_name - str,req - unique identifier for column within table
-	table_ind_col_order - int,req - order of the columns within the index
-	f_table_id - int - when the index type is a foreign key, this is the constraining table
-	f_col_name - str - when the index type is a foreign key, this is the constraining column
+	id - int,req - unique identifier for this table index column
+	table_ind - int,req - unique identifier for index within table
+	table_col - int,req - unique identifier for column within table
+	order - int,req - order of the columns within the index
+	f_table_col - int - when the index type is a foreign key, this is the constraining column
+
+	table - int,req - unique identifier for this table
+	f_table - int - when the index type is a foreign key, this is the constraining table
 
 Index List:
 
-	primary - unique - [table_id,ind_name,col_name]
-	ak_order - unique - [table_id,ind_name,table_ind_col_order]
-	fk_table_ind - foreign - [table_id,ind_name]->[table_ind]:[table_id,ind_name]
-	fk_table_col - foreign - [table_id,col_name]->[table_col]:[table_id,col_name]
-	fk_f_table_col - foreign - [f_table_id,f_col_name]->[table_col]:[table_id,col_name]
+	primary - unique - [id]
+	ak_table_col - unique - [table_ind,table_col]
+	ak_order - unique - [table_ind,order]
+	fk_table_ind - foreign - [table_ind,table]->[table_ind]:[id,table]
+	fk_table_col - foreign - [table_col,table]->[table_col]:[id,table]
+	fk_f_table_col - foreign - [f_table_col]->[table_col]:[id]
 
 Example Record List:
 
-	|tbl|ind_name        |col_name     |ord|ftbl|fcol     |
-	|---|----------------|-------------|---|----|---------|
-	|  1|primary         |user_id      |  1|    |         | - ensure all [user_id] are unique
-	|  1|ak_login_name   |login_name   |  1|    |         | - ensure all [login_name] are unique
-	|  1|ak_private_email|private_email|  1|    |         | - ensure all [private_email] are unique
-	|  2|primary         |user_id      |  1|    |         | - ensure all [user_id] are unique
-	|  2|ak_public_name  |public_name  |  1|    |         | - ensure all [login_name] are unique
-	|  2|fk_user         |user_id      |  1|   1|user_id  | - ensure user_profile matches user_auth
-	|  3|primary         |user_id      |  1|    |         | - ensure all [user_id,pref_name] are unique
-	|  3|primary         |pref_name    |  2|    |         | - ensure all [user_id,pref_name] are unique
-	|  3|fk_user         |user_id      |  1|   1|user_id  | - ensure user_pref matches user_auth
-	|  4|primary         |person_id    |  1|    |         | - ensure all [person_id] are unique
-	|  4|ak_alternate_id |alternate_id |  1|    |         | - ensure all [alternate_id] are unique
-	|  4|fk_father       |father_id    |  1|   4|person_id| - link child to father
-	|  4|fk_mother       |mother_id    |  1|   4|person_id| - link child to mother
+	|id|ind|col|ord|tbl|ftbl|fcol|
+	|--|---|---|---|---|----|----|
+	| 1|  1|  1|  1|  1|    |    | - ensure all [user_id] are unique
+	| 2|  2|  2|  1|  1|    |    | - ensure all [login_name] are unique
+	| 3|  3|  5|  1|  1|    |    | - ensure all [private_email] are unique
+	| 4|  4|  8|  1|  2|    |    | - ensure all [user_id] are unique
+	| 5|  5|  9|  1|  2|    |    | - ensure all [login_name] are unique
+	| 6|  6|  8|  1|  2|   1|   1| - ensure user_profile matches user_auth
+	| 7|  7| 17|  1|  3|    |    | - ensure all [user_id,pref_name] are unique
+	| 8|  7| 18|  2|  3|    |    | - ensure all [user_id,pref_name] are unique
+	| 9|  8| 17|  1|  3|   1|   1| - ensure user_pref matches user_auth
+	|10|  9| 20|  1|  4|    |    | - ensure all [person_id] are unique
+	|11| 10| 21|  1|  4|    |    | - ensure all [alternate_id] are unique
+	|12| 11| 24|  1|  4|   4|  20| - link child to father
+	|13| 12| 25|  1|  4|   4|  20| - link child to mother
 
 =head2 trigger
 
@@ -1204,8 +1244,9 @@ per each row worked on; they can run on inserts and/or updates and/or deletes.
 
 Column List:
 
-	table_id - int,req - unique identifier for the table to watch
-	block_id - int,req - unique identifier for the block to execute, only 1 trig can use a block
+	id - int,req - unique identifier for this trigger
+	table - int,req - unique identifier for the table to watch
+	block - int,req - unique identifier for the block to execute, only 1 trig can use a block
 	run_before - bool,req - true when the block should execute before attempted change is made
 	run_after - bool,req - true when the block should execute after attempted change is made
 	on_insert - bool,req - true when block should execute when a record insert is attempted
@@ -1215,10 +1256,10 @@ Column List:
 
 Index List:
 
-	primary - unique - [table_id,block_id]
-	ak_block - unique - [block_id]
-	fk_table - foreign - [table_id]->[table]:[table_id]
-	fk_block - foreign - [block_id]->[block]:[block_id]
+	primary - unique - [id]
+	ak_block - unique - [block]
+	fk_table - foreign - [table]->[table]:[id]
+	fk_block - foreign - [block]->[block]:[id]
 
 =head1 VIEWS
 
@@ -1261,11 +1302,11 @@ unnecessary work or complexity.  The flag defaults to false.
 
 Column List:
 
-	view_id - int,req - unique identifier for this view
-	view_type - str,req - what kind of view this is; eg: object, caller, cursor, inside
-	namespace_id - int - the namespace that this view is in, if any
-	view_name - str - the name this view is identified by, if any
-	view_order - int - to explicitely define what order views are declared in, if named
+	id - int,req - unique identifier for this view
+	view_type - enum,req - what kind of view this is; eg: object, caller, cursor, inside
+	namespace - int - the namespace that this view is in, if any
+	name - str - the name this view is identified by, if any
+	order - int - to explicitely define what order views are declared in, if named
 	public_syn - str - a name for the view outside of any namespace, if named; Oracle public synonym
 	may_write - bool,req - true when we should at least try allowing updates through the view
 	match_table - int - when set, the view matches exactly the interface for one table
@@ -1274,19 +1315,28 @@ Undecided Possible Extra Columns:
 
 	page_rows - bool,req - true when we should page the resulting rows so only some are returned
 	maxr_lit_val - int - if paging, this literal value says maximum rows to be returned
-	maxr_var_name - str - if paging, get max rows from the caller bind variable (?) named here
+	maxr_block_var - int - if paging, get max rows from this containing block variable
+	maxr_command_var - int - if paging, get max rows from this caller bind variable
 	skipr_lit_val - int - if paging, this literal value says rows to skip before returning any
-	skipr_var_name - str - if paging, get skip rows from the caller bind variable (?) named here
+	skipr_block_var - int - if paging, get skip rows from this containing block variable
+	skipr_command_var - int - if paging, get skip rows from this caller bind variable
 
 Index List:
 
-	primary - unique - [view_id]
-	ak_name - unique - [namespace_id,view_name]
-	ak_order - unique - [namespace_id,view_order]
+	primary - unique - [id]
+	ak_name - unique - [namespace,name]
+	ak_order - unique - [namespace,order]
 	ak_public - unique - [public_syn]
 	fk_view_type - foreign - [view_type]->[cct_view_type]:[code]
-	fk_namespace - foreign - [namespace_id]->[namespace]:[namespace_id]
-	fk_match_table - foreign - [match_table]->[table]:[table_id]
+	fk_namespace - foreign - [namespace]->[namespace]:[id]
+	fk_match_table - foreign - [match_table]->[table]:[id]
+
+Undecided Possible Extra Indexes:
+
+	fk_maxr_block_var - foreign - [maxr_block_var]->[block_var]:[id]
+	fk_maxr_command_var - foreign - [maxr_command_var]->[command_var]:[id]
+	fk_skipr_block_var - foreign - [skipr_block_var]->[block_var]:[id]
+	fk_skipr_command_var - foreign - [skipr_command_var]->[command_var]:[id]
 
 Example Record List:
 
@@ -1305,10 +1355,11 @@ implementation (where the data comes from or goes to) is not described here.
 
 Column List:
 
-	view_id - int,req - unique identifier for this view
-	col_name - str,req - unique identifier for column within view
-	col_order - int,req - what order columns are declared in (and by default returned in)
-	data_type - str,req - the user-customized data type for this column
+	id - int,req - unique identifier for this view column
+	view - int,req - unique identifier for this view
+	name - str,req - unique identifier for column within view
+	order - int,req - what order columns are declared in (and by default returned in)
+	data_type - int,req - the user-customized data type for this column
 	sort_priority - int - if valued, priority for final result rows (after rs merges) to be sorted by this column
 
 Undecided Possible Extra Columns:
@@ -1319,38 +1370,39 @@ Undecided Possible Extra Columns:
 
 Index List:
 
-	primary - unique - [view_id,col_name]
-	ak_order - unique - [view_id,col_order]
-	fk_view - foreign - [view_id]->[view]:[view_id]
-	fk_data_type - foreign - [data_type]->[data_type]:[name]
+	primary - unique - [id]
+	ak_name - unique - [view,name]
+	ak_order - unique - [view,order]
+	fk_view - foreign - [view]->[view]:[id]
+	fk_data_type - foreign - [data_type]->[data_type]:[id]
 
 Example Record List:
 
-	|vw|col_name     |ord|type   |so|
-	|--|-------------|---|-------|--|
-	| 1|user_id      |  1|int    |  | - unique internal id for user, not changeable
-	| 1|login_name   |  2|str20  | 1| - who user authenticates into app as
-	| 1|login_pass   |  3|str20  |  | - also used with authentication
-	| 1|private_name |  4|str100 |  | - real name that app service provider can know
-	| 1|private_email|  5|str100 |  | - email that service provider can contact user with
-	| 1|may_login    |  6|boolean|  | - true when user may use app at all
-	| 1|max_sessions |  7|byte   |  | - max concurrent app logins user may have
-	| 1|public_name  |  8|str250 |  | - public name or pen name or public alias
-	| 1|public_email |  9|str250 |  | - email address the public may use for contact
-	| 1|web_url      | 10|str250 |  | - personal/business website address of user
-	| 1|contact_net  | 11|str250 |  | - info like ICQ number or other internet handles
-	| 1|contact_phy  | 12|str250 |  | - physical address or city or telephone number
-	| 1|bio          | 13|str250 |  | - brief description of the person
-	| 1|plan         | 14|str250 |  | - what the person plans to do next
-	| 1|comments     | 15|str250 |  | - other comments
-	| 2|self_id      |  1|int    |  | - unique actual id for person, not changeable
-	| 2|self_name    |  2|str100 | 1| - actual name of the person they are called by
-	| 2|father_id    |  3|int    |  | - person_id of this person's father, if known
-	| 2|father_name  |  4|str100 | 2| - actual name of the person's father
-	| 2|mother_id    |  5|int    |  | - person_id of this person's mother, if known
-	| 2|mother_name  |  6|str100 | 3| - actual name of the person's mother
-	| 3|theme_name   |  2|generic| 2| - name of a user theme
-	| 3|theme_count  |  3|int    | 1| - count of users that use this theme
+	|id|vw|col_name     |ord|ty|so|
+	|--|--|-------------|---|--|--|
+	| 1| 1|user_id      |  1| 9|  | - unique internal id for user, not changeable
+	| 2| 1|login_name   |  2|23| 1| - who user authenticates into app as
+	| 3| 1|login_pass   |  3|23|  | - also used with authentication
+	| 4| 1|private_name |  4|24|  | - real name that app service provider can know
+	| 5| 1|private_email|  5|24|  | - email that service provider can contact user with
+	| 6| 1|may_login    |  6|19|  | - true when user may use app at all
+	| 7| 1|max_sessions |  7| 7|  | - max concurrent app logins user may have
+	| 8| 1|public_name  |  8|25|  | - public name or pen name or public alias
+	| 9| 1|public_email |  9|25|  | - email address the public may use for contact
+	|10| 1|web_url      | 10|25|  | - personal/business website address of user
+	|11| 1|contact_net  | 11|25|  | - info like ICQ number or other internet handles
+	|12| 1|contact_phy  | 12|25|  | - physical address or city or telephone number
+	|13| 1|bio          | 13|25|  | - brief description of the person
+	|14| 1|plan         | 14|25|  | - what the person plans to do next
+	|15| 1|comments     | 15|25|  | - other comments
+	|16| 2|self_id      |  1| 9|  | - unique actual id for person, not changeable
+	|17| 2|self_name    |  2|24| 1| - actual name of the person they are called by
+	|18| 2|father_id    |  3| 9|  | - person_id of this person's father, if known
+	|19| 2|father_name  |  4|24| 2| - actual name of the person's father
+	|20| 2|mother_id    |  5| 9|  | - person_id of this person's mother, if known
+	|21| 2|mother_name  |  6|24| 3| - actual name of the person's mother
+	|22| 3|theme_name   |  1|27| 2| - name of a user theme
+	|23| 3|theme_count  |  2| 9| 1| - count of users that use this theme
 
 =head2 view_rowset
 
@@ -1366,121 +1418,123 @@ that the merging operations (eg: the unions) are done in the correct order.
 
 Column List:
 
-	view_id - int,req - unique identifier for this view
-	rowset_num - int,req - unique identifier for rowset within view
-	p_rowset_num - int - parent rowset of this one, if any; empty if this is the root rowset
+	id - int,req - unique identifier for this view rowset
+	view - int,req - unique identifier for this view
+	p_rowset - int - parent rowset of this one, if any; empty if this is the root rowset
 	p_rowset_order - int,req - order of this rowset among its siblings; 1 if no siblings
-	c_merge_type - str - how to merge any child rowsets of this one together, if any
+	c_merge_type - enum - how to merge any child rowsets of this one together, if any
 
 Index List:
 
-	primary - unique - [view_id,rowset_num]
-	ak_order - unique - [view_id,p_rowset_num,p_rowset_order]
-	fk_view - foreign - [view_id]->[view]:[view_id]
+	primary - unique - [id]
+	ak_order - unique - [p_rowset,p_rowset_order]
+	fk_view - foreign - [view]->[view]:[id]
 	fk_merge_type - foreign - [c_merge_type]->[cct_rs_merge_type]:[code]
 
 Example Record List:
 
-	|vw|rn|prn|pro|mtp|
+	|id|vw|pri|pro|mtp|
 	|--|--|---|---|---|
 	| 1| 1|   |  1|   | - user
-	| 2| 1|   |  1|   | - person_with_parents
-	| 3| 1|   |  1|   | - user_theme
+	| 2| 2|   |  1|   | - person_with_parents
+	| 3| 3|   |  1|   | - user_theme
 
 =head2 view_src
 
 Each record in this table uniquely corresponds to a source table or view that
-is used by this view (one copy per view rowset if applicable).  Specifically 
-it applies only to the "from" clause in the generated SQL, where applicable.
+is used by this view (one copy per view rowset if applicable).  Specifically it
+applies only to the "from" clause in the generated SQL, where applicable.  A
+table or view may be used for multiple sources, each of which would be a unique
+alias for it.
 
 Column List:
 
-	view_id - int,req - unique identifier for this view
-	rowset_num - int,req - unique identifier for rowset within view
-	src_name - str,req - unique "alias" identifier for source within view rowset
-	src_order - int,req - what order sources are declared in (and by default joined)
+	id - int,req - unique identifier for this view source
+	rowset - int,req - unique identifier for rowset within view
+	name - str,req - unique "alias" identifier for source within view rowset
+	order - int,req - what order sources are declared in (and by default joined)
 	match_table - int - if set, the source is a table (and match_view must not be set)
 	match_view - int - if set, the source is another view (and match_table must not be set)
 
 Index List:
 
-	primary - unique - [view_id,rowset_num,src_name]
-	ak_order - unique - [view_id,rowset_num,src_order]
-	fk_rowset - foreign - [view_id,rowset_num]->[view_rowset]:[view_id,rowset_num]
-	fk_match_table - foreign - [match_table]->[table]:[table_id]
-	fk_match_view - foreign - [match_view]->[view]:[view_id]
+	primary - unique - [id]
+	ak_name - unique - [rowset,name]
+	ak_order - unique - [rowset,order]
+	fk_rowset - foreign - [rowset]->[view_rowset]:[id]
+	fk_match_table - foreign - [match_table]->[table]:[id]
+	fk_match_view - foreign - [match_view]->[view]:[id]
 
 Example Record List:
 
-	|vw|rn|name        |ord|mtb|mvw|
+	|id|rs|name        |ord|mtb|mvw|
 	|--|--|------------|---|---|---|
 	| 1| 1|user_auth   |  1|  1|   | - match "user_auth" table
-	| 1| 1|user_profile|  2|  2|   | - match "user_profile" table
-	| 2| 1|self        |  1|  4|   | - match "person" table
-	| 2| 1|father      |  2|  4|   | - match "person" table
-	| 2| 1|mother      |  3|  4|   | - match "person" table
-	| 3| 1|user_pref   |  1|  3|   | - match "user_pref" table
+	| 2| 1|user_profile|  2|  2|   | - match "user_profile" table
+	| 3| 2|self        |  1|  4|   | - match "person" table
+	| 4| 2|father      |  2|  4|   | - match "person" table
+	| 5| 2|mother      |  3|  4|   | - match "person" table
+	| 6| 3|user_pref   |  1|  3|   | - match "user_pref" table
 
 =head2 view_src_col
 
 Each record in this table uniquely represents a column in a source table or
 view that is used by this view, as specified in the view_src table.
 
-Note that the "Virtual Index List" describes a constraint that is complicated 
-enough such that it can only be enforced with a trigger or some other means 
-that supports multiple levels of indirection (constraints with subqueries?).
+Note that with databases that require all used columns to be populated in order
+to enforce a unique key or foreign key constraint, a trigger or other mechanism
+may be needed for some of the below items.
 
 Column List:
 
-	view_id - int,req - unique identifier for this view
-	rowset_num - int,req - unique identifier for rowset within view
-	src_name - str,req - which view source this column is associated with
-	src_col - str,req - which column from the source table or view is represented
+	id - int,req - unique identifier for this view source column
+	src - int,req - which view source this column is associated with
+	match_table_col - int - which column from the source table is represented, if applicable
+	match_view_col - int - which column from the source view is represented, if applicable
+
+	rowset - int,req - unique identifier for rowset within view (for fk to col table)
+	match_table - int - if set, the source is a table (and match_view must not be set)
+	match_view - int - if set, the source is another view (and match_table must not be set)
 
 Index List:
 
-	primary - unique - [view_id,rowset_num,src_name,src_col]
-	fk_view_src - foreign - [view_id,rowset_num,src_name]->[view_src]:[view_id,rowset_num,src_name]
-
-Virtual Index List:
-
-	given $src_table = fk_view_src:[match_table]
-	given $src_view = fk_view_src:[match_view]
-	if $src_table is set then
-		fk_src_col - foreign - [$src_table,src_col]->[table]:[table_id,col_name]
-	end if
-	if $src_view is set then
-		fk_src_col - foreign - [$src_view,src_col]->[view]:[view_id,col_name]
-	end if
+	primary - unique - [id]
+	fk_view_src - foreign - [src,rowset]->[view_src]:[id,rowset]
+	fk_match_table - foreign - [src,match_table]->[view_src]:[id,match_table]
+	fk_match_view - foreign - [src,match_view]->[view_src]:[id,match_view]
+	fk_match_table_col - foreign - [match_table,match_table_col]->[table_col]:[id,table]
+	fk_match_view_col - foreign - [match_view,match_view_col]->[view_col]:[id,view]
 
 Example Record List:
 
-	|vw|rn|src_name    |src_col      |
-	|--|--|------------|-------------|
-	| 1| 1|user_auth   |user_id      |
-	| 1| 1|user_auth   |login_name   |
-	| 1| 1|user_auth   |login_pass   |
-	| 1| 1|user_auth   |private_name |
-	| 1| 1|user_auth   |private_email|
-	| 1| 1|user_auth   |may_login    |
-	| 1| 1|user_auth   |max_sessions |
-	| 1| 1|user_profile|user_id      |
-	| 1| 1|user_profile|public_name  |
-	| 1| 1|user_profile|public_email |
-	| 1| 1|user_profile|web_url      |
-	| 1| 1|user_profile|contact_net  |
-	| 1| 1|user_profile|contact_phy  |
-	| 1| 1|user_profile|bio          |
-	| 1| 1|user_profile|plan         |
-	| 1| 1|user_profile|comments     |
-	| 2| 1|self        |person_id    |
-	| 2| 1|self        |name         |
-	| 2| 1|father      |person_id    |
-	| 2| 1|father      |name         |
-	| 2| 1|mother      |person_id    |
-	| 2| 1|mother      |name         |
-	| 3| 1|user_pref   |pref_name    |
-	| 3| 1|user_pref   |pref_value   |
+	|id|vs|mtb|mtc|mvw|mvc|ri|
+	|--|--|---|---|---|---|--|
+	| 1| 1|  1|  1|   |   | 1| - "user_auth"."user_id"
+	| 2| 1|  1|  2|   |   | 1| - "user_auth"."login_name"
+	| 3| 1|  1|  3|   |   | 1| - "user_auth"."login_pass"
+	| 4| 1|  1|  4|   |   | 1| - "user_auth"."private_name"
+	| 5| 1|  1|  5|   |   | 1| - "user_auth"."private_email"
+	| 6| 1|  1|  6|   |   | 1| - "user_auth"."may_login"
+	| 7| 1|  1|  7|   |   | 1| - "user_auth"."max_sessions"
+	| 8| 2|  2|  8|   |   | 1| - "user_profile"."user_id"
+	| 9| 2|  2|  9|   |   | 1| - "user_profile"."public_name"
+	|10| 2|  2| 10|   |   | 1| - "user_profile"."public_email"
+	|11| 2|  2| 11|   |   | 1| - "user_profile"."web_url"
+	|12| 2|  2| 12|   |   | 1| - "user_profile"."contact_net"
+	|13| 2|  2| 13|   |   | 1| - "user_profile"."contact_phy"
+	|14| 2|  2| 14|   |   | 1| - "user_profile"."bio"
+	|15| 2|  2| 15|   |   | 1| - "user_profile"."plan"
+	|16| 2|  2| 16|   |   | 1| - "user_profile"."comments"
+	|17| 3|  4| 20|   |   | 2| - "self"."person_id"
+	|18| 3|  4| 22|   |   | 2| - "self"."name"
+	|19| 4|  4| 20|   |   | 2| - "father"."person_id"
+	|20| 4|  4| 22|   |   | 2| - "father"."name"
+	|21| 5|  4| 20|   |   | 2| - "mother"."person_id"
+	|22| 5|  4| 22|   |   | 2| - "mother"."name"
+	|23| 6|  3| 18|   |   | 3| - "user_pref"."pref_name"
+	|24| 6|  3| 19|   |   | 3| - "user_pref"."pref_value"
+	|25| 3|  4| 24|   |   | 2| - "self"."father_id"
+	|26| 3|  4| 25|   |   | 2| - "self"."mother_id"
 
 =head2 view_join
 
@@ -1496,27 +1550,28 @@ which in many databases is illegal.
 
 Column List:
 
-	view_id - int,req - unique identifier for this view
-	rowset_num - int,req - unique identifier for rowset within view
-	lhs_src_name - str,req - which view source is on the left side of the join
-	rhs_src_name - str,req - which view source is on the right side of the join
-	join_type - str,req - what kind of table/view join is being done
+	id - int,req - unique identifier for this view join
+	rowset - int,req - unique identifier for rowset within view
+	lhs_src - int,req - which view source is on the left side of the join
+	rhs_src - int,req - which view source is on the right side of the join
+	join_type - enum,req - what kind of table/view join is being done
 
 Index List:
 
-	primary - unique - [view_id,rowset_num,lhs_src_name,rhs_src_name]
-	ak_limit_one - unique - [view_id,rowset_num,rhs_src_name]
-	fk_lhs_src - foreign - [view_id,rowset_num,lhs_src_name]->[view_src]:[view_id,rowset_num,src_name]
-	fk_rhs_src - foreign - [view_id,rowset_num,rhs_src_name]->[view_src]:[view_id,rowset_num,src_name]
+	primary - unique - [id]
+	ak_join - unique - [lhs_src,rhs_src]
+	ak_limit_one - unique - [rhs_src]
+	fk_lhs_src - foreign - [lhs_src,rowset]->[view_src]:[id,rowset]
+	fk_rhs_src - foreign - [rhs_src,rowset]->[view_src]:[id,rowset]
 	fk_join_type - foreign - [join_type]->[cct_rs_join_type]:[code]
 
 Example Record List:
 
-	|vw|rn|lhs_src  |rhs_src     |type |
-	|--|--|---------|------------|-----|
-	| 1| 1|user_auth|user_profile|left | - "user_auth" left join "user_profile"
-	| 2| 1|self     |father      |left | - "self" left join "father"
-	| 2| 1|self     |mother      |left | - "self" left join "mother"
+	|id|pa|lhs|rhs|type|
+	|--|--|---|---|----|
+	| 1| 1|  1|  2|left| - "user_auth" left join "user_profile"
+	| 2| 2|  3|  4|left| - "self" left join "father"
+	| 3| 2|  3|  5|left| - "self" left join "mother"
 
 =head2 view_join_col
 
@@ -1530,27 +1585,29 @@ source) that are being matched.
 
 Column List:
 
-	view_id - int,req - unique identifier for this view
-	rowset_num - int,req - unique identifier for rowset within view
-	lhs_src_name - str,req - which view source is on the left side of the join
-	rhs_src_name - str,req - which view source is on the right side of the join
-	lhs_src_col - str,req - which column from the left source is being matched on
-	rhs_src_col - str,req - which column from the right source is being matched on
+	id - int,req - unique identifier for this view join column
+	join - int,req - which view join this column is associated with
+	lhs_src_col - int,req - which column from the left source is being matched on
+	rhs_src_col - int,req - which column from the right source is being matched on
+
+	lhs_src - int,req - which view source is on the left side of the join
+	rhs_src - int,req - which view source is on the right side of the join
 
 Index List:
 
-	primary - unique - [view_id,rowset_num,lhs_src_name,rhs_src_name,lhs_src_col]
-	fk_view_join - foreign - [view_id,rowset_num,lhs_src_name,rhs_src_name]->[view_join]:[view_id,rowset_num,lhs_src_name,rhs_src_name]
-	fk_lhs_src_col - foreign - [view_id,rowset_num,lhs_src_name,rhs_src_col]->[view_src_col]:[view_id,rowset_num,src_name,src_col]
-	fk_rhs_src_col - foreign - [view_id,rowset_num,rhs_src_name,rhs_src_col]->[view_src_col]:[view_id,rowset_num,src_name,src_col]
+	primary - unique - [id]
+	ak_join - unique - [lhs_src,rhs_src,lhs_src_col]
+	fk_join - foreign - [join,lhs_src,rhs_src]->[view_join]:[id,lhs_src,rhs_src]
+	fk_lhs_src_col - foreign - [lhs_src_col,lhs_src]->[view_src_col]:[id,src]
+	fk_rhs_src_col - foreign - [rhs_src_col,rhs_src]->[view_src_col]:[id,src]
 
 Example Record List:
 
-	|vw|rn|lhs_src  |rhs_src     |lhs_col  |rhs_col  |
-	|--|--|---------|------------|---------|---------|
-	| 1| 1|user_auth|user_profile|user_id  |user_id  | - on "user_profile"."user_id" = "user_auth"."user_id"
-	| 2| 1|self     |father      |father_id|person_id| - on "father"."person_id" = "self"."father_id"
-	| 2| 1|self     |mother      |mother_id|person_id| - on "mother"."person_id" = "self"."mother_id"
+	|id|pa|lhs|lhc|rhs|rhc|
+	|--|--|---|---|---|---|
+	| 1| 1|  1|  1|  2|  8| - on "user_profile"."user_id" = "user_auth"."user_id"
+	| 2| 2|  3| 25|  4| 19| - on "father"."person_id" = "self"."father_id"
+	| 3| 3|  3| 26|  5| 21| - on "mother"."person_id" = "self"."mother_id"
 
 =head2 view_hierarchy
 
@@ -1564,26 +1621,34 @@ a standard way of doing the same thing as Oracle's CONNECT BY.
 
 Column List:
 
-	view_id - int,req - unique identifier for this view
-	rowset_num - int,req - unique identifier for rowset within view
-	src_name - str,req - which view source is being hierarchically joined to itself
-	start_src_col - str,req - which source column is checked against to determine the root of the hierarchy
+	id - int,req - unique identifier for this view hierarchy
+	rowset - int,req - unique identifier for rowset within view
+	start_src_col - int,req - which source column is checked against to determine the root of the hierarchy
 	start_lit_val - str - if start_src_col is being compared to a literal, then store the literal value here
-	start_var_name - str - if start_src_col is being compared to a variable, then put the caller bind variable (?) name here
-	conn_src_col - str,req - which source column contains a record's own identifier against which children match
-	p_conn_src_col - str,req - which source column contains the value of a parent identifier
+	start_block_var - int - if start_src_col is being compared to a containing block variable
+	start_command_var - int - if start_src_col is being compared to a caller bind variable
+	conn_src_col - int,req - which source column contains a record's own identifier against which children match
+	p_conn_src_col - int,req - which source column contains the value of a parent identifier
+
+	src - int,req - which view source is being hierarchically joined to itself
 
 Index List:
 
-	primary - unique - [view_id,rowset_num]
-	fk_start_src_col - foreign - [view_id,rowset_num,src_name,start_src_col]->[view_src_col]:[view_id,rowset_num,src_name,src_col]
-	fk_conn_src_col - foreign - [view_id,rowset_num,src_name,conn_src_col]->[view_src_col]:[view_id,rowset_num,src_name,src_col]
-	fk_p_conn_src_col - foreign - [view_id,rowset_num,src_name,p_conn_src_col]->[view_src_col]:[view_id,rowset_num,src_name,src_col]
+	primary - unique - [id]
+	ak_rowset - unique - [rowset]
+	fk_rowset - foreign - [rowset]->[view_rowset]:[id]
+	fk_src - foreign - [src,rowset]->[view_src]:[id,rowset]
+	fk_start_src_col - foreign - [start_src_col,src]->[view_src_col]:[id,src]
+	fk_start_block_var - foreign - [start_block_var]->[block_var]:[id]
+	fk_start_command_var - foreign - [start_command_var]->[command_var]:[id]
+	fk_conn_src_col - foreign - [conn_src_col,src]->[view_src_col]:[id,src]
+	fk_p_conn_src_col - foreign - [p_conn_src_col,src]->[view_src_col]:[id,src]
 
 Note that the current structure only allows queries like "... start with
-[start_src_col] = [start_lit_val/src_name] connect by prior [conn_src_col] =
-[p_conn_src_col] ...", but this probably isn't adequate for all uses, and will
-be improved.  We may eliminate this table in favor of view_part_def.
+[start_src_col] = [start_[lit_val/[block/command]_var]] connect by prior
+[conn_src_col] = [p_conn_src_col] ...", but this probably isn't adequate for
+all uses, and will be improved.  We may eliminate this table in favor of
+view_part_def.
 
 =head2 view_col_def
 
@@ -1600,61 +1665,63 @@ as the data_type specified in the view_col record.
 
 Column List:
 
-	view_id - int,req - unique identifier for this view
-	col_name - str,req - unique identifier for interface/output column within view
-	rowset_num - int,req - unique identifier for rowset within view
-	expr_num - int,req - unique identifier for sub-expression within view column def
-	p_expr_num - int - parent expression of this one, if any; empty if this is the root expression
+	id - int,req - unique identifier for this view column def sub-expression
+	view - int,req - unique identifier for this view
+	view_col - int,req - unique identifier for interface/output column within view
+	rowset - int,req - unique identifier for rowset within view
+	p_expr - int - parent expression of this one, if any; empty if this is the root expression
 	p_expr_order - int,req - order of this expression among its siblings; 1 if no siblings
-	expr_type - str,req - what type of expression this is; eg: literal, variable, column, view, function
+	expr_type - enum,req - what type of expression this is; eg: literal, variable, column, view, function
 	lit_val - str - if expr_type is 'lit', then store the literal value here
-	var_name - str - if expr_type is 'var', then put the caller bind variable (?) name here
-	src_name - str - if expr_type is 'col', then put the column source/alias name here
-	src_col - str - if expr_type is 'col', then put the source table/view column name here
-	f_view_id - int - if expr_type is 'view', then put the view/subquery id here
-	sfunc_code - str - if expr_type is 'sfunc', then put the standard built-in function name/code here
-	ufunc_id - int - if expr_type is 'ufunc', then put the user-defined stored function (block) id here
+	block_var - int - if expr_type is 'var', then use this containing block variable
+	command_var - int - if expr_type is 'var', then use this caller bind variable
+	src_col - int - if expr_type is 'col', then use this source table/view column
+	f_view - int - if expr_type is 'view', then put the view/subquery id here
+	sfunc - enum - if expr_type is 'sfunc', then put the standard built-in function name/code here
+	ufunc - int - if expr_type is 'ufunc', then put the user-defined stored function (block) id here
 
 Index List:
 
-	primary - unique - [view_id,col_name,rowset_num,expr_num]
-	ak_order - unique - [view_id,col_name,rowset_num,p_expr_num,p_expr_order]
-	fk_view_col - foreign - [view_id,col_name]->[view_col]:[view_id,col_name]
-	fk_rowset - foreign - [view_id,rowset_num]->[view_rowset]:[view_id,rowset_num]
+	primary - unique - [id]
+	ak_order - unique - [view_col,rowset,p_expr,p_expr_order]
+	fk_view_col - foreign - [view_col,view]->[view_col]:[id,view]
+	fk_rowset - foreign - [rowset,view]->[view_rowset]:[id,view]
 	fk_expr_type - foreign - [c_expr_type]->[cct_basic_expr_type]:[code]
-	fk_src_col - foreign - [view_id,rowset_num,src_name,src_col]->[view_src_col]:[view_id,rowset_num,src_name,col_name]
-	fk_f_view - foreign - [f_view_id]->[view]:[view_id]
-	fk_sfunc_code - foreign - [sfunc_code]->[cct_standard_func]:[code]
-	fk_ufunc - foreign - [ufunc_id]->[block]:[block_id]
+	fk_block_var - foreign - [block_var]->[block_var]:[id]
+	fk_command_var - foreign - [command_var]->[command_var]:[id]
+	fk_src_col - foreign - [src_col,rowset]->[view_src_col]:[id,rowset]
+	fk_f_view - foreign - [f_view]->[view]:[id]
+	fk_sfunc - foreign - [sfunc]->[cct_standard_func]:[code]
+	fk_ufunc - foreign - [ufunc]->[block]:[id]
 
 Example Record List:
 
-	|vw|col_name     |rn|en|pen|peo|type |lit|var|src_name    |src_col      |fvw|sf    |uf|
-	|--|-------------|--|--|---|---|-----|---|---|------------|-------------|---|------|--|
-	| 1|user_id      | 1| 1|   |  1|col  |   |   |user_auth   |user_id      |   |      |  |
-	| 1|login_name   | 1| 1|   |  1|col  |   |   |user_auth   |login_name   |   |      |  |
-	| 1|login_pass   | 1| 1|   |  1|col  |   |   |user_auth   |login_pass   |   |      |  |
-	| 1|private_name | 1| 1|   |  1|col  |   |   |user_auth   |private_name |   |      |  |
-	| 1|private_email| 1| 1|   |  1|col  |   |   |user_auth   |private_email|   |      |  |
-	| 1|may_login    | 1| 1|   |  1|col  |   |   |user_auth   |may_login    |   |      |  |
-	| 1|max_sessions | 1| 1|   |  1|col  |   |   |user_auth   |max_sessions |   |      |  |
-	| 1|public_name  | 1| 1|   |  1|col  |   |   |user_profile|public_name  |   |      |  |
-	| 1|public_email | 1| 1|   |  1|col  |   |   |user_profile|public_email |   |      |  |
-	| 1|web_url      | 1| 1|   |  1|col  |   |   |user_profile|web_url      |   |      |  |
-	| 1|contact_net  | 1| 1|   |  1|col  |   |   |user_profile|contact_net  |   |      |  |
-	| 1|contact_phy  | 1| 1|   |  1|col  |   |   |user_profile|contact_phy  |   |      |  |
-	| 1|bio          | 1| 1|   |  1|col  |   |   |user_profile|bio          |   |      |  |
-	| 1|plan         | 1| 1|   |  1|col  |   |   |user_profile|plan         |   |      |  |
-	| 1|comments     | 1| 1|   |  1|col  |   |   |user_profile|comments     |   |      |  |
-	| 2|self_id      | 1| 1|   |  1|col  |   |   |self        |person_id    |   |      |  |
-	| 2|self_name    | 1| 1|   |  1|col  |   |   |self        |name         |   |      |  |
-	| 2|father_id    | 1| 1|   |  1|col  |   |   |father      |person_id    |   |      |  |
-	| 2|father_name  | 1| 1|   |  1|col  |   |   |father      |name         |   |      |  |
-	| 2|mother_id    | 1| 1|   |  1|col  |   |   |mother      |person_id    |   |      |  |
-	| 2|mother_name  | 1| 1|   |  1|col  |   |   |mother      |name         |   |      |  |
-	| 3|theme_name   | 1| 1|   |  1|col  |   |   |user_pref   |pref_value   |   |      |  |
-	| 3|theme_count  | 1| 1|   |  1|sfunc|   |   |            |             |   |gcount|  |
-	| 3|theme_count  | 1| 2|  1|  1|col  |   |   |user_pref   |pref_value   |   |      |  |
+	|id|vw|ci|ri|pe|peo|type |lit|blv|cmv|src|fvw|sf    |uf|
+	|--|--|--|--|--|---|-----|---|---|---|---|---|------|--|
+	| 1| 1| 1| 1|  |  1|col  |   |   |   |  1|   |      |  |
+	| 2| 1| 2| 1|  |  1|col  |   |   |   |  2|   |      |  |
+	| 3| 1| 3| 1|  |  1|col  |   |   |   |  3|   |      |  |
+	| 4| 1| 4| 1|  |  1|col  |   |   |   |  4|   |      |  |
+	| 5| 1| 5| 1|  |  1|col  |   |   |   |  5|   |      |  |
+	| 6| 1| 6| 1|  |  1|col  |   |   |   |  6|   |      |  |
+	| 7| 1| 7| 1|  |  1|col  |   |   |   |  7|   |      |  |
+	| 8| 1| 8| 1|  |  1|col  |   |   |   |  9|   |      |  |
+	| 9| 1| 9| 1|  |  1|col  |   |   |   | 10|   |      |  |
+	|10| 1|10| 1|  |  1|col  |   |   |   | 11|   |      |  |
+	|11| 1|11| 1|  |  1|col  |   |   |   | 12|   |      |  |
+	|12| 1|12| 1|  |  1|col  |   |   |   | 13|   |      |  |
+	|13| 1|13| 1|  |  1|col  |   |   |   | 14|   |      |  |
+	|14| 1|14| 1|  |  1|col  |   |   |   | 15|   |      |  |
+	|15| 1|15| 1|  |  1|col  |   |   |   | 16|   |      |  |
+	|16| 2|16| 2|  |  1|col  |   |   |   | 17|   |      |  |
+	|17| 2|17| 2|  |  1|col  |   |   |   | 18|   |      |  |
+	|18| 2|18| 2|  |  1|col  |   |   |   | 19|   |      |  |
+	|19| 2|19| 2|  |  1|col  |   |   |   | 20|   |      |  |
+	|20| 2|20| 2|  |  1|col  |   |   |   | 21|   |      |  |
+	|21| 2|21| 2|  |  1|col  |   |   |   | 22|   |      |  |
+	|22| 3|22| 3|  |  1|col  |   |   |   | 24|   |      |  |
+	|23| 3|23| 3|  |  1|sfunc|   |   |   |   |   |gcount|  |
+	|24| 3|23| 3|23|  1|col  |   |   |   | 24|   |      |  |
 
 =head2 view_part_def
 
@@ -1687,54 +1754,55 @@ expression each.
 
 Column List:
 
-	view_id - int,req - unique identifier for this view
-	rowset_num - int,req - unique identifier for rowset within view
-	view_part - str,req - what "part" of a view definition this is defining
-	expr_num - int,req - unique identifier for sub-expression within view rowset
-	p_expr_num - int - parent expression of this one, if any; empty if this is the root expression
+	id - int,req - unique identifier for this view part def sub-expression
+	rowset - int,req - unique identifier for rowset within view
+	view_part - enum,req - what "part" of a view definition this is defining
+	p_expr - int - parent expression of this one, if any; empty if this is the root expression
 	p_expr_order - int,req - order of this expression among its siblings; 1 if no siblings
-	expr_type - str,req - what type of expression this is; eg: literal, variable, column, view, function
+	expr_type - enum,req - what type of expression this is; eg: literal, variable, column, view, function
 	lit_val - str - if expr_type is 'lit', then store the literal value here
-	var_name - str - if expr_type is 'var', then put the caller bind variable (?) name here
-	src_name - str - if expr_type is 'col', then put the column source/alias name here
-	src_col - str - if expr_type is 'col', then put the source table/view column name here
-	f_view_id - int - if expr_type is 'view', then put the view/subquery id here
-	sfunc_code - str - if expr_type is 'sfunc', then put the standard built-in function name/code here
-	ufunc_id - int - if expr_type is 'ufunc', then put the user-defined stored function (block) id here
+	block_var - int - if expr_type is 'var', then use this containing block variable
+	command_var - int - if expr_type is 'var', then use this caller bind variable
+	src_col - int - if expr_type is 'col', then use this source table/view column
+	f_view - int - if expr_type is 'view', then put the view/subquery id here
+	sfunc - enum - if expr_type is 'sfunc', then put the standard built-in function name/code here
+	ufunc - int - if expr_type is 'ufunc', then put the user-defined stored function (block) id here
 
 Index List:
 
-	primary - unique - [view_id,rowset_num,view_part,expr_num]
-	ak_order - unique - [view_id,rowset_num,view_part,p_expr_num,p_expr_order]
-	fk_rowset - foreign - [view_id,rowset_num]->[view_rowset]:[view_id,rowset_num]
+	primary - unique - [id]
+	ak_order - unique - [rowset,view_part,p_expr,p_expr_order]
+	fk_rowset - foreign - [rowset]->[view_rowset]:[id]
 	fk_view_part - foreign - [view_part]->[cct_view_part]:[code]
 	fk_expr_type - foreign - [c_expr_type]->[cct_basic_expr_type]:[code]
-	fk_src_col - foreign - [view_id,rowset_num,src_name,src_col]->[view_src_col]:[view_id,rowset_num,src_name,src_col]
-	fk_f_view - foreign - [f_view_id]->[view]:[view_id]
-	fk_sfunc_code - foreign - [sfunc_code]->[cct_standard_func]:[code]
-	fk_ufunc - foreign - [ufunc_id]->[block]:[block_id]
+	fk_block_var - foreign - [block_var]->[block_var]:[id]
+	fk_command_var - foreign - [command_var]->[command_var]:[id]
+	fk_src_col - foreign - [src_col,rowset]->[view_src_col]:[id,rowset]
+	fk_f_view - foreign - [f_view]->[view]:[id]
+	fk_sfunc - foreign - [sfunc]->[cct_standard_func]:[code]
+	fk_ufunc - foreign - [ufunc]->[block]:[id]
 
 Example Record List:
 
-	|vw|rn|part |en|pen|peo|type |lit  |var     |src_name |src_col   |fvw|sf    |uf|
-	|--|--|-----|--|---|---|-----|-----|--------|---------|----------|---|------|--|
-	| 1| 1|where| 1|   |  1|sfunc|     |        |         |          |   |eq    |  | - standard function of "eq(a,b)"
-	| 1| 1|where| 2|  1|  1|col  |     |        |user_auth|user_id   |   |      |  | - match column "user_auth"."user_id"
-	| 1| 1|where| 3|  1|  2|var  |     |curr_uid|         |          |   |      |  | - value of bind var "curr_uid"
-	| 2| 1|where| 1|   |  1|sfunc|     |        |         |          |   |and   |  | - standard function of "and(a,b)"
-	| 2| 1|where| 2|  1|  1|sfunc|     |        |         |          |   |like  |  | - standard function of "like(a,b)"
-	| 2| 1|where| 3|  2|  1|col  |     |        |father   |name      |   |      |  | - match column "father"."name"
-	| 2| 1|where| 4|  2|  2|var  |     |srchw_fa|         |          |   |      |  | - value of bind var "srchw_fa"
-	| 2| 1|where| 5|  1|  1|sfunc|     |        |         |          |   |like  |  | - standard function of "like(a,b)"
-	| 2| 1|where| 6|  5|  1|col  |     |        |mother   |name      |   |      |  | - match column "mother"."name"
-	| 2| 1|where| 7|  5|  2|var  |     |srchw_mo|         |          |   |      |  | - value of bind var "srchw_mo"
-	| 3| 1|where| 1|   |  1|sfunc|     |        |         |          |   |eq    |  | - standard function of "eq(a,b)"
-	| 3| 1|where| 2|  1|  1|col  |     |        |user_pref|pref_name |   |      |  | - match column "user_pref"."pref_name"
-	| 3| 1|where| 3|  1|  2|lit  |theme|        |         |          |   |      |  | - match literal value of "theme"
-	| 3| 1|group| 1|   |  1|col  |     |        |user_pref|pref_value|   |      |  | - group by "user_pref"."pref_value"
-	| 3| 1|havin| 1|   |  1|sfunc|     |        |         |          |   |gt    |  | - standard function of "gt(a,b)"
-	| 3| 1|havin| 2|  1|  1|sfunc|     |        |         |          |   |gcount|  | - standard function of "gcount(col)"
-	| 3| 1|havin| 4|  1|  2|lit  |    1|        |         |          |   |      |  | - match literal value of "theme"
+	|id|ri|part |pe|peo|type |lit  |blv|cmv     |src|fvw|sf    |uf|
+	|--|--|-----|--|---|-----|-----|---|--------|---|---|------|--|
+	| 1| 1|where|  |  1|sfunc|     |   |        |   |   |eq    |  | - standard function of "eq(a,b)"
+	| 2| 1|where| 1|  1|col  |     |   |        |  1|   |      |  | - match column "user_auth"."user_id"
+	| 3| 1|where| 1|  2|var  |     |   |curr_uid|   |   |      |  | - value of bind var "curr_uid"
+	| 4| 2|where|  |  1|sfunc|     |   |        |   |   |and   |  | - standard function of "and(a,b)"
+	| 5| 2|where| 4|  1|sfunc|     |   |        |   |   |like  |  | - standard function of "like(a,b)"
+	| 6| 2|where| 5|  1|col  |     |   |        | 20|   |      |  | - match column "father"."name"
+	| 7| 2|where| 5|  2|var  |     |   |srchw_fa|   |   |      |  | - value of bind var "srchw_fa"
+	| 8| 2|where| 4|  1|sfunc|     |   |        |   |   |like  |  | - standard function of "like(a,b)"
+	| 9| 2|where| 8|  1|col  |     |   |        | 22|   |      |  | - match column "mother"."name"
+	|10| 2|where| 8|  2|var  |     |   |srchw_mo|   |   |      |  | - value of bind var "srchw_mo"
+	|11| 3|where|  |  1|sfunc|     |   |        |   |   |eq    |  | - standard function of "eq(a,b)"
+	|12| 3|where|11|  1|col  |     |   |        | 23|   |      |  | - match column "user_pref"."pref_name"
+	|13| 3|where|11|  2|lit  |theme|   |        |   |   |      |  | - match literal value of "theme"
+	|14| 3|group|  |  1|col  |     |   |        | 24|   |      |  | - group by "user_pref"."pref_value"
+	|15| 3|havin|  |  1|sfunc|     |   |        |   |   |gt    |  | - standard function of "gt(a,b)"
+	|16| 3|havin|15|  1|sfunc|     |   |        |   |   |gcount|  | - standard function of "gcount(col)"
+	|17| 3|havin|15|  2|lit  |    1|   |        |   |   |      |  | - match literal value of "theme"
 
 	Notes: In Oracle notation: the first view says match where
 	"user_auth.user_id = :curr_uid", the second says match where "father.name
@@ -1813,14 +1881,15 @@ some core details.
 
 Column List:
 
-	block_id - int,req - unique identifier for this block
-	p_block_id - int - parent block of this one, if any; empty if this is the root block
-	p_block_order - int,req - order of this block among its siblings; 1 if no siblings
-	block_type - str,req - what kind of block this is; eg: object, caller, cursor, inside
-	namespace_id - int - the namespace that this block is in, if any
-	block_name - str - the name this block is identified by, if any
-	block_order - int - to explicitely define what order blocks are declared in, if named
+	id - int,req - unique identifier for this block
+	block_type - enum,req - what kind of block this is; eg: object, caller, cursor, inside
+	namespace - int - the namespace that this block is in, if any
+	name - str - the name this block is identified by, if any
+	order - int - to explicitely define what order blocks are declared in, if named
 	public_syn - str - a name for the block outside of any namespace, if named; Oracle public synonym
+
+	p_block - int - parent block of this one, if any; empty if this is the root block
+	p_block_order - int,req - order of this block among its siblings; 1 if no siblings
 
 Undecided Possible Extra Columns:
 
@@ -1828,12 +1897,12 @@ Undecided Possible Extra Columns:
 
 Index List:
 
-	primary - unique - [block_id]
-	ak_name - unique - [namespace_id,block_name]
-	ak_order - unique - [namespace_id,block_order]
+	primary - unique - [id]
+	ak_name - unique - [namespace,name]
+	ak_order - unique - [namespace,order]
 	ak_public - unique - [public_syn]
 	fk_block_type - foreign - [block_type]->[cct_block_type]:[code]
-	fk_namespace - foreign - [namespace_id]->[namespace]:[namespace_id]
+	fk_namespace - foreign - [namespace]->[namespace]:[id]
 
 Undecided Possible Extra Indexes:
 
@@ -1850,14 +1919,15 @@ determined by its type.
 
 Column List:
 
-	block_id - int,req - what block this variable is in
-	var_name - str,req - unique identifier for variable within view
-	var_order - int,req - what order variables are declared in
-	var_type - str,req - what basic variable type the variable is
+	id - int,req - unique identifier for this block var
+	block - int,req - what block this variable is in
+	name - str,req - unique identifier for variable within view
+	order - int,req - what order variables are declared in
+	var_type - enum,req - what basic variable type the variable is
 	is_argument - bool,req - true if this variable is a block argument (needs fleshing out)
-	data_type - str - if the var type is 'scalar', this is its user customized data type
+	data_type - int - if the var type is 'scalar', this is its user customized data type
 	init_lit_val - str - if var type is 'scalar', an initial value for var can go here
-	view_id - int - if var type is 'cursor', then put the view defining it here
+	c_view - int - if var type is 'cursor', then put the view defining it here
 
 Undecided Possible Extra Columns:
 
@@ -1865,12 +1935,13 @@ Undecided Possible Extra Columns:
 
 Index List:
 
-	primary - unique - [block_id,var_name]
-	ak_order - unique - [block_id,var_order]
-	fk_block - foreign - [block_id]->[block]:[block_id]
+	primary - unique - [id]
+	ak_name - unique - [block,name]
+	ak_order - unique - [block,order]
+	fk_block - foreign - [block]->[block]:[id]
 	fk_var_type - foreign - [var_type]->[cct_basic_var_type]:[code]
-	fk_data_type - foreign - [data_type]->[data_type]:[name]
-	fk_view - foreign - [view_id]->[view]:[view_id]
+	fk_data_type - foreign - [data_type]->[data_type]:[id]
+	fk_c_view - foreign - [c_view]->[view]:[id]
 
 =head2 block_stmt
 
@@ -1883,18 +1954,24 @@ referred to by the block_stmt record.
 
 Column List:
 
-	block_id - int,req - what block this statement is in
-	stmt_num - int,req - unique identifier for stmt within block, and what order it executes in
+	id - int,req - unique identifier for this block statement
+	block - int,req - what block this statement is in
+	order - int,req - what order a statement executes in
 	stmt_type - str,req - what type of stmt this is; eg: assignment, condit, call, loop, dml, return
-	dest_var_name - str - if the stmt type is 'assign', this var is where the expression result goes
-	c_block_id - int - if the stmt type starts an unnamed block context, this is the child block id
+	dest_var - int - if the stmt type is 'assign', this var is where the expression result goes
+	sproc - enum - if expr_type is 'sproc', then this is the standard built-in procedure to call
+	uproc - int - if expr_type is 'uproc', then this is the user-defined stored function (block) to call
+	c_block - int - if the stmt type starts an unnamed block context, this is the child block id
 
 Index List:
 
-	primary - unique - [block_id,stmt_num]
-	fk_block - foreign - [block_id]->[block]:[block_id]
-	fk_dest_var - foreign - [block_id,dest_var_name]->[block_var]:[block_id,var_name]
-	fk_c_block - foreign - [c_block_id]->[block]:[block_id]
+	primary - unique - [id]
+	ak_order - unique - [block,order]
+	fk_block - foreign - [block]->[block]:[id]
+	fk_dest_var - foreign - [dest_var]->[block_var]:[id]
+	fk_sproc - foreign - [sproc]->[cct_standard_proc]:[code]
+	fk_uproc - foreign - [uproc]->[block]:[id]
+	fk_c_block - foreign - [c_block]->[block]:[id]
 
 =head2 block_expr
 
@@ -1907,26 +1984,25 @@ side of the statement.
 
 Column List:
 
-	block_id - int,req - unique identifier for this block
-	stmt_num - int,req - unique identifier for block statement this expression is part of
-	expr_num - int,req - unique identifier for sub-expression within block statement
-	p_expr_num - int - parent expression of this one, if any; empty if this is the root expression
+	id - int,req - unique identifier for this block statement sub-expression
+	stmt - int,req - unique identifier for block statement this expression is part of
+	p_expr - int - parent expression of this one, if any; empty if this is the root expression
 	p_expr_order - int,req - order of this expression among its siblings; 1 if no siblings
-	expr_type - str,req - what type of expression this is; eg: literal, variable, column, function
+	expr_type - enum,req - what type of expression this is; eg: literal, variable, column, function
 	lit_val - str - if expr_type is 'lit', then store the literal value here
-	src_var_name - str - if expr_type is 'var', then put the block variable name here
-	sfunc_code - str - if expr_type is 'sfunc', then put the standard built-in function name/code here
-	ufunc_id - int - if expr_type is 'ufunc', then put the user-defined stored function (block) id here
+	src_var - int - if expr_type is 'var', then use this containing block variable
+	sfunc - enum - if expr_type is 'sfunc', then put the standard built-in function name/code here
+	ufunc - int - if expr_type is 'ufunc', then put the user-defined stored function (block) id here
 
 Index List:
 
-	primary - unique - [block_id,stmt_num,expr_num]
-	ak_order - unique - [block_id,stmt_num,p_expr_num,p_expr_order]
-	fk_stmt - foreign - [block_id,stmt_num]->[block_stmt]:[block_id,stmt_num]
+	primary - unique - [id]
+	ak_order - unique - [stmt,p_expr,p_expr_order]
+	fk_stmt - foreign - [stmt]->[block_stmt]:[id]
 	fk_expr_type - foreign - [c_expr_type]->[cct_basic_expr_type]:[code]
-	fk_src_var_name - foreign - [block_id,src_var_name]->[block_var]:[block_id,var_name]
-	fk_sfunc_code - foreign - [sfunc_code]->[cct_standard_func]:[code]
-	fk_ufunc - foreign - [ufunc_id]->[block]:[block_id]
+	fk_src_var - foreign - [src_var]->[block_var]:[id]
+	fk_sfunc - foreign - [sfunc]->[cct_standard_func]:[code]
+	fk_ufunc - foreign - [ufunc]->[block]:[id]
 
 =head1 USERS
 
@@ -1938,7 +2014,7 @@ to anything in the SQL::ObjectModel code.
 
 To be added: user, privilege.
 
-=head1 COMMANDS AND RESULTS
+=head1 APPLICATIONS, COMMANDS AND RESULTS
 
 This section still needs to be written.
 
@@ -1946,10 +2022,11 @@ Because all of the records in these tables are user defined, the provided
 record list is simply some example or "synopsis" data; none of it corresponds 
 to anything in the SQL::ObjectModel code.
 
-To be added: command, result.
+To be added: application, command, command_var, result.
 
 =head1 SEE ALSO
 
-perl(1), SQL::ObjectModel, Rosetta, Rosetta::Framework.
+perl(1), SQL::ObjectModel, SQL::ObjectModel::XMLSchema, Rosetta,
+Rosetta::Framework.
 
 =cut

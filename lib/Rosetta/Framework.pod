@@ -753,17 +753,20 @@ To stay "Rosetta":
 
 =head2 In distribution "Rosetta-Drivers" or a multiplicity of similarly named
 
+I<Note: more databases (and data access protocols) can be found listed at 
+"http://freshmeat.net/articles/view/305/" and "http://freshmeat.net/articles/view/307/">
+
 	Rosetta::Driver::Native (a fully functional small RDBMS for when normal db not needed)
 	Rosetta::Driver::Oracle (interface to Oracle db 8, 9)
 	Rosetta::Driver::Sybase (interface to Sybase db)
 	Rosetta::Driver::PostgreSQL (interface to PostgreSQL db)
 	Rosetta::Driver::MySQL (interface/binding to MySQL cli-serv/embed db 3.23.x, 4.x, 5.x)
-	Rosetta::Driver::DB2 (interface to IBM's DB2 db and its DB2 Express db)
+	Rosetta::Driver::Informix (interface to IBM Informix db)
+	Rosetta::Driver::DB2 (interface to IBM's DB/2 db and its DB/2 Express db)
 	Rosetta::Driver::SQLServer (interface to MS SQLServer db)
 	Rosetta::Driver::Adabas (interface to Software AG's Adabas db)
 	Rosetta::Driver::SAPdb (interface to the SAP open source db; forked from Adabas apparently)
 	Rosetta::Driver::Unify (interface to Unify db)
-	Rosetta::Driver::Informix (interface to IBM Informix db)
 	Rosetta::Driver::Empress (interface to the Empress db)
 	Rosetta::Driver::PrimeBase (interface to PrimeBase db)
 	Rosetta::Driver::OpenBase (interface to OpenBase db)
@@ -776,10 +779,12 @@ To stay "Rosetta":
 	Rosetta::Driver::Ingres (interface to Ingres db)
 	Rosetta::Driver::Illustra (interface to Illustra database)
 	Rosetta::Driver::Valentina (binding to Paradigma Software's Valentina embedded db) 
+	Rosetta::Driver::RelX (binding to relX' embedded db) 
 	Rosetta::Driver::4D (interface to 4D db)
 	Rosetta::Driver::mSQL (interface to mSQL db)
 	Rosetta::Driver::Helix (interface to Helix db)
 	Rosetta::Driver::Pick (interface to Pick Systems' db)
+	Rosetta::Driver::PointBase (interface to PointBase db, if linking to Java is possible)
 	Rosetta::Driver::FileMaker (interface to FileMaker Pro db)
 	Rosetta::Driver::FoxPro (interface to FoxPro db)
 	Rosetta::Driver::SQLite (binding to public domain SQLite embedded db)
@@ -1100,7 +1105,8 @@ it.
 
 =head1 SEE ALSO
 
-perl(1), Rosetta, Rosetta::SimilarModules, SQL::ObjectModel, 
-SQL::ObjectModel::DataDictionary, SQL::ObjectModel::API_C, DBI.
+perl(1), Rosetta, Rosetta::SimilarModules, SQL::ObjectModel,
+SQL::ObjectModel::DataDictionary, SQL::ObjectModel::XMLSchema,
+SQL::ObjectModel::API_C, DBI.
 
 =cut
