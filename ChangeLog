@@ -1,3 +1,37 @@
+2004-03-03   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.25.
+
+	* Implemented and altered large portions of Rosetta.pm, bringing it up to
+	version 0.09 from 0.08.  Most code for this module was created, and any
+	previously existing property declarations were heavily edited.  The new
+	version isn't yet functionally complete, but it should be about 70% of the
+	way there.  The "Rosetta::_::[Interface/Engine]" classes were renamed to
+	"Rosetta::[Interface/Engine]" so that they would be easier for external
+	code to refer to, which should happen a lot.  (We'll just have to ensure
+	that no one tries to make extension modules with those names.)  As an
+	experiment, those two inner class declarations are no longer slightly
+	mangled to hide them from the PAUSE indexer.  We'll see what serves the
+	community better.  For documentation, a large chunk was added to STRUCTURE
+	and a couple dozen lines were changed in SYNOPSIS; the rest was practically
+	unchanged.  One significant design change is that when you create the first
+	Interface with new(), you always pass an "application_instance" SSM Node.
+
+	* Minor update to SkipID.pm (now v0.112) that reverses a mistaken change
+	that was done as part of release 0.23; the two methods create_node_tree()
+	and create_child_node_tree() have been reverted and are now identical to
+	the versions in release 0.22.  The "mistaken change" had been intended to
+	fix several "uninitialized value" warnings, which did not exist in release
+	0.22.  A SyntaxModel.pm update for release 0.23 was what caused the
+	warnings to appear; the correct solution would have been to mirror the
+	SyntaxModel.pm change in SkipID.pm so they remained compatible, and said
+	change has been done now.  The private _set_initial_container_props()
+	method was moved from the Model class to the Container class and renamed to
+	_initialize_properties(); this properly fixed the warnings.
+
+	* Aside from setting the test files to look for the newer module versions, 
+	and updating the TODO and ChangeLog, no other files were changed.
+
 2004-02-23   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.24.
@@ -251,7 +285,7 @@
 
 	* Split SQL::SyntaxModel into two modules, itself and a new subclass named
 	SQL::SyntaxModel::ByTree.  The split was clean, and consisted of moving the
-	following 14 methods out of the core SQL::ObjectModel, with their POD:
+	following 14 methods out of the core SQL::SyntaxModel, with their POD:
 	major_type_of_node_type_attribute(), expected_attribute_major_type(),
 	get_attribute(), get_attributes(), clear_attribute(), clear_attributes(),
 	set_attribute(), set_attributes(), test_mandatory_attributes(),

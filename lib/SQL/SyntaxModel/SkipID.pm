@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.111';
+$VERSION = '0.112';
 
 use SQL::SyntaxModel::ByTree 0.111;
 
@@ -504,7 +504,7 @@ sub create_child_node_tree {
 	my $container = $node->get_container();
 
 	$new_child->get_node_id() or 
-		$new_child->set_node_id( 1 + ($container->{$CPROP_HIGH_IDS}->{$child_node_type}||0) );
+		$new_child->set_node_id( 1 + $container->{$CPROP_HIGH_IDS}->{$child_node_type} );
 
 	$new_child->put_in_container( $container );
 	$new_child->add_reciprocal_links();
@@ -516,7 +516,7 @@ sub create_child_node_tree {
 
 	$container->{$CPROP_LAST_NODES}->{$child_node_type} = $new_child; # assign reference
 	my $child_node_id = $new_child->get_node_id();
-	if( $child_node_id > ($container->{$CPROP_HIGH_IDS}->{$child_node_type}||0) ) {
+	if( $child_node_id > $container->{$CPROP_HIGH_IDS}->{$child_node_type} ) {
 		$container->{$CPROP_HIGH_IDS}->{$child_node_type} = $child_node_id;
 	}
 
@@ -536,6 +536,16 @@ use vars qw( @ISA );
 
 ######################################################################
 
+sub _initialize_properties {
+	my ($container) = @_;
+	my $node_types = $container->valid_node_types();
+	$container->{$CPROP_LAST_NODES} = { map { ($_ => undef) } keys %{$node_types} };
+	$container->{$CPROP_HIGH_IDS} = { map { ($_ => 0) } keys %{$node_types} };
+	$container->SUPER::_initialize_properties();
+}
+
+######################################################################
+
 sub create_node_tree {
 	my ($container, $args) = @_;
 	defined( $args ) or $container->_throw_error_message( 'SSMBTR_C_CR_NODE_TREE_NO_ARGS' ); # same er as p
@@ -548,7 +558,7 @@ sub create_node_tree {
 
 	my $node_type = $node->get_node_type();
 
-	$node->get_node_id() or $node->set_node_id( 1 + ($container->{$CPROP_HIGH_IDS}->{$node_type}||0) );
+	$node->get_node_id() or $node->set_node_id( 1 + $container->{$CPROP_HIGH_IDS}->{$node_type} );
 
 	$node->put_in_container( $container );
 	$node->add_reciprocal_links();
@@ -562,7 +572,7 @@ sub create_node_tree {
 
 	$container->{$CPROP_LAST_NODES}->{$node_type} = $node; # assign reference
 	my $node_id = $node->get_node_id();
-	if( $node_id > ($container->{$CPROP_HIGH_IDS}->{$node_type}||0) ) {
+	if( $node_id > $container->{$CPROP_HIGH_IDS}->{$node_type} ) {
 		$container->{$CPROP_HIGH_IDS}->{$node_type} = $node_id;
 	}
 
@@ -599,16 +609,6 @@ SQL::SyntaxModel::SkipID;
 #use base qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::ByTree );
 use vars qw( @ISA );
 @ISA = qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::ByTree );
-
-######################################################################
-
-sub _set_initial_container_props {
-	my $container = $_[0]->{$MPROP_CONTAINER};
-	my $node_types = $container->valid_node_types();
-	$container->{$CPROP_LAST_NODES} = { map { ($_ => undef) } keys %{$node_types} };
-	$container->{$CPROP_HIGH_IDS} = { map { ($_ => 0) } keys %{$node_types} };
-	$_[0]->SUPER::_set_initial_container_props();
-}
 
 ######################################################################
 ######################################################################

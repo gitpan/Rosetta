@@ -1,6 +1,6 @@
 ONE DEVELOPMENT TRACK
 
-r0.25 - Finish writing the Rosetta core module.  Then start the Rosetta-Engines 
+r0.26 - Finish writing the Rosetta core module.  Then start the Rosetta-Engines 
 distribution, so that together you can use them to actually do some stuff with
 a database, limited at the start to mainly schema object creation (eg:
 tables) and DML activity.  The Engines distribution will start off mainly with
@@ -8,26 +8,26 @@ a central batch of generic SQL generating code and about a half dozen actual
 Engine modules for different databases that call that code with arguments to
 customize it; the customization will get more refined over time, and initially
 some generated SQL may simply be incorrect for particular database products.
-This will probably be actually tested with just SQLite.  ETD is Feb 26th.
+This will probably be actually tested with just SQLite.  ETD is Mar 6th.
 
-r0.26 - Maybe do another distribution to clean up and improve compatability or
+r0.27 - Maybe do another distribution to clean up and improve compatability or
 basic sql generating type features.  Add MySQL to the 'having actually tested'
 list.  To make the test more thorough, actually port a simple production app of
 mine to run on top of Rosetta, where it is currently written to use DBI/MySQL
-directly.  ETD is Feb 29th.
+directly.  ETD is Mar 9th.
 
-r0.27 - Split up the Rosetta core distro into 'Rosetta', 'SQL-SyntaxModel',
+r0.28 - Split up the Rosetta core distro into 'Rosetta', 'SQL-SyntaxModel',
 'SQL-SyntaxModel-ByTree', 'SQL-SyntaxModel-SkipID'; afterwards I can largely
 ignore the last two as they aren't very important, nor recommended for general
-use.  Each of the 4 new distros will be at r0.27 (or another number where they
+use.  Each of the 4 new distros will be at r0.28 (or another number where they
 are all equal), and their ChangeLog files will be reset to a near-empty state,
-saying simply to look at the Rosetta-0.26 *large* ChangeLog file if you want to
+saying simply to look at the Rosetta-0.27 *large* ChangeLog file if you want to
 know the previous change history details.  Either before or after this I will
 circulate some RFCs to the likes of dbi-users and poop-group so I know what the
 next major issues I have to address or explain are, from the viewpoints of
 actual potential users.  Around the same time, any or all of the core
 Rosetta/SSM modules may be updated to 'alpha' development status, up from
-'pre-alpha'.  I'll want to change the License around then too.  ETD is Mar 1st.
+'pre-alpha'.  I'll want to change the License around then too.  ETD is Mar 11th.
 
 * Actually test with PostgreSQL and OpenBase.
 

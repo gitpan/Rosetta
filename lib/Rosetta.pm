@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.08';
+$VERSION = '0.09';
 
 use Locale::KeyedText 0.02;
 use SQL::SyntaxModel 0.12;
@@ -87,14 +87,13 @@ Rosetta::_::Shared; # has no properties, only stateless methods of its own
 
 ######################################################################
 
-# Names of properties for objects of the Rosetta class are declared here:
-my $RPROP_INTERFACE = 'interface'; # holds all the actual Interface properties for this class
-	# We use two classes internally where user sees one so that no internal refs point to the 
-	# parentmost object, and hence DESTROY() will be called properly when all external refs go away.
-
-# Names of properties for objects of the Rosetta::_::Interface class are declared here:
+# Names of properties for objects of the Rosetta::Interface class are declared here:
 my $IPROP_INTF_TYPE = 'intf_type'; # str (enum) - what type of Interface this is, no chg once set
 	# The Interface Type is the only property which absolutely can not change, and is set when object created.
+my $IPROP_ERROR_MSG = 'error_msg'; # object (Locale::KeyedText::_::Message) - details of a 
+	# failure, or at least any that might be useful to a generic application error handler; 
+	# if there was no error condition, then this is undefined/null
+	# This property is mandatory for Error Interfaces, and optional for other Interfaces
 my $IPROP_PARENT_INTF = 'parent_intf'; # ref to parent Interface, which provides a context 
 	# for the current one, unless the current Interface is a root
 my $IPROP_CHILD_INTFS = 'child_intfs'; # array - list of refs to child Interfaces that the 
@@ -110,49 +109,39 @@ my $IPROP_ENGINE = 'engine'; # ref to Engine implementing this Interface if any
 	# to any Engine methods that it invokes.  Of course, if this Engine implements a 
 	# middle-layer and invokes another Interface/Engine tree of its own, then it would store 
 	# a reference to that Interface like an application would.
-my $IPROP_IS_ERROR = 'is_error'; # boolean - true means Interface obj represents a failure
-my $IPROP_ERROR_MSG = 'error_msg'; # object (Locale::KeyedText::_::Message) - details of a 
-	# failure, or at least any that might be useful to a generic application error handler
+my $IPROP_SSM_NODE = 'ssm_node'; # ref to SQL::SyntaxModel Node providing context for this Intf
+	# If we are an 'application' Interface, this would be an 'application_instance' Node.
+	# If we are a 'preparation' Interface, this would be a 'command' or 'routine' Node.
+	# If we are any other kind of interface, this is a second ref to same SSM the parent 'prep' has.
 my $IPROP_THROW_ERRORS = 'throw_errors'; # boolean - true means that Interface objects will be 
 	# thrown by prepare/execute methods if they are errors, false means return all Interface objs
 
-# Names of properties for objects of the Rosetta::_::Engine class are declared here:
+# Names of properties for objects of the Rosetta::Engine class are declared here:
 	 # No properties (yet) are declared by this parent class; leaving space free for child classes
 
 # Names of the allowed Interface types go here:
-my $INTFTP_ROOT        = 'root'; # What you get when you create an Interface out of any context
+my $INTFTP_ERROR       = 'error'; # What is returned if an error happens, in place of another Intf type
+my $INTFTP_APPLICATION = 'application'; # What you get when you create an Interface out of any context
+	# This type is the root of an Interface tree; when you create one, you provide an 
+	# "application_instance" SQL::SyntaxModel Node; that provides the necessary context for 
+	# subsequent "command" or "routine" Nodes you pass to any child Intf's "prepare" method.
 my $INTFTP_PREPARATION = 'preparation'; # That which is returned by the 'prepare()' method
+my $INTFTP_ENGINE_ROOT = 'engine_root'; # Parent to all CONNECTION INTFs impl by same engine
 my $INTFTP_CONNECTION  = 'connection'; # Result of executing a 'connect' command
 my $INTFTP_TRANSACTION = 'transaction'; # Result of asking to start a new transaction
 my $INTFTP_CURSOR      = 'cursor'; # Result of executing a query that would return rows to the caller
 my $INTFTP_ROW         = 'row'; # Result of executing a query that returns one row
 my $INTFTP_LITERAL     = 'literal'; # Result of execution that isn't one of the above, like an IUD
-my %ALL_INTFTP_TYPES = ( map { ($_ => 1) } (
-	$INTFTP_ROOT, $INTFTP_PREPARATION, 
-	$INTFTP_CONNECTION, $INTFTP_TRANSACTION, 
+my %ALL_INTFTP = ( map { ($_ => 1) } (
+	$INTFTP_ERROR, $INTFTP_APPLICATION, $INTFTP_PREPARATION, 
+	$INTFTP_ENGINE_ROOT, $INTFTP_CONNECTION, $INTFTP_TRANSACTION, 
 	$INTFTP_CURSOR, $INTFTP_ROW, $INTFTP_LITERAL, 
 ) );
 
-######################################################################
-# These are 'protected' methods; only sub-classes should invoke them.
-
-sub _get_static_const_root_class_name {
-	# This function is intended to be overridden by sub-classes.
-	# It is intended only to be used when making new objects.
-	return( 'Rosetta' );
-}
-
-sub _get_static_const_interface_class_name {
-	# This function is intended to be overridden by sub-classes.
-	# It is intended only to be used when making new objects.
-	return( 'Rosetta::_::Interface' );
-}
-
-sub _get_static_const_engine_class_name {
-	# This function is intended to be overridden by sub-classes.
-	# It is intended only to be used when making new objects.
-	return( 'Rosetta::_::Engine' );
-}
+# Names of SQL::SyntaxModel-recognized enumerated values such as Node types go here:
+my $SSNNTP_APPINST = 'application_instance';
+my $SSNNTP_COMMAND = 'command';
+my $SSNNTP_ROUTINE = 'routine';
 
 ######################################################################
 # This is a 'protected' method; only sub-classes should invoke it.
@@ -164,36 +153,6 @@ sub _throw_error_message {
 }
 
 ######################################################################
-
-sub new {
-	my ($self) = @_;
-	my $root = bless( {}, $self->_get_static_const_root_class_name() );
-	$root->{$RPROP_INTERFACE} = $self->new_interface();
-	return( $root );
-}
-
-sub new_interface {
-	my ($self, $intf_type) = @_;
-	defined( $intf_type ) or $self->_throw_error_message( 'ROS_S_NEW_INTF_NO_ARGS' );
-
-	unless( $ALL_INTFTP_TYPES{$intf_type} ) {
-		$self->_throw_error_message( 'ROS_S_NEW_INTF_BAD_TYPE', { 'TYPE' => $intf_type } );
-	}
-
-	my $interface = bless( {}, $self->_get_static_const_interface_class_name() );
-
-	$interface->{$IPROP_INTF_TYPE} = $intf_type;
-	$interface->{$IPROP_PARENT_INTF} = undef;
-	$interface->{$IPROP_CHILD_INTFS} = [];
-	$interface->{$IPROP_ENGINE} = undef;
-	$interface->{$IPROP_IS_ERROR} = 0;
-	$interface->{$IPROP_ERROR_MSG} = undef;
-	$interface->{$IPROP_THROW_ERRORS} = 0;
-
-	return( $interface );
-}
-
-######################################################################
 ######################################################################
 
 package # hide this class name from PAUSE indexer
@@ -201,18 +160,481 @@ Rosetta;
 use base qw( Rosetta::_::Shared );
 
 ######################################################################
+# This is a convenience wrapper method; its sole argument is a SSM Node.
+
+sub new {
+	return( Rosetta::Interface->new( $INTFTP_APPLICATION, undef, undef, undef, $_[1] ) );
+}
+
+######################################################################
 ######################################################################
 
-package # hide this class name from PAUSE indexer
-Rosetta::_::Interface;
+package Rosetta::Interface; # not hiding class name from PAUSE indexer as an experiment
 use base qw( Rosetta::_::Shared );
 
 ######################################################################
+
+sub new {
+	# Make a new Interface with basically all props set now and not changed later.
+	my ($class, @args) = @_;
+	my $interface = bless( {}, ref($class) || $class );
+	$interface->_initialize_properties( @args );
+	return( $interface );
+}
+
+sub _initialize_properties {
+	my ($interface, $intf_type, $err_msg, $parent_intf, $engine, $ssm_node) = @_;
+	$interface->_validate_properties_to_be( $intf_type, $err_msg, $parent_intf, $engine, $ssm_node );
+	unless( $intf_type eq $INTFTP_ERROR ) {
+		# If type was Application or Preparation, $ssm_node would already be set.
+		# Anything else except Error has a parent.
+		$ssm_node ||= $parent_intf->{$IPROP_THROW_ERRORS};
+	}
+	$interface->{$IPROP_INTF_TYPE} = $intf_type;
+	$interface->{$IPROP_ERROR_MSG} = $err_msg;
+	$interface->{$IPROP_PARENT_INTF} = $parent_intf;
+	$interface->{$IPROP_CHILD_INTFS} = [];
+	$interface->{$IPROP_ENGINE} = $engine;
+	$interface->{$IPROP_SSM_NODE} = $ssm_node;
+	$interface->{$IPROP_THROW_ERRORS} = $parent_intf ? $parent_intf->{$IPROP_THROW_ERRORS} : 0;
+	$parent_intf and push( @{$parent_intf->{$IPROP_CHILD_INTFS}}, $interface );
+}
+
+sub _validate_properties_to_be {
+	my ($interface, $intf_type, $err_msg, $parent_intf, $engine, $ssm_node) = @_;
+
+	# Check $intf_type, which is mandatory.
+	defined( $intf_type ) or $interface->_throw_error_message( 'ROS_I_NEW_INTF_NO_TYPE' );
+	unless( $ALL_INTFTP{$intf_type} ) {
+		$interface->_throw_error_message( 'ROS_I_NEW_INTF_BAD_TYPE', { 'TYPE' => $intf_type } );
+	}
+
+	# Check $err_msg, which is not mandatory except when type is Error.
+	if( defined( $err_msg ) ) {
+		unless( UNIVERSAL::isa( $err_msg, 'Locale::KeyedText::_::Message' ) ) {
+			$interface->_throw_error_message( 'ROS_I_NEW_INTF_BAD_ERR', { 'ERR' => $err_msg } );
+		}
+	} else {
+		$intf_type eq $INTFTP_ERROR and $interface->_throw_error_message( 'ROS_I_NEW_INTF_NO_ERR' );
+	}
+
+	# Check $parent_intf, which must not be set when type is Error/Application, must be set otherwise.
+	if( $intf_type eq $INTFTP_ERROR or $intf_type eq $INTFTP_APPLICATION ) {
+		defined( $parent_intf ) and $interface->_throw_error_message( 'ROS_I_NEW_INTF_YES_PARENT' );
+	} else {
+		$interface->_validate_parent_intf( $intf_type, $parent_intf );
+	}
+
+	# Check $engine, which must not be set when type is Error/Application, must be set otherwise.
+	if( $intf_type eq $INTFTP_ERROR or $intf_type eq $INTFTP_APPLICATION ) {
+		defined( $engine ) and $interface->_throw_error_message( 'ROS_I_NEW_INTF_YES_ENG' );
+	} else {
+		defined( $engine ) or $interface->_throw_error_message( 'ROS_I_NEW_INTF_NO_ENG' );
+		unless( UNIVERSAL::isa( $engine, 'Rosetta::Engine' ) ) {
+			$interface->_throw_error_message( 'ROS_I_NEW_INTF_BAD_ENG', { 'ENG' => $engine } );
+		}
+	}
+
+	# Check $ssm_node, must be given for Application or Preparation, must not be given otherwise (incl Error).
+	# $ssm_node is always set to its parent Preparation when arg must not be given, except when Error.
+	if( $intf_type eq $INTFTP_APPLICATION ) {
+		$interface->_validate_ssm_node( $ssm_node );
+		my $node_type = $ssm_node->get_node_type();
+		unless( $node_type eq $SSNNTP_APPINST ) {
+			$interface->_throw_error_message( 'ROS_I_NEW_INTF_NODE_TYPE_NOT_SUPP', { 'TYPE' => $node_type } );
+		}
+	} elsif( $intf_type eq $INTFTP_PREPARATION ) {
+		$interface->_validate_ssm_node( $ssm_node, $parent_intf );
+		my $node_type = $ssm_node->get_node_type();
+		unless( $node_type eq $SSNNTP_COMMAND or $node_type eq $SSNNTP_ROUTINE ) {
+			$interface->_throw_error_message( 'ROS_I_NEW_INTF_NODE_TYPE_NOT_SUPP', { 'TYPE' => $node_type } );
+		}
+	} else {
+		defined( $ssm_node ) and $interface->_throw_error_message( 'ROS_I_NEW_INTF_YES_NODE' );
+	}
+
+	# All properties to be seem to check out fine.
+}
+
+sub _validate_parent_intf {
+	my ($interface, $intf_type, $parent_intf) = @_;
+
+	# First check that the given $parent_intf is an Interface at all.
+	defined( $parent_intf ) or $interface->_throw_error_message( 'ROS_I_NEW_INTF_NO_PARENT' );
+	unless( UNIVERSAL::isa( $parent_intf, 'Rosetta::Interface' ) ) {
+		$interface->_throw_error_message( 'ROS_I_NEW_INTF_BAD_PARENT', { 'ARG' => $parent_intf } );
+	}
+	my $p_intf_type = $parent_intf->{$IPROP_INTF_TYPE};
+
+	# Now check that we may be a child of the given $parent_intf.
+	if( $intf_type eq $INTFTP_PREPARATION ) {
+		unless( $p_intf_type eq $INTFTP_APPLICATION or $p_intf_type eq $INTFTP_ENGINE_ROOT or 
+				$p_intf_type eq $INTFTP_CONNECTION or $p_intf_type eq $INTFTP_TRANSACTION ) {
+			$interface->_throw_error_message( 'ROS_I_NEW_INTF_DIR_INCOMP', 
+				{ 'TYPE' => $intf_type, 'PTYPE' => $p_intf_type } );
+		}
+		return( 1 ); # Skip the other tests
+	}
+	unless( $p_intf_type eq $INTFTP_PREPARATION ) {
+		$interface->_throw_error_message( 'ROS_I_NEW_INTF_DIR_INCOMP', 
+			{ 'TYPE' => $intf_type, 'PTYPE' => $p_intf_type } );
+	}
+
+	# If we get here then at the very least we have an 'application' and 'preparation' above us.
+	# Now check that we may be a grand-child of the parent of the given $parent_intf.
+	my $pp_intf_type = $parent_intf->{$IPROP_PARENT_INTF}->{$IPROP_INTF_TYPE};
+	if( $intf_type eq $INTFTP_ENGINE_ROOT ) {
+		unless( $pp_intf_type eq $INTFTP_APPLICATION ) {
+			$interface->_throw_error_message( 'ROS_I_NEW_INTF_INDIR_INCOMP', 
+				{ 'TYPE' => $intf_type, 'PTYPE' => $p_intf_type, 'PPTYPE' => $pp_intf_type } );
+		}
+	} elsif( $intf_type eq $INTFTP_CONNECTION ) {
+		unless( $pp_intf_type eq $INTFTP_ENGINE_ROOT ) {
+			$interface->_throw_error_message( 'ROS_I_NEW_INTF_INDIR_INCOMP', 
+				{ 'TYPE' => $intf_type, 'PTYPE' => $p_intf_type, 'PPTYPE' => $pp_intf_type } );
+		}
+	} elsif( $intf_type eq $INTFTP_TRANSACTION ) {
+		unless( $pp_intf_type eq $INTFTP_CONNECTION ) {
+			$interface->_throw_error_message( 'ROS_I_NEW_INTF_INDIR_INCOMP', 
+				{ 'TYPE' => $intf_type, 'PTYPE' => $p_intf_type, 'PPTYPE' => $pp_intf_type } );
+		}
+	} else {
+		unless( $pp_intf_type eq $INTFTP_TRANSACTION ) {
+			$interface->_throw_error_message( 'ROS_I_NEW_INTF_INDIR_INCOMP', 
+				{ 'TYPE' => $intf_type, 'PTYPE' => $p_intf_type, 'PPTYPE' => $pp_intf_type } );
+		}
+	}
+
+	# $parent_intf seems to check out fine.
+}
+
+sub _validate_ssm_node {
+	my ($interface, $ssm_node, $parent_intf) = @_;
+	defined( $ssm_node ) or $interface->_throw_error_message( 'ROS_I_NEW_INTF_NO_NODE' );
+	unless( UNIVERSAL::isa( $ssm_node, 'SQL::SyntaxModel::_::Node' ) ) {
+		$interface->_throw_error_message( 'ROS_I_NEW_INTF_BAD_NODE', { 'ARG' => $ssm_node } );
+	}
+	my $given_container = $ssm_node->get_container();
+	unless( $given_container ) {
+		$interface->_throw_error_message( 'ROS_I_NEW_INTF_NODE_NOT_IN_CONT' );
+	}
+	if( $parent_intf ) {
+		my $expected_container = $parent_intf->{$IPROP_SSM_NODE}->get_container();
+		# Above line assumes parent Intf's Node not taken from Container since put in parent.
+		if( $given_container ne $expected_container ) {
+			$interface->_throw_error_message( 'ROS_I_NEW_INTF_NODE_NOT_SAME_CONT' );
+		}
+	}
+	# $ssm_node seems to check out fine.
+}
+
 ######################################################################
 
-package # hide this class name from PAUSE indexer
-Rosetta::_::Engine;
+sub destroy {
+	# Since we probably have circular refs, we must explicitely be destroyed.
+	my ($interface) = @_;
+
+	# For simplicity, require that caller destroys our children first.
+	if( @{$interface->{$IPROP_CHILD_INTFS}} > 0 ) {
+		$interface->_throw_error_message( 'ROS_I_DESTROY_HAS_CHILD' );
+	}
+
+	# First destroy Engine implementing ourself, if we have one and it is willing.
+	if( $interface->{$IPROP_ENGINE} ) {
+		$interface->{$IPROP_ENGINE}->destroy(); # may throw exception of its own
+	}
+
+	# Now break link from our parent Interface to ourself, if we have a parent.
+	if( $interface->{$IPROP_PARENT_INTF} ) {
+		my $siblings = $interface->{$IPROP_PARENT_INTF};
+		@{$siblings} = grep { $_ ne $interface } @{$siblings}; # should only be one; break all
+	}
+
+	# Now break any links from ourself to other things, and destroy ourself.
+	%{$interface} = ();
+
+	# Finally, once any external refs to us are gone, we get garbage collected.
+}
+
+######################################################################
+
+sub get_interface_type {
+	return( $_[0]->{$IPROP_INTF_TYPE} );
+}
+
+######################################################################
+
+sub get_error_message {
+	# This method returns the Message object by reference.
+	return( $_[0]->{$IPROP_ERROR_MSG} );
+}
+
+######################################################################
+
+sub get_parent_interface {
+	# This method returns the Interface object by reference.
+	return( $_[0]->{$IPROP_PARENT_INTF} );
+}
+
+######################################################################
+
+sub get_child_interfaces {
+	# This method returns each Interface object by reference.
+	return( [@{$_[0]->{$IPROP_CHILD_INTFS}}] );
+}
+
+######################################################################
+# We may not keep this method
+
+sub get_engine {
+	return( $_[0]->{$IPROP_ENGINE} );
+}
+
+######################################################################
+
+sub get_ssm_node {
+	# This method returns the Node object by reference.
+	return( $_[0]->{$IPROP_SSM_NODE} );
+}
+
+######################################################################
+
+sub throw_errors {
+	my ($interface, $new_value) = @_;
+	if( defined( $new_value ) ) {
+		unless( $new_value eq '0' or $new_value eq '1' ) {
+			$interface->_throw_error_message( 'ROS_I_THROW_ERR_BAD_ARG', { 'ARG' => $new_value } );
+		}
+		$interface->{$IPROP_THROW_ERRORS} = $new_value;
+	}
+	return( $interface->{$IPROP_THROW_ERRORS} );
+}
+
+######################################################################
+
+sub prepare {
+	my ($interface, $command) = @_;
+	# First check that this method may be called on an Interface of this type.
+	my $intf_type = $interface->{$IPROP_INTF_TYPE};
+	unless( $intf_type eq $INTFTP_APPLICATION or $intf_type eq $INTFTP_ENGINE_ROOT or 
+			$intf_type eq $INTFTP_CONNECTION or $intf_type eq $INTFTP_TRANSACTION ) {
+		$interface->_throw_error_message( 'ROS_I_PREPARE_METH_NOT_SUPP', { 'TYPE' => $intf_type } );
+	}
+	# From this point onward, an Interface object will be made, and any errors will go in it.
+	my $preparation = undef;
+	eval {
+		# This test of our SSM Node argument is a bootstrap of sorts; the Interface->new() 
+		# method will do the same tests when it is called later; return same errors it would have.
+		$interface->_validate_ssm_node( $command, $interface );
+		my $node_type = $command->get_node_type();
+		unless( $node_type eq $SSNNTP_COMMAND or $node_type eq $SSNNTP_ROUTINE ) {
+			$interface->_throw_error_message( 'ROS_I_NEW_INTF_NODE_TYPE_NOT_SUPP', { 'TYPE' => $node_type } );
+		}
+		# Now we get to doing the real work we were called for.
+		if( $intf_type eq $INTFTP_APPLICATION ) {
+			$preparation = $interface->_prepare_with_no_engine( $command );
+		} else {
+			$preparation = $interface->{$IPROP_ENGINE}->prepare( $command );
+		}
+	};
+	if( my $exception = $@ ) {
+		if( UNIVERSAL::isa( $exception, 'Rosetta::Interface' ) ) {
+			# The called code threw a Rosetta::Interface object.
+			$preparation = $exception;
+		} elsif( UNIVERSAL::isa( $exception, 'Locale::KeyedText::_::Message' ) ) {
+			# The called code threw a Locale::KeyedText Message object.
+			$preparation = $interface->new( $INTFTP_ERROR, $exception );
+		} else {
+			# The called code died in some other way (means coding error, not user error).
+			$preparation = $interface->new( $INTFTP_ERROR, Locale::KeyedText->new_message( 
+				'ROS_I_PREPARE_MISC_EXCEPTION', { 'VALUE' => $exception } ) );
+		}
+	} else {
+		unless( UNIVERSAL::isa( $preparation, 'Rosetta::Interface' ) ) {
+			# The called code didn't die, but didn't return a Rosetta::Interface object either.
+			$preparation = $interface->new( $INTFTP_ERROR, Locale::KeyedText->new_message( 
+				'ROS_I_PREPARE_BAD_RESULT', { 'VALUE' => $preparation } ) );
+		}
+	}
+	if( $preparation->get_error_message() and $interface->{$IPROP_THROW_ERRORS} ) {
+		die $preparation;
+	}
+	return( $preparation );
+}
+
+sub _prepare_with_no_engine {
+	my ($application, $command) = @_;
+	my $preparation = undef;
+
+	# ... Here we first analyse $command to figure out which Rosetta Engine 
+	# modules we should load and create "Engine Root" Interfaces for; 
+	# eg: a "database open" command will require just one, while 
+	# a "database list" command will require all available Engines 
+	# indicated in the SSM Model's "tools" section.
+
+	# ... Each "Engine Root" Interface object and corresponding Engine object 
+	# will be created by the newly required Engine module.
+
+	# ... If we called "database list" then invoke each Engine with that same 
+	# command and then collate the results into one set of SSM nodes, or something.
+
+	# ... If we called "database open" then invoke one Engine to create a 
+	# Connection Interface/Engine etcetera.
+
+	return( $preparation );
+}
+
+######################################################################
+
+sub execute {
+	my ($preparation, $bind_vars) = @_;
+	# First check that this method may be called on an Interface of this type.
+	my $intf_type = $preparation->{$IPROP_INTF_TYPE};
+	unless( $intf_type eq $INTFTP_PREPARATION ) {
+		$preparation->_throw_error_message( 'ROS_I_EXECUTE_METH_NOT_SUPP', { 'TYPE' => $intf_type } );
+	}
+	# From this point onward, an Interface object will be made, and any errors will go in it.
+	my $result = undef;
+	eval {
+		# Now we get to doing the real work we were called for.
+		$result = $preparation->{$IPROP_ENGINE}->execute( $bind_vars );
+	};
+	if( my $exception = $@ ) {
+		if( UNIVERSAL::isa( $exception, 'Rosetta::Interface' ) ) {
+			# The called code threw a Rosetta::Interface object.
+			$result = $exception;
+		} elsif( UNIVERSAL::isa( $exception, 'Locale::KeyedText::_::Message' ) ) {
+			# The called code threw a Locale::KeyedText Message object.
+			$result = $preparation->new( $INTFTP_ERROR, $exception );
+		} else {
+			# The called code died in some other way (means coding error, not user error).
+			$result = $preparation->new( $INTFTP_ERROR, Locale::KeyedText->new_message( 
+				'ROS_I_EXECUTE_MISC_EXCEPTION', { 'VALUE' => $exception } ) );
+		}
+	} else {
+		unless( UNIVERSAL::isa( $result, 'Rosetta::Interface' ) ) {
+			# The called code didn't die, but didn't return a Rosetta::Interface object either.
+			$result = $preparation->new( $INTFTP_ERROR, Locale::KeyedText->new_message( 
+				'ROS_I_EXECUTE_BAD_RESULT', { 'VALUE' => $result } ) );
+		}
+	}
+	if( $result->get_error_message() and $preparation->{$IPROP_THROW_ERRORS} ) {
+		die $result;
+	}
+	return( $result );
+}
+
+######################################################################
+
+sub finalize {
+	my ($cursor) = @_;
+	# First check that this method may be called on an Interface of this type.
+	my $intf_type = $cursor->{$IPROP_INTF_TYPE};
+	unless( $intf_type eq $INTFTP_CURSOR ) {
+		$cursor->_throw_error_message( 'ROS_I_FINALIZE_METH_NOT_SUPP', { 'TYPE' => $intf_type } );
+	}
+	# do the equivalent of CURSOR_CLOSE here
+}
+
+######################################################################
+
+sub has_more_rows {
+	my ($cursor) = @_;
+	# First check that this method may be called on an Interface of this type.
+	my $intf_type = $cursor->{$IPROP_INTF_TYPE};
+	unless( $intf_type eq $INTFTP_CURSOR ) {
+		$cursor->_throw_error_message( 'ROS_I_HASROWS_METH_NOT_SUPP', { 'TYPE' => $intf_type } );
+	}
+	# do the equivalent of CURSOR_FETCH here
+	# returns undef if there are no more rows or on error
+}
+
+######################################################################
+
+sub fetch_row {
+	my ($cursor) = @_;
+	# First check that this method may be called on an Interface of this type.
+	my $intf_type = $cursor->{$IPROP_INTF_TYPE};
+	unless( $intf_type eq $INTFTP_CURSOR ) {
+		$cursor->_throw_error_message( 'ROS_I_FETROW_METH_NOT_SUPP', { 'TYPE' => $intf_type } );
+	}
+	# do the equivalent of CURSOR_FETCH here
+	# returns undef if there are no more rows or on error
+}
+
+######################################################################
+
+sub fetch_all_rows {
+	my ($cursor) = @_;
+	# First check that this method may be called on an Interface of this type.
+	my $intf_type = $cursor->{$IPROP_INTF_TYPE};
+	unless( $intf_type eq $INTFTP_CURSOR ) {
+		$cursor->_throw_error_message( 'ROS_I_FETALLROWS_METH_NOT_SUPP', { 'TYPE' => $intf_type } );
+	}
+	my $array_of_hashes = ();
+	# now stuff it with a whole bunch of CURSOR_FETCH
+	# then finalize()
+	return( $array_of_hashes ); # empty array if no more rows, or undef on error
+}
+
+######################################################################
+######################################################################
+
+package Rosetta::Engine; # not hiding class name from PAUSE indexer as an experiment
 use base qw( Rosetta::_::Shared );
+
+######################################################################
+
+sub new {
+	my ($class, @args) = @_;
+	my $engine = bless( {}, ref($class) || $class );
+	$engine->_initialize_properties( @args );
+	return( $engine );
+}
+
+######################################################################
+# These methods must be overridden by sub-classes; they simply die otherwise.
+
+sub _initialize_properties {
+	my ($engine, $interface) = @_;
+	# Among other things, this is possibly where we bind to the Interface we implement.
+	$engine->_throw_error_message( 'ROS_E_INIT_METH_NOT_IMPL' );
+}
+
+sub destroy {
+	my ($engine, $interface) = @_;
+	$engine->_throw_error_message( 'ROS_E_DESTROY_METH_NOT_IMPL' );
+}
+
+sub prepare {
+	my ($engine, $interface) = @_;
+	$engine->_throw_error_message( 'ROS_E_PREPARE_METH_NOT_IMPL' );
+}
+
+sub execute {
+	my ($engine, $interface) = @_;
+	$engine->_throw_error_message( 'ROS_E_EXECUTE_METH_NOT_IMPL' );
+}
+
+sub finalize {
+	my ($engine, $interface) = @_;
+	$engine->_throw_error_message( 'ROS_E_FINALIZE_METH_NOT_IMPL' );
+}
+
+sub has_more_rows {
+	my ($engine, $interface) = @_;
+	$engine->_throw_error_message( 'ROS_E_HASROWS_METH_NOT_IMPL' );
+}
+
+sub fetch_row {
+	my ($engine, $interface) = @_;
+	$engine->_throw_error_message( 'ROS_E_FETROW_METH_NOT_IMPL' );
+}
+
+sub fetch_all_rows {
+	my ($engine, $interface) = @_;
+	$engine->_throw_error_message( 'ROS_E_FETALLROWS_METH_NOT_IMPL' );
+}
 
 ######################################################################
 ######################################################################
@@ -232,7 +654,11 @@ construct the various SQL commands / Node groups used in this SYNOPSIS.>
 	main();
 
 	sub main {
-		my $interface = Rosetta->new();
+		# ... Next create and stuff Nodes in $schema_model that represent the application 
+		# blueprint and instance thereof that we are.  Then put a 'application_instance' 
+		# Node for said instance in $application_instance.
+
+		my $interface = Rosetta->new( $application_instance );
 
 		# ... Next create and stuff Nodes in $schema_model that represent the database we want 
 		# to use (including what data storage product it is) and how we want to link/connect 
@@ -240,7 +666,7 @@ construct the various SQL commands / Node groups used in this SYNOPSIS.>
 		# Node which instructs to open a connection with said database in $open_db_command.
 
 		my $prepared_open_cmd = $interface->prepare( $open_db_command );
-		if( $prepared_open_cmd->is_error() ) {
+		if( $prepared_open_cmd->get_error_message() ) {
 			print "internal error: a command is invalid: ".error_to_string( $prepared_open_cmd );
 			return( 0 );
 		}
@@ -251,14 +677,14 @@ construct the various SQL commands / Node groups used in this SYNOPSIS.>
 
 			my $db_conn = $prepared_open_cmd->execute( { 'login_user' => $user, 'login_pass' => $pass } );
 
-			unless( $db_conn->is_error() ) {
+			unless( $db_conn->get_error_message() ) {
 				last; # Connection was successful.
 			}
 
 			# If we get here, something went wrong when trying to open the database; eg: the requested 
 			# engine plug-in doesn't exist, or the DSN doesn't exist, or the user/pass are incorrect.  
 
-			my $error_message = $db_conn->error_message();
+			my $error_message = $db_conn->get_error_message();
 
 			# ... Next examine $error_message (a machine-readable Locale::KeyedText Message 
 			# object) to see if the problem is our fault or the user's fault.
@@ -292,7 +718,7 @@ construct the various SQL commands / Node groups used in this SYNOPSIS.>
 
 	sub error_to_string {
 		my ($interface) = @_;
-		my $message = $interface->error_message();
+		my $message = $interface->get_error_message();
 		my $translator = Locale::KeyedText->new_translator( 
 			['Rosetta::L::', 'SQL::SyntaxModel::L::'], ['en'] );
 		my $user_text = $translator->translate_message( $message );
@@ -312,7 +738,7 @@ construct the various SQL commands / Node groups used in this SYNOPSIS.>
 		# instructs to create said table in $create_stoff_command.
 
 		my $result = $db_conn->prepare( $create_stoff_command )->execute();
-		if( $result->is_error() ) {
+		if( $result->get_error_message() ) {
 			print "sorry, problem making stoff table: ".error_to_string( $result );
 			return( 0 );
 		}
@@ -327,7 +753,7 @@ construct the various SQL commands / Node groups used in this SYNOPSIS.>
 		# ... Next make a SSM 'command' to drop the table and put it in $drop_stoff_command.
 
 		my $result = $db_conn->prepare( $drop_stoff_command )->execute();
-		if( $result->is_error() ) {
+		if( $result->get_error_message() ) {
 			print "sorry, problem removing table: ".error_to_string( $result );
 			return( 0 );
 		}
@@ -355,7 +781,7 @@ construct the various SQL commands / Node groups used in this SYNOPSIS.>
 
 		foreach my $data_item (@data) {
 			my $result = $prepared_insert_cmd->execute( $data_item );
-			if( $result->is_error() ) {
+			if( $result->get_error_message() ) {
 				print "sorry, problem stuffing stoff: ".error_to_string( $result );
 				return( 0 );
 			}
@@ -373,12 +799,12 @@ construct the various SQL commands / Node groups used in this SYNOPSIS.>
 		# routine arg 'a_foo'.  Then put this 'routine' Node in $get_one_stoff_cmd.
 
 		my $get_one_cmd = $db_conn->prepare( $get_one_stoff_cmd );
-		if( $get_one_cmd->is_error() ) {
+		if( $get_one_cmd->get_error_message() ) {
 			print "internal error: a command is invalid: ".error_to_string( $get_one_cmd );
 			return( 0 );
 		}
 		my $row = $get_one_cmd->execute( { 'a_foo' => 'snowy' } );
-		if( $row->is_error() ) {
+		if( $row->get_error_message() ) {
 			print "sorry, problem getting snowy: ".error_to_string( $result );
 			return( 0 );
 		}
@@ -388,12 +814,12 @@ construct the various SQL commands / Node groups used in this SYNOPSIS.>
 		# selects all rows from 'stoff'.  Then put this 'routine' Node in $get_all_stoff_cmd.
 
 		my $get_all_cmd = $db_conn->prepare( $get_all_stoff_cmd );
-		if( $get_all_cmd->is_error() ) {
+		if( $get_all_cmd->get_error_message() ) {
 			print "internal error: a command is invalid: ".error_to_string( $get_all_cmd );
 			return( 0 );
 		}
 		my $cursor = $get_all_cmd->execute();
-		if( $cursor->is_error() ) {
+		if( $cursor->get_error_message() ) {
 			print "sorry, problem getting all stoff: ".error_to_string( $result );
 			return( 0 );
 		}
@@ -471,7 +897,7 @@ wrapper functions to keep your code down to size, or use another CPAN module
 such as one of the above that does the wrapping for you.
 
 The Rosetta framework is conceptually similar to the mature and popular Perl
-DBI framework spearheaded by Tim Bunce; in fact, many initial Rosetta engines
+DBI framework created by Tim Bunce; in fact, many initial Rosetta engines
 are each implemented as a value-added wrapper for a DBI DBD module.  But they
 have significant differences as well, so Rosetta should not be considered a
 mere wrapper of DBI (moreover, on the implementation side, the Rosetta core
@@ -518,6 +944,13 @@ simple common super-class for all Engine plug-in modules.  The Engine
 super-class mainly deals with manipulating the Perl references that bind Engine
 and Interface objects together, so normal Engine classes don't ever see those.
 
+Note that each distinct Rosetta Engine class is represented by a distinct
+SQL::SyntaxModel "data_link_product" Node that you create; you put the name of
+the Rosetta Engine Class, such as "Rosetta::Engine::foo", in that Node's
+"product_code" attribute.  The SQL::SyntaxModel documentation refers to that
+attribute as being just for recognition by an external "mediation layer"; when
+you use Rosetta, then Rosetta *is* said "mediation layer".
+
 During the normal course of using Rosetta, you will end up talking to a whole
 bunch of Interface objects, which are all related to each other in a tree-like
 fashion.  Each time you prepare() or execute() a command against one, another
@@ -525,17 +958,59 @@ is typically spawned which represents the results of your command, be it an
 error condition or a database connection handle or a transaction context handle
 or a select cursor handle or a miscellaneous returned data container.  Each
 Interface object has a "type" property which says what kind of thing it
-represents and how it behaves.  All Interface types have an "is_error()" method
+represents and how it behaves.  All Interface types have a "get_error_message()" method
 but only a cursor type, for example, has a "fetch_row()" method.  For
 simplicity, all Interface objects are explicitely defined to have all possible
 Interface methods (no "autoload" et al is used); however, an inappropriately
 called method will throw an exception saying so, so it is as if Perl had a
-normal run-time error due to calling a non-existant method.
+normal run-time error due to calling a non-existent method.
 
 Each Interface object may also have its own Engine object associated with it 
 behind the scenes, with all the Engine objects in a mirroring tree structure; 
 but that may not always be true.  One example is right when you start out, or 
-if you try to open a database connection using a non-existint Engine module.
+if you try to open a database connection using a non-existent Engine module.
+
+This diagram shows all of the Interface types and how they are allowed to 
+relate to each other parent-child wise in an Interface tree:
+
+	1	Application
+	2	  Preparation
+	3		Engine
+	4		  Preparation
+	5			Connection
+	6			  Preparation
+	7				Transaction
+	8				  Preparation
+	9					Cursor
+	10				  Preparation
+	11					Row
+	12				  Preparation
+	13					Literal
+	14	Error
+
+The "Application" (1) at the top is created using "Rosetta->new()", and you
+normally have just one of those in your program.  A "Preparation"
+(2,4,6,8,10,12) is created when you invoke "prepare()" off of an Interface
+object of one of these types: "Application" (1), "Engine" (3), "Connection"
+(5), "Transaction" (7).  Every type of Interface except "Application" and
+"Preparation" is created by invoking "execute()" of of an appropriate
+"Preparation" method.  The "prepare()" and "execute()" methods always create a
+new Interface having the result of the call, and this is usually a child of the
+one you invoked it from.  
+
+An "Error" (14) Interface can be returned potentially by any method and it is
+self-contained; it has no parent Interfaces or children.  Note that any other
+kind of Interface can also store an error condition in addition to keeping its
+normal properties.
+
+For convenience, what often happens is that the Rosetta Engine will create
+multiple Interface generations for you as appropriate when you say "prepare()".
+For example, if you give a "open this database" command to an "Application" (1)
+Interface, you would be given back a great-grand-child "Preparation" (4)
+Interface.  Or, if you give a "select these rows" command to a "Connection"
+Interface, you will be given back a great-grand-child "Preparation" (8)
+Interface (which would re-use the last "Transaction" if one exists).  Be aware
+of this if you ever request that an Interface you hold give you its parent.
 
 =head1 SYNTAX
 

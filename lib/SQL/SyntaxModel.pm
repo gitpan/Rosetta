@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.12';
+$VERSION = '0.121';
 
 use Locale::KeyedText 0.02;
 
@@ -1219,7 +1219,7 @@ sub delete_node {
 
 	# Ultimately the pure-Perl version of this method is a no-op because once 
 	# a Node is not in a Container, there are no references to it by any 
-	# SQL::ObjectModel/::* object; it will vanish when external refs go away.
+	# SQL::SyntaxModel/::* object; it will vanish when external refs go away.
 	# This function is a placeholder for the C version, which will require 
 	# explicit memory deallocation.
 }
@@ -2603,7 +2603,7 @@ Occasionally a thread will want to change the object, such as to correspond to
 a simultaneous change to the database schema, or to the web application's data
 dictionary that maps the database to application screens.  Under this
 situation, the application's definitive data dictionary (stored partly or
-wholly in a SQL::ObjectModel) can occupy one place in RAM visible to all
+wholly in a SQL::SyntaxModel) can occupy one place in RAM visible to all
 threads, and each thread won't have to keep looking somewhere else such as in
 the database or a file to keep up with the definitive copy.  (Of course, any
 *changes* to the in-memory data dictionary should see a corresponding update to
@@ -2629,7 +2629,7 @@ it does *not* live in a Container, and it is illegal to have any actual (Perl)
 references between it and any other Node.  Nodes in this state can be built
 (have their Node Id and other attributes set or changed) piecemeal with the
 least processing overhead, and can be moved or exist independently of anything
-else that SQL::ObjectModel manages.  An "Alone" Node does not need to have its
+else that SQL::SyntaxModel manages.  An "Alone" Node does not need to have its
 Node Id set.  Any Node attributes which are conceptually references to other
 Nodes are stored and read as Id numbers when the Node is "Alone"; also, no
 confirmation has yet taken place that the referenced Nodes actually exist yet.
@@ -3172,15 +3172,15 @@ less space than multiple spaces per indent level.)
 =head1 INFORMATION FUNCTIONS AND METHODS
 
 These "getter" functions/methods are all intended for use by programs that want
-to dynamically interface with SQL::ObjectModel, especially those programs that
+to dynamically interface with SQL::SyntaxModel, especially those programs that
 will generate a user interface for manual editing of data stored in or accessed
-through SQL::ObjectModel constructs.  It will allow such programs to continue
+through SQL::SyntaxModel constructs.  It will allow such programs to continue
 working without many changes while SQL::SyntaxModel itself continues to evolve.
 In a manner of speaking, these functions/methods let a caller program query as
 to what 'schema' or 'business logic' drive this class.  These functions/methods
 are all deterministic and stateless; they can be used in any context and will
 always give the same answers from the same arguments, and no object properties
-are used.  You can invoke them from any kind of object that SQL::ObjectModel
+are used.  You can invoke them from any kind of object that SQL::SyntaxModel
 implements, or straight off of the class name itself, like a 'static' method.  
 All of these functions return the undefined value if they match nothing.
 
