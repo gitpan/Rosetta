@@ -1,3 +1,77 @@
+2004-02-12   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.23.
+
+	* Some reorganization of the constructor and destructor methods was done in
+	SQL::SyntaxModel.  The new() method can now be invoked off of any object
+	type just like create_empty_node(); corresponding to this, a new private
+	method named _get_static_const_model_class_name() was added to all 3 SSM
+	modules (all 3 are now at v0.11 up from v0.10).  These 3 methods were moved
+	from the Model class to the Container class: initialize(),
+	_set_initial_container_props(), _destroy_container_props(); you can now
+	invoke the first one from either a Model or Container object.
+
+	* Fixed a put_in_container() bug so it accepts both SQL::SyntaxModel and
+	SQL::SyntaxModel::_::Container objects as input, which users consider the
+	same thing.  Simplified the code in remove_reciprocal_links().
+
+	* Fixed a bug concerning Nodes that are in "At Home" status.  By definition
+	they are not supposed to be visible to any other Nodes and they should not
+	appear in any get_all_properties() output; however, any Nodes that had
+	pseudo-Node parents were always being output regardless of their status.
+	This was fixed by taking the code that added a Node to or removed a Node
+	from its pseudo-Node parent's child list and moving it from the 'container'
+	methods to the 'reciprocal' methods.
+
+	* Updated the move_before_sibling() method so that it also works with Nodes
+	that are siblings beneath pseudo-Node parents, rather than just under
+	normal Node parents.  One related error message key/value was also altered, 
+	with SQL::SyntaxModel::L::en (now v0.021) getting a minor update.
+
+	* Added new with_all_nodes_test_mandatory_attributes() method to the
+	Container class that tests all Nodes in it for test_mandatory_attributes().
+
+	* Fixed several "uninitialized value" warnings in SQL::SyntaxModel::SkipID.
+
+	* Made a large number of design changes and other documentation
+	improvements in Language.pod, with matching updates in all of the other
+	code, test, and documentation files.  Several Node types and enumerated
+	types were created, or reorganized, or removed.  LANGUAGE CONCEPT STRUCTURE
+	was mostly rewritten, and there are now 5 main Node groupings ('elements',
+	'blueprints', 'tools', 'sites', 'circumventions') instead of the previous
+	4; the last one is unchanged, the first was 'common-space', the second was
+	merged from most of 'database-space' and 'application-space'.  One major
+	design advancement concerned the ability to recognize and act properly with
+	multiple instances of the same database schema or application blueprint, as
+	well as general communications between applications and catalogs, and
+	between catalogs, and concerning database users and multiple data links and
+	multiple implementing database products.  Every Node type now has a list of
+	defined attributes, though some are incomplete; none don't have any.  The
+	structure of view and routine components has been improved and matured;
+	issues regarding support for defining insert/update/delete operations have
+	matured (views take care of it), as have issues about views inside
+	routines.  There is still a major outstanding concern in the design to work
+	out regarding routines, SQL::SyntaxModel 'commands', as well as 'standard
+	procedures'.  Fixed a minor documentation mistake where LITERAL ATTRIBUTE
+	TYPES was a head2 rather than a head1.
+
+	* Added an actual SYNOPSIS documentation section to SQL::SyntaxModel that
+	demonstrates its use (by itself).  Also added new test battery file
+	lib/t_SQL_SyntaxModel.pm which tests SQL::SyntaxModel by itself; all 3 of
+	the t/1*_SQL_SyntaxMode*.t main test scripts now use it.  Several other 
+	minor documentation updates were made in SQL::SyntaxModel.
+
+	* A block of older documentation was moved from Framework.pod (EXPANDED
+	MODULE LIST -> Schema Modules) to Language.pod (OLDER DOCUMENTATION).
+
+	* Multiple updates in Framework.pod, mainly concerning drivers.  Also
+	chopped the DEPENDENCIES section from that file.  Multiple updates in
+	Rosetta.pm (now v0.073), mainly to bring its declaration details in line
+	with SyntaxModel.pm; DEPENDENCIES are in the new format, and require Perl
+	5.006, and current versions of the other modules.  Also chopped out the
+	single "function" which didn't actually do anything.  Other minor updates 
+	there and in SimilarModules.pod.
+
 2004-02-04   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.22.

@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.10';
+$VERSION = '0.11';
 
 use Locale::KeyedText 0.02;
 
@@ -163,6 +163,9 @@ my %ENUMERATED_TYPES = (
 	'calendar' => { map { ($_ => 1) } qw(
 		ABS GRE JUL CHI HEB ISL JPN
 	) },
+	'privilege_type' => { map { ($_ => 1) } qw(
+		CONNECT SELECT INSERT UPDATE DELETE EXECUTE CREATE ALTER DROP 
+	) },
 	'table_index_type' => { map { ($_ => 1) } qw(
 		ATOMIC FULLTEXT UNIQUE FOREIGN UFOREIGN
 	) },
@@ -170,7 +173,7 @@ my %ENUMERATED_TYPES = (
 		SCHEMA APPLIC CURSOR INSIDE
 	) },
 	'view_type' => { map { ($_ => 1) } qw(
-		TABLE SIMPLE COMPOUND SUBQUERY RECURSIVE
+		MATCH SINGLE MULTIPLE COMPOUND SUBQUERY RECURSIVE
 	) },
 	'compound_operator' => { map { ($_ => 1) } qw(
 		DISTINCT ALL UNION INTERSECT EXCLUSIVE EXCEPT
@@ -179,10 +182,10 @@ my %ENUMERATED_TYPES = (
 		EQUAL LEFT
 	) },
 	'view_part' => { map { ($_ => 1) } qw(
-		RESULT WHERE GROUP HAVING ORDER
+		RESULT SET WHERE GROUP HAVING ORDER MAXR SKIPR
 	) },
 	'basic_expr_type' => { map { ($_ => 1) } qw(
-		LIT VAR COL VIEW SFUNC UFUNC
+		LIT COL MCOL VARG ARG VAR CVIEW SFUNC UFUNC
 	) },
 	'standard_func' => { map { ($_ => 1) } qw(
 		TO_STR TO_NUM TO_INT TO_BOOL TO_DATE
@@ -200,12 +203,12 @@ my %ENUMERATED_TYPES = (
 		ANONYMOUS PACKAGE TRIGGER PROCEDURE FUNCTION LOOP CONDITION
 	) },
 	'basic_stmt_type' => { map { ($_ => 1) } qw(
-		SPROC UPROC ASSIG LOGIC
+		COMMAND SPROC UPROC ASSIG LOGIC
 	) },
 	'standard_proc' => { map { ($_ => 1) } qw(
 	) },
 	'command_type' => { map { ($_ => 1) } qw(
-		DB_LIST DB_INFO DB_VERIFY DB_OPEN DB_CLOSE DB_PING 
+		DB_LIST DB_INFO DB_VERIFY DB_ATTACH DB_DETACH DB_PING 
 		DB_CREATE DB_DELETE DB_CLONE DB_MOVE
 		USER_LIST USER_INFO USER_VERIFY
 		USER_CREATE USER_DELETE USER_CLONE USER_UPDATE USER_GRANT USER_REVOKE
@@ -215,13 +218,16 @@ my %ENUMERATED_TYPES = (
 		VIEW_CREATE VIEW_DELETE VIEW_CLONE VIEW_UPDATE
 		ROUTINE_LIST ROUTINE_INFO ROUTINE_VERIFY 
 		ROUTINE_CREATE ROUTINE_DELETE ROUTINE_CLONE ROUTINE_UPDATE
-		REC_FETCH REC_VERIFY REC_INSERT REC_UPDATE REC_C_UPDATE 
+		REC_FETCH REC_VERIFY REC_INSERT REC_UPDATE 
 		REC_DELETE REC_REPLACE REC_CLONE REC_LOCK REC_UNLOCK
 		TRA_START TRA_COMMIT TRA_ROLLBACK
 		CALL_PROC CALL_FUNC
 	) },
 	'result_type' => { map { ($_ => 1) } qw(
 		ERROR CONN TRANS CURS REC VAR LIT
+	) },
+	'user_type' => { map { ($_ => 1) } qw(
+		ROOT SCHEMA_OWNER DATA_EDITOR ANONYMOUS
 	) },
 );
 
@@ -241,12 +247,14 @@ my $TPI_MA_ENUMS     = 'ma_enums'; # Mandatory enums attributes; keys=keys, valu
 my $TPI_MA_NREFS     = 'ma_nrefs'; # Mandatory nodes attributes; keys=keys, values = 1
 
 # Names of special "pseudo-nodes" that are used in an XML version of this structure.
-my $SQLSM_ROOT_NODE_TYPE = 'root';
-my $SQLSM_L2_CMMN_SPACE = 'common_space';
-my $SQLSM_L2_DTBS_SPACE = 'database_space';
-my $SQLSM_L2_APPL_SPACE = 'application_space';
-my $SQLSM_L2_CIRC_SPACE = 'circumvention_space';
-my @L2_PSEUDONODE_LIST = ($SQLSM_L2_CMMN_SPACE, $SQLSM_L2_DTBS_SPACE, $SQLSM_L2_APPL_SPACE, $SQLSM_L2_CIRC_SPACE);
+my $SQLSM_L1_ROOT_PSND = 'root';
+my $SQLSM_L2_ELEM_PSND = 'elements';
+my $SQLSM_L2_BLPR_PSND = 'blueprints';
+my $SQLSM_L2_TOOL_PSND = 'tools';
+my $SQLSM_L2_SITE_PSND = 'sites';
+my $SQLSM_L2_CIRC_PSND = 'circumventions';
+my @L2_PSEUDONODE_LIST = ($SQLSM_L2_ELEM_PSND, $SQLSM_L2_BLPR_PSND, 
+	$SQLSM_L2_TOOL_PSND, $SQLSM_L2_SITE_PSND, $SQLSM_L2_CIRC_PSND);
 
 # These are the allowed Node types, with their allowed attributes and their 
 # allowed child Node types.  They are used for method input checking and 
@@ -280,7 +288,7 @@ my %NODE_TYPES = (
 			'char_enc' => 'char_enc_type',
 			'calendar' => 'calendar',
 		},
-		$TPI_P_PSEUDONODE => $SQLSM_L2_CMMN_SPACE,
+		$TPI_P_PSEUDONODE => $SQLSM_L2_ELEM_PSND,
 		$TPI_MA_LITERALS => {map { ($_ => 1) } qw( name )},
 		$TPI_MA_ENUMS => {map { ($_ => 1) } qw( base_type )},
 	},
@@ -305,37 +313,42 @@ my %NODE_TYPES = (
 		$TPI_AT_LITERALS => {
 			'name' => 'cstr',
 		},
-		$TPI_P_PSEUDONODE => $SQLSM_L2_DTBS_SPACE,
+		$TPI_P_PSEUDONODE => $SQLSM_L2_BLPR_PSND,
 	},
-	'user' => {
+	'application' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id catalog name password default_schema 
+			id name 
 		)],
 		$TPI_AT_LITERALS => {
 			'name' => 'cstr',
-			'password' => 'cstr',
 		},
+		$TPI_P_PSEUDONODE => $SQLSM_L2_BLPR_PSND,
+	},
+	'owner' => {
+		$TPI_AT_SEQUENCE => [qw( 
+			id catalog 
+		)],
 		$TPI_AT_NREFS => {
 			'catalog' => 'catalog',
-			'default_schema' => 'schema',
 		},
 		$TPI_P_NODE_ATNMS => [qw( catalog )],
 		$TPI_MA_NREFS => {map { ($_ => 1) } qw( catalog )},
 	},
-	'role' => {
+	'catalog_link' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id 
+			id catalog application name target
 		)],
-	},
-	'privilege' => {
-		$TPI_AT_SEQUENCE => [qw( 
-			id 
-		)],
-	},
-	'user_role' => {
-		$TPI_AT_SEQUENCE => [qw( 
-			id 
-		)],
+		$TPI_AT_LITERALS => {
+			'name' => 'cstr',
+		},
+		$TPI_AT_NREFS => {
+			'catalog' => 'catalog',
+			'application' => 'application',
+			'target' => 'catalog',
+		},
+		$TPI_P_NODE_ATNMS => [qw( catalog application )],
+		$TPI_MA_LITERALS => {map { ($_ => 1) } qw( name )},
+		$TPI_MA_NREFS => {map { ($_ => 1) } qw( target )},
 	},
 	'schema' => {
 		$TPI_AT_SEQUENCE => [qw( 
@@ -346,10 +359,41 @@ my %NODE_TYPES = (
 		},
 		$TPI_AT_NREFS => {
 			'catalog' => 'catalog',
-			'owner' => 'user',
+			'owner' => 'owner',
 		},
 		$TPI_P_NODE_ATNMS => [qw( catalog )],
 		$TPI_MA_NREFS => {map { ($_ => 1) } qw( catalog owner )},
+	},
+	'role' => {
+		$TPI_AT_SEQUENCE => [qw( 
+			id catalog name
+		)],
+		$TPI_AT_LITERALS => {
+			'name' => 'cstr',
+		},
+		$TPI_AT_NREFS => {
+			'catalog' => 'catalog',
+		},
+		$TPI_P_NODE_ATNMS => [qw( catalog )],
+		$TPI_MA_LITERALS => {map { ($_ => 1) } qw( name )},
+		$TPI_MA_NREFS => {map { ($_ => 1) } qw( catalog )},
+	},
+	'privilege' => {
+		$TPI_AT_SEQUENCE => [qw( 
+			id role priv_type schema table routine
+		)],
+		$TPI_AT_ENUMS => {
+			'priv_type' => 'privilege_type',
+		},
+		$TPI_AT_NREFS => {
+			'role' => 'role',
+			'schema' => 'schema',
+			'table' => 'table',
+			'routine' => 'routine',
+		},
+		$TPI_P_NODE_ATNMS => [qw( role )],
+		$TPI_MA_ENUMS => {map { ($_ => 1) } qw( priv_type )},
+		$TPI_MA_NREFS => {map { ($_ => 1) } qw( role )},
 	},
 	'sequence' => {
 		$TPI_AT_SEQUENCE => [qw( 
@@ -457,10 +501,11 @@ my %NODE_TYPES = (
 	},
 	'view' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id view_context view_type schema name p_routine p_view match_table c_merge_type may_write 
+			id view_context view_type schema name routine p_view match_all_cols c_merge_type may_write 
 		)],
 		$TPI_AT_LITERALS => {
 			'name' => 'cstr',
+			'match_all_cols' => 'bool',
 			'may_write' => 'bool',
 		},
 		$TPI_AT_ENUMS => {
@@ -472,7 +517,6 @@ my %NODE_TYPES = (
 			'schema' => 'schema',
 			'routine' => 'routine',
 			'p_view' => 'view',
-			'match_table' => 'table',
 		},
 		$TPI_P_NODE_ATNMS => [qw( schema routine p_view )],
 		$TPI_MA_LITERALS => {map { ($_ => 1) } qw( may_write )},
@@ -480,16 +524,10 @@ my %NODE_TYPES = (
 	},
 	'view_arg' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id 
-		)],
-	},
-	'view_col' => {
-		$TPI_AT_SEQUENCE => [qw( 
-			id view name domain sort_priority 
+			id view name domain 
 		)],
 		$TPI_AT_LITERALS => {
 			'name' => 'cstr',
-			'sort_priority' => 'uint',
 		},
 		$TPI_AT_NREFS => {
 			'view' => 'view',
@@ -501,15 +539,17 @@ my %NODE_TYPES = (
 	},
 	'view_src' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id view name match_table match_view
+			id view name match_table match_view catalog_link may_write
 		)],
 		$TPI_AT_LITERALS => {
 			'name' => 'cstr',
+			'may_write' => 'bool',
 		},
 		$TPI_AT_NREFS => {
 			'view' => 'view',
 			'match_table' => 'table',
 			'match_view' => 'view',
+			'catalog_link' => 'catalog_link',
 		},
 		$TPI_P_NODE_ATNMS => [qw( view )],
 		$TPI_MA_LITERALS => {map { ($_ => 1) } qw( name )},
@@ -526,6 +566,22 @@ my %NODE_TYPES = (
 		},
 		$TPI_P_NODE_ATNMS => [qw( src )],
 		$TPI_MA_NREFS => {map { ($_ => 1) } qw( src )},
+	},
+	'view_col' => {
+		$TPI_AT_SEQUENCE => [qw( 
+			id view name domain src_col 
+		)],
+		$TPI_AT_LITERALS => {
+			'name' => 'cstr',
+		},
+		$TPI_AT_NREFS => {
+			'view' => 'view',
+			'domain' => 'domain',
+			'src_col' => 'view_src_col',
+		},
+		$TPI_P_NODE_ATNMS => [qw( view )],
+		$TPI_MA_LITERALS => {map { ($_ => 1) } qw( name )},
+		$TPI_MA_NREFS => {map { ($_ => 1) } qw( view domain )},
 	},
 	'view_join' => {
 		$TPI_AT_SEQUENCE => [qw( 
@@ -557,14 +613,21 @@ my %NODE_TYPES = (
 	},
 	'view_hierarchy' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id view start_src_col start_lit_val start_routine_var conn_src_col p_conn_src_col 
+			id view start_src_col start_expr_type 
+			start_lit_val start_view_arg start_routine_arg start_routine_var
+			conn_src_col p_conn_src_col 
 		)],
 		$TPI_AT_LITERALS => {
 			'start_lit_val' => 'misc',
 		},
+		$TPI_AT_ENUMS => {
+			'start_expr_type' => 'basic_expr_type',
+		},
 		$TPI_AT_NREFS => {
 			'view' => 'view',
 			'start_src_col' => 'view_src_col',
+			'start_view_arg' => 'view_arg',
+			'start_routine_arg' => 'routine_arg',
 			'start_routine_var' => 'routine_var',
 			'conn_src_col' => 'view_src_col',
 			'p_conn_src_col' => 'view_src_col',
@@ -574,8 +637,9 @@ my %NODE_TYPES = (
 	},
 	'view_expr' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id expr_type p_expr view view_part view_col lit_val 
-			view_arg routine_arg routine_var src_col f_view sfunc ufunc 
+			id expr_type p_expr view view_part view_col 
+			set_view_col lit_val src_col match_col view_arg routine_arg routine_var
+			call_view call_view_arg call_sfunc call_ufunc call_ufunc_arg catalog_link
 		)],
 		$TPI_AT_LITERALS => {
 			'lit_val' => 'misc',
@@ -586,48 +650,58 @@ my %NODE_TYPES = (
 			'sfunc' => 'standard_func',
 		},
 		$TPI_AT_NREFS => {
+			'p_expr' => 'view_expr',
 			'view' => 'view',
 			'view_col' => 'view_col',
-			'p_expr' => 'view_expr',
+			'set_view_col' => 'view_col',
+			'src_col' => 'view_src_col',
+			'match_col' => 'view_col',
 			'view_arg' => 'view_arg',
 			'routine_arg' => 'routine_arg',
 			'routine_var' => 'routine_var',
-			'src_col' => 'view_src_col',
-			'f_view' => 'view',
-			'ufunc' => 'routine',
+			'call_view' => 'view',
+			'call_view_arg' => 'view_arg',
+			'call_ufunc' => 'routine',
+			'call_ufunc_arg' => 'routine_arg',
+			'catalog_link' => 'catalog_link',
 		},
-		$TPI_P_NODE_ATNMS => [qw( view p_expr )],
+		$TPI_P_NODE_ATNMS => [qw( p_expr view )],
 		$TPI_MA_ENUMS => {map { ($_ => 1) } qw( expr_type )},
 	},
 	'routine' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id routine_type schema name trigger application p_routine return_type 
+			id routine_type schema trigger application p_routine name return_var_type return_domain
 		)],
 		$TPI_AT_LITERALS => {
 			'name' => 'cstr',
 		},
 		$TPI_AT_ENUMS => {
 			'routine_type' => 'routine_type',
-			'return_type' => 'domain',
+			'return_var_type' => 'basic_var_type',
 		},
 		$TPI_AT_NREFS => {
 			'schema' => 'schema',
 			'trigger' => 'trigger',
 			'application' => 'application',
 			'p_routine' => 'routine',
+			'return_domain' => 'domain',
 		},
 		$TPI_P_NODE_ATNMS => [qw( schema trigger application p_routine )],
 		$TPI_MA_ENUMS => {map { ($_ => 1) } qw( routine_type )},
 	},
 	'routine_arg' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id routine name 
+			id routine name var_type domain
 		)],
 		$TPI_AT_LITERALS => {
 			'name' => 'cstr',
 		},
+		$TPI_AT_ENUMS => {
+			'var_type' => 'basic_var_type',
+		},
 		$TPI_AT_NREFS => {
 			'routine' => 'routine',
+			'domain' => 'domain',
 		},
 		$TPI_P_NODE_ATNMS => [qw( routine )],
 		$TPI_MA_LITERALS => {map { ($_ => 1) } qw( name )},
@@ -651,23 +725,28 @@ my %NODE_TYPES = (
 			'curs_view' => 'view',
 		},
 		$TPI_P_NODE_ATNMS => [qw( routine )],
-		$TPI_MA_LITERALS => {map { ($_ => 1) } qw( name is_argument )},
+		$TPI_MA_LITERALS => {map { ($_ => 1) } qw( name )},
 		$TPI_MA_ENUMS => {map { ($_ => 1) } qw( var_type )},
 		$TPI_MA_NREFS => {map { ($_ => 1) } qw( routine )},
 	},
-	'command' => {
+	'routine_stmt' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id routine stmt_type dest_arg dest_var sproc uproc c_routine 
+			id routine stmt_type command command_arg dest_arg dest_var call_sproc call_uproc catalog_link c_routine 
 		)],
+		$TPI_AT_LITERALS => {
+			'command_arg' => 'uint',
+		},
 		$TPI_AT_ENUMS => {
 			'stmt_type' => 'basic_stmt_type',
-			'sproc' => 'standard_proc',
+			'command' => 'command_type',
+			'call_sproc' => 'standard_proc',
 		},
 		$TPI_AT_NREFS => {
 			'routine' => 'routine',
 			'dest_arg' => 'routine_arg',
 			'dest_var' => 'routine_var',
-			'uproc' => 'routine',
+			'call_uproc' => 'routine',
+			'catalog_link' => 'catalog_link',
 			'c_routine' => 'routine',
 		},
 		$TPI_P_NODE_ATNMS => [qw( routine )],
@@ -676,39 +755,136 @@ my %NODE_TYPES = (
 	},
 	'routine_expr' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id expr_type command p_expr lit_val src_arg src_var sfunc ufunc 
+			id expr_type p_stmt p_expr lit_val src_arg src_var 
+			call_sfunc call_ufunc call_ufunc_arg catalog_link
 		)],
 		$TPI_AT_LITERALS => {
 			'lit_val' => 'cstr',
 		},
 		$TPI_AT_ENUMS => {
 			'expr_type' => 'basic_expr_type',
-			'sfunc' => 'standard_func',
+			'call_sfunc' => 'standard_func',
 		},
 		$TPI_AT_NREFS => {
-			'command' => 'command',
+			'p_stmt' => 'routine_stmt',
 			'p_expr' => 'routine_expr',
 			'src_arg' => 'routine_arg',
 			'src_var' => 'routine_var',
-			'ufunc' => 'routine',
+			'call_ufunc' => 'routine',
+			'call_ufunc_arg' => 'routine_arg',
+			'catalog_link' => 'catalog_link',
 		},
-		$TPI_P_NODE_ATNMS => [qw( command p_expr )],
+		$TPI_P_NODE_ATNMS => [qw( p_stmt p_expr )],
 		$TPI_MA_ENUMS => {map { ($_ => 1) } qw( expr_type )},
 	},
-	'application' => {
+	'database_product' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id 
+			id name product_code is_file_based is_local_proc is_network_svc
+		)],
+		$TPI_AT_LITERALS => {
+			'name' => 'cstr',
+			'product_code' => 'cstr',
+			'is_file_based' => 'bool',
+			'is_local_proc' => 'bool',
+			'is_network_svc' => 'bool',
+		},
+		$TPI_P_PSEUDONODE => $SQLSM_L2_TOOL_PSND,
+		$TPI_MA_LITERALS => {map { ($_ => 1) } qw( product_code )},
+	},
+	'catalog_instance' => {
+		$TPI_AT_SEQUENCE => [qw( 
+			id blueprint name product server_ip server_domain server_port file_path
+		)],
+		$TPI_AT_LITERALS => {
+			'name' => 'cstr',
+			'server_ip' => 'cstr',
+			'server_domain' => 'cstr',
+			'server_port' => 'uint',
+			'file_path' => 'cstr',
+		},
+		$TPI_AT_NREFS => {
+			'blueprint' => 'catalog',
+			'product' => 'database_product',
+		},
+		$TPI_P_PSEUDONODE => $SQLSM_L2_SITE_PSND,
+		$TPI_MA_NREFS => {map { ($_ => 1) } qw( blueprint product )},
+	},
+	'application_instance' => {
+		$TPI_AT_SEQUENCE => [qw( 
+			id blueprint name 
 		)],
 		$TPI_AT_LITERALS => {
 			'name' => 'cstr',
 		},
-		$TPI_P_PSEUDONODE => $SQLSM_L2_APPL_SPACE,
+		$TPI_AT_NREFS => {
+			'blueprint' => 'application',
+		},
+		$TPI_P_PSEUDONODE => $SQLSM_L2_SITE_PSND,
+		$TPI_MA_NREFS => {map { ($_ => 1) } qw( blueprint )},
+	},
+	'catalog_link_instance' => {
+		$TPI_AT_SEQUENCE => [qw( 
+			id unrealized catalog application target local_dsn
+		)],
+		$TPI_AT_LITERALS => {
+			'local_dsn' => 'cstr',
+		},
+		$TPI_AT_NREFS => {
+			'unrealized' => 'catalog_link',
+			'catalog' => 'catalog_instance',
+			'application' => 'application_instance',
+			'target' => 'catalog_instance',
+		},
+		$TPI_P_NODE_ATNMS => [qw( catalog application )],
+		$TPI_MA_NREFS => {map { ($_ => 1) } qw( unrealized target )},
+	},
+	'user' => {
+		$TPI_AT_SEQUENCE => [qw( 
+			id catalog user_type match_owner name password default_schema 
+		)],
+		$TPI_AT_LITERALS => {
+			'name' => 'cstr',
+			'password' => 'cstr',
+		},
+		$TPI_AT_ENUMS => {
+			'user_type' => 'user_type',
+		},
+		$TPI_AT_NREFS => {
+			'catalog' => 'catalog_instance',
+			'match_owner' => 'owner',
+			'default_schema' => 'schema',
+		},
+		$TPI_P_NODE_ATNMS => [qw( catalog )],
+		$TPI_MA_ENUMS => {map { ($_ => 1) } qw( user_type )},
+		$TPI_MA_NREFS => {map { ($_ => 1) } qw( catalog )},
+	},
+	'user_role' => {
+		$TPI_AT_SEQUENCE => [qw( 
+			id user role 
+		)],
+		$TPI_AT_NREFS => {
+			'user' => 'user',
+			'role' => 'role',
+		},
+		$TPI_P_NODE_ATNMS => [qw( user )],
+		$TPI_MA_NREFS => {map { ($_ => 1) } qw( user role )},
 	},
 	'sql_fragment' => {
 		$TPI_AT_SEQUENCE => [qw( 
-			id 
+			id product att_node_type att_node_id is_inside is_before is_after fragment
 		)],
-		$TPI_P_PSEUDONODE => $SQLSM_L2_CIRC_SPACE,
+		$TPI_AT_LITERALS => {
+			'att_node_type' => 'cstr',
+			'att_node_id' => 'uint',
+			'is_inside' => 'bool',
+			'is_before' => 'bool',
+			'is_after' => 'bool',
+			'fragment' => 'cstr',
+		},
+		$TPI_AT_NREFS => {
+			'product' => 'database_product',
+		},
+		$TPI_P_PSEUDONODE => $SQLSM_L2_CIRC_PSND,
 	},
 );
 
@@ -727,6 +903,12 @@ my $DBG_GAP_CHILDREN  = 'CHILDREN'; # list of refs to new Nodes we will become p
 
 ######################################################################
 # These are 'protected' methods; only sub-classes should invoke them.
+
+sub _get_static_const_model_class_name {
+	# This function is intended to be overridden by sub-classes.
+	# It is intended only to be used when making new objects.
+	return( 'SQL::SyntaxModel' );
+}
 
 sub _get_static_const_container_class_name {
 	# This function is intended to be overridden by sub-classes.
@@ -920,6 +1102,14 @@ sub _throw_error_message {
 }
 
 ######################################################################
+
+sub new {
+	my ($self) = @_;
+	my $model = bless( {}, $self->_get_static_const_model_class_name() );
+	$model->{$MPROP_CONTAINER} = bless( {}, $self->_get_static_const_container_class_name() );
+	$model->{$MPROP_CONTAINER}->_set_initial_container_props();
+	return( $model );
+}
 
 sub create_empty_node {
 	my ($self, $node_type) = @_;
@@ -1448,6 +1638,10 @@ sub put_in_container {
 	my ($node, $new_container) = @_;
 	defined( $new_container ) or $node->_throw_error_message( 'SSM_N_PI_CONT_NO_ARGS' );
 
+	if( UNIVERSAL::isa( $new_container, 'SQL::SyntaxModel' ) ) {
+		# The user sees SQL::SyntaxModel and SQL::SyntaxModel::_::Container as same thing.
+		$new_container = $new_container->{$MPROP_CONTAINER};
+	}
 	unless( UNIVERSAL::isa( $new_container, 'SQL::SyntaxModel::_::Container' ) ) {
 		$node->_throw_error_message( 'SSM_N_PI_CONT_BAD_ARG', { 'ARG' => $new_container } );
 	}
@@ -1491,10 +1685,6 @@ sub put_in_container {
 	$node->{$NPROP_AT_NREFS} = \%at_nodes_refs;
 	$rh_cnl_bt->{$node_type}->{$node_id} = $node;
 	# We don't get referenced nodes to link back here; caller requests that separately
-
-	if( my $p_pseudonode = $NODE_TYPES{$node_type}->{$TPI_P_PSEUDONODE} ) {
-		push( @{$new_container->{$CPROP_PSEUDONODES}->{$p_pseudonode}}, $node );
-	}
 }
 
 sub take_from_container {
@@ -1515,10 +1705,6 @@ sub take_from_container {
 		$at_nodes_nids{$at_nodes_atnm} = $rh_at_nodes_refs->{$at_nodes_atnm}->{$NPROP_NODE_ID};
 	}
 
-	if( my $p_pseudonode = $NODE_TYPES{$node_type}->{$TPI_P_PSEUDONODE} ) {
-		my $siblings = $container->{$CPROP_PSEUDONODES}->{$p_pseudonode};
-		@{$siblings} = grep { $_ ne $node } @{$siblings};
-	}
 	delete( $node->{$NPROP_CONTAINER}->{$CPROP_ALL_NODES}->{$node_type}->{$node_id} );
 	$node->{$NPROP_AT_NREFS} = \%at_nodes_nids;
 	$node->{$NPROP_CONTAINER} = undef;
@@ -1541,9 +1727,15 @@ sub add_reciprocal_links {
 		$node->_throw_error_message( 'SSM_N_ADD_RL_NO_NODE_ID' );
 	}
 
+	my $node_type = $node->{$NPROP_NODE_TYPE};
+	if( my $p_pseudonode = $NODE_TYPES{$node_type}->{$TPI_P_PSEUDONODE} ) {
+		push( @{$container->{$CPROP_PSEUDONODES}->{$p_pseudonode}}, $node );
+	}
+
 	foreach my $attr_value (values %{$node->{$NPROP_AT_NREFS}}) {
 		push( @{$attr_value->{$NPROP_CHILD_NODES}}, $node );
 	}
+
 	$node->{$NPROP_LINKS_RECIP} = 1;
 }
 
@@ -1555,15 +1747,16 @@ sub remove_reciprocal_links {
 		$node->_throw_error_message( 'SSM_N_REM_RL_HAS_CHILD' );
 	}
 
+	my $node_type = $node->{$NPROP_NODE_TYPE};
+	if( my $p_pseudonode = $NODE_TYPES{$node_type}->{$TPI_P_PSEUDONODE} ) {
+		my $container = $node->{$NPROP_CONTAINER};
+		my $siblings = $container->{$CPROP_PSEUDONODES}->{$p_pseudonode};
+		@{$siblings} = grep { $_ ne $node } @{$siblings}; # remove all occurances
+	}
+
 	foreach my $attr_value (@{$node->{$NPROP_AT_NREFS}}) {
-		my $ra_children_of_parent = $attr_value->{$NPROP_CHILD_NODES};
-		foreach my $i (0..$#{$ra_children_of_parent}) {
-			if( $ra_children_of_parent->[$i] eq $node ) {
-				# remove first instance of $node from it's parent's child list
-				splice( @{$ra_children_of_parent}, $i, 1 );
-				last;
-			}
-		}
+		my $siblings = $attr_value->{$NPROP_CHILD_NODES};
+		@{$siblings} = grep { $_ ne $node } @{$siblings}; # remove all occurances
 	}
 
 	$node->{$NPROP_LINKS_RECIP} = 0;
@@ -1573,6 +1766,7 @@ sub remove_reciprocal_links {
 
 sub move_before_sibling {
 	my ($node, $sibling, $parent) = @_;
+	my $p_pseudonode = $NODE_TYPES{$node->{$NPROP_NODE_TYPE}}->{$TPI_P_PSEUDONODE};
 
 	# First make sure we have 3 actual Nodes that are all "Well Known" and in the same Container.
 
@@ -1595,9 +1789,16 @@ sub move_before_sibling {
 			$node->_throw_error_message( 'SSM_N_MOVE_PRE_SIB_P_DIFF_CONT' );
 		}
 	} else {
-		$parent = $node->{$NPROP_AT_NREFS}->{$node->{$NPROP_P_NODE_ATNM}} or 
-			$node->_throw_error_message( 'SSM_N_MOVE_PRE_SIB_NO_P_ARG_OR_PP' );
+		unless( $node->{$NPROP_P_NODE_ATNM} and 
+				$parent = $node->{$NPROP_AT_NREFS}->{$node->{$NPROP_P_NODE_ATNM}} ) {
+			$p_pseudonode or $node->_throw_error_message( 'SSM_N_MOVE_PRE_SIB_NO_P_ARG_OR_PP_OR_PS' );
+		}
 	}
+
+	# Now get the Node list we're going to search through.
+
+	my $ra_search_list = $parent ? $parent->{$NPROP_CHILD_NODES} : 
+		$node->{$NPROP_CONTAINER}->{$CPROP_PSEUDONODES}->{$p_pseudonode};
 
 	# Now confirm the given Nodes are our parent and sibling.
 	# For efficiency we also prepare to reorder the Nodes at the same time.
@@ -1608,7 +1809,7 @@ sub move_before_sibling {
 	my @refs_after_both = ();
 
 	my $others_go_before = 1;
-	foreach my $child (@{$parent->{$NPROP_CHILD_NODES}}) {
+	foreach my $child (@{$ra_search_list}) {
 		if( $child eq $node ) {
 			push( @curr_node_refs, $child );
 		} elsif( $child eq $sibling ) {
@@ -1626,7 +1827,7 @@ sub move_before_sibling {
 
 	# Everything checks out, so now we perform the reordering.
 
-	@{$parent->{$NPROP_CHILD_NODES}} = (@refs_before_both, @curr_node_refs, @sib_node_refs, @refs_after_both);
+	@{$ra_search_list} = (@refs_before_both, @curr_node_refs, @sib_node_refs, @refs_after_both);
 }
 
 ######################################################################
@@ -1766,6 +1967,32 @@ use base qw( SQL::SyntaxModel::_::Shared );
 
 ######################################################################
 
+sub _set_initial_container_props {
+	my ($container) = @_;
+	$container->{$CPROP_ALL_NODES} = { map { ($_ => {}) } keys %NODE_TYPES };
+	$container->{$CPROP_PSEUDONODES} = { map { ($_ => []) } @L2_PSEUDONODE_LIST };
+}
+
+sub _destroy_container_props {
+	my ($container) = @_;
+	foreach my $nodes_by_type (values %{$container->{$CPROP_ALL_NODES}}) {
+		foreach my $node (values %{$nodes_by_type}) {
+			%{$node} = ();
+		}
+	}
+	%{$container} = ();
+}
+
+######################################################################
+
+sub initialize {
+	my ($self) = @_;
+	$self->_destroy_container_props();
+	$self->_set_initial_container_props();
+}
+
+######################################################################
+
 sub get_node {
 	my ($container, $node_type, $node_id) = @_;
 	defined( $node_type ) or $container->_throw_error_message( 'SSM_C_GET_NODE_NO_ARG_TYPE' );
@@ -1778,6 +2005,17 @@ sub get_node {
 
 ######################################################################
 
+sub with_all_nodes_test_mandatory_attributes {
+	my ($container) = @_;
+	foreach my $nodes_by_type (values %{$container->{$CPROP_ALL_NODES}}) {
+		foreach my $node (values %{$nodes_by_type}) {
+			$node->test_mandatory_attributes();
+		}
+	}
+}
+
+######################################################################
+
 sub get_all_properties {
 	return( $_[0]->_get_all_properties() );
 }
@@ -1786,7 +2024,7 @@ sub _get_all_properties {
 	my ($container) = @_;
 	my $pseudonodes = $container->{$CPROP_PSEUDONODES};
 	return( {
-		$DBG_GAP_NODE_TYPE => $SQLSM_ROOT_NODE_TYPE,
+		$DBG_GAP_NODE_TYPE => $SQLSM_L1_ROOT_PSND,
 		$DBG_GAP_ATTRS => {},
 		$DBG_GAP_CHILDREN => [map { {
 			$DBG_GAP_NODE_TYPE => $_,
@@ -1813,47 +2051,23 @@ use base qw( SQL::SyntaxModel::_::Shared );
 
 ######################################################################
 
-sub new {
-	my ($class) = @_;
-	my $model = bless( {}, ref($class) || $class );
-	$model->{$MPROP_CONTAINER} = bless( {}, $model->_get_static_const_container_class_name() );
-	$model->_set_initial_container_props();
-	return( $model );
-}
-
-sub _set_initial_container_props {
-	my $container = $_[0]->{$MPROP_CONTAINER};
-	$container->{$CPROP_ALL_NODES} = { map { ($_ => {}) } keys %NODE_TYPES };
-	$container->{$CPROP_PSEUDONODES} = { map { ($_ => []) } @L2_PSEUDONODE_LIST };
-}
-
 sub DESTROY {
-	$_[0]->_destroy_container_props();
-}
-
-sub _destroy_container_props {
-	my $container = $_[0]->{$MPROP_CONTAINER};
-	foreach my $nodes_by_type (values %{$container->{$CPROP_ALL_NODES}}) {
-		foreach my $node (values %{$nodes_by_type}) {
-			%{$node} = ();
-		}
-	}
-	%{$container} = ();
-}
-
-######################################################################
-
-sub initialize {
-	my ($self) = @_;
-	$self->_destroy_container_props();
-	$self->_set_initial_container_props();
+	$_[0]->{$MPROP_CONTAINER}->_destroy_container_props();
 }
 
 ######################################################################
 # Shims for methods declared in Container class.
 
+sub initialize {
+	return( $_[0]->{$MPROP_CONTAINER}->initialize() );
+}
+
 sub get_node {
 	return( $_[0]->{$MPROP_CONTAINER}->get_node( $_[1], $_[2] ) );
+}
+
+sub with_all_nodes_test_mandatory_attributes {
+	return( $_[0]->{$MPROP_CONTAINER}->with_all_nodes_test_mandatory_attributes() );
 }
 
 sub get_all_properties {
@@ -1876,8 +2090,139 @@ __END__
 
 =head1 SYNOPSIS
 
-I<This documentation has yet to be written.  Meanwhile, try looking at the
-other modules which sub-class this one.>
+This module's native API is highly verbose / detailed and so a realistically
+complete example of its use would be too large to show here.  (In fact, most
+real uses of the module would involve user-picked wrapper functions that aren't
+included.)  However, here are a few example usage lines:
+
+	use SQL::SyntaxModel;
+
+	eval {
+		my $model = SQL::SyntaxModel->new();
+
+		# Create user-defined data type domain that our database record primary keys are:
+		my $dom_entity_id = SQL::SyntaxModel->create_empty_node( 'domain' );
+		$dom_entity_id->set_node_id( 1 );
+		$dom_entity_id->put_in_container( $model );
+		$dom_entity_id->add_reciprocal_links();
+		$dom_entity_id->set_literal_attribute( 'name', 'entity_id' );
+		$dom_entity_id->set_enumerated_attribute( 'base_type', 'NUM_INT' );
+		$dom_entity_id->set_literal_attribute( 'num_scale', 9 );
+
+		# ... add a few more Nodes
+
+		# Define the table that holds our data:
+		my $tb_person = $pp_node->create_empty_node( 'table' );
+		$tb_person->set_node_id( 1 );
+		$tb_person->put_in_container( $model );
+		$tb_person->add_reciprocal_links();
+		$tb_person->set_node_ref_attribute( 'schema', $schema );
+		$tb_person->set_parent_node_attribute_name( 'schema' );
+		$tb_person->set_literal_attribute( 'name', 'person' );
+
+		# Define the 'person id' column of that table:
+		my $tbc_person_id = $pp_node->create_empty_node( 'table_col' );
+		$tbc_person_id->set_node_id( 1 );
+		$tbc_person_id->put_in_container( $model );
+		$tbc_person_id->add_reciprocal_links();
+		$tbc_person_id->set_node_ref_attribute( 'table', $tb_person );
+		$tbc_person_id->set_parent_node_attribute_name( 'table' );
+		$tbc_person_id->set_literal_attribute( 'name', 'person_id' );
+		$tbc_person_id->set_node_ref_attribute( 'domain', $dom_entity_id );
+		$tbc_person_id->set_literal_attribute( 'mandatory', 1 );
+		$tbc_person_id->set_literal_attribute( 'default_val', 1 );
+		$tbc_person_id->set_literal_attribute( 'auto_inc', 1 );
+
+		# ... add a lot more Nodes
+
+		# Now check that we didn't omit something important:
+		$model->with_all_nodes_test_mandatory_attributes();
+
+		# Now serialize all our Nodes to see if we stored what we expected:
+		print $model->get_all_properties_as_xml_str();
+	};
+
+	if( $@ ) {
+		my $translator = Locale::KeyedText->new_translator( ['SQL::SyntaxModel::L::'], ['en'] );
+		my $user_text = $translator->translate_message( $@ );
+		print "SOMETHING'S WRONG: $user_text" );
+	}
+
+The above code sample is taken and slightly altered from a longer set of code
+in this module's test script/module: 't/10_SQL_SyntaxModel.t' and
+'lib/t_SQL_SyntaxModel.pm'.  Even that code is an incomplete sample, but it 
+also demonstrates the use of a couple simple wrapper functions.
+
+This is a serialization of the model that the test code makes, which should
+give you a better idea what kind of information is stored in a SQL::SynaxModel:
+
+	<root>
+		<elements>
+			<domain id="1" name="entity_id" base_type="NUM_INT" num_scale="9" />
+			<domain id="2" name="person_name" base_type="STR_CHAR" max_chars="100" />
+		</elements>
+		<blueprints>
+			<catalog id="1">
+				<owner id="1" catalog="1" />
+				<schema id="1" catalog="1" name="gene" owner="1">
+					<table id="1" schema="1" name="person">
+						<table_col id="1" table="1" name="person_id" domain="1" mandatory="1" default_val="1" auto_inc="1" />
+						<table_col id="2" table="1" name="name" domain="2" mandatory="1" />
+						<table_col id="3" table="1" name="father_id" domain="1" mandatory="0" />
+						<table_col id="4" table="1" name="mother_id" domain="1" mandatory="0" />
+						<table_ind id="1" table="1" name="primary" ind_type="UNIQUE">
+							<table_ind_col id="1" table_ind="1" table_col="1" />
+						</table_ind>
+						<table_ind id="2" table="1" name="fk_father" ind_type="FOREIGN" f_table="1">
+							<table_ind_col id="2" table_ind="2" table_col="3" f_table_col="1" />
+						</table_ind>
+						<table_ind id="3" table="1" name="fk_mother" ind_type="FOREIGN" f_table="1">
+							<table_ind_col id="3" table_ind="3" table_col="4" f_table_col="1" />
+						</table_ind>
+					</table>
+				</schema>
+			</catalog>
+			<application id="1" name="Setup">
+				<catalog_link id="1" application="1" name="admin_link" target="1" />
+				<routine id="1" routine_type="ANONYMOUS" application="1" name="install_app_schema">
+					<routine_stmt id="1" routine="1" stmt_type="COMMAND" command="DB_CREATE" command_arg="1" />
+				</routine>
+				<routine id="2" routine_type="ANONYMOUS" application="1" name="remove_app_schema">
+					<routine_stmt id="2" routine="2" stmt_type="COMMAND" command="DB_DELETE" command_arg="1" />
+				</routine>
+			</application>
+			<application id="2" name="People Watcher">
+				<catalog_link id="2" application="2" name="editor_link" target="1" />
+				<routine id="3" routine_type="ANONYMOUS" application="2" name="fetch_all_persons">
+					<view id="1" view_context="APPLIC" view_type="MATCH" routine="3" match_all_cols="1" may_write="1">
+						<view_src id="1" view="1" name="person" match_table="1" />
+					</view>
+				</routine>
+				<routine id="4" routine_type="ANONYMOUS" application="2" name="insert_a_person" />
+				<routine id="5" routine_type="ANONYMOUS" application="2" name="update_a_person" />
+				<routine id="6" routine_type="ANONYMOUS" application="2" name="delete_a_person" />
+			</application>
+		</blueprints>
+		<tools>
+			<database_product id="1" product_code="SQLite_2_8_12" is_file_based="1" />
+			<database_product id="2" product_code="Oracle_9_i" is_network_svc="1" />
+		</tools>
+		<sites>
+			<catalog_instance id="1" blueprint="1" name="test" product="1">
+				<user id="1" catalog="1" user_type="SCHEMA_OWNER" match_owner="1" name="ronsealy" password="K34dsD" />
+				<user id="2" catalog="1" user_type="DATA_EDITOR" name="joesmith" password="fdsKJ4" />
+			</catalog_instance>
+			<catalog_instance id="2" blueprint="1" name="demo" product="2">
+				<user id="3" catalog="2" user_type="SCHEMA_OWNER" match_owner="1" name="florence" password="0sfs8G" />
+				<user id="4" catalog="2" user_type="DATA_EDITOR" name="thainuff" password="9340sd" />
+			</catalog_instance>
+		</sites>
+		<circumventions />
+	</root>
+
+For some additional code samples, try looking at the various modules that
+sub-class or use SQL::SyntaxModel.  They tend to implement or use wrappers that
+make for much more compact code.
 
 =head1 DESCRIPTION
 
@@ -2043,20 +2388,15 @@ the root Node of each tree which has a different Node type as its parent.
 
 Finally, any Node of certain types will always have a specific pseudo-node as
 its single parent, which it does not reference in an attribute, and which can
-not be changed.  All 5 pseudo-nodes have no attributes, even 'id', and only one
+not be changed.  All 6 pseudo-nodes have no attributes, even 'id', and only one
 of each exists; they are created by default with the Container they are part
 of, forming the top 2 levels of the Node tree, and can not be removed.  They
 are: 'root' (the single level-1 Node which is parent to the other pseudo-nodes
-but no normal Nodes), 'common_space' (parent to 'domain' Nodes),
-'database_space' (parent to 'catalog' Nodes), 'application_space' (parent to
-'application' Nodes), and 'circumvention_space' (parent to 'sql_fragment'
+but no normal Nodes), 'elements' (parent to 'domain' Nodes), 'blueprints'
+(parent to 'catalog' and 'application' Nodes), 'tools' (parent to
+'database_product' Nodes), 'sites' (parent to 'catalog_instance' and
+'application_instance' Nodes), and 'circumventions' (parent to 'sql_fragment'
 nodes).  All other Node types have normal Nodes as parents.
-
-Note that this module does not support the concept of 'document fragments',
-which is a set of Nodes not linked to the main tree.  Every Node (save the
-pseudo-node root) must have a primary parent Node at all times.  However, Node
-trees can still be moved around at any time by reassigning their primary parent
-attribute.  Also, individual Nodes can still always be referred to externally.
 
 You should look at the POD-only file named SQL::SyntaxModel::Language, which
 comes with this distribution.  It serves to document all of the possible Node
@@ -2293,6 +2633,20 @@ This "getter" method returns a reference to one of this Container's member
 Nodes, which has a Node Type of NODE_TYPE, and a Node Id of NODE_ID.  You may
 not request a pseudo-node (it doesn't actually exist).
 
+=head2 with_all_nodes_test_mandatory_attributes()
+
+	my $model->with_all_nodes_test_mandatory_attributes();
+
+This "getter" method implements a type of deferrable data validation.  It will
+iterate through every Node in this Container and invoke its
+test_mandatory_attributes() method; the order that the Nodes are tested is not
+defined, but every one will get tested regardless of its state or connectedness
+with the other Nodes.  That said, a failure with any one Node will cause the
+testing of the whole set to abort, as the offending Node throws an exception
+which this method doesn't catch; any untested Nodes could also have failed. 
+Only when you can call this method without any exceptions being thrown will all
+Nodes have passed the tests.
+
 =head1 NODE OBJECT METHODS
 
 These methods are stateful and may only be invoked off of Node objects.  For
@@ -2313,7 +2667,7 @@ collected as soon as you lose your reference to it.
 
 =head2 get_node_type()
 
-my $type = $node->get_node_type();
+	my $type = $node->get_node_type();
 
 This "getter" method returns the Node Type scalar (enum) property of this Node.
  You can not change this property on an existing Node, but you can set it on a
@@ -2773,13 +3127,14 @@ argument is given, it just returns true if that attribute is mandatory.
 
 =head1 BUGS
 
-This module is currently in pre-alpha development status, meaning that I am
-certain parts of it will be changed in the near future, some in incompatible
-ways.  This module will indeed execute and do a variety of things, but it isn't
-yet recommended for any kind of serious use.  The current state is analagous to
+This module is currently in pre-alpha development status, meaning that some
+parts of it will be changed in the near future, perhaps in incompatible ways;
+however, I believe that the largest short-term changes are already done.  This
+module will indeed execute and do a variety of things, but it isn't yet
+recommended for any kind of serious use.  The current state is analagous to
 'developer releases' of operating systems; you can study it with the intent of
 using it in the future, but you should hold off writing any volume of code
-against it which you aren't prepared to rewrite later as the API changes. Also,
+against it which you aren't prepared to rewrite later as the API changes.  Also,
 the module hasn't been tested as much as I would like, but it has tested the
 more commonly used areas.  All of the code included with the other modules that
 sub-class this one has been executed, which tests most internal functions and
@@ -2815,7 +3170,7 @@ the current compatability issues.
 
 This module currently does not prevent the user from creating circular virtual
 references between Nodes, such as "A is the child of B and B is the child of
-A"; however, only a few types of Nodes (such as 'view' and 'block' and
+A"; however, only a few types of Nodes (such as 'view' and 'routine' and
 '*_expr') even make this possible.
 
 =head1 SEE ALSO

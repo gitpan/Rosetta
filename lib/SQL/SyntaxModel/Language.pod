@@ -77,9 +77,8 @@ is meant to say what 'grammar' for SQL::SyntaxModel's 'language' is, or what
 The type of information this document would provide is functionally similar to
 the SQL design documents, or vendor-specific ones.
 
-I<CAVEAT: THIS DOCUMENT STILL NEEDS SOME MAJOR EDITING BEFORE IT WILL BE
-"DONE"; IN THE MEAN TIME, IT IS MAINLY THINGS ASSOCIATED WITH ROUTINES (AND
-VIEWS) THAT NEED FIXING.>
+I<CAVEAT: SOME PARTS OF THIS DOCUMENT, PARTICULARLY THE PARTS RELATED TO
+ROUTINES AND COMMANDS, STILL NEED SOME MAJOR EDITING BEFORE THEY ARE "DONE".>
 
 =head1 FEATURE SCOPE AND STANDARDS COMPLIANCE
 
@@ -245,26 +244,51 @@ Ultimately, adding native support for a feature is better.
 
 =head1 LANGUAGE CONCEPT STRUCTURE
 
-SQL::SyntaxModel manages SQL concepts that fit into 2 main categories.  The
-first of these is structures that are stored persistently in the native schema
-of a database itself.  The second of these is structures that are not stored in
-a database, but in an application that uses the database.  For the context of
-this document, we will call the two "database-space" and "application-space".
-These two categories can overlap greatly, with most concepts being storable in
-either place; in practice, you would pick what to put in each space on a
-per-case basis, accounting for how powerful your database is, what arrangement
-is more secure, or is faster, or is easier to manage, and so on.  
+SQL::SyntaxModel manages SQL concepts that we arrange into 5 main categories
+for convenience: 'elements', 'blueprints', 'tools', 'sites', 'circumventions'.
 
-We also use a third main category for some simple concepts that are
-conceptually global, such as data types or domains.  In the model we call this
-"common-space"; in practice the concepts persist in both of the first 2 spaces.
+The first two of these, 'elements' and 'blueprints', are the most important;
+they describe completely the composition and behaviour of your database schemas
+and application-level routines that talk to them.  For all intents and
+purposes, they are part of your core application code and would get distributed
+as such; like your core application code, everyone's installation will be
+identical.  We keep simple and widely re-used details in 'elements' such as
+column/variable data types or domains.  We describe most structures in
+'blueprints', including database tables (with constraints), arbitrarily complex
+database views, and various kinds of routines (such as stored procedures, user
+defined functions, and basic DML like selects, inserts, updates, deletes), both
+those stored in a database schema or in an application.  We can represent
+multiple database catalogs and applications at once, whether or not they talk 
+to each other; how they inter-relate is also represented.
 
-We also use a fourth main category to implement SQL::SyntaxModel's
-"circumvention" features, to access a concept that a specific database product
-understands but nothing in the SQL::SyntaxModel code does.  In the model we
-call this "circumvention-space".
+The second two categories, 'tools' and 'sites', are effectively locale or
+site-specific configuration data, and each installation of your application
+would be different in these areas.  We use 'tools' to store a small list of one
+or more externally (to SQL::SyntaxModel and your application core) recognizable
+database product identifiers (such as SQLite or Oracle) that are used on a site
+to implement the database catalogs.  We use 'sites' to indicate localized
+details of your database (and application) installations, such as the product
+used for each catalog instance, or its DSN or server address or file path, or
+what users it has and their privileges.  If you have multiple copies of a
+database installed, such as for test data vs production data, you can
+distinguish between them in 'sites'.
 
-Here is a tree diagram, formatted visually like XML, which shows how the high
+The last category, 'circumventions', is used to implement SQL::SyntaxModel's
+"circumvention" features, to access concepts that a specific database product
+understands but nothing in the SQL::SyntaxModel code does.
+
+While a database and application are actually being *used* (post-installation
+at a site), structures belonging to each of the 5 categories would be stored
+persistantly in two main places.  One of these is the native schema of a
+database itself.  The second of these is structures that are not stored in a
+database, but in an application that uses the database.  Many structures, such
+as views and routines, can be stored in either place; some, like tables, can
+probably only be stored in the database; either way, the places can overlap
+greatly.  In practice, you would pick what to put in each place on a per-case
+basis, accounting for how powerful your database is, what arrangement is more
+secure, or is faster, or is easier to manage, and so on.
+
+Here is a tree diagram, formatted visually like XML, which shows the high
 level SQL::SyntaxModel language concepts; each distinct concept is represented
 by one tree node.  Parent nodes provide a context in which their children live
 (eg: a table only exists within a schema).  The top 2 tree levels don't
@@ -275,36 +299,47 @@ The node attribute 'r' indicates recursion, where a node can be a child of
 another of the same type (eg: a sub-query or sub-routine).
 
 	<root c="1">
-		<common_space c="1">
+		<elements c="1">
 			<domain c="M">
 				<domain_opt c="M" />
 			</domain>
-		</common_space>
-		<database_space c="1">
+		</elements>
+		<blueprints c="1">
 			<catalog c="M">
-				<user c="M">
-					<user_role c="M" />
-				</user>
-				<role c="M">
-					<privilege c="M" />
-					<user_role c="M" />
-				</role>
+				<owner c="M" />
+				<catalog_link c="M" />
 				<schema c="M">
 					<sequence c="M" />
 					<table c="M" />
 					<view c="M" r="Y" />
 					<routine c="M" r="Y" />
 				</schema>
+				<role c="M">
+					<privilege c="M" />
+				</role>
 			</catalog>
-		</database_space>
-		<application_space c="1">
 			<application c="M">
+				<catalog_link c="M" />
 				<routine c="M" r="Y" />
 			</application>
-		</application_space>
-		<circumvention_space c="1">
+		</blueprints>
+		<tools>
+			<database_product c="M" />
+		</tools>
+		<sites c="1">
+			<catalog_instance c="M">
+				<catalog_link_instance c="M" />
+				<user c="M">
+					<user_role c="M" />
+				</user>
+			</catalog_instance>
+			<application_instance c="M">
+				<catalog_link_instance c="M" />
+			</application_instance>
+		</sites>
+		<circumventions c="1">
 			<sql_fragment c="M" />
-		</circumvention_space>
+		</circumventions>
 	</root>
 
 	<table c="M">
@@ -319,10 +354,10 @@ another of the same type (eg: a sub-query or sub-routine).
 
 	<view c="M" r="Y">
 		<view_arg c="M" />
-		<view_col c="M" />
 		<view_src c="M">
 			<view_src_col c="M" />
 		</view_src>
+		<view_col c="M" />
 		<view_join c="M">
 			<view_join_col c="M" />
 		</view_join>
@@ -334,7 +369,7 @@ another of the same type (eg: a sub-query or sub-routine).
 		<view c="M" r="Y" />
 		<routine_arg c="M" />
 		<routine_var c="M" />
-		<command c="M" r="Y" />
+		<routine_stmt c="M" r="Y" />
 		<routine_expr c="M" r="Y" />
 	</routine>
 
@@ -343,11 +378,11 @@ single SQL::SyntaxModel Node Type.  Each Node Type is explained in further
 detail below.
 
 Besides the Node it is a child of, a Node can reference other Nodes almost
-anywhere else in the tree, with the following exceptions: 1. Nodes in
-database-space can't reference those in application-space; 2. Nodes in
-common-space can't reference those in the other top two spaces; 3. Nodes in
-circumvention-space can reference those in the first 3 spaces, but can't be
-referenced by them.
+anywhere else in the tree, with the following exceptions: 1. Considering the
+order of the 5 main categories above, Nodes in any category can not reference
+Nodes in a later category; they can only reference self or earlier; 2. Nodes in
+'tools' can't reference anything else; 3. Catalog Nodes can't reference
+Application Nodes.
 
 =head1 LANGUAGE PROCEDURAL STRUCTURE
 
@@ -359,17 +394,17 @@ either of those can be considered named bind variables.
 
 The SQL::SyntaxModel language is designed so that you would do B<all> types of
 database interaction with it; not only would you use SQL to issue typical DML
-or DDL commands, but you would connect to or create a database in the first
-place using SQL.  This is much like CLI database clients and their "connect to
-... identified by ..." SQL statements, or similar statements that run inside a
-database stored procedure that connect to a second database.  In fact, the
-SQL::SyntaxModel language is designed such that you should be able to run the
-same SQL commands either in a client application or in a database stored
-procedure, without changes.  Likewise, your application should be able to
-invoke a SQL routine the same way whether it is stored in the application or
-the database.  By contrast, some other modules for letting your application
-talk to a database require you to call non-sql routines for some operations
-like connecting to a database.
+or DDL commands, but you would attach (connect to) or create a database in the
+first place using SQL.  This is much like CLI database clients and their
+"connect to ... identified by ..." or "attach ... as ..." SQL statements, or
+similar statements that run inside a database stored procedure that connect to
+a second database.  In fact, the SQL::SyntaxModel language is designed such
+that you should be able to run the same SQL commands either in a client
+application or in a database stored procedure, without changes.  Likewise, your
+application should be able to invoke a SQL routine the same way whether it is
+stored in the application or the database.  By contrast, some other modules for
+letting your application talk to a database require you to call non-sql
+routines for some operations like connecting to a database.
 
 The SQL::SyntaxModel language takes a broad definition as to what constitutes a
 SQL routine.  While some RDBMS products don't support this in stored
@@ -408,6 +443,14 @@ of an error that occurred.  The object returned as output from "Execute" should
 also have its own "Execute" method when the object can be considered a context
 for future commands; eg: the object returned from an "open database" command
 should represent that database for further queries against it.
+
+The SQL::SyntaxModel language does not require you to explicitely run a
+connect/open/attach command before running SQL against a database.  Since the
+info it needs to do this is provided in 'catalog link' definitions that are
+already related to the SQL definitions, an implementer can just implicitely
+connect to a database for you when you ask it to run the SQL.  And that
+implicit link can either be cached or new, such as the implementer decides. 
+I<Note that this idea may need to be thought out further.>
 
 =head1 NODE ATTRIBUTE TYPES
 
@@ -450,7 +493,7 @@ a Node Type.
 
 =back
 
-=head2 LITERAL ATTRIBUTE TYPES
+=head1 LITERAL ATTRIBUTE TYPES
 
 Currently, SQL::SyntaxModel recognizes these explicit literal attribute types:
 
@@ -543,6 +586,21 @@ simple_data_type is DATETIME.
 
 	Note that some of these examples may be wrong for practical use and be changed later.
 
+=head2 privilege_type
+
+These are the basic types of privileges that database roles can be granted, and
+that by extension users granted those roles can have.  I<Incomplete list.>
+
+	CONNECT - user may connect/open/attach to the catalog that is the parent of the role
+	SELECT - user may select rows from a table
+	INSERT - user may insert rows into a table
+	UPDATE - user may update rows in a table
+	DELETE - user may delete rows from a table
+	EXECUTE - user may execute a routine
+	CREATE - user may create objects in a schema
+	ALTER - user may alter objects in a schema
+	DROP - user may drop objects in a schema
+
 =head2 table_index_type
 
 These are the basic index types that database tables can have applied to them;
@@ -597,10 +655,11 @@ only if their parent views can.
 These are the basic types that a database view or SQL query can be.  All types 
 of views are very similar in structure, but they are not the same; by setting the 
 view_type of a view, you are saying which differences apply to that view and 
-possibly any child views.
+possibly any child views.  
 
-	TABLE - this one-Node view/query is trivial and matches a table exactly, like "select * from [tbl]"
-	SIMPLE - a "normal" view/query (with joins), not a compound query, has no sub-queries, is fully self-defined
+	MATCH - matches single table/view exactly, result cols must equal match col, no grouping, can 'set','where','order'
+	SINGLE - a "simple" view/query with a single source in 'from', no [jn, comp, sub-q, rcr]
+	MULTIPLE - a "normal" view/query (with joins), not a compound query, has no sub-queries, is fully self-defined
 	COMPOUND - consists of several "select ..." (each defined by a child view) connected by a compound operator
 	SUBQUERY - contains subqueries but not recursive, either in "from", "where", elsewhere
 	RECURSIVE - a recursive query, either invoking itself in a "with" clause, or using "start-with connect-by"
@@ -641,11 +700,14 @@ into common rows on related row values.  This is the most common way of
 These are the standard parts of a view/query definition that are not in the
 "from" part.
 
-	RESULT - the result list at the top; one item per "view_col" per "view compound member"
+	RESULT - the result list at the top; one item per "view_col" per view
+	SET    - when outer view used by an "insert" or "update", this is the "set" part
 	WHERE  - the SQL "where" part
 	GROUP  - the SQL "group by" part
 	HAVING - the SQL "having" part
 	ORDER  - the SQL "order by" part
+	MAXR   - says to page the results, and how many rows per page, corresponds to SQL "limit" first part
+	SKIPR  - says how many of the first rows to skip before returing the next ones, corr to "limit" second part
 
 =head2 basic_expr_type
 
@@ -655,12 +717,15 @@ returns a value; each argument is also an expression.  This is recursive until t
 expression is one that either takes no arguments (includes constant values or names of 
 variables or columns).
 
-	LIT   - a literal value, such as number or string
-	VAR   - a variable name, such as stored routine or app bind var
-	COL   - a column name, such as in a view or cursor in routine
-	VIEW  - a view declaration, such as a subquery or a cursor
-	SFUNC - a standard built-in function; one of standard_func
-	UFUNC - a user defined stored function (routine)
+	LIT   - use a literal value, such as number or string
+	COL   - use the value of a local view source column
+	MCOL  - match a result column; used mainly with MATCH view, or in 'having','order' sql elsewhere
+	VARG  - when view is a "with" sub-query, use value of an argument to the view
+	ARG   - use value of an arg to the current routine
+	VAR   - use value of a variable declared in the current routine
+	CVIEW - use result of a call to a view, such as a subquery or a cursor
+	SFUNC - use result of a call to a standard built-in function; one of standard_func
+	UFUNC - use result of a call to a user defined stored function (routine)
 
 =head2 standard_func
 
@@ -776,6 +841,7 @@ These are the basic statement types that routines can contain.
 Examples of statements are calls to stored procedures or some kinds of program 
 logic control operations or value assignment operations.
 
+	COMMAND - a call to a SQL::SyntaxModel recognized command, with a Node as its argument
 	SPROC - a call to a standard built-in procedure; one of standard_proc
 	UPROC - a call to a user defined stored procedure (routine)
 	ASSIG - an assignment of an expression value to a variable
@@ -801,14 +867,14 @@ These are the standard built in procedures that can be called from routines.
 
 These are the basic types of SQL::SyntaxModel Commands that an application 
 can execute against a database or other Result context.  Note that in many cases 
-"db" can mean either "database" or "data source"; "ds" may be used instead.
+"db" can mean either "database" or "data source" or "catalog link"; "ds" may be used instead.
 
 	DB_LIST      - fetches a list of auto-detectable database instances
 	DB_INFO      - fetches some detailed info about a database instance
 	DB_VERIFY    - compares a provided db spec to an actual database
-	DB_OPEN      - opens a connection between app and a database instance
-	DB_CLOSE     - closes a connection between app and a database instance
-	DB_PING      - verifies that a db connection is still open
+	DB_ATTACH    - opens a link or connection to a database instance, or attaches it
+	DB_DETACH    - closes a link or connection to a database instance, or detaches it
+	DB_PING      - verifies that a db connection is still open, that the db is accessible
 	DB_CREATE    - creates a new database instance
 	DB_DELETE    - deletes a database instance
 	DB_CLONE     - makes a clone of a db instance in another storage loc
@@ -847,7 +913,6 @@ can execute against a database or other Result context.  Note that in many cases
 	REC_VERIFY   - compares a provided set of records to stored ones
 	REC_INSERT   - inserts new recs into a table or view of multiple tables
 	REC_UPDATE   - updates exist recs in a table or view of multiple tables
-	REC_C_UPDATE - ? updates exist recs with calculation rather than value list
 	REC_DELETE   - deletes exist recs from a table or view of multiple tables
 	REC_REPLACE  - either updates or inserts recs if they exist or not
 	REC_CLONE    - creates a clone of a record in same table/view (if possible)
@@ -880,6 +945,15 @@ SQL::SyntaxModel routine/command against a database or other Result context.
 	REC   - a database row returned by a cursor
 	VAR   - a variable bound to a db command arg or large result
 	LIT   - a literal value (may be multidimensional)
+
+=head2 user_type
+
+These are the basic types of database users that you can have.
+
+	ROOT - the default user that owns the entire database install; login name usually set by RDBMS product
+	SCHEMA_OWNER - owns one or more database schema that are shared with others, perform DDL operations there
+	DATA_EDITOR - does not own any shared schema, usually can do DML only, typ stores data in a shared schema
+	ANONYMOUS - can connect to a database without username or password, owns nothing, usually very limited
 
 =head1 NODE TYPES
 
@@ -1032,13 +1106,102 @@ Example List:
 
 =head2 catalog
 
-This type of Node describes a distinct "database" or "data source" or "database
-instance" or "server" or "host" or "catalog" which contains everything else,
-both schema and users.  This is what an application "connects to" when it will
-use a database.  Often you will have just one "catalog" Node; however, the
-rationale for being able to describe multiple databases in the same
-SQL::ObjectModel is, for example, when one database wants to talk directly to
-another, or an application wants to use several.
+This type of Node describes a distinct unrealized "database" or "catalog" which
+contains everything else, both schema and users.  Often you will have just one
+"catalog" Node; however, the rationale for being able to describe
+multiple databases in the same SQL::SyntaxModel is, for example, when one
+database wants to talk directly to another, or an application wants to use
+several.  This Node type does not describe an instance of a database; rather,
+it contains all the details that are common to a set of databases having
+identical schema; it is their template.  I<See also the "catalog_instance" Node
+type.>  Note that while "user" Nodes can be children of this, you should only
+define users here that either own a schema which is shared with multiple users
+or are otherwise universal in all instances of this blueprint; no 'normal'
+users should be here.
+
+Attribute List:
+
+	id - NODE_ID - MA - unique identifier for each Node within this Node Type
+	name - L.cstr - lets you label the blueprint if you want; this isn't used when making SQL
+
+Unique Constraint List:
+
+	primary - [id]
+
+Example List:
+
+	|id|name|
+	|--|----|
+	| 1|    | - a default database/catalog, usually just used if it is the only database
+	| 2|gene| - a multi-schema genealogy database/catalog that you manage
+
+=head2 application
+
+This type of Node collects information that is specific to a database-using
+application but is not stored in a database.  Those details mainly are the
+unrealized catalog links that it uses and the SQL (all in routine form) that it
+executes.  Often you will have just one "application" Node; however,
+the rationale for being able to describe multiple applications in the same
+SQL::SyntaxModel is, for example, when you have several different applications
+that use the same database or database set.  This Node type does not describe
+an instance or installation of an application.  I<See also the
+"application_instance" Node type.>
+
+Relating this to the SQL standard, an application is essentially a SQL-1999
+Call-Level Interface (CLI) client; each 'routine' it runs is a set of one or
+more SQL statements pushed over the command line, and even the 'attach' /
+'connect' is done this way.
+
+Attribute List:
+
+	id - NODE_ID - MA - unique identifier for each Node within this Node Type
+	name - L.cstr - lets you label the blueprint if you want
+
+Unique Constraint List:
+
+	primary - [id]
+
+=head2 owner
+
+This type of Node represents an unrealized user which owns a database catalog. 
+It is here to for "schema" Nodes to reference as their owner.  A separate
+"user" Node will be matched with this "owner" Node on a per-catalog-instance
+basis; this allows each site to have different usernames or passwords for the
+schema owner.
+
+Attribute List:
+
+	id - NODE_ID - MA - unique identifier for each Node within this Node Type
+	catalog - N.catalog - MA - the catalog that this user is in
+
+Unique Constraint List:
+
+	primary - [id]
+
+Example List:
+
+	|id|ca|
+	|--|--|
+	| 1| 1|
+	| 2| 2|
+
+=head2 catalog_link
+
+This type of Node represents a distinct "catalog link" or "data source" local
+name which SQL under a 'catalog' or 'application' Node
+refers to when it wants to talk to an external database catalog.  This Node is
+particularly necessary when either two instances of the same catalog
+want to communicate or an application wants to talk to two instances of the
+same catalog; SQL::SyntaxModel has no way to know which instance regular SQL is
+referring to except by referencing these catalog link Nodes.  The
+'catalog_link' Node just says what the remote 'catalog' is
+so local SQL knows what it can refer to; the 'catalog_link_instance' Node is
+required to say which specific catalog instance to talk to.  
+
+Note that SQL does not have to mention a link if it either is referring to its
+own catalog instance or there is only one instance of a blueprint in the system;
+if all catalog instances are based on different blueprints, then no SQL has to 
+reference the links; the schema objects to reference are un-ambiguous.
 
 According to the SQL-1999 standard, a fully qualified schema object name has 3
 main parts: the catalog name (provided by this Node), the schema name, and the
@@ -1048,82 +1211,14 @@ schema name, one is using a partially qualified name.
 Attribute List:
 
 	id - NODE_ID - MA - unique identifier for each Node within this Node Type
-	name - L.cstr - corresponds to Oracle "Data Source" (for one db instance querying another)
+	catalog - N.catalog - the schema in this blueprint may use the unrealized catalog link
+	application - N.application - the routines in this app bp may use the unrealized catalog link
+	name - L.cstr - MA - the "catalog link" that is the front of the fully qualified remote schema object name
+	target - N.catalog - MA - this is what the link connects to
 
 Unique Constraint List:
 
 	primary - [id]
-	ak_name - [name]
-
-Example List:
-
-	|id|name|
-	|--|----|
-	| 1|    | - a default database/catalog, usually just used if it is the only database
-	| 2|site| - a multi-schema genealogy database/catalog that you manage
-	| 3|dist| - a similar database/catalog that someone else manages
-
-=head2 user
-
-This type of Node describes a "user" who would connect to and/or has privileges
-in a database/catalog.  Most database products support multiple users per
-catalog, though some only support one.  Each database schema may/must be owned
-by exactly one user (according to the SQL-1999 spec) but it may be used by
-several.  With some products like Oracle, a "user" and a "schema" are one and
-the same entity (the schema may not have any objects, though); however,
-SQL::SyntaxModel is designed such that they are separate, and one user may own
-multiple schemas.
-
-Most database products have a granular security system where each user must be
-explicitely granted the rights to do certain kinds of tasks there, such as read
-data or write data or edit a schema or even connect to the database.  In
-SQL::SyntaxModel, you create "role" Nodes and assign them privileges (roles are
-named groups of privileges); you then allocate roles to the users that may have
-the privileges they group.
-
-Note that, in the best interests of security, it is recommended that the
-database user which your application connects as for normal use should not be
-the same as one that owns any schemas; if your application creates its own
-schema, then it should have an additional database user for that purpose.
-
-Attribute List:
-
-	id - NODE_ID - MA - unique identifier for each Node within this Node Type
-	catalog - N.catalog - MA - the catalog that this user is in
-	name - L.cstr - the name this user is identified by, and what he authenticates himself with
-	password - L.cstr - the password this user provides when authenticating themself
-	default_schema - N.schema - this user's default schema; unqualified object references look here
-
-Unique Constraint List:
-
-	primary - [id]
-	ak_name - [catalog,name]
-
-Example List:
-
-	|id|ca|name    |pass  |sc|
-	|--|--|--------|------|--|
-	| 1| 1|        |      | 1| - a default and/or 'public' user, or for db without 'users'
-	| 2| 2|ronsealy|K34dsD| 2| - Ron Sealy
-	| 3| 2|joesmith|fdsKJ4| 3| - Joe Smith
-	| 4| 3|thainuff|9340sd| 4| - Thainuff
-
-=head2 role
-
-This type of Node describes a database role, which is a named collection of
-user privileges.  I<Details to be added later.>
-
-=head2 privilege
-
-This type of Node describes a specific privilege that is assigned to a role;
-all users given that role will have this privilege.  I<Details to be added
-later.>
-
-=head2 user_role
-
-Each Node of this type indicates that a specific user has been granted a
-specific role, and the privileges that come with it.  I<Details to be added
-later.>
 
 =head2 schema
 
@@ -1165,8 +1260,41 @@ Example List:
 	|--|--|----|--|
 	| 1| 1|    | 1| - a default schema/namespace, usually just used if it is the only schema/namespace
 	| 2| 2|gene| 2| - store all the normal app data that constitutes a genealogy database
-	| 3| 2|dd  | 3| - store a data dictionary describing an application for editing gene data
-	| 4| 3|gene| 4| - in case we want to access genealogy data collected by someone else
+	| 3| 2|dd  | 2| - store a data dictionary describing an application for editing gene data
+
+=head2 role
+
+This type of Node describes a database role, which is a named collection of
+user privileges.
+
+Attribute List:
+
+	id - NODE_ID - MA - unique identifier for each Node within this Node Type
+	catalog - N.catalog - MA - the catalog that this role is in
+	name - L.cstr - MA - the name this role is identified by
+
+Unique Constraint List:
+
+	primary - [id]
+	ak_name - [catalog,name]
+
+=head2 privilege
+
+This type of Node describes a specific privilege that is assigned to a role;
+all users given that role will have this privilege.  I<Details to be edited.>
+
+Attribute List:
+
+	id - NODE_ID - MA - unique identifier for each Node within this Node Type
+	role - N.role - MA - the role that this privilege is granted to
+	priv_type - E.privilege_type - MA - what manner of privilege this is
+	schema - N.schema - if the privilege relates to a whole schema, this is the schema
+	table - N.table - if the privilege type is table-related, this is the table
+	routine - N.routine - if the privilege type is routine-related, this is the routine
+
+Unique Constraint List:
+
+	primary - [id]
 
 =head2 sequence
 
@@ -1393,13 +1521,12 @@ insert, update, or delete rows through some views/queries as with a table.
 
 Views are often fully defined using a set of multiple linked Nodes of varying
 Node Types, which makes them fully customizable.  However, a short-cut is
-available which allows a view to be defined entirely with just one "view" Node,
-through the optional match_table attribute.  When that attribute is set, the
-view will exactly match the interface of that table, with no further
-customization being allowed (except, perhaps, row paging).  This short cut is
-mainly for use when we want to simulate full direct table access, which is
-needed for mass back-ups or restores of tables, or when implementing a utility
-that lets users make direct changes to a table.
+available which allows a view to be defined entirely with as few as two Nodes,
+one "view" having type of MATCH and one "view_src".  This short cut is mainly
+for use when we want to simulate full direct table access, which is needed for
+mass back-ups or restores of tables, or when implementing a utility that lets
+users make direct changes to a table.  Other part-way short cuts are available
+too.
 
 Since the ability to change database records is more complicated than simply
 viewing records, and usually requires more information to be available (such as
@@ -1408,24 +1535,32 @@ hint with a view, called "may_write", that says whether or not you will even
 try to make updates against a view, so we will know in advance and save
 ourselves unnecessary work or complexity.  The flag defaults to false.
 
+SQL::SyntaxModel also uses "views" to describe editing DML operations, such as
+Insert, Update, Delete operations.  The view definition says what the
+conditions for each DML operation is, namely what rows they will affect.  With
+Update and Delete operations, all rows that would be returned by the view will
+be correspondingly updated or deleted.  An Insert (single or multiple row)
+won't affect the existing rows, but will add to what the view sees after the
+Insert happens.  The frequent case in such situations, though, is that said
+view is only matching one row, since a user typically just edits or deletes or
+inserts one row at a time.  However, in such situation where your conceptual
+view is selecting more rows than you intend to edit the same way afterwards,
+you would want to make a second view which uses the first as its source, and
+the second/outer view would have a more restrictive 'where' clause that limits
+to the rows being changed.
+
 Attribute List:
 
 	id - NODE_ID - MA - unique identifier for each Node within this Node Type
 	view_context - E.view_context - MA - what context this view expects to live in; eg: schema, cursor, application
-	view_type - E.view_type - MA - what kind of view this is; eg: table, compound, has-subqueries, recursive
+	view_type - E.view_type - MA - what kind of view this is; eg: match, single, mult, compound, has-subq, recursive
 	schema - N.schema - MC(view_context=SCHEMA) - the schema that this view is in, if any
 	name - L.cstr - MC(view_context=SCHEMA) - the name this view is identified by, if any
 	routine - N.routine - MC(view_context=CURSOR|APPLIC) - parent view of this one, if any; empty if this is the root view
 	p_view - N.view - MC(view_context=INSIDE) - parent view of this one, if any; empty if this is the root view
-	match_table - N.table - MC(view_type=TABLE) - when set, the view matches exactly the interface for one table
+	match_all_cols - L.bool - use with view_type=MATCH; if true, this view matches every col; if false, view_col has list
 	c_merge_type - E.compound_operator - MC(view_type=COMPOUND) - how to merge any child rowsets/views of this one together, if any
-	may_write - L.bool - MA - true when we should at least try allowing updates through the view
-
-	page_rows - L.bool - true when we should page the resulting rows so only some are returned; default false
-	maxr_lit_val - L.uint - if paging, this literal value says maximum rows to be returned
-	maxr_routine_var - N.routine_var - if paging, get max rows from this containing routine variable
-	skipr_lit_val - L.uint - if paging, this literal value says rows to skip before returning any
-	skipr_routine_var - N.routine_var - if paging, get skip rows from this containing routine variable
+	may_write - L.bool - true when we should at least try allowing updates through the view
 
 Unique Constraint List:
 
@@ -1434,12 +1569,12 @@ Unique Constraint List:
 
 Example List:
 
-	|id|contex|type  |sc|name|match|wr|
-	|--|------|------|--|----|-----|--|
-	| 1|APPLIC|SIMPLE|  |    |     |1 | - user - joins the "user_auth" and "user_profile" tables
-	| 2|APPLIC|SIMPLE|  |    |     |0 | - person_with_parents - joins the "person" table with itself twice
-	| 3|APPLIC|SIMPLE|  |    |     |0 | - user_theme - shows how many users use each theme pref value
-	| 4|APPLIC|TABLE |  |    |    4|1 | - person - simply the "person" table
+	|id|contex|type    |sc|name|wr|
+	|--|------|--------|--|----|--|
+	| 1|APPLIC|MULTIPLE|  |    |1 | - user - joins the "user_auth" and "user_profile" tables
+	| 2|APPLIC|MULTIPLE|  |    |0 | - person_with_parents - joins the "person" table with itself twice
+	| 3|APPLIC|SINGLE  |  |    |0 | - user_theme - shows how many users use each theme pref value
+	| 4|APPLIC|MATCH   |  |    |1 | - person - simply the "person" table
 
 =head2 view_arg
 
@@ -1449,56 +1584,17 @@ query/view, then it can take arguments to define its caller context; each
 is not used for anything else; it is not like a routine arg that doubles for an
 app bind var.
 
-=head2 view_col
-
-This type of Node describes a single view column public interface, and has
-details that are specific to that column; the view column implementation (where
-the data comes from or goes to) is not described here.
-
 Attribute List:
 
 	id - NODE_ID - MA - unique identifier for each Node within this Node Type
-	view - N.view - MA - unique identifier for this view
-	name - L.cstr - MA - unique identifier for column within view
-	domain - N.domain - MA - the user-customized data type for this column
-	sort_priority - L.uint - if valued, priority for final result rows (after rs merges) to be sorted by this column
-
-	is_writeable - L.bool - true when enough info is known to write changes to this column
-	is_required - L.bool - true when corresponding value must always be populated
-	is_key - L.bool - true when this column is a part of unique id for source table or for view row
+	view - N.view - MA - what named sub-query view this is an argument for
+	name - L.cstr - MA - name of the argument
+	domain - N.domain - MA - the user-customized data type for this argument
 
 Unique Constraint List:
 
 	primary - [id]
 	ak_name - [view,name]
-
-Example List:
-
-	|id|vw|col_name     |do|so|
-	|--|--|-------------|--|--|
-	| 1| 1|user_id      | 9|  | - unique internal id for user, not changeable
-	| 2| 1|login_name   |23| 1| - who user authenticates into app as
-	| 3| 1|login_pass   |23|  | - also used with authentication
-	| 4| 1|private_name |24|  | - real name that app service provider can know
-	| 5| 1|private_email|24|  | - email that service provider can contact user with
-	| 6| 1|may_login    |19|  | - true when user may use app at all
-	| 7| 1|max_sessions | 7|  | - max concurrent app logins user may have
-	| 8| 1|public_name  |25|  | - public name or pen name or public alias
-	| 9| 1|public_email |25|  | - email address the public may use for contact
-	|10| 1|web_url      |25|  | - personal/business website address of user
-	|11| 1|contact_net  |25|  | - info like ICQ number or other internet handles
-	|12| 1|contact_phy  |25|  | - physical address or city or telephone number
-	|13| 1|bio          |25|  | - brief description of the person
-	|14| 1|plan         |25|  | - what the person plans to do next
-	|15| 1|comments     |25|  | - other comments
-	|16| 2|self_id      | 9|  | - unique actual id for person, not changeable
-	|17| 2|self_name    |24| 1| - actual name of the person they are called by
-	|18| 2|father_id    | 9|  | - person_id of this person's father, if known
-	|19| 2|father_name  |24| 2| - actual name of the person's father
-	|20| 2|mother_id    | 9|  | - person_id of this person's mother, if known
-	|21| 2|mother_name  |24| 3| - actual name of the person's mother
-	|22| 3|theme_name   |27| 2| - name of a user theme
-	|23| 3|theme_count  | 9| 1| - count of users that use this theme
 
 =head2 view_src
 
@@ -1514,6 +1610,8 @@ Attribute List:
 	name - L.cstr - MA - unique "alias" identifier for source within view
 	match_table - N.table - if set, the source is a table (and match_view must not be set)
 	match_view - N.view - if set, the source is another view (and match_table must not be set)
+	catalog_link - N.catalog_link - if match_* in another catalog, say via which catalog link
+	may_write - L.bool - alternately to the same 'view' attribute, say here which exact sources we want to 'select for update'
 
 Unique Constraint List:
 
@@ -1530,6 +1628,7 @@ Example List:
 	| 4| 2|father      |  4|   | - match "person" table
 	| 5| 2|mother      |  4|   | - match "person" table
 	| 6| 3|user_pref   |  3|   | - match "user_pref" table
+	| 7| 4|person      |  4|   | - match "person" table
 
 =head2 view_src_col
 
@@ -1578,10 +1677,61 @@ Example List:
 	|25| 3| 24|   | - "self"."father_id"
 	|26| 3| 25|   | - "self"."mother_id"
 
+=head2 view_col
+
+This type of Node describes a single view column public interface, and has
+details that are specific to that column; the view column implementation (where
+the data comes from or goes to) is not described here.
+
+Attribute List:
+
+	id - NODE_ID - MA - unique identifier for each Node within this Node Type
+	view - N.view - MA - what view this column is a result/interface for
+	name - L.cstr - MA - unique identifier for column within view
+	domain - N.domain - MA - the user-customized data type for this column
+	src_col - N.view_src_col - use with view_type=MATCH; the single source table/view column to match
+
+	is_writeable - L.bool - true when enough info is known to write changes to this column
+	is_required - L.bool - true when corresponding value must always be populated
+	is_key - L.bool - true when this column is a part of unique id for source table or for view row
+
+Unique Constraint List:
+
+	primary - [id]
+	ak_name - [view,name]
+
+Example List:
+
+	|id|vw|col_name     |do|
+	|--|--|-------------|--|
+	| 1| 1|user_id      | 9| - unique internal id for user, not changeable
+	| 2| 1|login_name   |23| - who user authenticates into app as
+	| 3| 1|login_pass   |23| - also used with authentication
+	| 4| 1|private_name |24| - real name that app service provider can know
+	| 5| 1|private_email|24| - email that service provider can contact user with
+	| 6| 1|may_login    |19| - true when user may use app at all
+	| 7| 1|max_sessions | 7| - max concurrent app logins user may have
+	| 8| 1|public_name  |25| - public name or pen name or public alias
+	| 9| 1|public_email |25| - email address the public may use for contact
+	|10| 1|web_url      |25| - personal/business website address of user
+	|11| 1|contact_net  |25| - info like ICQ number or other internet handles
+	|12| 1|contact_phy  |25| - physical address or city or telephone number
+	|13| 1|bio          |25| - brief description of the person
+	|14| 1|plan         |25| - what the person plans to do next
+	|15| 1|comments     |25| - other comments
+	|16| 2|self_id      | 9| - unique actual id for person, not changeable
+	|17| 2|self_name    |24| - actual name of the person they are called by
+	|18| 2|father_id    | 9| - person_id of this person's father, if known
+	|19| 2|father_name  |24| - actual name of the person's father
+	|20| 2|mother_id    | 9| - person_id of this person's mother, if known
+	|21| 2|mother_name  |24| - actual name of the person's mother
+	|22| 3|theme_name   |27| - name of a user theme
+	|23| 3|theme_count  | 9| - count of users that use this theme
+
 =head2 view_join
 
 This type of Node describes a join operation being done between two sources
-(each a table or a view), both in the same view compound. There are usually
+(each a table or a view), both in the same view. There are usually
 just two types of joins used, "equal" and "left".  Note that there can only be
 one join between the same two sources.  Also the same source can never be on
 the right side of more than one join (?).  A "right" join may be discouraged as
@@ -1642,7 +1792,7 @@ Example List:
 
 This type of Node describes an n-level hierarchical join to be part of a view
 compound definition (similar to Oracle's start-with-connect-by feature).  Only
-one is allowed per view compound.
+one is allowed per view.
 
 Note: While SQL::SyntaxModel supports the SQL-1999 "with" syntax, that among
 its other powers can do hierarchical queries, I have provided "view_hierarchy"
@@ -1651,10 +1801,13 @@ as a way of invoking Oracle-style "start-with connect-by" tersely.
 Attribute List:
 
 	id - NODE_ID - MA - unique identifier for each Node within this Node Type
-	view - N.view - unique identifier for this view
+	view - N.view - MA - what view this has a part in defining
 	start_src_col - N.view_src_col - MA - which source column is checked against to determine the root of the hierarchy
-	start_lit_val - L.misc - if start_src_col is being compared to a literal, then store the literal value here
-	start_routine_var - N.routine_var - if start_src_col is being compared to a containing routine variable
+	start_expr_type - E.basic_expr_type - MA - use this to determine source of value to compare start_src_col against
+	start_lit_val - L.misc - MC(start_expr_type=LIT) - if start_src_col is being compared to a literal, then store the literal value here
+	start_view_arg - N.view_arg - MC(start_expr_type=VARG) - if the current view is a subquery, read value of an argument to it
+	start_routine_arg - N.routine_arg - MC(start_expr_type=ARG) - the current routine argument to read the value of
+	start_routine_var - N.routine_var - MC(start_expr_type=VAR) - the current routine variable to read the value of
 	conn_src_col - N.view_src_col - MA - which source column contains a record's own identifier against which children match
 	p_conn_src_col - N.view_src_col - MA - which source column contains the value of a parent identifier
 
@@ -1665,14 +1818,14 @@ Unique Constraint List:
 =head2 view_expr
 
 This type of Node is intended to describe most of the parts of a SQL "select"
-which is the basis for a view compound definition.  The parts described here
+which is the basis for a view definition.  The parts described here
 correspond to these SQL terms: "result list", "where", "group by", "having",
 "order by". All of these parts are optional, and often mutually exclusive. 
 However, "having" can only be used with "group by".
 
-The main parts that are not described here are the column list definitions that
-start a "select", and the "from" (includes join definitions), and any "union"
-or similar operations.  See the other view_* tables for those.
+The main parts that are not described here are the "from" (includes join
+definitions), and any "union" or similar operations, and any hierarchical
+operations.  See the other view_* tables for those.
 
 The "order by" described by this table is applied prior to any compound view
 merge operations; since those operations tend to change the order of rows, it
@@ -1683,7 +1836,7 @@ which has much simpler syntax, and is evaluated after all compound view merging
 is done.
 
 This type of Node describes a sub-expression that is part of one of several
-optional main/root expressions in a view compound definition. All of these
+optional main/root expressions in a view definition. All of these
 sub-expressions form a hierarchy where children are "arguments" to their parent
 expressions.  There can only be one root expression for a "where" and a
 "having" part, and that is expected to return a boolean value.  The "group by"
@@ -1692,22 +1845,31 @@ part of an ordered list of "columns" arranged in the priority that they are
 applied.  The "start with" and "connect by" can only have one root expression
 each.
 
+This type of Node also describes details that would only be used in Inserts or 
+Updates, where applicable; this allows you to set values based on expressions 
+or function calls, and not just literal values.
+
 Attribute List:
 
 	id - NODE_ID - MA - unique identifier for each Node within this Node Type
-	expr_type - E.basic_expr_type - MA - what type of expression this is; eg: literal, variable, column, view, function
+	expr_type - E.basic_expr_type - MA - what type of expression this is; eg: literal, column, subq call, function call
 	p_expr - N.view_expr - parent expression of this one, if any; empty if this is the root expression
-	view - N.view - unique identifier for this view
-	view_part - E.view_part - what "part" of a view definition this is defining
-	view_col - N.view_col - unique identifier for interface/output column within view
-	lit_val - L.misc - if expr_type is 'lit', then store the literal value here
-	view_arg - N.view_arg - if expr_type is 'arg', then use this containing routine variable
-	routine_arg - N.routine_arg - if expr_type is 'arg', then use this containing routine variable
-	routine_var - N.routine_var - if expr_type is 'var', then use this containing routine variable
-	src_col - N.view_src_col - if expr_type is 'col', then use this source table/view column
-	f_view - N.view - if expr_type is 'view', then put the view/subquery id here; subquery is child of cont view
-	sfunc - E.standard_func - if expr_type is 'sfunc', then put the standard built-in function name/code here
-	ufunc - N.routine - if expr_type is 'ufunc', then put the user-defined stored function (routine) id here
+	view - N.view - MC(!p_expr) - what view this expression has a part in defining
+	view_part - E.view_part - MC(!p_expr) - what "part" of a view definition this is defining
+	view_col - N.view_col - MC(view_part=RESULT) - the view interface/result column we are defining the value of
+	set_view_col - N.view_col - MC(view_part=SET) - this is the column we are setting the value of in insert or update op
+	lit_val - L.misc - MC(expr_type=LIT) - the literal value of this expression
+	src_col - N.view_src_col - MC(expr_type=COL) - the source table/view column to read the value of
+	match_col - N.view_col - MC(expr_type=MCOL) - ref res col inst of src col; only MATCH views can in "where", all cn [hv,ord]
+	view_arg - N.view_arg - MC(expr_type=VARG) - if the current view is a subquery, read value of an argument to it
+	routine_arg - N.routine_arg - MC(expr_type=ARG) - the current routine argument to read the value of
+	routine_var - N.routine_var - MC(expr_type=VAR) - the current routine variable to read the value of
+	call_view - N.view - MC(expr_type=CVIEW) - the view/subquery we will invoke; subquery is child of cont view
+	call_view_arg - N.view_arg - if parent expr set call_view, name view arg that curr expr passes value to
+	call_sfunc - E.standard_func - MC(expr_type=SFUNC) - the standard built-in function we will invoke
+	call_ufunc - N.routine - MC(expr_type=UFUNC) - the user-defined stored function we are calling
+	call_ufunc_arg - N.routine_arg - if parent expr set call_ufunc, name routine arg that curr expr passes value to
+	catalog_link - N.catalog_link - if ufunc in another catalog, say via which catalog link
 
 Unique Constraint List:
 
@@ -1715,7 +1877,7 @@ Unique Constraint List:
 
 Example List:
 
-	|id|cl|vw|part  |pe|type |lit  |blv|cmv     |src|fvw|sf    |uf|
+	|id|cl|vw|part  |pe|type |lit  |blv|cmv     |src|mtc|sf    |uf|
 	|--|--|--|------|--|-----|-----|---|--------|---|---|------|--|
 	| 1|  | 1|WHERE |  |SFUNC|     |   |        |   |   |EQ    |  | - standard function of "eq(a,b)"
 	| 2|  |  |      | 1|COL  |     |   |        |  1|   |      |  | - match column "user_auth"."user_id"
@@ -1758,6 +1920,12 @@ Example List:
 	|42|22| 3|RESULT|  |COL  |     |   |        | 24|   |      |  |
 	|43|23| 3|RESULT|  |SFUNC|     |   |        |   |   |GCOUNT|  |
 	|44|23|  |      |43|COL  |     |   |        | 24|   |      |  |
+	|51|  | 1|ORDER |  |MCOL |     |   |        |   |  2|      |  |
+	|52|  | 2|ORDER |  |MCOL |     |   |        |   | 17|      |  |
+	|53|  | 2|ORDER |  |MCOL |     |   |        |   | 19|      |  |
+	|54|  | 2|ORDER |  |MCOL |     |   |        |   | 21|      |  |
+	|55|  | 3|ORDER |  |MCOL |     |   |        |   | 23|      |  |
+	|56|  | 3|ORDER |  |MCOL |     |   |        |   | 22|      |  |
 
 	Notes: In Oracle notation: the first view says match where
 	"user_auth.user_id = :curr_uid", the second says match where "father.name
@@ -1782,7 +1950,7 @@ expression is supposed to return the same type of value as the domain specified
 in the view_col record.
 
 view_src_filter: Each Node of this type uniquely corresponds to a
-sub-expression that is part of a filter definition in a view compound.  This
+sub-expression that is part of a filter definition in a view.  This
 filter definition is run against the rows in the view sources just after or
 while they are being joined, and it is supposed to eliminate most or all of the
 source rows that we don't want to keep.  In other words, the whole expression
@@ -1791,16 +1959,16 @@ prior to the SQL "group by").  All of these sub-expressions form a hierarchy
 where children are "arguments" to their parent expressions; the root expression
 is supposed to return a boolean value.
 
-view_grp: When any Nodes of this type exist for a particular view compound,
-each one matches a source column, and the rows returned by the view compound
+view_grp: When any Nodes of this type exist for a particular view,
+each one matches a source column, and the rows returned by the view
 will be grouped (self-merged) so that each row has a unique permutation of
 values in the columns being grouped on.  Also, when any view_grp records are
-used, that view compound may only use the columns being grouped on in its
+used, that view may only use the columns being grouped on in its
 output column definition.  Certain standard functions can only be used when
 grouping.
 
 view_grp_filter: This type of Node describes a sub-expression that is part of a
-filter definition in a view compound.  This filter definition is run against
+filter definition in a view.  This filter definition is run against
 the rows after they have been grouped; it is supposed to do additional
 filtering that could only be done after grouping, such as when the
 sub-expression uses standard functions that only work in a grouping SQL select.
@@ -1812,7 +1980,7 @@ return a boolean value.
 view_order: This type of Node says what order to return the rows for a view
 compound or entire view in; there is one record for each solumn that is being
 sorted by. They correspond to the SQL "order by".  Also, when any view_grp
-records are used, that view compound may only use the columns being grouped on
+records are used, that view may only use the columns being grouped on
 in its output column definition.  Certain standard functions can only be used
 when grouping.
 
@@ -1833,11 +2001,12 @@ Attribute List:
 	id - NODE_ID - MA - unique identifier for each Node within this Node Type
 	routine_type - E.routine_type - MA - what kind of routine this is
 	schema - N.schema - the schema that this routine is in, if any
-	name - L.cstr - the name this routine is identified by, if any
 	trigger - N.trigger - if this routine is the body for a trigger, it is our parent Node
 	application - N.application - if routine is in the application space, an app is our parent
 	p_routine - N.routine - parent routine of this one, if any; empty if this is the root routine
-	return_type - E.domain - if this routine returns a value, this is its data type
+	name - L.cstr - the name this routine is identified by in a schema or p_routine or application, if any
+	return_var_type - E.basic_var_type - if this routine returns a value, this is its variable type
+	return_domain - N.domain - if this routine returns a value, this is its domain
 
 Unique Constraint List:
 
@@ -1847,6 +2016,19 @@ Unique Constraint List:
 =head2 routine_arg
 
 This type of Node describes an input and/or output argument variable to a routine.
+
+Attribute List:
+
+	id - NODE_ID - MA - unique identifier for each Node within this Node Type
+	routine - N.routine - MA - what routine this argument is for
+	name - L.cstr - MA - unique identifier for variable within view
+	var_type - E.basic_var_type - MA - what basic variable type the argument is
+	domain - N.domain - if the var type is 'scalar', this is its user customized data type
+
+Unique Constraint List:
+
+	primary - [id]
+	ak_name - [routine,name]
 
 =head2 routine_var
 
@@ -1870,24 +2052,25 @@ Unique Constraint List:
 	primary - [id]
 	ak_name - [routine,name]
 
-=head2 command
+=head2 routine_stmt
 
 This type of Node describes a command or statement or line within a routine,
 which includes such operations as variable assignment or reading a cursor or
-executing a DML operation.  In the case of an assignment, it is the
-routine_expr record(s) which refer to the routine_stmt record.  If this
-statement is something which opens a new unnamed routine context, the routine
-record is referred to by the routine_stmt record.
+executing a DML operation.  Often, most details for a statement are in child 
+expression Nodes.
 
 Attribute List:
 
 	id - NODE_ID - MA - unique identifier for each Node within this Node Type
 	routine - N.routine - MA - what routine this statement is in
 	stmt_type - E.basic_stmt_type - MA - what type of stmt this is; eg: assignment, condit, call, loop, dml, return
+	command - E.command_type - MC(stmt_type=COMMAND) - what SQL::SyntaxModel recognized command to run - MOCKUP
+	command_arg - L.uint - MC(stmt_type=COMMAND) - the Node ID of the argument to the above command - MOCKUP
 	dest_arg - N.routine_arg - if the stmt type is 'assign', this 'out' arg is where the expression result goes
 	dest_var - N.routine_var - if the stmt type is 'assign', this var is where the expression result goes
-	sproc - E.standard_proc - if expr_type is 'sproc', then this is the standard built-in procedure to call
-	uproc - N.routine - if expr_type is 'uproc', then this is the user-defined stored function (routine) to call
+	call_sproc - E.standard_proc - if expr_type is 'sproc', then this is the standard built-in procedure to call
+	call_uproc - N.routine - if expr_type is 'uproc', then this is the user-defined stored function (routine) to call
+	catalog_link - N.catalog_link - if uproc in another catalog, say via which catalog link
 	c_routine - N.routine - if the stmt type starts an unnamed routine context, this is the child routine id
 
 Unique Constraint List:
@@ -1906,28 +2089,268 @@ variable on the left side of the statement.
 Attribute List:
 
 	id - NODE_ID - MA - unique identifier for each Node within this Node Type
-	expr_type - E.basic_expr_type - MA - what type of expression this is; eg: literal, variable, column, function
-	command - N.command - unique identifier for routine command/statement this expression is part of
+	expr_type - E.basic_expr_type - MA - what type of expression this is; eg: literal, variable, function
+	p_stmt - N.routine_stmt - unique identifier for routine routine_stmt this expression is part of
 	p_expr - N.routine_expr - parent expression of this one, if any; empty if this is the root expression
-	lit_val - L.cstr - if expr_type is 'lit', then store the literal value here
-	src_arg - N.routine_arg - if expr_type is 'arg', then use this containing routine argument
-	src_var - N.routine_var - if expr_type is 'var', then use this containing routine variable
-	sfunc - E.standard_func - if expr_type is 'sfunc', then put the standard built-in function name/code here
-	ufunc - N.routine - if expr_type is 'ufunc', then put the user-defined stored function (routine) id here
+	lit_val - L.misc - MC(expr_type=LIT) - the literal value of this expression
+	src_arg - N.routine_arg - MC(expr_type=ARG) - the current routine argument to read the value of
+	src_var - N.routine_var - MC(expr_type=VAR) - the current routine variable to read the value of
+	call_sfunc - E.standard_func - MC(expr_type=SFUNC) - the standard built-in function we will invoke
+	call_ufunc - N.routine - MC(expr_type=UFUNC) - the user-defined stored function we are calling
+	call_ufunc_arg - N.routine_arg - if parent set call_ufunc/uproc, name routine arg that curr expr passes value to
+	catalog_link - N.catalog_link - if ufunc in another catalog, say via which catalog link
 
 Unique Constraint List:
 
 	primary - [id]
 
-=head2 application
+=head2 database_product
 
-This type of Node collects information that is specific to a database-using
-application but is not stored in a database.  I<Details to be added later.>
+This type of Node describes a distinct database product that someone can use to
+implement a database in, such as Oracle 9i or PostgreSQL 7.4.  The attributes
+in this Node mainly just have meaning to external code that mediates between a
+SQL::SyntaxModel and the native drivers for database products; typically they
+are used to map a specific native driver to use, and/or a specific SQL
+generator to use for the mediation.  If you are using multiple versions of the 
+same database product line for different database instances, you should have a 
+separate one of these Nodes for each, as the different versions may not support 
+the same features or interface.
+
+Attribute List:
+
+	id - NODE_ID - MA - unique identifier for each Node within this Node Type
+	name - L.cstr - lets you label the product in the model if you want
+	product_code - L.cstr - MA - a string recognized by the mediation layer as what product we have
+	is_file_based - L.bool - if true, db data in a named file that we ref when opening it
+	is_local_proc - L.bool - if true, database is a local service we access via IPC or something
+	is_network_svc - L.bool - if true, database is on a network server, access by network protocol
+
+Unique Constraint List:
+
+	primary - [id]
+
+=head2 catalog_instance
+
+This type of Node describes a distinct "database instance" or "server" or
+"host" which is described by an "catalog".  This is what an
+application "connects to" when it will use a database.  What often happens in
+real life is that you make a database/catalog design and then instantiate
+multiple copies; for example, one may contain data for testers of your
+application, while another has clean data for marketers to show off, while
+various others are installed at customer sites.  Since there can be in real
+life multiple copies of a database design within communications range of each
+other, such that a client can 'pick one', or when you want to clone data
+between them, SQL::SyntaxModel lets you model this by having separate
+"catalog" and "catalog_instance" Nodes.  The 'instance' Node stores
+the instance specific details like server IP address or domain name.  Most of
+your "user" Nodes should be children of this, since they are usually different
+between installations; only those that own a shared schema can't be, but normal
+users shouldn't log in as those.
+
+Attribute List:
+
+	id - NODE_ID - MA - unique identifier for each Node within this Node Type
+	blueprint - N.catalog - MA - what catalog blueprint describes this instance
+	name - L.cstr - lets you label the instance if you want; this isn't used when making SQL
+	product - N.database_product - MA - what product implements this; determines SQL dialect to use
+	server_ip - L.cstr - Internet IP address of the database server, if applicable
+	server_domain - L.cstr - Internet domain name of the database server, if applicable
+	server_port - L.uint - TCP/IP port the database listens to, if applicable
+	file_path - L.cstr - Path on a file system for a file-based database, if applicable
+
+Unique Constraint List:
+
+	primary - [id]
+
+Example List:
+
+	|id|bp|name|
+	|--|--|----|
+	| 1| 1|    | - a default database/catalog, usually just used if it is the only database
+	| 2| 2|site| - a multi-schema genealogy database/catalog that you manage
+	| 3| 2|dist| - a similar database/catalog that someone else manages
+
+=head2 application_instance
+
+This type of Node describes a distinct instance of an "application".  
+Mainly it just resolves the application's potential catalog links to actual ones; 
+it says which specific database instances we talk to, while the blueprint only 
+knows about the blueprint for said instances.
+
+Attribute List:
+
+	id - NODE_ID - MA - unique identifier for each Node within this Node Type
+	blueprint - N.application - MA - what application blueprint describes this instance
+	name - L.cstr - lets you label the instance if you want
+
+Unique Constraint List:
+
+	primary - [id]
+
+=head2 catalog_link_instance
+
+This type of Node describes a distinct instance of an 'catalog_link'.
+This mainly holds client install specific details, like what catalog instance
+to talk to, what its local DSN is, such as would be registered with ODBC or in
+tsnames.ora, or would be a filename, or stuff like that.  Also connect string
+details perhaps, such as username and password, lest they be run-time arguments
+instead.  I<Details to be modified later.>
+
+Attribute List:
+
+	id - NODE_ID - MA - unique identifier for each Node within this Node Type
+	unrealized - N.catalog_link - MA - the unrealized catalog link that we are 'implementing'
+	catalog - N.catalog_instance - the schema in this instance may use the actual catalog link
+	application - N.application_instance - the routines in this app inst may use the actual catalog link
+	target - N.catalog_instance - MA - this is what the link connects to
+	local_dsn - L.cstr - locally known driver-specific name for the catalog link
+
+Unique Constraint List:
+
+	primary - [id]
+
+=head2 user
+
+This type of Node describes a "user" who would connect to and/or has privileges
+in a database/catalog.  Most database products support multiple users per
+catalog, though some only support one.  Each database schema may/must be owned
+by exactly one user (according to the SQL-1999 spec) but it may be used by
+several.  With some products like Oracle, a "user" and a "schema" are one and
+the same entity (the schema may not have any objects, though); however,
+SQL::SyntaxModel is designed such that they are separate, and one user may own
+multiple schemas.
+
+Most database products have a granular security system where each user must be
+explicitely granted the rights to do certain kinds of tasks there, such as read
+data or write data or edit a schema or even connect to the database.  In
+SQL::SyntaxModel, you create "role" Nodes and assign them privileges (roles are
+named groups of privileges); you then allocate roles to the users that may have
+the privileges they group.
+
+Note that, in the best interests of security, it is recommended that the
+database user which your application connects as for normal use should not be
+the same as one that owns any schemas; if your application creates its own
+schema, then it should have an additional database user for that purpose.
+
+Attribute List:
+
+	id - NODE_ID - MA - unique identifier for each Node within this Node Type
+	catalog - N.catalog_instance - MA - the catalog_instance that this user is in
+	user_type - E.user_type - MA - what type of user this is; eg: schema owner vs data editor
+	match_owner - N.owner - MC(user_type=SCHEMA_OWNER) - the catalog that this user is in
+	name - L.cstr - MC(user_type<>ANONYMOUS) - the name this user is identified by, and what he authenticates himself with
+	password - L.cstr - MC(user_type<>ANONYMOUS) - the password this user provides when authenticating themself
+	default_schema - N.schema - this user's default schema; unqualified object references look here
+
+Unique Constraint List:
+
+	primary - [id]
+
+Example List:
+
+	|id|ci|ow|name    |pass  |sc|
+	|--|--|--|--------|------|--|
+	| 1| 1| 1|        |      | 1| - a default and/or 'public' user, or for db without 'users'
+	| 2| 2| 2|ronsealy|K34dsD| 2| - Ron Sealy, owns all schemas in instance 2
+	| 3| 2|  |joesmith|fdsKJ4| 3| - Joe Smith is a normal user in instance 2
+	| 4| 3| 2|florence|0sfs8G| 2| - Florence, owns all schemas in instance 3
+	| 5| 3|  |thainuff|9340sd| 3| - Thainuff is a normal user in instance 3
+
+=head2 user_role
+
+Each Node of this type indicates that a specific user has been granted a
+specific role, and the privileges that come with it.
+
+Attribute List:
+
+	id - NODE_ID - MA - unique identifier for each Node within this Node Type
+	user - N.user - MA - the user that a role is granted to
+	role - N.role - MA - the role that is being granted
+
+Unique Constraint List:
+
+	primary - [id]
 
 =head2 sql_fragment
 
 This type of Node holds literal SQL fragments that you can inject into SQL that
-is generated from SQL::SyntaxModel Nodes.  I<Details to be added later.>
+is generated from SQL::SyntaxModel Nodes.  I<Details may be changed later.>
+
+Attribute List:
+
+	id - NODE_ID - MA - unique identifier for each Node within this Node Type
+	product - N.database_product - if set, only use with this product; if not, use with all prods
+	att_node_type - L.cstr - the Node Type of the normal Node we attach this SQL fragment to
+	att_node_id - L.uint - the Node Id of the normal Node we attach this SQL fragment to
+	is_inside - L.bool - the fragment goes "inside" the SQL generated from attached-to Node
+	is_before - L.bool - the fragment goes "before" the SQL
+	is_after - L.bool - the fragment goes "after" the SQL
+	fragment - L.cstr - this is the actual SQL string fragment to be injected
+
+Unique Constraint List:
+
+	primary - [id]
+
+=head1 OLDER DOCUMENTATION
+
+These paragraphs were more or less the original documentation for high-level
+SQL::SyntaxModel concepts, back when each concept was planned to be a separate
+class of its own.  They were originally published in Framework.pod since the
+first release of the Rosetta distribution, and up until release 0.22 inclusive.
+ They are here in Language.pod as of release 0.23.  Some details you see here
+shouldn't be considered accurate.
+
+B<SQL::SyntaxModel::_::Command> - This Schema class describes an action that needs
+to be done against a database; the action may include several steps, and all of
+them must be done when executing the Command.  A Command object has one
+mandatory string property named 'type' (eg: 'database_open', 'table_create',
+'data_insert'), which sets the context for all of its other properties, which
+are in a hash property named 'args'.  Elements of 'args' often include other
+Schema class objects like 'Table' or 'DataType'.  Like all Schema objects, this
+is static and context-independant; it is intended to be serialized and passed
+to code like DBI->prepare().   While bind vars are often used with them (such
+as values to insert or update, or record matching conditions), it is always up
+to the calling code to resolve the bind vars such as with a user prompt (as
+SQL*Plus does), and pass those to code like DBI->execute().  I<See also
+Rosetta::Engine::_::Command.>
+
+B<SQL::SyntaxModel::_::DataType> - This Schema class describes a simple data type,
+which serves as metadata for a single atomic or scalar unit of data, or a
+column whose members are all of the same data type, such as in a regular
+database table or in row sets read from or to be written to one.  This class
+would be used both when manipulating database schema and when manipulating
+database data.
+
+B<SQL::SyntaxModel::_::Table> - This Schema class describes a single database
+table, and would be used for such things as managing schema for the table (eg:
+create, alter, destroy), and describing the table's "public interface" so other
+functionality like views or various DML operations know how to use the table.
+In its simplest sense, a Table object consists of a table name, a list of table
+columns, a list of keys, a list of constraints, and a few other implementation
+details.  This class does not describe anything that is changed by DML
+activity, such as a count of stored records, or the current values of sequences
+attached to columns.  This class would be used both when manipulating database
+schema and when manipulating database data.  This class can generate
+SQL::SyntaxModel::Command objects having types of: 'table_verify',
+'table_create', 'table_alter', 'table_destroy'.
+
+B<SQL::SyntaxModel::_::View> - This Schema class describes a single database view,
+which conceptually looks like a table, but it is used differently.  Tables and
+views are similar in that they both represent or store a matrix of data, which
+has uniquely identifiable columns, and rows which can be uniquely identifiable
+but may not be.  With the way that Rosetta implements views, you can do all of
+the same DML operations with them that you can do with tables: select, insert,
+update, delete rows; that said, the process for doing any of those with views
+is more complicated than with tables, but this complexity is usually internal
+to Rosetta so you shouldn't have to code any differently between them.  Tables
+and views are different in that tables actually store data in themselves, while
+views don't.  A view is actually a custom abstracted interface to one or more
+database tables which are related to each other in a specific way; when you
+issue DML against a view, you are actually fetching from or modifying the data
+stored in one (simplest case) or more tables.  This class can generate
+SQL::SyntaxModel::Command objects having types of: 'data_select', 'data_insert',
+'data_update', 'data_delete', 'data_lock', 'data_unlock', 'view_verify',
+'view_create', 'view_alter', 'view_destroy'.
 
 =head1 SEE ALSO
 

@@ -11,6 +11,7 @@ lib/SQL/SyntaxModel/L/en.pm
 lib/SQL/SyntaxModel/Language.pod
 lib/SQL/SyntaxModel/SkipID.pm
 lib/SQL/SyntaxModel/SkipID/L/en.pm
+lib/t_SQL_SyntaxModel.pm
 lib/t_SQL_SyntaxModel_ByTree.pm
 lib/t_SQL_SyntaxModel_SkipID.pm
 LICENSE

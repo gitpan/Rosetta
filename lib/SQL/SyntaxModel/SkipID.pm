@@ -11,9 +11,9 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.10';
+$VERSION = '0.11';
 
-use SQL::SyntaxModel::ByTree 0.10;
+use SQL::SyntaxModel::ByTree 0.11;
 
 ######################################################################
 
@@ -25,7 +25,7 @@ Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	SQL::SyntaxModel::ByTree 0.10 (parent class)
+	SQL::SyntaxModel::ByTree 0.11 (parent class)
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -121,7 +121,11 @@ my %NODE_TYPES_EXTRA_DETAILS = (
 		'link_search_attr' => 'name',
 		'def_attr' => 'id',
 	},
-	'user' => {
+	'application' => {
+		'link_search_attr' => 'name',
+		'def_attr' => 'id',
+	},
+	'owner' => {
 		'link_search_attr' => 'name',
 		'def_attr' => 'id',
 	},
@@ -162,20 +166,13 @@ my %NODE_TYPES_EXTRA_DETAILS = (
 		'def_attr' => 'table_col',
 	},
 	'view' => {
-		'search_paths' => {
-			'match_table' => [$P], # match child table in current schema
-		},
 		'link_search_attr' => 'name',
 		'def_attr' => 'name',
 		'attr_defaults' => {
 			'view_context' => ['lit','SCHEMA'],
-			'view_type' => ['lit','SIMPLE'],
+			'view_type' => ['lit','MULTIPLE'],
 			'may_write' => ['lit',0],
 		},
-	},
-	'view_col' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'name',
 	},
 	'view_src' => {
 		'search_paths' => {
@@ -192,6 +189,10 @@ my %NODE_TYPES_EXTRA_DETAILS = (
 		},
 		'link_search_attr' => 'match_table_col',
 		'def_attr' => 'match_table_col',
+	},
+	'view_col' => {
+		'link_search_attr' => 'name',
+		'def_attr' => 'name',
 	},
 	'view_join' => {
 		'search_paths' => {
@@ -229,7 +230,7 @@ my %NODE_TYPES_EXTRA_DETAILS = (
 		'link_search_attr' => 'name',
 		'def_attr' => 'name',
 	},
-	'command' => {
+	'routine_stmt' => {
 		'search_paths' => {
 			'dest_var' => [$P], # match child routine_var in current routine
 			'c_routine' => [$P], # link to child routine of current routine
@@ -241,13 +242,15 @@ my %NODE_TYPES_EXTRA_DETAILS = (
 			'ufunc' => [$S,$P,$S,$P,$P], # match child routine in current schema
 		},
 	},
-	'application' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'id',
-	},
 );
 
 ######################################################################
+
+sub _get_static_const_model_class_name {
+	# This function is intended to be overridden by sub-classes.
+	# It is intended only to be used when making new objects.
+	return( 'SQL::SyntaxModel::SkipID' );
+}
 
 sub _get_static_const_container_class_name {
 	# This function is intended to be overridden by sub-classes.
@@ -502,7 +505,7 @@ sub create_child_node_tree {
 	my $container = $node->get_container();
 
 	$new_child->get_node_id() or 
-		$new_child->set_node_id( 1 + $container->{$CPROP_HIGH_IDS}->{$child_node_type} );
+		$new_child->set_node_id( 1 + ($container->{$CPROP_HIGH_IDS}->{$child_node_type}||0) );
 
 	$new_child->put_in_container( $container );
 	$new_child->add_reciprocal_links();
@@ -514,7 +517,7 @@ sub create_child_node_tree {
 
 	$container->{$CPROP_LAST_NODES}->{$child_node_type} = $new_child; # assign reference
 	my $child_node_id = $new_child->get_node_id();
-	if( $child_node_id > $container->{$CPROP_HIGH_IDS}->{$child_node_type} ) {
+	if( $child_node_id > ($container->{$CPROP_HIGH_IDS}->{$child_node_type}||0) ) {
 		$container->{$CPROP_HIGH_IDS}->{$child_node_type} = $child_node_id;
 	}
 
@@ -546,7 +549,7 @@ sub create_node_tree {
 
 	my $node_type = $node->get_node_type();
 
-	$node->get_node_id() or $node->set_node_id( 1 + $container->{$CPROP_HIGH_IDS}->{$node_type} );
+	$node->get_node_id() or $node->set_node_id( 1 + ($container->{$CPROP_HIGH_IDS}->{$node_type}||0) );
 
 	$node->put_in_container( $container );
 	$node->add_reciprocal_links();
@@ -560,7 +563,7 @@ sub create_node_tree {
 
 	$container->{$CPROP_LAST_NODES}->{$node_type} = $node; # assign reference
 	my $node_id = $node->get_node_id();
-	if( $node_id > $container->{$CPROP_HIGH_IDS}->{$node_type} ) {
+	if( $node_id > ($container->{$CPROP_HIGH_IDS}->{$node_type}||0) ) {
 		$container->{$CPROP_HIGH_IDS}->{$node_type} = $node_id;
 	}
 
@@ -768,7 +771,7 @@ with the parent class against this class and get the same output.
 		{ 'name' => 'generic' , 'base_type' => 'STR_CHAR', 'max_chars' => 250, },
 	) ] );
 
-	$model->create_node_trees( ['catalog', 'schema'] );
+	$model->create_node_trees( ['catalog', 'owner', 'schema'] );
 
 	$model->create_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'name' => 'person', }, 'CHILDREN' => [ 
@@ -792,6 +795,64 @@ with the parent class against this class and get the same output.
 			[ { 'name' => 'fk_mother', 'ind_type' => 'FOREIGN', 'f_table' => 'person', }, 
 				{ 'table_col' => 'mother_id', 'f_table_col' => 'person_id' } ], 
 		) ),
+	] } );
+
+	$model->create_node_tree( { 'NODE_TYPE' => 'view', 
+			'ATTRS' => { 'name' => 'person', 'view_type' => 'MATCH', 'may_write' => 1 }, 'CHILDREN' => [ 
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'name' => 'person', 'match_table' => 'person', }, },
+	] } );
+
+	$model->create_node_tree( { 'NODE_TYPE' => 'view', 
+			'ATTRS' => { 'name' => 'person_with_parents', 'may_write' => 0, }, 'CHILDREN' => [ 
+		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
+			{ 'name' => 'self_id'    , 'domain' => 'int'   , },
+			{ 'name' => 'self_name'  , 'domain' => 'str100', },
+			{ 'name' => 'father_id'  , 'domain' => 'int'   , },
+			{ 'name' => 'father_name', 'domain' => 'str100', },
+			{ 'name' => 'mother_id'  , 'domain' => 'int'   , },
+			{ 'name' => 'mother_name', 'domain' => 'str100', },
+		) ),
+		( map { { 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'name' => $_, 'match_table' => 'person', }, 
+			'CHILDREN' => [ map { { 'NODE_TYPE' => 'view_src_col', 'ATTRS' => $_ } } qw( person_id name father_id mother_id ) ] 
+		} } qw( self ) ),
+		( map { { 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'name' => $_, 'match_table' => 'person', }, 
+			'CHILDREN' => [ map { { 'NODE_TYPE' => 'view_src_col', 'ATTRS' => $_ } } qw( person_id name ) ] 
+		} } qw( father mother ) ),
+		{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'lhs_src' => 'self', 
+				'rhs_src' => 'father', 'join_type' => 'LEFT', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'lhs_src_col' => 'father_id', 
+				'rhs_src_col' => 'person_id',  } },
+		] },
+		{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'lhs_src' => 'self', 
+				'rhs_src' => 'mother', 'join_type' => 'LEFT', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'lhs_src_col' => 'mother_id', 
+				'rhs_src_col' => 'person_id',  } },
+		] },
+		( map { { 'NODE_TYPE' => 'view_expr', 'ATTRS' => $_ } } (
+			{ 'view_part' => 'RESULT', 'view_col' => 'self_id'    , 'expr_type' => 'COL', 'src_col' => ['person_id','self'], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'self_name'  , 'expr_type' => 'COL', 'src_col' => ['name'     ,'self'], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'father_id'  , 'expr_type' => 'COL', 'src_col' => ['person_id','father'], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'father_name', 'expr_type' => 'COL', 'src_col' => ['name'     ,'father'], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'mother_id'  , 'expr_type' => 'COL', 'src_col' => ['person_id','mother'], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'mother_name', 'expr_type' => 'COL', 'src_col' => ['name'     ,'mother'], },
+		) ),
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'WHERE', 
+				'expr_type' => 'SFUNC', 'sfunc' => 'AND', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+					'expr_type' => 'SFUNC', 'sfunc' => 'LIKE', }, 'CHILDREN' => [ 
+				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+					'expr_type' => 'COL', 'src_col' => ['name','father'], }, },
+				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+					'expr_type' => 'VAR', }, }, #'routine_var' => 'srchw_fa',
+			] },
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+					'expr_type' => 'SFUNC', 'sfunc' => 'LIKE', }, 'CHILDREN' => [ 
+				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+					'expr_type' => 'COL', 'src_col' => ['name','mother'], }, },
+				{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+					'expr_type' => 'VAR', }, }, #'routine_var' => 'srchw_mo',
+			] },
+		] },
 	] } );
 
 	$model->create_node_tree( { 'NODE_TYPE' => 'table', 
@@ -841,80 +902,6 @@ with the parent class against this class and get the same output.
 		) ),
 	] } );
 
-	$model->create_node_tree( { 'NODE_TYPE' => 'table', 
-			'ATTRS' => { 'name' => 'user_pref', }, 'CHILDREN' => [ 
-		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
-			{ 'name' => 'user_id'   , 'domain' => 'int'     , 'mandatory' => 1, },
-			{ 'name' => 'pref_name' , 'domain' => 'entitynm', 'mandatory' => 1, },
-			{ 'name' => 'pref_value', 'domain' => 'generic' , 'mandatory' => 0, },
-		) ),
-		( map { { 'NODE_TYPE' => 'table_ind', 'ATTRS' => $_->[0], 'CHILDREN' => [ 
-				map { { 'NODE_TYPE' => 'table_ind_col', 'ATTRS' => $_ } } @{$_->[1]}
-				] } } (
-			[ { 'name' => 'primary', 'ind_type' => 'UNIQUE', }, [ 'user_id', 'pref_name', ], ], 
-			[ { 'name' => 'fk_user', 'ind_type' => 'FOREIGN', 'f_table' => 'user_auth', }, 
-				[ { 'table_col' => 'user_id', 'f_table_col' => 'user_id' }, ], ], 
-		) ),
-	] } );
-
-	$model->create_node_tree( { 'NODE_TYPE' => 'view', 
-			'ATTRS' => { 'name' => 'person', 'may_write' => 1, 'match_table' => 'person' }, } );
-
-	$model->create_node_tree( { 'NODE_TYPE' => 'view', 
-			'ATTRS' => { 'name' => 'person_with_parents', 'may_write' => 0, }, 'CHILDREN' => [ 
-		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
-			{ 'name' => 'self_id'    , 'domain' => 'int'   , },
-			{ 'name' => 'self_name'  , 'domain' => 'str100', },
-			{ 'name' => 'father_id'  , 'domain' => 'int'   , },
-			{ 'name' => 'father_name', 'domain' => 'str100', },
-			{ 'name' => 'mother_id'  , 'domain' => 'int'   , },
-			{ 'name' => 'mother_name', 'domain' => 'str100', },
-		) ),
-		{ 'NODE_TYPE' => 'view_rowset', 'CHILDREN' => [ 
-			( map { { 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'name' => $_, 'match_table' => 'person', }, 
-				'CHILDREN' => [ map { { 'NODE_TYPE' => 'view_src_col', 'ATTRS' => $_ } } qw( person_id name father_id mother_id ) ] 
-			} } qw( self ) ),
-			( map { { 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'name' => $_, 'match_table' => 'person', }, 
-				'CHILDREN' => [ map { { 'NODE_TYPE' => 'view_src_col', 'ATTRS' => $_ } } qw( person_id name ) ] 
-			} } qw( father mother ) ),
-			{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'lhs_src' => 'self', 
-					'rhs_src' => 'father', 'join_type' => 'left', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'lhs_src_col' => 'father_id', 
-					'rhs_src_col' => 'person_id',  } },
-			] },
-			{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'lhs_src' => 'self', 
-					'rhs_src' => 'mother', 'join_type' => 'left', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'lhs_src_col' => 'mother_id', 
-					'rhs_src_col' => 'person_id',  } },
-			] },
-			( map { { 'NODE_TYPE' => 'view_col_def', 'ATTRS' => $_ } } (
-				{ 'view_col' => 'self_id'    , 'expr_type' => 'col', 'src_col' => ['person_id','self'], },
-				{ 'view_col' => 'self_name'  , 'expr_type' => 'col', 'src_col' => ['name'     ,'self'], },
-				{ 'view_col' => 'father_id'  , 'expr_type' => 'col', 'src_col' => ['person_id','father'], },
-				{ 'view_col' => 'father_name', 'expr_type' => 'col', 'src_col' => ['name'     ,'father'], },
-				{ 'view_col' => 'mother_id'  , 'expr_type' => 'col', 'src_col' => ['person_id','mother'], },
-				{ 'view_col' => 'mother_name', 'expr_type' => 'col', 'src_col' => ['name'     ,'mother'], },
-			) ),
-			{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 'view_part' => 'where', 
-					'expr_type' => 'sfunc', 'sfunc' => 'and', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
-						'expr_type' => 'sfunc', 'sfunc' => 'like', }, 'CHILDREN' => [ 
-					{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
-						'expr_type' => 'col', 'src_col' => ['name','father'], }, },
-					{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
-						'expr_type' => 'var', 'routine_var' => 'srchw_fa', }, },
-				] },
-				{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
-						'expr_type' => 'sfunc', 'sfunc' => 'like', }, 'CHILDREN' => [ 
-					{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
-						'expr_type' => 'col', 'src_col' => ['name','mother'], }, },
-					{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
-						'expr_type' => 'var', 'routine_var' => 'srchw_mo', }, },
-				] },
-			] },
-		] },
-	] } );
-
 	$model->create_node_tree( { 'NODE_TYPE' => 'view', 
 			'ATTRS' => { 'name' => 'user', 'may_write' => 1, }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
@@ -934,84 +921,96 @@ with the parent class against this class and get the same output.
 			{ 'name' => 'plan'         , 'domain' => 'str250' , },
 			{ 'name' => 'comments'     , 'domain' => 'str250' , },
 		) ),
-		{ 'NODE_TYPE' => 'view_rowset', 'CHILDREN' => [ 
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'name' => 'user_auth', 
-					'match_table' => 'user_auth', }, 'CHILDREN' => [ 
-				( map { { 'NODE_TYPE' => 'view_src_col', 'ATTRS' => $_ } } qw(
-					user_id login_name login_pass private_name private_email may_login max_sessions
-				) ),
-			] },
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'name' => 'user_profile', 
-					'match_table' => 'user_profile', }, 'CHILDREN' => [ 
-				( map { { 'NODE_TYPE' => 'view_src_col', 'ATTRS' => $_ } } qw(
-					user_id public_name public_email web_url contact_net contact_phy bio plan comments
-				) ),
-			] },
-			{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'lhs_src' => 'user_auth', 
-					'rhs_src' => 'user_profile', 'join_type' => 'left', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'lhs_src_col' => 'user_id', 
-					'rhs_src_col' => 'user_id',  } },
-			] },
-			( map { { 'NODE_TYPE' => 'view_col_def', 'ATTRS' => $_ } } (
-				{ 'view_col' => 'user_id'      , 'expr_type' => 'col', 'src_col' => ['user_id'      ,'user_auth'   ], },
-				{ 'view_col' => 'login_name'   , 'expr_type' => 'col', 'src_col' => ['login_name'   ,'user_auth'   ], },
-				{ 'view_col' => 'login_pass'   , 'expr_type' => 'col', 'src_col' => ['login_pass'   ,'user_auth'   ], },
-				{ 'view_col' => 'private_name' , 'expr_type' => 'col', 'src_col' => ['private_name' ,'user_auth'   ], },
-				{ 'view_col' => 'private_email', 'expr_type' => 'col', 'src_col' => ['private_email','user_auth'   ], },
-				{ 'view_col' => 'may_login'    , 'expr_type' => 'col', 'src_col' => ['may_login'    ,'user_auth'   ], },
-				{ 'view_col' => 'max_sessions' , 'expr_type' => 'col', 'src_col' => ['max_sessions' ,'user_auth'   ], },
-				{ 'view_col' => 'public_name'  , 'expr_type' => 'col', 'src_col' => ['public_name'  ,'user_profile'], },
-				{ 'view_col' => 'public_email' , 'expr_type' => 'col', 'src_col' => ['public_email' ,'user_profile'], },
-				{ 'view_col' => 'web_url'      , 'expr_type' => 'col', 'src_col' => ['web_url'      ,'user_profile'], },
-				{ 'view_col' => 'contact_net'  , 'expr_type' => 'col', 'src_col' => ['contact_net'  ,'user_profile'], },
-				{ 'view_col' => 'contact_phy'  , 'expr_type' => 'col', 'src_col' => ['contact_phy'  ,'user_profile'], },
-				{ 'view_col' => 'bio'          , 'expr_type' => 'col', 'src_col' => ['bio'          ,'user_profile'], },
-				{ 'view_col' => 'plan'         , 'expr_type' => 'col', 'src_col' => ['plan'         ,'user_profile'], },
-				{ 'view_col' => 'comments'     , 'expr_type' => 'col', 'src_col' => ['comments'     ,'user_profile'], },
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'name' => 'user_auth', 
+				'match_table' => 'user_auth', }, 'CHILDREN' => [ 
+			( map { { 'NODE_TYPE' => 'view_src_col', 'ATTRS' => $_ } } qw(
+				user_id login_name login_pass private_name private_email may_login max_sessions
 			) ),
-			{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 'view_part' => 'where', 
-					'expr_type' => 'sfunc', 'sfunc' => 'eq', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
-					'expr_type' => 'col', 'src_col' => ['user_id','user_auth'], }, },
-				{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
-					'expr_type' => 'var', 'routine_var' => 'curr_uid', }, },
-			] },
+		] },
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'name' => 'user_profile', 
+				'match_table' => 'user_profile', }, 'CHILDREN' => [ 
+			( map { { 'NODE_TYPE' => 'view_src_col', 'ATTRS' => $_ } } qw(
+				user_id public_name public_email web_url contact_net contact_phy bio plan comments
+			) ),
+		] },
+		{ 'NODE_TYPE' => 'view_join', 'ATTRS' => { 'lhs_src' => 'user_auth', 
+				'rhs_src' => 'user_profile', 'join_type' => 'LEFT', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_join_col', 'ATTRS' => { 'lhs_src_col' => 'user_id', 
+				'rhs_src_col' => 'user_id',  } },
+		] },
+		( map { { 'NODE_TYPE' => 'view_expr', 'ATTRS' => $_ } } (
+			{ 'view_part' => 'RESULT', 'view_col' => 'user_id'      , 'expr_type' => 'COL', 'src_col' => ['user_id'      ,'user_auth'   ], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'login_name'   , 'expr_type' => 'COL', 'src_col' => ['login_name'   ,'user_auth'   ], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'login_pass'   , 'expr_type' => 'COL', 'src_col' => ['login_pass'   ,'user_auth'   ], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'private_name' , 'expr_type' => 'COL', 'src_col' => ['private_name' ,'user_auth'   ], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'private_email', 'expr_type' => 'COL', 'src_col' => ['private_email','user_auth'   ], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'may_login'    , 'expr_type' => 'COL', 'src_col' => ['may_login'    ,'user_auth'   ], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'max_sessions' , 'expr_type' => 'COL', 'src_col' => ['max_sessions' ,'user_auth'   ], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'public_name'  , 'expr_type' => 'COL', 'src_col' => ['public_name'  ,'user_profile'], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'public_email' , 'expr_type' => 'COL', 'src_col' => ['public_email' ,'user_profile'], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'web_url'      , 'expr_type' => 'COL', 'src_col' => ['web_url'      ,'user_profile'], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'contact_net'  , 'expr_type' => 'COL', 'src_col' => ['contact_net'  ,'user_profile'], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'contact_phy'  , 'expr_type' => 'COL', 'src_col' => ['contact_phy'  ,'user_profile'], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'bio'          , 'expr_type' => 'COL', 'src_col' => ['bio'          ,'user_profile'], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'plan'         , 'expr_type' => 'COL', 'src_col' => ['plan'         ,'user_profile'], },
+			{ 'view_part' => 'RESULT', 'view_col' => 'comments'     , 'expr_type' => 'COL', 'src_col' => ['comments'     ,'user_profile'], },
+		) ),
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'WHERE', 
+				'expr_type' => 'SFUNC', 'sfunc' => 'EQ', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'expr_type' => 'COL', 'src_col' => ['user_id','user_auth'], }, },
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'expr_type' => 'VAR', }, }, #'routine_var' => 'curr_uid',
 		] },
 	] } );
 
+	$model->create_node_tree( { 'NODE_TYPE' => 'table', 
+			'ATTRS' => { 'name' => 'user_pref', }, 'CHILDREN' => [ 
+		( map { { 'NODE_TYPE' => 'table_col', 'ATTRS' => $_ } } (
+			{ 'name' => 'user_id'   , 'domain' => 'int'     , 'mandatory' => 1, },
+			{ 'name' => 'pref_name' , 'domain' => 'entitynm', 'mandatory' => 1, },
+			{ 'name' => 'pref_value', 'domain' => 'generic' , 'mandatory' => 0, },
+		) ),
+		( map { { 'NODE_TYPE' => 'table_ind', 'ATTRS' => $_->[0], 'CHILDREN' => [ 
+				map { { 'NODE_TYPE' => 'table_ind_col', 'ATTRS' => $_ } } @{$_->[1]}
+				] } } (
+			[ { 'name' => 'primary', 'ind_type' => 'UNIQUE', }, [ 'user_id', 'pref_name', ], ], 
+			[ { 'name' => 'fk_user', 'ind_type' => 'FOREIGN', 'f_table' => 'user_auth', }, 
+				[ { 'table_col' => 'user_id', 'f_table_col' => 'user_id' }, ], ], 
+		) ),
+	] } );
+
 	$model->create_node_tree( { 'NODE_TYPE' => 'view', 
-			'ATTRS' => { 'name' => 'user_theme', 'may_write' => 0, }, 'CHILDREN' => [ 
+			'ATTRS' => { 'name' => 'user_theme', 'view_type' => 'SINGLE', 'may_write' => 0, }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
 			{ 'name' => 'theme_name' , 'domain' => 'generic', },
 			{ 'name' => 'theme_count', 'domain' => 'int'    , },
 		) ),
-		{ 'NODE_TYPE' => 'view_rowset', 'CHILDREN' => [ 
-			{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'name' => 'user_pref', 'match_table' => 'user_pref', }, 
-				'CHILDREN' => [ map { { 'NODE_TYPE' => 'view_src_col', 'ATTRS' => $_ } } qw( pref_name pref_value ) ] 
-			},
-			{ 'NODE_TYPE' => 'view_col_def', 'ATTRS' => { 'view_col' => 'theme_name', 
-				'expr_type' => 'col', 'src_col' => ['pref_value','user_pref'], }, },
-			{ 'NODE_TYPE' => 'view_col_def', 'ATTRS' => { 'view_col' => 'theme_count', 
-					'expr_type' => 'sfunc', 'sfunc' => 'gcount', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_col_def', 'ATTRS' => { 
-					'expr_type' => 'col', 'src_col' => ['pref_value','user_pref'], }, },
-			] },
-			{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 'view_part' => 'where', 
-					'expr_type' => 'sfunc', 'sfunc' => 'eq', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
-					'expr_type' => 'col', 'src_col' => ['pref_name','user_pref'], }, },
-				{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
-					'expr_type' => 'lit', 'lit_val' => 'theme', }, },
-			] },
-			{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 'view_part' => 'group', 
-				'expr_type' => 'col', 'src_col' => ['pref_value','user_pref'], }, },
-			{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 'view_part' => 'havin', 
-					'expr_type' => 'sfunc', 'sfunc' => 'gt', }, 'CHILDREN' => [ 
-				{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
-					'expr_type' => 'sfunc', 'sfunc' => 'gcount', }, },
-				{ 'NODE_TYPE' => 'view_part_def', 'ATTRS' => { 
-					'expr_type' => 'lit', 'lit_val' => '1', }, },
-			] },
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'name' => 'user_pref', 'match_table' => 'user_pref', }, 
+			'CHILDREN' => [ map { { 'NODE_TYPE' => 'view_src_col', 'ATTRS' => $_ } } qw( pref_name pref_value ) ] 
+		},
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'RESULT', 
+			'view_col' => 'theme_name', 'expr_type' => 'COL', 'src_col' => ['pref_value','user_pref'], }, },
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'RESULT', 
+				'view_col' => 'theme_count', 'expr_type' => 'SFUNC', 'sfunc' => 'GCOUNT', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'expr_type' => 'COL', 'src_col' => ['pref_value','user_pref'], }, },
+		] },
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'WHERE', 
+				'expr_type' => 'SFUNC', 'sfunc' => 'EQ', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'expr_type' => 'COL', 'src_col' => ['pref_name','user_pref'], }, },
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'expr_type' => 'LIT', 'lit_val' => 'theme', }, },
+		] },
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'GROUP', 
+			'expr_type' => 'COL', 'src_col' => ['pref_value','user_pref'], }, },
+		{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 'view_part' => 'HAVING', 
+				'expr_type' => 'SFUNC', 'sfunc' => 'GT', }, 'CHILDREN' => [ 
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'expr_type' => 'SFUNC', 'sfunc' => 'GCOUNT', }, },
+			{ 'NODE_TYPE' => 'view_expr', 'ATTRS' => { 
+				'expr_type' => 'LIT', 'lit_val' => '1', }, },
 		] },
 	] } );
 

@@ -114,36 +114,6 @@ appreciate being informed any time you create a modified version of Rosetta
 that you are willing to distribute, because that is a practical way of 
 suggesting improvements to the standard version.
 
-=head1 DEPENDENCIES
-
-All of my modules require Perl 5.004 or newer, even though only some of them need
-it, in the interest of consistency.  That said, Perl 5.004 is more than 3 years 
-old, is available as a binary on practically every OS that supports Perl at all, 
-and is a very solid release, so I see no reason to support anything older.
-
-The Rosetta core modules, meaning all modules that are in the distribution that 
-you hold right now, don't require anything else.  
-
-However, other distributions which hold extensions to the Rosetta core, such as
-the almost always used Rosetta-Drivers distributions, do have other
-dependencies.  These are specified in said other distributions, and often
-include the popular DBI and DBD::* modules, which most Driver modules use.
-
-This distribution is getting split up soon.  When that happens, the "Rosetta" 
-distribution will be dependant on the new "SQL-SyntaxModel" distribution.
-
-=head2 Perl Version
-
-	5.004
-
-=head2 Standard Modules
-
-	I<none>
-
-=head2 Nonstandard Modules
-
-	I<none>
-
 =head1 SYNOPSIS
 
 =head2 Content of settings file "survey_prefs.pl", used by script below:
@@ -546,9 +516,9 @@ provide.
 =head1 STRUCTURE
 
 The modules composing the Rosetta framework are grouped into several main
-categories, which can be called: "Locale", "Schema" (SQL::SyntaxModel),
-"Engine", "Driver", "Proxy" (Server/Client), "Validator", "Emulator", and
-others.
+categories, which can be called: "Locale" (Locale::KeyedText), "Schema"
+(SQL::SyntaxModel), "Engine", "Driver", "Proxy" (Server/Client), "Validator",
+"Emulator", and others.
 
 Note: the file Language.pod should be read next, after Framework.pod.
 
@@ -848,82 +818,15 @@ I<Note: more databases (and data access protocols) can be found listed at
 
 Note that the exact module names and descriptions listed within each grouping
 are an older draft and are subject to near-future revisions or rewrites,
-including addition of more modules or removal of some existing ones.
-
-Note the third: now that some of these modules have been implemented, their 
-updated descriptions here are more accurate.
-
-=head2 Schema (SQL::SyntaxModel) Modules
-
-=over 4
-
-=item 0
-
-B<SQL::SyntaxModel::_::Command> - This Schema class describes an action that needs
-to be done against a database; the action may include several steps, and all of
-them must be done when executing the Command.  A Command object has one
-mandatory string property named 'type' (eg: 'database_open', 'table_create',
-'data_insert'), which sets the context for all of its other properties, which
-are in a hash property named 'args'.  Elements of 'args' often include other
-Schema class objects like 'Table' or 'DataType'.  Like all Schema objects, this
-is static and context-independant; it is intended to be serialized and passed
-to code like DBI->prepare().   While bind vars are often used with them (such
-as values to insert or update, or record matching conditions), it is always up
-to the calling code to resolve the bind vars such as with a user prompt (as
-SQL*Plus does), and pass those to code like DBI->execute().  I<See also
-Rosetta::Engine::_::Command.>
-
-=item 0
-
-B<SQL::SyntaxModel::_::DataType> - This Schema class describes a simple data type,
-which serves as metadata for a single atomic or scalar unit of data, or a
-column whose members are all of the same data type, such as in a regular
-database table or in row sets read from or to be written to one.  This class
-would be used both when manipulating database schema and when manipulating
-database data.
-
-=item 0
-
-B<SQL::SyntaxModel::_::Table> - This Schema class describes a single database
-table, and would be used for such things as managing schema for the table (eg:
-create, alter, destroy), and describing the table's "public interface" so other
-functionality like views or various DML operations know how to use the table.
-In its simplest sense, a Table object consists of a table name, a list of table
-columns, a list of keys, a list of constraints, and a few other implementation
-details.  This class does not describe anything that is changed by DML
-activity, such as a count of stored records, or the current values of sequences
-attached to columns.  This class would be used both when manipulating database
-schema and when manipulating database data.  This class can generate
-SQL::SyntaxModel::Command objects having types of: 'table_verify',
-'table_create', 'table_alter', 'table_destroy'.
-
-=item 0
-
-B<SQL::SyntaxModel::_::View> - This Schema class describes a single database view,
-which conceptually looks like a table, but it is used differently.  Tables and
-views are similar in that they both represent or store a matrix of data, which
-has uniquely identifiable columns, and rows which can be uniquely identifiable
-but may not be.  With the way that Rosetta implements views, you can do all of
-the same DML operations with them that you can do with tables: select, insert,
-update, delete rows; that said, the process for doing any of those with views
-is more complicated than with tables, but this complexity is usually internal
-to Rosetta so you shouldn't have to code any differently between them.  Tables
-and views are different in that tables actually store data in themselves, while
-views don't.  A view is actually a custom abstracted interface to one or more
-database tables which are related to each other in a specific way; when you
-issue DML against a view, you are actually fetching from or modifying the data
-stored in one (simplest case) or more tables.  This class can generate
-SQL::SyntaxModel::Command objects having types of: 'data_select', 'data_insert',
-'data_update', 'data_delete', 'data_lock', 'data_unlock', 'view_verify',
-'view_create', 'view_alter', 'view_destroy'.
-
-=back
+including addition of more modules or removal of some existing ones.  Also, as
+of the Rosetta distribution v0.23, the 'Schema Modules' section has been
+removed from Framework.pod and its contents put in Language.pod.
 
 =head2 Engine Modules
 
 =over 4
 
-=item 0
+=item
 
 B<Rosetta::_::Engine> - This Engine class is inherited by all other Engine
 Engine classes, and it provides functionality to talk to or manage Driver modules.
@@ -936,7 +839,7 @@ select cursor), and invoking execute_command() again on the Result object
 Instantiated by itself, this class stores globals that are shared by all
 drivers or connections.  Subclasses include: Result, Database.
 
-=item 0
+=item
 
 B<Rosetta::_::Command> - This Engine class describes an action that needs
 to be done against a database; its objects encapsulate
@@ -945,7 +848,7 @@ or live objects like 'Cursor'.  Code using these objects should be doing
 something like both calling DBI->prepare() and DBI->execute().  I<See also
 SQL::SyntaxModel::_::Command.>
 
-=item 0
+=item
 
 B<Rosetta::_::Result> - This Engine class is inherited by all Engine
 classes that would be returned from or thrown by an execute_command() method,
@@ -955,7 +858,7 @@ failed or not, and if so then why.  Some commands (eg: 'database_close')
 have no other meta-data or data to return, while others do (eg: 'data_select').  
 Subclasses include: Database.
 
-=item 0
+=item
 
 B<Rosetta::_::Connection> - This Engine class represents a connection
 to a database instance, and the simplest database applications use only one.
@@ -966,7 +869,7 @@ which also defines what RDBMS product is being used; 'server' is the name of
 the specific database instance to use; 'user' is the username to authenticate
 yourself against a multi-user database as; 'pass' is the associated password.
 
-=item 0
+=item
 
 B<Rosetta::_::Cursor> - This Engine class represents a cursor over a
 rowset that is being selected from a database.  You instantiate a Cursor object
@@ -982,29 +885,32 @@ order, and row limiting or paging.
 
 =over 4
 
-=item 0
+=item
 
 B<Rosetta::Driver::SQLite> - This class embeds the public domain SQLite RDBMS,
 and will serve as a default (though separately distributed) driver for Rosetta.
 It is small, powerful, easy to install and use, and implements the most
 important parts of the RNI, including Unicode, portability, transactions, and
 subselects.  This driver is intended mainly for programs that are used by one
-person at a time, as locks will grab the whole database.
+person at a time, as locks will grab the whole database.  Given that the actual
+database is embedded into the driver, we simply use the latest version
+available at the time of each driver update, so mention of version ranges being
+supported or not is not applicable.
 
-=item 0
+=item
 
 B<Rosetta::Driver::Oracle> - This class implements a driver for talking to
-Oracle 8.x and 9.x databases.  Note that Oracle 9 is the first version of the
+Oracle 8.x, 9.x, 10.x databases.  Note that Oracle 9 is the first version of the
 Oracle database that runs under Mac OS X (10.2 and later).  Oracle versions 
 before 8.x, like 7.3, will not be supported unless there is a great demand.
-=item 0
 
-B<Rosetta::Driver::PostgreSQL> - This class implements a driver for talking to 
-PostgreSQL 7.4 and 7.3 databases, with 7.4 being strongly recommended.  Support 
-for 7.3 will probably be deprecated, or moved to a separate driver if there is 
-a long-term demand.  Versions 7.2 and earlier won't be supported without demand.
+=item
 
-=item 0
+B<Rosetta::Driver::PostgreSQL> - This class implements a driver for talking to
+PostgreSQL 7.4 databases, with 7.3 support likely present but deprecated. 
+Versions 7.2 and earlier won't be supported without demand.
+
+=item
 
 B<Rosetta::Driver::MySQL> - This class implements a driver for talking to MySQL
 databases.  It is intended to be used only with MySQL versions 4.0.17 and
@@ -1012,14 +918,11 @@ later, with version 4.1.1 or greater being strongly recommended.  That said,
 which version you should use depends on your stage of development; MySQL AB has
 declared the 4.1.x series to be alpha quality now (2003.04.10), and expects it
 to be production ready in eight months (and 5.x six months after that), whereas
-the 4.0.x series is production quality right now (2003.03.15).  Given the
-current large installed base of MySQL 3.23.x, this class will temporarily
-support that version as well, with that support being deprecated, until most
-users have migrated to 4.x.  3.22.x will not be supported at all.  Alternately,
-the older (3.x) MySQL versions will have a separate driver for them, so they
-can be supported long term.
+the 4.0.x series is production quality right now (2003.03.15).  Support for
+3.23.x will be present in the short term, but it is deprecated.  3.22.x and
+earlier will not be supported at all, without great demand.
 
-=item 0
+=item
 
 B<Rosetta::Driver::Common::RWViews> - This is a utility class containing common
 functionality for multiple Drivers.  Given that most, if not all, existing
@@ -1028,7 +931,7 @@ table in every way, this class will implement that Rosetta feature, translating
 selects, inserts, updates, or deletes against a view into one or more
 corresponding actions against the underlying tables that the view interfaces.
 
-=item 0
+=item
 
 B<Rosetta::Driver::Common::SQLBuilder> - This is a utility class containing
 common functionality for multiple Drivers.  Given that a majority of commonly
@@ -1039,7 +942,7 @@ take arguments that instruct it how to vary the SQL output to the dialect that
 a particular RDBMS uses.  Note that the default SQL being produced will be 
 compliant with the ANSI-SQL-99 standard.
 
-=item 0
+=item
 
 B<Rosetta::Driver::Common::DBIWrapper> - This is a utility class containing
 common functionality for multiple Drivers.  Given that the pure perl versions

@@ -1,5 +1,5 @@
-# This module contains test input and output data which is used only by 
-# SQL-SyntaxModel-SkipID.t.
+# This module contains sample input and output data which is used to test 
+# SQL::SyntaxModel::SkipID, and possibly other modules that are derived from it.
 
 package # hide this class name from PAUSE indexer
 t_SQL_SyntaxModel_SkipID;
@@ -48,7 +48,7 @@ sub create_and_populate_model {
 		{ 'name' => 'generic' , 'base_type' => 'STR_CHAR', 'max_chars' => 250, },
 	) ] );
 
-	$model->create_node_trees( ['catalog', 'user', 'schema'] );
+	$model->create_node_trees( ['catalog', 'owner', 'schema'] );
 
 	$model->create_node_tree( { 'NODE_TYPE' => 'table', 
 			'ATTRS' => { 'name' => 'person', }, 'CHILDREN' => [ 
@@ -75,7 +75,9 @@ sub create_and_populate_model {
 	] } );
 
 	$model->create_node_tree( { 'NODE_TYPE' => 'view', 
-			'ATTRS' => { 'name' => 'person', 'view_type' => 'TABLE', 'may_write' => 1, 'match_table' => 'person' }, } );
+			'ATTRS' => { 'name' => 'person', 'view_type' => 'MATCH', 'may_write' => 1 }, 'CHILDREN' => [ 
+		{ 'NODE_TYPE' => 'view_src', 'ATTRS' => { 'name' => 'person', 'match_table' => 'person', }, },
+	] } );
 
 	$model->create_node_tree( { 'NODE_TYPE' => 'view', 
 			'ATTRS' => { 'name' => 'person_with_parents', 'may_write' => 0, }, 'CHILDREN' => [ 
@@ -256,7 +258,7 @@ sub create_and_populate_model {
 	] } );
 
 	$model->create_node_tree( { 'NODE_TYPE' => 'view', 
-			'ATTRS' => { 'name' => 'user_theme', 'may_write' => 0, }, 'CHILDREN' => [ 
+			'ATTRS' => { 'name' => 'user_theme', 'view_type' => 'SINGLE', 'may_write' => 0, }, 'CHILDREN' => [ 
 		( map { { 'NODE_TYPE' => 'view_col', 'ATTRS' => $_ } } (
 			{ 'name' => 'theme_name' , 'domain' => 'generic', },
 			{ 'name' => 'theme_count', 'domain' => 'int'    , },
@@ -297,7 +299,7 @@ sub create_and_populate_model {
 sub expected_model_xml_output {
 	return(
 '<root>
-	<common_space>
+	<elements>
 		<domain id="1" name="bin1k" base_type="STR_BIT" max_octets="1000" />
 		<domain id="2" name="bin32k" base_type="STR_BIT" max_octets="32000" />
 		<domain id="3" name="str4" base_type="STR_CHAR" max_chars="4" store_fixed="1" char_enc="ASCII" trim_white="1" uc_latin="1" pad_char=" " trim_pad="1" />
@@ -325,10 +327,10 @@ sub expected_model_xml_output {
 		<domain id="25" name="str250" base_type="STR_CHAR" max_chars="250" />
 		<domain id="26" name="entitynm" base_type="STR_CHAR" max_chars="30" />
 		<domain id="27" name="generic" base_type="STR_CHAR" max_chars="250" />
-	</common_space>
-	<database_space>
+	</elements>
+	<blueprints>
 		<catalog id="1">
-			<user id="1" catalog="1" />
+			<owner id="1" catalog="1" />
 			<schema id="1" catalog="1" owner="1">
 				<table id="1" schema="1" name="person">
 					<table_col id="1" table="1" name="person_id" domain="9" mandatory="1" default_val="1" auto_inc="1" />
@@ -350,32 +352,34 @@ sub expected_model_xml_output {
 						<table_ind_col id="4" table_ind="4" table_col="6" f_table_col="1" />
 					</table_ind>
 				</table>
-				<view id="1" view_context="SCHEMA" view_type="TABLE" schema="1" name="person" match_table="1" may_write="1" />
-				<view id="2" view_context="SCHEMA" view_type="SIMPLE" schema="1" name="person_with_parents" may_write="0">
+				<view id="1" view_context="SCHEMA" view_type="MATCH" schema="1" name="person" may_write="1">
+					<view_src id="1" view="1" name="person" match_table="1" />
+				</view>
+				<view id="2" view_context="SCHEMA" view_type="MULTIPLE" schema="1" name="person_with_parents" may_write="0">
 					<view_col id="1" view="2" name="self_id" domain="9" />
 					<view_col id="2" view="2" name="self_name" domain="24" />
 					<view_col id="3" view="2" name="father_id" domain="9" />
 					<view_col id="4" view="2" name="father_name" domain="24" />
 					<view_col id="5" view="2" name="mother_id" domain="9" />
 					<view_col id="6" view="2" name="mother_name" domain="24" />
-					<view_src id="1" view="2" name="self" match_table="1">
-						<view_src_col id="1" src="1" match_table_col="1" />
-						<view_src_col id="2" src="1" match_table_col="3" />
-						<view_src_col id="3" src="1" match_table_col="5" />
-						<view_src_col id="4" src="1" match_table_col="6" />
+					<view_src id="2" view="2" name="self" match_table="1">
+						<view_src_col id="1" src="2" match_table_col="1" />
+						<view_src_col id="2" src="2" match_table_col="3" />
+						<view_src_col id="3" src="2" match_table_col="5" />
+						<view_src_col id="4" src="2" match_table_col="6" />
 					</view_src>
-					<view_src id="2" view="2" name="father" match_table="1">
-						<view_src_col id="5" src="2" match_table_col="1" />
-						<view_src_col id="6" src="2" match_table_col="3" />
+					<view_src id="3" view="2" name="father" match_table="1">
+						<view_src_col id="5" src="3" match_table_col="1" />
+						<view_src_col id="6" src="3" match_table_col="3" />
 					</view_src>
-					<view_src id="3" view="2" name="mother" match_table="1">
-						<view_src_col id="7" src="3" match_table_col="1" />
-						<view_src_col id="8" src="3" match_table_col="3" />
+					<view_src id="4" view="2" name="mother" match_table="1">
+						<view_src_col id="7" src="4" match_table_col="1" />
+						<view_src_col id="8" src="4" match_table_col="3" />
 					</view_src>
-					<view_join id="1" view="2" lhs_src="1" rhs_src="2" join_type="LEFT">
+					<view_join id="1" view="2" lhs_src="2" rhs_src="3" join_type="LEFT">
 						<view_join_col id="1" join="1" lhs_src_col="3" rhs_src_col="5" />
 					</view_join>
-					<view_join id="2" view="2" lhs_src="1" rhs_src="3" join_type="LEFT">
+					<view_join id="2" view="2" lhs_src="2" rhs_src="4" join_type="LEFT">
 						<view_join_col id="2" join="2" lhs_src_col="4" rhs_src_col="7" />
 					</view_join>
 					<view_expr id="1" expr_type="COL" view="2" view_part="RESULT" view_col="1" src_col="1" />
@@ -384,12 +388,12 @@ sub expected_model_xml_output {
 					<view_expr id="4" expr_type="COL" view="2" view_part="RESULT" view_col="4" src_col="6" />
 					<view_expr id="5" expr_type="COL" view="2" view_part="RESULT" view_col="5" src_col="7" />
 					<view_expr id="6" expr_type="COL" view="2" view_part="RESULT" view_col="6" src_col="8" />
-					<view_expr id="7" expr_type="SFUNC" view="2" view_part="WHERE" sfunc="AND">
-						<view_expr id="8" expr_type="SFUNC" p_expr="7" sfunc="LIKE">
+					<view_expr id="7" expr_type="SFUNC" view="2" view_part="WHERE">
+						<view_expr id="8" expr_type="SFUNC" p_expr="7">
 							<view_expr id="9" expr_type="COL" p_expr="8" src_col="6" />
 							<view_expr id="10" expr_type="VAR" p_expr="8" />
 						</view_expr>
-						<view_expr id="11" expr_type="SFUNC" p_expr="7" sfunc="LIKE">
+						<view_expr id="11" expr_type="SFUNC" p_expr="7">
 							<view_expr id="12" expr_type="COL" p_expr="11" src_col="8" />
 							<view_expr id="13" expr_type="VAR" p_expr="11" />
 						</view_expr>
@@ -433,7 +437,7 @@ sub expected_model_xml_output {
 						<table_ind_col id="10" table_ind="10" table_col="14" f_table_col="7" />
 					</table_ind>
 				</table>
-				<view id="3" view_context="SCHEMA" view_type="SIMPLE" schema="1" name="user" may_write="1">
+				<view id="3" view_context="SCHEMA" view_type="MULTIPLE" schema="1" name="user" may_write="1">
 					<view_col id="7" view="3" name="user_id" domain="9" />
 					<view_col id="8" view="3" name="login_name" domain="23" />
 					<view_col id="9" view="3" name="login_pass" domain="23" />
@@ -449,27 +453,27 @@ sub expected_model_xml_output {
 					<view_col id="19" view="3" name="bio" domain="25" />
 					<view_col id="20" view="3" name="plan" domain="25" />
 					<view_col id="21" view="3" name="comments" domain="25" />
-					<view_src id="4" view="3" name="user_auth" match_table="2">
-						<view_src_col id="9" src="4" match_table_col="7" />
-						<view_src_col id="10" src="4" match_table_col="8" />
-						<view_src_col id="11" src="4" match_table_col="9" />
-						<view_src_col id="12" src="4" match_table_col="10" />
-						<view_src_col id="13" src="4" match_table_col="11" />
-						<view_src_col id="14" src="4" match_table_col="12" />
-						<view_src_col id="15" src="4" match_table_col="13" />
+					<view_src id="5" view="3" name="user_auth" match_table="2">
+						<view_src_col id="9" src="5" match_table_col="7" />
+						<view_src_col id="10" src="5" match_table_col="8" />
+						<view_src_col id="11" src="5" match_table_col="9" />
+						<view_src_col id="12" src="5" match_table_col="10" />
+						<view_src_col id="13" src="5" match_table_col="11" />
+						<view_src_col id="14" src="5" match_table_col="12" />
+						<view_src_col id="15" src="5" match_table_col="13" />
 					</view_src>
-					<view_src id="5" view="3" name="user_profile" match_table="3">
-						<view_src_col id="16" src="5" match_table_col="14" />
-						<view_src_col id="17" src="5" match_table_col="15" />
-						<view_src_col id="18" src="5" match_table_col="16" />
-						<view_src_col id="19" src="5" match_table_col="17" />
-						<view_src_col id="20" src="5" match_table_col="18" />
-						<view_src_col id="21" src="5" match_table_col="19" />
-						<view_src_col id="22" src="5" match_table_col="20" />
-						<view_src_col id="23" src="5" match_table_col="21" />
-						<view_src_col id="24" src="5" match_table_col="22" />
+					<view_src id="6" view="3" name="user_profile" match_table="3">
+						<view_src_col id="16" src="6" match_table_col="14" />
+						<view_src_col id="17" src="6" match_table_col="15" />
+						<view_src_col id="18" src="6" match_table_col="16" />
+						<view_src_col id="19" src="6" match_table_col="17" />
+						<view_src_col id="20" src="6" match_table_col="18" />
+						<view_src_col id="21" src="6" match_table_col="19" />
+						<view_src_col id="22" src="6" match_table_col="20" />
+						<view_src_col id="23" src="6" match_table_col="21" />
+						<view_src_col id="24" src="6" match_table_col="22" />
 					</view_src>
-					<view_join id="3" view="3" lhs_src="4" rhs_src="5" join_type="LEFT">
+					<view_join id="3" view="3" lhs_src="5" rhs_src="6" join_type="LEFT">
 						<view_join_col id="3" join="3" lhs_src_col="9" rhs_src_col="16" />
 					</view_join>
 					<view_expr id="14" expr_type="COL" view="3" view_part="RESULT" view_col="7" src_col="9" />
@@ -487,7 +491,7 @@ sub expected_model_xml_output {
 					<view_expr id="26" expr_type="COL" view="3" view_part="RESULT" view_col="19" src_col="22" />
 					<view_expr id="27" expr_type="COL" view="3" view_part="RESULT" view_col="20" src_col="23" />
 					<view_expr id="28" expr_type="COL" view="3" view_part="RESULT" view_col="21" src_col="24" />
-					<view_expr id="29" expr_type="SFUNC" view="3" view_part="WHERE" sfunc="EQ">
+					<view_expr id="29" expr_type="SFUNC" view="3" view_part="WHERE">
 						<view_expr id="30" expr_type="COL" p_expr="29" src_col="9" />
 						<view_expr id="31" expr_type="VAR" p_expr="29" />
 					</view_expr>
@@ -504,32 +508,33 @@ sub expected_model_xml_output {
 						<table_ind_col id="13" table_ind="12" table_col="23" f_table_col="7" />
 					</table_ind>
 				</table>
-				<view id="4" view_context="SCHEMA" view_type="SIMPLE" schema="1" name="user_theme" may_write="0">
+				<view id="4" view_context="SCHEMA" view_type="SINGLE" schema="1" name="user_theme" may_write="0">
 					<view_col id="22" view="4" name="theme_name" domain="27" />
 					<view_col id="23" view="4" name="theme_count" domain="9" />
-					<view_src id="6" view="4" name="user_pref" match_table="4">
-						<view_src_col id="25" src="6" match_table_col="24" />
-						<view_src_col id="26" src="6" match_table_col="25" />
+					<view_src id="7" view="4" name="user_pref" match_table="4">
+						<view_src_col id="25" src="7" match_table_col="24" />
+						<view_src_col id="26" src="7" match_table_col="25" />
 					</view_src>
 					<view_expr id="32" expr_type="COL" view="4" view_part="RESULT" view_col="22" src_col="26" />
-					<view_expr id="33" expr_type="SFUNC" view="4" view_part="RESULT" view_col="23" sfunc="GCOUNT">
+					<view_expr id="33" expr_type="SFUNC" view="4" view_part="RESULT" view_col="23">
 						<view_expr id="34" expr_type="COL" p_expr="33" src_col="26" />
 					</view_expr>
-					<view_expr id="35" expr_type="SFUNC" view="4" view_part="WHERE" sfunc="EQ">
+					<view_expr id="35" expr_type="SFUNC" view="4" view_part="WHERE">
 						<view_expr id="36" expr_type="COL" p_expr="35" src_col="25" />
 						<view_expr id="37" expr_type="LIT" p_expr="35" lit_val="theme" />
 					</view_expr>
 					<view_expr id="38" expr_type="COL" view="4" view_part="GROUP" src_col="26" />
-					<view_expr id="39" expr_type="SFUNC" view="4" view_part="HAVING" sfunc="GT">
-						<view_expr id="40" expr_type="SFUNC" p_expr="39" sfunc="GCOUNT" />
+					<view_expr id="39" expr_type="SFUNC" view="4" view_part="HAVING">
+						<view_expr id="40" expr_type="SFUNC" p_expr="39" />
 						<view_expr id="41" expr_type="LIT" p_expr="39" lit_val="1" />
 					</view_expr>
 				</view>
 			</schema>
 		</catalog>
-	</database_space>
-	<application_space />
-	<circumvention_space />
+	</blueprints>
+	<tools />
+	<sites />
+	<circumventions />
 </root>
 '
 	);

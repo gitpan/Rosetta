@@ -3,11 +3,12 @@
 
 ######################### We start with some black magic to print on failure.
 
-BEGIN { $| = 1; print "1..5\n"; }
+BEGIN { $| = 1; print "1..7\n"; }
 END {print "not ok 1\n" unless $loaded;}
+use t_SQL_SyntaxModel;
 use t_SQL_SyntaxModel_ByTree;
 use t_SQL_SyntaxModel_SkipID;
-use SQL::SyntaxModel::SkipID 0.10;
+use SQL::SyntaxModel::SkipID 0.11;
 use SQL::SyntaxModel::SkipID::L::en 0.02;
 $loaded = 1;
 print "ok 1\n";
@@ -52,7 +53,30 @@ sub error_to_string {
 
 ######################################################################
 
-message( "START TESTING SQL::SyntaxModel::SkipID Parent Compatibility" );
+message( "START TESTING SQL::SyntaxModel::SkipID Parent Compatibility (SSM)" );
+
+######################################################################
+
+eval {
+	message( "First populate some objects ..." );
+
+	my $model = t_SQL_SyntaxModel->create_and_populate_model( 'SQL::SyntaxModel::SkipID' );
+	result( ref($model) eq 'SQL::SyntaxModel::SkipID', "creation of all objects" );
+
+	message( "Now see if the output is correct ..." );
+
+	my $expected_output = t_SQL_SyntaxModel->expected_model_xml_output();
+	my $actual_output = $model->get_all_properties_as_xml_str();
+	result( $actual_output eq $expected_output, "verify serialization of objects" );
+
+	message( "Other functional tests are not written yet; they will come later" );
+};
+$@ and result( 0, "TESTS ABORTED: ".error_to_string( $@ ) );
+
+######################################################################
+
+message( "DONE TESTING SQL::SyntaxModel::SkipID Parent Compatibility (SSM)" );
+message( "START TESTING SQL::SyntaxModel::SkipID Parent Compatibility (SSMBTR)" );
 
 ######################################################################
 
@@ -74,7 +98,7 @@ $@ and result( 0, "TESTS ABORTED: ".error_to_string( $@ ) );
 
 ######################################################################
 
-message( "DONE TESTING SQL::SyntaxModel::SkipID Parent Compatibility" );
+message( "DONE TESTING SQL::SyntaxModel::SkipID Parent Compatibility (SSMBTR)" );
 message( "START TESTING SQL::SyntaxModel::SkipID Added Functionality" );
 
 ######################################################################

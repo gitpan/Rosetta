@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.02';
+$VERSION = '0.021';
 
 ######################################################################
 
@@ -261,9 +261,9 @@ my %text_strings = (
 	'SSM_N_MOVE_PRE_SIB_P_DIFF_CONT' => 
 		"move_before_sibling(): invalid PARENT argument; that Node is not in ".
 		"the same Container (if any) as the current Node, so they can not be related",
-	'SSM_N_MOVE_PRE_SIB_NO_P_ARG_OR_PP' => 
+	'SSM_N_MOVE_PRE_SIB_NO_P_ARG_OR_PP_OR_PS' => 
 		"move_before_sibling(): no PARENT argument was given, and the current Node ".
-		"has no primary parent Node for it to default to",
+		"has no primary parent Node or parent pseudo-Node for it to default to",
 	'SSM_N_MOVE_PRE_SIB_P_NOT_P' => 
 		"move_before_sibling(): invalid PARENT argument; ".
 		"the current Node is not a child of that Node",

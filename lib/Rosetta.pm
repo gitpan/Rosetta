@@ -11,19 +11,33 @@ See the file Rosetta::Framework for the main Rosetta documentation.
 ######################################################################
 
 package Rosetta;
-require 5.004;
+use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.072';
+$VERSION = '0.073';
+
+use Locale::KeyedText 0.02;
+use SQL::SyntaxModel 0.11;
 
 ######################################################################
+
+=head1 DEPENDENCIES
+
+Perl Version: 5.006
+
+Standard Modules: I<none>
+
+Nonstandard Modules: 
+
+	Locale::KeyedText 0.02 (for error messages)
+	SQL::SyntaxModel 0.11
 
 =head1 COPYRIGHT AND LICENSE
 
 This file is part of the Rosetta database abstraction framework.
 
-Rosetta is Copyright (c) 1999-2003, Darren R. Duncan.  All rights reserved. 
+Rosetta is Copyright (c) 1999-2004, Darren R. Duncan.  All rights reserved. 
 Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
 visit "http://www.DarrenDuncan.net" for more information.
 
@@ -67,28 +81,6 @@ appreciate being informed any time you create a modified version of Rosetta
 that you are willing to distribute, because that is a practical way of 
 suggesting improvements to the standard version.
 
-=head1 DEPENDENCIES
-
-=head2 Perl Version
-
-	5.004
-
-=head2 Standard Modules
-
-	I<none>
-
-=head2 Nonstandard Modules
-
-	SQL::SyntaxModel 0.011
-
-=cut
-
-######################################################################
-
-use SQL::SyntaxModel 0.011;
-
-######################################################################
-
 =head1 SYNOPSIS
 
 I<Please see the file lib/Rosetta/Framework.pod for a SYNOPSIS.>
@@ -105,29 +97,6 @@ This class does not export any functions or methods, so you need to call them
 using object notation.  This means using B<Class-E<gt>function()> for functions
 and B<$object-E<gt>method()> for methods.  If you are inheriting this class for
 your own modules, then that often means something like B<$self-E<gt>method()>. 
-
-=head1 FUNCTIONS AND METHODS
-
-I<Note: This list is wholly incomplete, and the items don't work yet.>
-
-=head2 new(...)
-
-This function creates a new Rosetta::Engine (or subclass) object and
-returns it.  All of the method arguments are passed to initialize() as is; 
-please see the POD for that method for an explanation of them.
-
-=cut
-
-######################################################################
-
-sub new {
-	return( Rosetta::Engine->new( @_[1..$#_] ) );
-}
-
-######################################################################
-
-1;
-__END__
 
 =head1 SEE ALSO
 

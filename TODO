@@ -1,6 +1,6 @@
 ONE DEVELOPMENT TRACK
 
-r0.23 - Create modules Rosetta, Rosetta::_::Engine, Rosetta::_::Connection, as
+r0.24 - Create modules Rosetta, Rosetta::_::Engine, Rosetta::_::Connection, as
 well as Rosetta::Driver::Null.  Or alternately, make what these become,
 following the inevitable major design updates started at the same time.
 

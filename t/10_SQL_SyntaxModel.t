@@ -3,10 +3,11 @@
 
 ######################### We start with some black magic to print on failure.
 
-BEGIN { $| = 1; print "1..2\n"; }
+BEGIN { $| = 1; print "1..3\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use SQL::SyntaxModel 0.10;
-use SQL::SyntaxModel::L::en 0.02;
+use t_SQL_SyntaxModel;
+use SQL::SyntaxModel 0.11;
+use SQL::SyntaxModel::L::en 0.021;
 $loaded = 1;
 print "ok 1\n";
 use strict;
@@ -56,8 +57,14 @@ message( "START TESTING SQL::SyntaxModel" );
 eval {
 	message( "First populate some objects ..." );
 
-	my $model = SQL::SyntaxModel->new();
+	my $model = t_SQL_SyntaxModel->create_and_populate_model( 'SQL::SyntaxModel' );
 	result( ref($model) eq 'SQL::SyntaxModel', "creation of all objects" );
+
+	message( "Now see if the output is correct ..." );
+
+	my $expected_output = t_SQL_SyntaxModel->expected_model_xml_output();
+	my $actual_output = $model->get_all_properties_as_xml_str();
+	result( $actual_output eq $expected_output, "verify serialization of objects" );
 
 	message( "Other functional tests are not written yet; they will come later" );
 };
