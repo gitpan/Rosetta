@@ -4,35 +4,120 @@ Rosetta::Framework - Main Rosetta purpose and design documentation
 
 =head1 ABSTRACT
 
-The Rosetta framework is intended to support complex (or simple) database-using
-Perl 5 applications that are easily portable across databases because all
-common product-specific details are abstracted away.  Rosetta is designed to
-natively handle (interface to or implement) a superset of generic RDBMS product
-features, so that you can do any action that you could before, including
-standard data manipulation (including complex multi-table selects or updates
-with subqueries or stored procedure calls), and schema manipulation (tables,
-views, procedures).  At the same time, it is designed to do its work quickly
-and efficiently.  The native interface of Rosetta (RNI) is unique to itself and
-verbose, being designed to use non-ambiguous structured definitions of all
-tasks; all input is multi-dimensional data structures (or objects) having
-atomic values, rather than strings to be parsed.  It is intended primarily for
-a data-driven application programming model, where an application uses a "data
-dictionary" to control what work it is doing (whose composite values map
-directly).  For cases where you don't already have a data dictionary, Rosetta
-can scan your existing database to create one.  That said, Rosetta also
-includes emulators (which sit on RNI) for common existing database interfaces,
-so that most Perl applications can simply use Rosetta as a hot-swappable
-replacement for them; you do not have to "learn yet another language" or
-re-code your application in order for it to just work with more databases. 
-Add-on utilities are also available for the likes of copying or backing up a
-database, or editing one through a web interface (like PHPMyAdmin but for Perl
-and any RDBMS).
+Rosetta is a comprehensive framework for database-using applications of any
+size or function that allows them to be easily portable across multiple
+database implementations because any proprietary details of each are abstracted
+away.  At the same time, it is designed to be fast and efficient.  Applications
+use Rosetta as a virtual embedded database, whose API is called the "Rosetta
+Native Interface" or "RNI", and whose feature set is an opaque normalized
+superset of all common database feature sets.  The feature superset includes
+both data manipulation (with multi-table selects and updates plus subqueries or
+stored procedure calls) and schema manipulation (tables, views, procedures).
+Rosetta is designed to work equally well with both embedded and client-server
+databases; in the latter case, it is the client.
+
+The RNI is implemented using mainly a "Command" design pattern, meaning that it
+has few real functions or methods, but those use objects as input and output,
+which are flexible enough to define any task or result.  The RNI is verbose and
+intended to provide non-ambiguous structured definitions of all tasks, so that
+the results of executing them are easy to predict; the definitions are
+multi-dimensional data structures (or objects) having atomic values (which also
+have native data type formats).  Rosetta has this as an advantage over other
+database abstractions that use serialized strings like SQL (such as ODBC/JDBC),
+because each database has its own SQL dialect, and applications using them must
+be coded differently for each one.  Rosetta is especially suited for
+data-driven applications, since the composite scalar values in their data
+dictionaries can often be copied directly to RNI structures, saving
+applications the tedious work of generating SQL themselves.  Rosetta also
+provides native internationalization support, for example allowing system
+messages to be in multiple user languages simultaneously.
+
+Rosetta makes it easy to layer alternative APIs on top of RNI, so that you can
+simplify or customize it to your specific needs.  As practical examples of
+this, there are several emulators provided for common existing database APIs
+(such as ODBC/JDBC), so that most applications can simply use Rosetta as a
+hot-swappable replacement for them; you do not have to "learn yet another
+language" or re-code your application in order for it to just work with more
+databases.  While the Rosetta core must always be embedded in an application to
+be used, an extension is available that will allow it to be used in a
+client-server arrangement instead (as ODBC does), where the server is a proxy
+for the client; the client is embedded in the main application, and it talks to
+the server in network-serialized RNI, which then translates the request into
+native database actions.  Some utilities built on Rosetta are also available,
+for such tasks as cloning or backing up a database (schema and/or data; this
+includes scanning the database to make a data dictionary), or editing one
+through a web interface (like PHPPgAdmin or PHPMyAdmin but for any RDBMS).
+
+Rosetta is not a complete database by itself and you need to separately have an
+actual database to use it with.  (But there is a new embedded database
+available, suited for small data sets, that was created just for Rosetta.)
+Rosetta does not usually implement features that are missing in a database
+being abstracted (such as foreign key constraints, transactional integrity, or
+geographical data types), in order to give it an identical feature set to a
+more capable database; Rosetta just allows for the features that do exist to be
+called in an identical way.  A consequence of this is that your choice of
+database implementation will indeed affect what features you have available;
+your application will port without changes only to databases which support the
+features that you use.  The RNI may not interface to every single feature of a
+particular database (neglecting esoteric ones), so you can't use those features
+with Rosetta (but support can be added).  Rosetta does not automate
+installation of any separate database software or configure it (like a package
+manager); you will have to do that yourself.
+
+=head1 COPYRIGHT AND LICENSE
+
+This file is part of the Rosetta database abstraction framework.
+
+Rosetta is Copyright (c) 1999-2003, Darren R. Duncan.  All rights reserved. 
+Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
+visit "http://www.DarrenDuncan.net" for more information.
+
+Rosetta is free software; you can redistribute it and/or modify it under the
+terms of the GNU General Public License (GPL) version 2 as published by the
+Free Software Foundation (http://www.fsf.org/).  You should have received a
+copy of the GPL as part of the Rosetta distribution, in the file named
+"LICENSE"; if not, write to the Free Software Foundation, Inc., 59 Temple
+Place, Suite 330, Boston, MA 02111-1307 USA.  
+
+Any versions of Rosetta that you modify and distribute must carry prominent
+notices stating that you changed the files and the date of any changes, in
+addition to preserving this original copyright notice and other credits. 
+Rosetta is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GPL for more details.
+
+Linking Rosetta statically or dynamically with other modules is making a
+combined work based on Rosetta.  Thus, the terms and conditions of the GPL
+cover the whole combination.
+
+As a special exception, the copyright holders of Rosetta give you permission to
+link Rosetta with independent modules that communicate with Rosetta solely
+through the "Driver" interface (because they are interfaces to or
+implementations of databases), regardless of the license terms of these
+independent modules, and to copy and distribute the resulting combined work
+under terms of your choice, provided that every copy of the combined work is
+accompanied by a complete copy of the source code of Rosetta (the version of
+Rosetta used to produce the combined work), being distributed under the terms
+of the GPL plus this exception.  An independent module is a module which is not
+derived from or based on Rosetta, and which is fully useable when not linked to
+Rosetta in any form.
+
+Note that people who make modified versions of Rosetta are not obligated to
+grant this special exception for their modified versions; it is their choice
+whether to do so.  The GPL gives permission to release a modified version
+without this exception; this exception also makes it possible to release a
+modified version which carries forward this exception.
+
+While it is by no means required, the copyright holders of Rosetta would
+appreciate being informed any time you create a modified version of Rosetta
+that you are willing to distribute, because that is a practical way of 
+suggesting improvements to the standard version.
 
 =head1 DEPENDENCIES
 
 =head2 Perl Version
 
-	5.004 (by intent; tested with 5.6)
+	5.004
 
 =head2 Standard Modules
 
@@ -47,8 +132,8 @@ and any RDBMS).
 =head2 Content of settings file "survey_prefs.pl", used by script below:
 
 	my $rh_prefs = {
-		pdbi_connect_args => {
-			driver => 'Rosetta::Driver::MySQL-3-23',
+		database_open_args => {
+			driver => 'Rosetta::Driver::MySQL',
 			server => 'survey1',
 			user => 'joebloe',
 			pass => 'fdDF9X0sd7zy',
@@ -70,11 +155,12 @@ and any RDBMS).
 			},
 		],
 	};
-	
+
 =head2 Content of a simple CGI script for implementing a web survey:
 
 	#!/usr/bin/perl
 	use strict;
+	use warnings;
 
 	&script_main();
 
@@ -139,26 +225,26 @@ and any RDBMS).
 		$engine->throw_error( 0 ); # on error, ret result obj, do not throw exception
 
 		my $dbh = $engine->execute_command( {
-			'type' => 'database_connect',
-			'args' => $prefs->{pdbi_connect_args}, # includes what driver to use
+			'type' => 'database_open',
+			'args' => $prefs->{database_open_args}, # includes what driver to use
 		} );
 		if( $dbh->is_error() ) {
-			return( "Error: can't connect to database: ".$dbh->get_error() );
+			return( "Error: can't open database: ".$dbh->get_error() );
 		}
 
-		my $html_output = &script_while_connected( $prefs, $dbh, $curr_mode, $form_values );
+		my $html_output = &script_while_opened( $prefs, $dbh, $curr_mode, $form_values );
 
 		my $rv = $dbh->execute_command( {
-			'type' => 'database_disconnect',
+			'type' => 'database_close',
 		} );
 		if( $rv->is_error() ) {
-			return( "Error: can't disconnect from database: ".$rv->get_error() );
+			return( "Error: can't close database: ".$rv->get_error() );
 		}
 
 		return( $html_output );
 	}
 
-	sub script_while_connected {
+	sub script_while_opened {
 		my ($prefs, $dbh, $curr_mode, $form_values) = @_;
 
 		my $questions = $prefs->{question_list};
@@ -313,12 +399,12 @@ and any RDBMS).
 
 =head1 DESCRIPTION
 
-The Rosetta framework is intended to support complex (or simple)
-database-using applications that are easily portable across databases because
-common product-specific details are abstracted away.  These include the RDBMS
-product and vendor name, what dialect of SQL its scripting or query interface
-uses, whether the product uses SQL at all or some other method of querying, how
-query results are returned, what features the RDBMS supports, how to manage
+The Rosetta framework is intended to support complex (or simple) database-using
+applications that are easily portable across databases because common
+product-specific details are abstracted away.  These include the RDBMS product
+and vendor name, what dialect of SQL its scripting or query interface uses,
+whether the product uses SQL at all or some other method of querying, how query
+results are returned, what features the RDBMS supports, how to manage
 connections, how to manage schema, how to manage stored procedures, and perhaps
 how to manage users.  The main thing that this framework will not be doing in
 the forseeable future is managing the installation and configuration of the
@@ -368,10 +454,10 @@ implementation details that aren't true on all databases.  Rather, this
 framework provides the means for you to specify in an RDBMS-generic fashion
 exactly what it is you want to happen, and your request is mapped to native or
 emulated functionality for the actual RDBMS that is being used, to do the work.
- The implementation or mapping is different for each RDBMS being abstracted
-away, and makes maximum use of that database's built-in functionality. 
-Thereby, the Rosetta framework achieves the greatest performance possible while
-still being 100% RDBMS-generic.
+The implementation or mapping is different for each RDBMS being abstracted
+away, and makes maximum use of that database's built-in functionality. Thereby,
+the Rosetta framework achieves the greatest performance possible while still
+being 100% RDBMS-generic.
 
 This differs from other database abstraction modules or frameworks that I am
 aware of on CPAN, since the others tend to either work towards the
@@ -384,21 +470,21 @@ part of their input, which in the broadest sense makes those non-portable as
 well.  With my framework I am attempting the "holy grail" of maximum
 portability with maximum features and maximum speed, which to my knowledge none
 of the existing solutions on CPAN are doing, or would be able to do short of a
-full rewrite.  This is largely why I am starting a new module framework rather 
+full rewrite.  This is largely why I am starting a new module framework rather
 than trying to help patch an existing solution; I believe a rewrite is needed.
 
 The Rosetta framework is best used through its native interface (RNI), which
-accepts and returns only atomic values (or multi-dimensional Perl data
-structures containing them); no "parsing" or such analysis is done such as with
-SQL statements.  The main reason is that this framework is intended primarily
-for a data-driven application programming model, where the applications use a
-"data dictionary" to control what work it is doing; the applications can simply
-copy the composite scalar values of the data dictionary, without having to
-encode them into a single string.  The RNI is designed to allow entry of a
+accepts and returns only atomic values (or multi-dimensional data structures
+containing them); no "parsing" or such analysis is done such as with SQL
+statements.  The main reason is that this framework is intended primarily for a
+data-driven application programming model, where the applications use a "data
+dictionary" to control what work it is doing; the applications can simply copy
+the composite scalar values of the data dictionary, without having to encode
+them into a single string.  The RNI is designed to allow entry of a
 non-ambiguous structured definition of any task that you would want a database
 to do.  Rosetta is intended to support a superset of features from all common
 generic RDBMS products, so it should have a native way of expressing any task
-that you can do now.  For cases where you don't already have a data dictionary, 
+that you can do now.  For cases where you don't already have a data dictionary,
 Rosetta can scan your existing database to create one.
 
 One would think that, despite all the advantages that Rosetta can bring to a
@@ -415,40 +501,73 @@ hurdle can deter upgrades to making apps portable.
 
 But to help with this situation, Rosetta also includes several emulators (each
 of which is a higher-level layer that translates its input into RNI calls) for
-common existing database interfaces, so that most Perl applications can simply
-use Rosetta as a hot-swappable replacement for them; you do not have to "learn
-yet another language" or re-code your application in order for it to just work
-with more databases.  It should be possible to emulate any existing interface,
-and if a new one comes along with features that Rosetta can't handle (interface
-to or implement), then this is a reasonable excuse to update the core so that
-it is possible.  That said, the success of an emulator depends largely on
-whether code that was using the original module is using the original the way
-it was designed or not; code that was hacking the internals of a module (as
-Perl makes so easy) is less likely to work (sort of like how an app used to
-using un-documented APIs on an operating sytem, or doing direct OS data
-structure access on a non-memory-protected OS, would break if the
-implementation of that OS changed).
+common existing database interfaces, so that most applications can simply use
+Rosetta as a hot-swappable replacement for them; you do not have to "learn yet
+another language" or re-code your application in order for it to just work with
+more databases.  It should be possible to emulate any existing interface, and
+if a new one comes along with features that Rosetta can't handle (interface to
+or implement), then this is a reasonable excuse to update the core so that it
+is possible.  That said, the success of an emulator depends largely on whether
+code that was using the original module is using the original the way it was
+designed or not; code that was hacking the internals of a module (as Perl makes
+so easy) is less likely to work (sort of like how an app used to using
+un-documented APIs on an operating sytem, or doing direct OS data structure
+access on a non-memory-protected OS, would break if the implementation of that
+OS changed).
 
 Included in the Rosetta distribution will be several applications which serve
 as examples of Rosetta in use, but in some cases are useful themselves.  One
 example will be a utility for copying one database to another, such as for
 backup or restore, or just migration.  Another example will be a web app that
-works sort of like "PHPMyAdmin" (letting users manually edit schema and data)
-except that it is written in Perl, and it works with many RDBMS products.  Some
-code porting utilities could also be available, to help makers of old
-applications migrate to RNI, for better control and performance than an
-emulator would provide.
+works sort of like "PHPPgAdmin" or "PHPMyAdmin" (letting users manually edit
+schema and data) except that it works with many RDBMS products.  Some code
+porting utilities could also be available, to help makers of old applications
+migrate to RNI, for better control and performance than an emulator would
+provide.
 
 =head1 STRUCTURE
 
 The modules composing the Rosetta framework are grouped into several main
-categories, which can be called: "Schema", "Engine", "Driver", "Locale",
-"Emulator", and others.
+categories, which can be called: "Locale", "Schema", "Engine", "Driver",
+"Proxy" (Server/Client), "Validator", "Emulator", and others.
 
 These classes do not export any functions or methods, so you need to call them
 using object notation.  This means using B<Class-E<gt>function()> for functions
 and B<$object-E<gt>method()> for methods.  If you are inheriting any class for
 your own modules, then that often means something like B<$self-E<gt>method()>. 
+
+This briefly illustrates the relationship of the module groups:
+
+	           DATABASE
+	              |
+	              |
+	     Proxy    |
+	     Client;Driver--------------\
+	    called by |   uses   used by \
+	              |                   \
+	      invokes |                    \
+	            Engine--------------Schema;Locale (both used by other 7 groups)
+	    called by | \ uses   used by /  |
+	              |  \              /   |
+	      invokes/|   \            /   /
+	            //| Emulator------/   /
+	Validator--// | | uses   used by /
+	           /  | |               /
+	     Proxy/   | |              /
+	     Server APPLICATION-------/
+	                  uses   used by
+
+The Locale modules function as constant data resources, mainly holding
+user-readable text such as database error messages and so forth, so that this
+text is separate from normal module code and easy to edit.  These are part of
+the Rosetta core, and are used by the Engine and Driver modules.  There are
+multiple Locale files rather than just one partly so that each file can have a
+different localization; adding a new user language is as easy as adding another
+file.  The set of text strings being stored should be comprehensive enough that
+any Driver module can use them, and therefore not need their own Locale files
+for displaying error messages.  All strings are mapped to short codes (eg:
+'R001372'); these codes are what the normal module code uses to display a
+particular message.
 
 The "Schema" and "Engine" modules are collectively referred to as the "Rosetta
 Native Interface" or "RNI", and they are the "Core" of the Rosetta framework to
@@ -477,17 +596,48 @@ they can generate an RNI data dictionary from it when desired.  Nothing talks
 to an RDBMS product except a Driver module, and nothing talks to a driver
 module except the Engine modules.
 
-The Locale modules function as constant data resources, mainly holding
-user-readable text such as database error messages and so forth, so that this
-text is separate from normal module code and easy to edit.  These are part of
-the Rosetta core, and are used by the Engine and Driver modules.  There are
-multiple Locale files rather than just one partly so that each file can have a
-different localization; adding a new user language is as easy as adding another
-file.  The set of text strings being stored should be comprehensive enough that
-any Driver module can use them, and therefore not need their own Locale files
-for displaying error messages.  All strings are mapped to short codes (eg:
-'R001372'); these codes are what the normal module code uses to display a
-particular message.
+Note that application specific "stored procedures" which are implemented in
+Perl, and that are RDBMS product specific, would sit beside "Driver" in the
+above diagram, since they would have direct access to the product-specific code
+that the Driver uses to talk to the DATABASE.  Those are not shown in the above
+diagram for simplicity.  That said, all calls to such "stored procedures" from
+the main APPLICATION will still always go through Engine.
+
+The Proxy modules comprise an extension that allows the normally embedded-only
+Rosetta to be used in a client-server situation (as ODBC is).  But this
+extension is implemented in such a way that neither the Driver modules nor the
+APPLICATION need to know the difference of whether the extension is being used
+or not.  The Proxy modules correspond to both a "Driver" (network client) and
+an "APPLICATION" (network server); they involve two applications that have the
+Rosetta core embedded talking to each other, with one handing all the database
+details on behalf of the other.  See the following diagram:
+
+	  DATABASE
+	     |
+	   Driver
+	     |
+	   Engine:::::::
+	     |         =
+	Proxy Server   =
+	     |         =
+	  NETWORK      = (Driver and APP think these are the same single Engine)
+	     |         =
+	Proxy Client   =
+	     |         =
+	   Engine:::::::
+	     |
+	APPLICATION
+
+The Validator modules are a common comprehensive test suite to run against all
+drivers in order to tell that they are implementing the Rosetta interface
+properly or not.  This also saves each Driver maker from having to write their
+own tests.  These would be used similarly to how Sun has an official validation
+suite for Java Virtual Machines to make sure they implement the official Java
+specification.  Since not all databases are alike, each driver is expected to
+report programmatically which kinds of features it supports, and the validator
+suite will only test interface compliance for those features; this way, a
+missing feature does not mean the driver will fail its tests unless it
+explicitely says it has said feature.
 
 The Emulator modules are extensions that are purely optional for use, and they
 are intended to facilitate rapid adaption (hot-swapping) of Rosetta into an
@@ -500,33 +650,24 @@ they still just become more portable.  Many Emulator modules would include SQL
 parsing functionality (as SQL is their input), and would convert SQL statements
 from known dialects into Engine/Schema objects
 
-This briefly illustrates the relationship of the module groups:
-
-	        RDBMS
-	          |
-	          |
-	          |
-	        Driver--------------\
-	called by |   uses   used by \
-	          |                   \
-	  invokes |                    \
-	        Engine--------------Schema;Locale (both used by same 4 groups)
-	called by | \ uses   used by /  |
-	          |  \              /   |
-	  invokes |   \            /   /
-	          | Emulator------/   /
-	          | | uses   used by /
-	          | |               /
-	          | |              /
-	        APPLICATION-------/
-	              uses   used by
-
-Note that application specific "stored procedures" which are implemented in
-Perl, and that are RDBMS product specific, would sit beside "Driver" in the
-above diagram, since they would have direct access to the product-specific code
-that the Driver uses to talk to the RDBMS.  Those are not shown in the above
-diagram for simplicity.  That said, all calls to such "stored procedures" from 
-the main APPLICATION will still always go through Engine.
+All of the Rosetta components are implemented using pure Perl 5 code for now
+and during the near future (although some drivers or extensions may have
+prerequisites that are not).  Once Rosetta is feature complete in this form, it
+will be rewritten as a C library which has bindings for multiple languages,
+including Perl 5 and Parrot.  Advantages of this change are not only greater
+speed and memory efficiency but also compatability; it will allow Rosetta (and
+through it Perl) to use databases which previously had no Perl bindings or DBI
+drivers before.  Moreover, the potential user base would increase sharply
+because users of other languages like PHP or Python would be able to use it.
+The C version of Rosetta will probably have the "Schema" and "Engine" modules
+being mostly reduced to struct definitions, macros for manipulating the
+structs, header files, and a small amount of implementation code.  Most of the
+normal implementation C code would be derived from the other modules,
+particularly the "Driver", "Proxy", "Validator", "Emulator" ones.  The pure
+Perl version will probably stay around after that conversion should it be
+useful, but it won't have as large of a database support.  I have no plans to
+make a pure Java version, but rather, the C version would bind to Java
+environments using a Java Bean.
 
 =head1 BRIEF MODULE LIST
 
@@ -559,23 +700,78 @@ all of these exist yet, as they are being implemented over time.
 	Rosetta::Engine (base class to provide 'execute' function; calls Drivers)
 	Rosetta::Engine::Command (describes an action to do)
 	Rosetta::Engine::Result (result of action including errors)
-	Rosetta::Engine::Connection (represents a connection)
+	Rosetta::Engine::Database (represents a connection)
 	Rosetta::Engine::Transaction (represents context within connection)
 	Rosetta::Engine::Cursor (result of a selection command)
 	Rosetta::Engine::* ... like DriverEngineGlobals or whatever
 
 	Rosetta::Driver (base class to provide common public interface)
-	Rosetta::Driver::Native (a fully functional RAM-based RDBMS impl in Perl, for testing core)
+	Rosetta::Driver::Null (a driver with no functionality, for testing core)
 
-=head2 In distribution "Rosetta-Drivers"
+=head2 In distribution "Rosetta-Drivers" or a multiplicity of similarly named
 
-	Rosetta::Driver::ANSI-SQL-99 (base class for common implementation, uses DBI/DBD::*)
-	Rosetta::Driver::MySQL-3-23 (generate and run SQL for MySQL 3.23.x)
-	Rosetta::Driver::MySQL-4-0 (generate and run SQL for MySQL 4.0.x)
-	Rosetta::Driver::MySQL-4-1 (generate and run SQL for MySQL 4.1.x)
-	Rosetta::Driver::Oracle-8 (generate and run SQL for Oracle 8)
-	Rosetta::Driver::Oracle-9 (generate and run SQL for Oracle 9)
-	Rosetta::Driver::* ... like Sybase, DB2, PostgreSQL, SQLServer, Informix, more
+	Rosetta::Driver::Native (a fully functional small RDBMS for when normal db not needed)
+	Rosetta::Driver::Oracle (interface to Oracle db 8, 9)
+	Rosetta::Driver::Sybase (interface to Sybase db)
+	Rosetta::Driver::PostgreSQL (interface to PostgreSQL db)
+	Rosetta::Driver::MySQL (interface/binding to MySQL cli-serv/embed db 3.23.x, 4.x, 5.x)
+	Rosetta::Driver::DB2 (interface to IBM DB2 db)
+	Rosetta::Driver::SQLServer (interface to MS SQLServer db)
+	Rosetta::Driver::Unify (interface to Unify db)
+	Rosetta::Driver::Informix (interface to IBM Informix db)
+	Rosetta::Driver::Empress (interface to the Empress db)
+	Rosetta::Driver::PrimeBase (interface to PrimeBase db)
+	Rosetta::Driver::OpenBase (interface to OpenBase db)
+	Rosetta::Driver::FrontBase (interface to FrontBase db)
+	Rosetta::Driver::InterBase (binding to Borland InterBase embedded db)
+	Rosetta::Driver::Solid (interface to Solid db)
+	Rosetta::Driver::Cache (interface to InterSystems Cache db)
+	Rosetta::Driver::xBase (binding to XBase db accessor library)
+	Rosetta::Driver::Ingres (interface to Ingres db)
+	Rosetta::Driver::Illustra (interface to Illustra database)
+	Rosetta::Driver::Valentina (binding to Paradigma Software's Valentina embedded db) 
+	Rosetta::Driver::4D (interface to 4D db)
+	Rosetta::Driver::mSQL (interface to mSQL db)
+	Rosetta::Driver::Helix (interface to Helix db)
+	Rosetta::Driver::Pick (interface to Pick Systems' db)
+	Rosetta::Driver::FileMaker (interface to FileMaker Pro db)
+	Rosetta::Driver::FoxPro (interface to FoxPro db)
+	Rosetta::Driver::SQLite (binding to public domain SQLite embedded db)
+	Rosetta::Driver::Access (interface to MS Access db)
+	Rosetta::Driver::Paradox (interface to Borland Paradox db)
+	Rosetta::Driver::dBase (interface to dBase db)
+	Rosetta::Driver::CSV (a database driver using CSV files for storage)
+	Rosetta::Driver::* ... any of the 100+ other databases or services not listed above
+
+	Rosetta::Driver::Common::RWViews (convert IUD against views into IUD against tables)
+	Rosetta::Driver::Common::SQLBuilder (generate ANSI-99 SQL and other SQL variants)
+	Rosetta::Driver::Common::DBIWrapper (helps drivers implemented using DBI/DBD::*)
+	Rosetta::Driver::Common::* ... other code for sharing between multiple drivers
+
+=head2 In distribution "Rosetta-Proxy"
+
+	Rosetta::Proxy::Server (an application on top of RNI implementing a network server)
+	Rosetta::Proxy::Client (a "Driver" implementing a network client of the server)
+	Rosetta::Proxy::Command (network-safe packed repr of ::Engine::Command obj)
+	Rosetta::Proxy::Result (network-safe packed repr of ::Engine::Result obj)
+
+=head2 In distribution "Rosetta-Validators"
+
+	Rosetta::Validator (a common comprehensive test suite to run against all drivers)
+	Rosetta::Validator::DB1 (tests include: new db, open db, close db)
+	Rosetta::Validator::Table1 (tests include: create/modify/delete tables, fetch table schema)
+	Rosetta::Validator::Select1 (tests Include: select recs from 1 table)
+	Rosetta::Validator::IUD1 (tests include: insert/update/delete recs in 1 table)
+	Rosetta::Validator::View1 (tests include: create/modify/delete views, fetch view schema)
+	Rosetta::Validator::Select2 (tests Include: select from mult tables using joins only)
+	Rosetta::Validator::Select3 (tests Include: select from mult tables using unions only)
+	Rosetta::Validator::Select4 (tests Include: select from mult tables using subqueries)
+	Rosetta::Validator::IUD2 (tests include: i/u/d against views using joins only)
+	Rosetta::Validator::IUD3 (tests include: i/u/d against views using unions only)
+	Rosetta::Validator::IUD4 (tests include: i/u/d against views using subqueries)
+	Rosetta::Validator::Select5 (tests include: various built-in functions)
+	Rosetta::Validator::IUD5 (tests include: i/u/d against views using built-in functions)
+	Rosetta::Validator::* ... like stored procedures, triggers, various others
 
 =head2 In distribution "Rosetta-Emulators"
 
@@ -585,9 +781,12 @@ all of these exist yet, as they are being implemented over time.
 	Rosetta::Emulator::* ... like some of the other abstraction modules
 	Rosetta::Emulator::*::* (helpers for emulated frameworks of several modules)
 
+	Rosetta::Emulator::Common::SQLParser (parse ANSI-99 SQL and other SQL variants)
+	Rosetta::Emulator::Common::* ... other code for sharing between multiple emulators
+
 =head2 In distribution "Rosetta-Applications"
 
-	Rosetta::Util::* ... higher level functionality like: Backup, Restore, Copy, ...
+	Rosetta::Utility::* ... higher level functionality like: Backup, Restore, Copy, ...
 
 =head2 In unknown distributions
 
@@ -596,192 +795,6 @@ all of these exist yet, as they are being implemented over time.
 	Rosetta::Adapter::* ... I like the name so it might be used for something
 
 	RosettaX::* ... unofficial extensions or wrappers to Rosetta are allowed here ...
-
-=head1 SCHEDULE FOR DEVELOPMENT
-
-In an effort to keep things simpler for development, the first few releases of
-this distribution will contain some of the intended features, while others will
-be left out for now, but be dealt with later at an appropriate time.  
-
-This is the approximate order that I plan to support particular features:
-
-=over 4
-
-=item 0
-
-Connect to (or open) an existing database as a registered or anonymous user,
-which establishes a current working context for doing anything else, and close
-it; multiple simultaneous connections should be supported; the database and
-users must already exist.
-
-=item 0
-
-Create new database instances or remove them, if that can be done easily.
-
-=item 0
-
-Create new users in the current database or remove them or alter their
-privileges or validate any settings for user existence or privileges; note 
-that Rosetta will not enforce user privileges or lacks of them for any 
-RDBMS products that don't do this internally.
-
-=item 0
-
-Create tables (including temporary) within the default schema context that you
-connected to (eg: an Oracle "user/schema" in an "instance"), with nullability
-or unique key (including primary key) or foreign key constraints or indexes
-that are not constraints or default column values, and alter or remove or
-validate them, assuming the connected user has said privileges; the same
-operations will also be supported against neighbouring contexts (if any) for
-which said user is permitted; note that Rosetta will not enforce any
-constraints on tables as that is up to the RDBMS product, although it may try
-to enforce some constraints in a far-away release for RDBMS products that don't
-do it themselves, but that would be slower and less reliable.
-
-=item 0
-
-Create or alter or remove sequences within the default schema context, and use
-them in table definitions or data modifying operations.
-
-=item 0
-
-Scan an existing database and create a data dictionary (as Perl objects) that
-describes its tables and sequences, including any constraints that the database
-knows about.
-
-=item 0
-
-Start a transaction, which is an operating context within which all table data
-changes must succeed or none will be saved, and end it either with a commit
-(keep changes) or rollback (discard changes); this type of data integrity will
-not work unless the RDBMS product being used supports transactions; far-off
-releases of Rosetta may implement transactional data integrity at the Perl
-level for non-supporting RDBMS products, but using a supporting RDBMS is
-better; multiple simultaneous transactions within a single database connection
-should be supported.
-
-=item 0
-
-Select data from single or related multiple tables, including the use of equal
-or left outer joins, full and unique unions (similar to full outer joins),
-derived tables (in sql-from), sub-selects (in sql-where), hierarchical queries
-(eg: an Oracle start-with and connect-by), and including the use of
-calculations or formulas (including logicals like choose-when) in the returned
-column list or in the row filter or grouping conditions; the select results can
-be accessed either with row cursors (memory efficient) or all at once with an
-array (for small result sets only); also, insert or update or delete against
-single tables.
-
-=item 0
-
-Obtain locks on table data for when you want atomic selects and updates, and
-release them; the same caveats that apply to transaction support in the RDBMS
-product being used also applies here.
-
-=item 0
-
-Utilities for backing up or restoring the tables in a database, both schema and
-data, either with another database or a set of text files.
-
-=item 0
-
-Insert or update or delete against multiple related related tables at once, as
-if they were a single table; the Rosetta objects that define the multiple table
-selection will be used to know how to map said data changes against the correct
-tables; it may not be possible for Rosetta to issue changes against some
-selects, since some required mapping information may be lacking; in that case, 
-the application logic will have to handle it against single tables.
-
-=item 0
-
-Create stored procedures and functions within the default schema context that
-you connected to, and alter or remove them, and invoke them directly; initially
-this feature will require you to define a separate version of a stored
-procedure or function for each RDBMS product you are going to use, because it
-is too difficult to implement an abstracted definition and generation of such
-things for earlier Rosetta releases; there are two ways to do this, one of
-which involves writing the functionality in pure Perl (which can be done once
-for all RDBMS products, particularly those that don't support stored procedures
-at all, but is slower), and the other way involves a hand-crafted SQL string
-implementing the procedure plus a shim Perl function that calls it; your main
-application is still RDBMS generic because any multiplicity of stored procedure
-implementations will be keyed to a Rosetta driver, so the right one is used at
-the right time; in any event, the standard RNI means of calling a stored
-procedure is calling something that looks externally like a Perl function,
-which won't change, so you will still have to make at least the interface in
-Perl; also modify or delete them, or validate those added through Rosetta.
-
-=item 0
-
-Call stored functions within select queries and so forth; this would likely
-only work when the stored item is actually in the database, and is not a pure 
-Perl implementation.
-
-=item 0
-
-Create stored triggers, with the same caveats as stored procedures and
-functions regarding multiplicity of implementations, or update or remove them,
-or validate those added through Rosetta; initially this feature will not work
-at all unless the underlying RDBMS supports triggers, since early Rosetta
-releases will not interrupt or scan data UID operations to implement triggers
-in Perl.
-
-=item 0
-
-Create or alter or remove "public synonyms" in Oracle or other RDBMS that 
-support the concept of this convenient aliasing system.
-
-=item 0
-
-Create views, which are select queries whose definitions are stored in a
-database for convenience and pre-processing speed, within the default schema
-context that you connected to, and alter or remove them; validating views 
-will at first only be possible if the same version of Rosetta created them, 
-because it is done by a simple string compare for databases that store 
-views as sql statements, so that the sql won't have to be parsed.
-
-=item 0
-
-Also scan the views in an existing database and parse their definition sql so
-that generated data dictionaries can describe both tables, views, and seqs.
-
-=item 0
-
-Also extract the stored procedures and functions and triggers and so forth 
-in their raw form, unparsed, for backup or restore to the same kind of 
-RDBMS that they came from.
-
-=item 0
-
-Emulate other database interfaces (like DBI or ODBC or OCI or whatever) on top
-of Rosetta; this would require being able to parse SQL like for data selection
-or modification, or table and view creation, and so forth, as well as pass
-through unparsed the creation sql of stored procedures and functions and
-triggers for use as is (latter not portable).
-
-=item 0
-
-Get around to parsing or generating sql for stored procedures or functions or 
-triggers, and representing them abstractly for a data dictionary.
-
-=item 0
-
-Whatever else is needed.
-
-=back
-
-On databases that don't support sub-selects (eg: MySQL before 4.1.x) or unions
-(eg: MySQL before 4.0.x) natively, Rosetta::Driver::* will try to
-emulate complex select commands by creating temporary tables in the database to
-hold results of inner selects.  This would keep all the implementation work
-inside the RDBMS product where it should be, with only the final resulting
-row-set being returned to the Perl application.  However, it is possible that
-this will only work if the database user being connected as has the privileges
-to create tables, which isn't always the case for DML-only users; on the other
-hand, temporary tables may not require said permissions.  There may also be
-problems with reliability of the results if someone else is modifying the
-inputs for the temporary tables before they are all built; this may change
-later when proper read locks are used.
 
 =head1 EXPANDED MODULE LIST
 
@@ -861,14 +874,14 @@ types, execute_command() may only start the process that needs doing (eg: get a
 select cursor), and invoking execute_command() again on the Result object
 (which is a subclass) will continue or finish the process (eg: fetch a row). 
 Instantiated by itself, this class stores globals that are shared by all
-drivers or connections.  Subclasses include: Result, Connection.
+drivers or connections.  Subclasses include: Result, Database.
 
 =item 0
 
 B<Rosetta::Engine::Command> - This Schema class describes an action
 that needs to be done against a database; the action may include several steps,
 and all of them must be done when executing the Command.  A Command object has
-one mandatory string property named 'type' (eg: 'database_connect',
+one mandatory string property named 'type' (eg: 'database_open',
 'table_create', 'data_insert'), which sets the context for all of its other
 properties, which are in a hash property named 'args'.  Elements of 'args' 
 often include other Engine class objects like 'Table' or 'DataType'.
@@ -879,16 +892,16 @@ B<Rosetta::Engine::Result> - This Engine class is inherited by all Engine
 classes that would be returned from or thrown by an execute_command() method,
 and it contains the return values or errors of a Command.  Its main task is to
 implement the is_error() and get_error() methods, which say whether the Command
-failed or not, and if so then why.  Some commands (eg: 'database_disconnect')
+failed or not, and if so then why.  Some commands (eg: 'database_close')
 have no other meta-data or data to return, while others do (eg: 'data_select').  
-Subclasses include: Connection.
+Subclasses include: Database.
 
 =item 0
 
-B<Rosetta::Engine::Connection> - This Engine class represents a connection
+B<Rosetta::Engine::Database> - This Engine class represents a connection
 to a database instance, and the simplest database applications use only one.
-You instantiate a Connection object by executing a Command of type
-'database_connect'; that command usually takes 4 arguments, the first of which
+You instantiate a Database object by executing a Command of type
+'database_open'; that command usually takes 4 arguments, the first of which
 is mandatory: 'driver' is a string having the name of the Driver module to use,
 which also defines what RDBMS product is being used; 'server' is the name of
 the specific database instance to use; 'user' is the username to authenticate
@@ -921,74 +934,74 @@ as it doesn't implement the methods it declares.
 =item 0
 
 B<Rosetta::Driver::Native> - This class implements a fully-functional
-stand-alone RDBMS, using 100% Perl code; it will implement all database
-features that the Rosetta core can interface to, even if some real databases
-can't.  This includes transactions, locking, foreign keys, stored procedures,
-multiple 'users', and more.  That said, it is intended mainly for testing the
-Rosetta core, and will be developed simultaneously with the latter.  While
-Rosetta::Driver::Native is fully functional, it is completely RAM-based for
-simplicity (nothing is stored on disk, except perhaps by means of explicit
-freeze/thaw or the like), and probably won't scale to more than a few thousand
-records (namely, it will hold just whatever can all fit in RAM at once).  It
-also won't be designed with multi-threaded environments in mind, due to its
-intent for testing (usually done by one person at a time); if you plan to use
-it for more, you will need to serialize access yourself.
+stand-alone embedded RDBMS; it will implement all database features that the
+RNI can interface to, even if some standard databases can't.  This includes
+transactions, locking, foreign keys, stored procedures, multiple 'users', and
+more.  That said, it is intended mainly as a proof of concept and won't scale
+well beyond small data sets.  The entire database, both schema and data will be
+loaded into RAM at once, so your use of it is limited by what will fit in RAM.
+Persistence is achieved by dumping all data structures used by the database to
+disk at once, into a single disk file, at appropriate times, and loading it
+from disk all at once.  So it will probably work best for data sets that don't
+exceed a few megabytes.
 
 =item 0
 
-B<Rosetta::Driver::ANSI-SQL-99> - This class implements most Driver methods using
-SQL that is compliant to the ANSI SQL standard.  It is not intended to be used
-by itself, but rather subclassed by another Driver module for a specific RDBMS
-product.  This class assumes that DBI and DBD::* modules will be used for
-implementation, so it uses DBI objects and methods internally.  It currently
-does not implement the 'database_connect' command because subclasses should be
-choosing which DBD::* module to use internally.
+B<Rosetta::Driver::Oracle> - This class implements a driver for talking to
+Oracle 8.x and 9.x databases.  Note that Oracle 9 is the first version of the
+Oracle database that runs under Mac OS X (10.2 and later).  Oracle versions 
+before 8.x, like 7.3, will not be supported unless there is a great demand.
 
 =item 0
 
-B<Rosetta::Driver::MySQL-3-23> - This class implements a driver for
-talking to MySQL 3.23.x databases.  This version of MySQL does not support most
-kinds of sub-selects and unions, so this driver emulates that functionality by
-creating temporary tables; you can only use those features if you connect as a
-user with privileges to make temporary tables.  Note that 3.23.54 is the latest
-release and is considered production-quality (stable) since 2001.01.22.
+B<Rosetta::Driver::MySQL> - This class implements a driver for talking to MySQL
+databases.  It is intended to be used only with MySQL versions 4.0.12 and
+later, with version 4.1 or greater being strongly recommended.  That said,
+which version you should use depends on your stage of development; MySQL AB has
+declared the 4.1.x series to be alpha quality now (2003.04.10), and expects it
+to be production ready in eight months (and 5.x six months after that), whereas
+the 4.0.x series is production quality right now (2003.03.15).  Given the
+current large installed base of MySQL 3.23.x, this class will temporarily
+support that version as well, with that support being deprecated, until most
+users have migrated to 4.x.  3.22.x will not be supported at all.  Alternately,
+the older (3.x) MySQL versions will have a separate driver for them, so they
+can be supported long term.
 
 =item 0
 
-B<Rosetta::Driver::MySQL-4-0> - This class implements a driver for talking
-to MySQL 4.0.x databases.  This version of MySQL does not support most kinds of
-sub-selects, so this driver emulates that functionality by creating temporary
-tables; you can only use those features if you connect as a user with
-privileges to make temporary tables.  Note that 4.0.7 is the latest release and
-is considered gamma-quality (soon to be stable?).
+B<Rosetta::Driver::Common::RWViews> - This is a utility class containing common
+functionality for multiple Drivers.  Given that most, if not all, existing
+RDBMS systems don't support updateable views, meaning treating a view like a
+table in every way, this class will implement that Rosetta feature, translating
+selects, inserts, updates, or deletes against a view into one or more
+corresponding actions against the underlying tables that the view interfaces.
 
 =item 0
 
-B<Rosetta::Driver::MySQL-4-1> - This class implements a driver for talking
-to MySQL 4.1.x databases.  This version of MySQL does support most kinds of
-sub-selects and unions, so this driver does not need to emulate them, and you
-can use these features even when you connect as a user that can not create
-temporary tables.  Note that 4.1.0 is the latest release and is considered
-alpha-quality (perhaps stable in a year?).
+B<Rosetta::Driver::Common::SQLBuilder> - This is a utility class containing
+common functionality for multiple Drivers.  Given that a majority of commonly
+used RDBMS systems use SQL as their primary command language, this class will
+take care of translating RNI commands into SQL commands.  While a large part of
+SQL is implemented in a common way on most SQL-using databases, this class will
+take arguments that instruct it how to vary the SQL output to the dialect that
+a particular RDBMS uses.  Note that the default SQL being produced will be 
+compliant with the ANSI-SQL-99 standard.
 
 =item 0
 
-B<Rosetta::Driver::Oracle-8> - This class implements a driver for talking
-to Oracle 8.x databases.
-
-=item 0
-
-B<Rosetta::Driver::Oracle-9> - This class implements a driver for talking
-to Oracle 9.x databases.  Note that Oracle 9 is the first version of the Oracle 
-database that runs under Mac OS X (10.2 and later).
+B<Rosetta::Driver::Common::DBIWrapper> - This is a utility class containing
+common functionality for multiple Drivers.  Given that the pure perl versions
+of Rosetta, which are its first releases, will be implemented on top of the
+popular DBI and DBD modules, this class provides some Rosetta-specific wrapper
+functionality for DBI that makes it easier for Rosetta drivers to use it.
 
 =back
 
 All other databases in common use should be supported as well; the ones in the
-above module list are vendors that I have used personally; I need to research
+above module list are products that I have used personally; I need to research
 others to know what versions exist or are stable or are in common use.  Other
 RDBMS products include: Sybase, PostgreSQL, DB2, SQL-Server, OpenBase,
-FrontBase, Valentina, Informix, ODBC, and others.
+FrontBase, Valentina, Informix, and others.
 
 =head2 MISCELLANEOUS MODULES FROM AFAR
 
@@ -1412,26 +1425,6 @@ This stuff is an older draft of the previous section, in a way.
 	view_ordering_def - not needed for unions (subquery does it if necessary); used with joins
 
 	... um ... stuff ...
-
-=head1 AUTHOR
-
-Copyright (c) 1999-2003, Darren R. Duncan.  All rights reserved.  This module
-is free software; you can redistribute it and/or modify it under the same terms
-as Perl itself.  However, I do request that this copyright information and
-credits remain attached to the file.  If you modify this module and
-redistribute a changed version then please attach a note listing the
-modifications.  This module is available "as-is" and the author can not be held
-accountable for any problems resulting from its use.
-
-I am always interested in knowing how my work helps others, so if you put this
-module to use in any of your own products or services then I would appreciate
-(but not require) it if you send me the website url for said product or
-service, so I know who you are.  Also, if you make non-proprietary changes to
-the module because it doesn't work the way you need, and you are willing to
-make these freely available, then please send me a copy so that I can roll
-desirable changes into the main release.
-
-Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>.
 
 =head1 SEE ALSO
 

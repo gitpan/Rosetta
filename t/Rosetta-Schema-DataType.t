@@ -6,9 +6,9 @@
 # Change 1..1 below to 1..last_test_to_print .
 # (It may become useful if the test is moved to ./t subdirectory.)
 
-BEGIN { $| = 1; print "1..69\n"; }
+BEGIN { $| = 1; print "1..68\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use Rosetta::Schema::DataType 0.02;
+use Rosetta::Schema::DataType 0.021;
 $loaded = 1;
 print "ok 1\n";
 use strict;
@@ -33,8 +33,7 @@ sub result {
 	my ($worked, $detail) = @_;
 	$verbose or 
 		$detail = substr( $detail, 0, 50 ).
-		(length( $detail ) > 47 ? "..." : "");	
-	print "@{[$worked ? '' : 'not ']}ok $test_num $detail\n";
+		(length( $detail ) > 47 ? "..." : "");	print "@{[$worked ? '' : 'not ']}ok $test_num $detail\n";
 }
 
 sub message {
@@ -103,7 +102,6 @@ message( "START TESTING Rosetta::Schema::DataType" );
 	$did = serialize( $rsdt2->get_all_properties() );
 	$should = "{ 'base_type' => 'str', 'name' => 'product_code', 'size' => '10', 'store_fixed' => '1', }, ";
 	result( $did eq $should, "on init rsdt2->get_all_properties() returns '$did'" );
-	
 	# now we test clone of default values
 
 	my $rsdt3 = $rsdt1->clone();  
@@ -113,7 +111,6 @@ message( "START TESTING Rosetta::Schema::DataType" );
 	$did = serialize( $rsdt3->get_all_properties() );
 	$should = "{ 'base_type' => 'str', 'name' => 'No_Name_Data_Type', 'size' => '250', 'store_fixed' => '0', }, ";
 	result( $did eq $should, "on init rsdt3->get_all_properties() returns '$did'" );
-	
 	# now we test clone of provided values (in hash)
 
 	my $rsdt4 = $rsdt2->clone();  
@@ -153,7 +150,6 @@ message( "START TESTING Rosetta::Schema::DataType" );
 	$did = serialize( $rsdt7->get_all_properties() );
 	$should = "{ 'base_type' => 'str', 'name' => 'No_Name_Data_Type', 'size' => '250', 'store_fixed' => '0', }, ";
 	result( $did eq $should, "on init rsdt7->get_all_properties() returns '$did'" );
-	
 	# now we test clone of provided values (string) into other existing object
 
 	my $rsdt8 = $rsdt6->clone( $rsdt7 );  # now 8 and 7 point to same obj, with prop of 6
@@ -180,9 +176,7 @@ message( "START TESTING Rosetta::Schema::DataType" );
 
 {
 	my ($rsdt, $did, $should);
-	
 	# first initialize data we will be reading from
-	
 	$rsdt = Rosetta::Schema::DataType->new(); 
 
 	message( "testing setter/getter methods on default object - get only" );
@@ -308,10 +302,6 @@ message( "START TESTING Rosetta::Schema::DataType" );
 	$did = $rsdt->size( 1.24 );
 	$should = "1";
 	result( $did eq $should, "size( 1.24 ) returns '$did'" );
-
-	$did = $rsdt->size( '' );
-	$should = "0";
-	result( $did eq $should, "size( '' ) returns '$did'" );
 
 	$did = $rsdt->size( ' 6 ' );
 	$should = "6";

@@ -1,71 +1,25 @@
-             FRAMEWORK FOR PORTABLE DATABASE APPLICATIONS
-----------------------------------------------------------------------
+=head1 NAME
 
-by Darren Duncan <perl@DarrenDuncan.net>
+Rosetta - Framework for RDBMS-generic apps and schemas
 
-CONTENTS
+=head1 ABSTRACT
 
-* Preface
-* Keeping Up To Date
-* Dependencies
-* Support
-* Bugs
-* Credits
-* Copyright And License
+See the file Rosetta::Framework for the main Rosetta documentation.
 
-PREFACE
+=cut
 
-See the file lib/Rosetta/Framework.pod for the main Rosetta documentation.  The
-"Rosetta" framework is divided across multiple distributions, and the
-distribution you are holding now includes its core modules.  All of the other
-*.pod and *.pm files have framework or individual module documentation in POD
-format, so you should read those too.  The distribution also includes a
-ChangeLog file to say what changes already happened, and a TODO file to say
-what changes have yet to happen.  The file INSTALL should help with
-installation issues. Read below for how to get support or keep up to date, know
-this distribution's dependencies, or read the credits or copyright and license.
+######################################################################
 
-KEEPING UP TO DATE
+package Rosetta;
+require 5.004;
+use strict;
+use warnings;
+use vars qw($VERSION);
+$VERSION = '0.062';
 
-My module set is constantly under development.  You should be able to find the
-newest versions at my website, "http://www.DarrenDuncan.net", on the page called
-"Perl Libraries I Made" (name subject to change).  They can also be found on CPAN
-under the author name of "DUNCAND".  
+######################################################################
 
-I am inclined to update the copies on my web site more often, but those
-intermediate versions are more likely to have been tested less, and the modules
-may be updated day by day without increasing the version numbers.  However, the
-copies on CPAN are guaranteed to have unique version numbers when the module has
-changed.
-
-DEPENDENCIES
-
-All of my modules require Perl 5.004 or newer, even though only some of them need
-it, in the interest of consistency.  That said, Perl 5.004 is already 3 years 
-old, is available as a binary on practically every OS that supports Perl at all, 
-and is a very solid release, so I see no reason to support anything older.
-
-The Rosetta core modules don't require anything else.
-
-SUPPORT
-
-Currently I don't have any support arranged with other people, lists, newsgroups,
-or otherwise.  Feel free to ask me if you can't figure things out on your own, or
-another person whom you know has used this.  I may start a mailing list for 
-support issues later, so that users of my modules can help each other with them.
-
-BUGS
-
-It appears that the Pod::Man with Perl 5.6.0 (and perhaps other versions)
-doesn't support the "head3" directive.  I would have liked to use this in
-lib/Rosetta/SimilarModules.pod, but can't so my level 3 headings there are
-one-line paragraphs instead.
-
-CREDITS
-
-... to write ...
-
-COPYRIGHT AND LICENSE
+=head1 COPYRIGHT AND LICENSE
 
 This file is part of the Rosetta database abstraction framework.
 
@@ -114,6 +68,66 @@ appreciate being informed any time you create a modified version of Rosetta
 that you are willing to distribute, because that is a practical way of 
 suggesting improvements to the standard version.
 
-FIN
+=head1 DEPENDENCIES
 
-Share and Enjoy!
+=head2 Perl Version
+
+	5.004
+
+=head2 Standard Modules
+
+	I<none>
+
+=head2 Nonstandard Modules
+
+	Rosetta::Engine (only if "new" method used)
+
+=head1 SYNOPSIS
+
+I<Please see the file lib/Rosetta/Framework.pod for a SYNOPSIS.>
+
+=head1 DESCRIPTION
+
+The Rosetta class currently has little functionality of its own, but rather
+mainly exists to help the CPAN indexers and users find the actual main
+documentation for the Rosetta framework, which starts in the file
+"lib/Rosetta/Framework.pod".  Similarly, the CPAN indexers like to find a
+module with the same name as the distribution in order to extract the
+single-line module summary for the distribution, from the module's NAME
+section; that is provided here.  Please see "lib/Rosetta/Framework.pod" for the
+main Rosetta purpose and design documentation.
+
+=head1 SYNTAX
+
+This class does not export any functions or methods, so you need to call them
+using object notation.  This means using B<Class-E<gt>function()> for functions
+and B<$object-E<gt>method()> for methods.  If you are inheriting this class for
+your own modules, then that often means something like B<$self-E<gt>method()>. 
+
+=head1 FUNCTIONS AND METHODS
+
+=head2 new(...)
+
+This is a mere convenience function and it does the exact same thing as calling
+Rosetta::Engine->new(), which you should actually be using instead.  Please see
+the POD in the Rosetta::Engine module for details on its use.
+
+=cut
+
+######################################################################
+
+sub new {
+	require Rosetta::Engine;
+	return( Rosetta::Engine->new( @_[1..$#_] ) );
+}
+
+######################################################################
+
+1;
+__END__
+
+=head1 SEE ALSO
+
+perl(1), Rosetta::Framework, Rosetta::SimilarModules.
+
+=cut

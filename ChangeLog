@@ -1,3 +1,84 @@
+2003-04-15   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.07.
+
+	* The experimental changes made in release 0.062 were rolled back, meaning
+	that the files lib/Rosetta.pm and t/Rosetta.t were restored to the presence
+	they had in 0.061.  Since those were the only changes, all change comments
+	below are relative to the state of release 0.061.
+
+	* This release was mainly a documentation and licensing update.  The
+	distribution now has these extra files: INSTALL, LICENSE, TODO.  No files
+	were removed.  Framework.pod had the most changes, ReadMe the second most.
+
+	* The section ABSTRACT in Framework.pod was largely rewritten to bring it
+	up to date with my evolved plans, and also to greatly improve the
+	communication of what Rosetta does and does not do.  For one thing, a lot
+	more emphasis is placed on its useability with both embedded and
+	client-server databases.  There were a huge number of content changes.
+
+	* The Rosetta database abstraction framework is now distributed under the
+	terms of the GNU General Public License (GPL) rather than "under the same
+	terms as Perl itself" (meaning a choice of GPL or Artistic).  The new
+	licensing should be a lot easier to understand.  This applies to both code
+	and design documents; also, any code implemented from my design documents
+	will be considered a derivative work no matter who makes it, and be bound
+	by the same license.  Note that while the GPL precludes linking to modules
+	for which the source code isn't freely available, my licensing terms have
+	an exception for the independent database drivers themselves.  That said,
+	it is very likely that I will change to a dual-licensing arrangement some
+	time in the future, after Rosetta is actually able to do something useful,
+	where a GPL license is free, and getting an alternative license requires a
+	special arrangement with myself.
+
+	* A new file named LICENSE has been added to the distribution, which
+	contains the text of the GPL.  All other distribution files, especially
+	Framework.pod, have been updated such that each AUTHOR documentation
+	section has been replaced with a COPYRIGHT AND LICENSE section (near the
+	top of each file); the AUTHOR section had talked about copyright and
+	licensing itself, and is now redundant.  Correspondingly, all code modules 
+	have had their version numbers increased by 0.001.
+
+	* The section SCHEDULE FOR DEVELOPMENT in lib/Rosetta/Framework.pod was
+	removed from there and put in the new file "TODO"; aside from a reformat to
+	move from POD to plain text, there were no changes.  Upcoming plans for
+	this file is that it will be rewritten to include multiple parallel
+	development tracks, which more realistically portrays what will happen.
+
+	* A few terms were renamed globally in Framework.pod.  Any references to
+	"connecting" or "disconnecting" a database were changed to say "opening"
+	and "closing" instead.  Also, the module "Connection" was renamed to
+	"Database". This affected mainly the SYNOPSIS and the EXPANDED MODULE LIST.  
+	Also, the DEPENDENCIES of all files were slightly updated.
+
+	* The STRUCTURE, BRIEF MODULE LIST, and EXPANDED MODULE LIST have been
+	expanded, and the diagram in STRUCTURE improved:  1. The list of Driver
+	modules has been rewritten to explicitely show several dozen databases, and
+	the expanded module descriptions for all drivers and driver utilities was
+	rewritten.  2. A new set of Validator modules has been added to be a common
+	test bed for all the drivers (akin to Sun's validation suite for JVMs).  3.
+	The Rosetta::Driver::Native driver is no longer intended for testing the
+	Rosetta core, but rather is to be useful in its own right; it will now be
+	in the Drivers distribution rather than the core distribution.  4. A new
+	set of modules named Rosetta::Proxy::* were added (along with a second
+	diagram in STRUCTURE), so that Rosetta could work as a client-server setup
+	ala ODBC.  Comments on my plan to convert Rosetta into a C library
+	eventually (with a fully working pure-Perl version coming first) were added
+	to STRUCTURE.
+
+	* Removed one test from Rosetta-Schema-DataType.t which was generating a
+	warning; there was no point since it effectively tested just the Perl
+	runtime engine and not the module.
+
+	* The BUGS section was removed from SimilarModules.pod and put in ReadMe. 
+	The INSTALLATION section was removed from ReadMe and put in a new file
+	named INSTALL.  ReadMe was further updated to rename REQUIREMENTS to
+	DEPENDENCIES and to add a CREDITS section (currently empty).  The PREFACE 
+	was completely rewritten (and is now much shorter).
+
+	* A few more tiny whitespace formatting bits were fixed in several files,
+	and several parts were re-word-wrapped.  Added "use warnings" to SYNOPSIS.
+
 2003-03-29   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.062.

@@ -8,7 +8,7 @@
 
 BEGIN { $| = 1; print "1..2\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use Rosetta::Schema::Table 0.01;
+use Rosetta::Schema::Table 0.011;
 $loaded = 1;
 print "ok 1\n";
 use strict;
@@ -33,8 +33,7 @@ sub result {
 	my ($worked, $detail) = @_;
 	$verbose or 
 		$detail = substr( $detail, 0, 50 ).
-		(length( $detail ) > 47 ? "..." : "");	
-	print "@{[$worked ? '' : 'not ']}ok $test_num $detail\n";
+		(length( $detail ) > 47 ? "..." : "");	print "@{[$worked ? '' : 'not ']}ok $test_num $detail\n";
 }
 
 sub message {
@@ -92,9 +91,7 @@ message( "START TESTING Rosetta::Schema::Table" );
 
 {
 	my ($rst, $did, $should);
-	
 	# first initialize data we will be reading from
-	
 	$rst = Rosetta::Schema::Table->new(); 
 
 	message( "OTHER TESTS TO GO HERE" );

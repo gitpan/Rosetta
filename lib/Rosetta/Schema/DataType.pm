@@ -2,33 +2,77 @@
 
 Rosetta::Schema::DataType - Metadata for atomic or scalar values
 
+=head1 ABSTRACT
+
+See the file Rosetta::Framework for the main Rosetta documentation.
+
 =cut
 
 ######################################################################
 
 package Rosetta::Schema::DataType;
 require 5.004;
-
-# Copyright (c) 1999-2003, Darren R. Duncan.  All rights reserved.  This module
-# is free software; you can redistribute it and/or modify it under the same terms
-# as Perl itself.  However, I do request that this copyright information and
-# credits remain attached to the file.  If you modify this module and
-# redistribute a changed version then please attach a note listing the
-# modifications.  This module is available "as-is" and the author can not be held
-# accountable for any problems resulting from its use.
-
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.02';
+$VERSION = '0.021';
 
 ######################################################################
+
+=head1 COPYRIGHT AND LICENSE
+
+This file is part of the Rosetta database abstraction framework.
+
+Rosetta is Copyright (c) 1999-2003, Darren R. Duncan.  All rights reserved. 
+Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
+visit "http://www.DarrenDuncan.net" for more information.
+
+Rosetta is free software; you can redistribute it and/or modify it under the
+terms of the GNU General Public License (GPL) version 2 as published by the
+Free Software Foundation (http://www.fsf.org/).  You should have received a
+copy of the GPL as part of the Rosetta distribution, in the file named
+"LICENSE"; if not, write to the Free Software Foundation, Inc., 59 Temple
+Place, Suite 330, Boston, MA 02111-1307 USA.  
+
+Any versions of Rosetta that you modify and distribute must carry prominent
+notices stating that you changed the files and the date of any changes, in
+addition to preserving this original copyright notice and other credits. 
+Rosetta is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GPL for more details.
+
+Linking Rosetta statically or dynamically with other modules is making a
+combined work based on Rosetta.  Thus, the terms and conditions of the GPL
+cover the whole combination.
+
+As a special exception, the copyright holders of Rosetta give you permission to
+link Rosetta with independent modules that communicate with Rosetta solely
+through the "Driver" interface (because they are interfaces to or
+implementations of databases), regardless of the license terms of these
+independent modules, and to copy and distribute the resulting combined work
+under terms of your choice, provided that every copy of the combined work is
+accompanied by a complete copy of the source code of Rosetta (the version of
+Rosetta used to produce the combined work), being distributed under the terms
+of the GPL plus this exception.  An independent module is a module which is not
+derived from or based on Rosetta, and which is fully useable when not linked to
+Rosetta in any form.
+
+Note that people who make modified versions of Rosetta are not obligated to
+grant this special exception for their modified versions; it is their choice
+whether to do so.  The GPL gives permission to release a modified version
+without this exception; this exception also makes it possible to release a
+modified version which carries forward this exception.
+
+While it is by no means required, the copyright holders of Rosetta would
+appreciate being informed any time you create a modified version of Rosetta
+that you are willing to distribute, because that is a practical way of 
+suggesting improvements to the standard version.
 
 =head1 DEPENDENCIES
 
 =head2 Perl Version
 
-	5.004 (by intent; tested with 5.6)
+	5.004
 
 =head2 Standard Modules
 
@@ -420,26 +464,6 @@ sub valid_types {
 
 1;
 __END__
-
-=head1 AUTHOR
-
-Copyright (c) 1999-2003, Darren R. Duncan.  All rights reserved.  This module
-is free software; you can redistribute it and/or modify it under the same terms
-as Perl itself.  However, I do request that this copyright information and
-credits remain attached to the file.  If you modify this module and
-redistribute a changed version then please attach a note listing the
-modifications.  This module is available "as-is" and the author can not be held
-accountable for any problems resulting from its use.
-
-I am always interested in knowing how my work helps others, so if you put this
-module to use in any of your own products or services then I would appreciate
-(but not require) it if you send me the website url for said product or
-service, so I know who you are.  Also, if you make non-proprietary changes to
-the module because it doesn't work the way you need, and you are willing to
-make these freely available, then please send me a copy so that I can roll
-desirable changes into the main release.
-
-Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>.
 
 =head1 SEE ALSO
 
