@@ -16,9 +16,10 @@ CONTENTS
 PREFACE
 
 The "Rosetta" distribution features mainly the Perl 5 modules named "Rosetta",
-"Rosetta::Schema/::*", and "Rosetta::Engine/::*", but also some related modules
-like "Rosetta::Driver" and "Rosetta::Driver::Native".  These constitute the
-"core" of the Rosetta framework, for RDBMS-generic apps and schemas.
+"Rosetta::Schema/::*", "Rosetta::Engine/::*", and "Rosetta::Locale/::*", but
+also some related modules like "Rosetta::Driver" and "Rosetta::Driver::Native".
+ These constitute the "core" of the Rosetta framework, for RDBMS-generic apps
+and schemas.  In addition, there are several documentation-only files.
 
 To get the most out of Rosetta, please also install the "Rosetta-Drivers"
 distribution, which includes RDBMS-specific glue that adapts Rosetta to work
@@ -38,7 +39,8 @@ All of my modules have complete POD inside of them, so please refer to that for
 a description of module-specific details such as their method APIs.  The file
 "lib/Rosetta/Framework.pod" contains the main POD documentation for the Rosetta
 framework taken as a whole, including the purpose and overall design structure
-of the distribution; it should be read first.
+of the distribution; it should be read first.  There is also the file 
+"lib/Rosetta/SimilarModules.pod" which compares Rosetta to other modules.
 
 This Read Me document concerns itself mainly with installation and support
 issues, and also includes any "To Do" lists.
@@ -101,10 +103,13 @@ this:
 
         use lib '/home/me/myperl5/lib';
 
-Then you would want to run the included test program to make sure the module is 
-installed correctly.  Call it with:
+Then you would want to run the included test programs to make sure the modules
+are installed correctly.  Call them like this:
 
         perl -w t/Rosetta.t
+        perl -w t/Rosetta-Schema-DataType.t
+        perl -w t/Rosetta-Schema-Table.t
+        perl -w t/Rosetta-Schema-View.t
 
 Any existing POD is embedded in the module itself.  The Makefile probably 
 extracted it for you in the usual manner, or you can run a POD extractor on it 
@@ -121,6 +126,8 @@ support issues later, so that users of my modules can help each other with them.
 TO DO
 
 	* Everything, more or less.
+	* See the file lib/Rosetta/Framework.pod for the planned time table; it is 
+	in the section "SCHEDULE FOR DEVELOPMENT".
 
 AUTHOR
 

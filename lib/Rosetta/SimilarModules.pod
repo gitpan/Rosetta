@@ -55,7 +55,7 @@ I<Note that this list is new and is mostly incomplete.>
 
 =head2 DBI and DBD::*
 
-Module List - DBI Core Framework:
+Module List - DBI Core Framework (release 1.35; 2003 Mar 07):
 
 	Name            DSLIP Description                                  Info
 	------------    ----- -------------------------------------------- ----
@@ -132,7 +132,7 @@ Module List - Official DBI Driver Extensions (in their own distributions):
 
 =head2 Alzabo
 
-Module List:
+Module List (release 0.70; 2002 Nov 21):
 
 	Name               DSLIP Description                                  Info
 	------------       ----- -------------------------------------------- ----
@@ -172,7 +172,7 @@ Module List:
 
 	Alzabo::ObjectCache::
 	::Sync                   Base class for syncing classes  
-	
+
 	Alzabo::ObjectCache::Store::
 	::BerkeleyDB             Cache objects in a BerkeleyDB file  
 	::LRU                    Make any storage module an LRU  
@@ -218,35 +218,35 @@ I<Note that this list is new and is mostly incomplete.>
 
 =head2 DBIx::SearchBuilder
 
-Module List:
+Module List (release 0.80; 2003 Mar 08):
 
 	Name            DSLIP Description                                  Info
 	------------    ----- -------------------------------------------- ----
 	DBIx::
 	::SearchBuilder ????? Perl extension for easy SQL SELECT Statement generation  JESSE
-	
+
 	DBIx::SearchBuilder::
 	::Handle              Perl extension which is a generic DBI handle
 	::Record              Perl extension for subclassing, so you can deal with a Record
-	
+
 	DBIx::SearchBuilder::Handle::
 	::Oracle              an oracle specific Handle object
 	::Pg
 	::mysql               a mysql specific Handle object
 	::mysqlPP
-	
+
 	DBIx::SearchBuilder::Record::
 	::Cachable
 
 =head2 SQL::Schema
 
-Module List:
+Module List (release 0.31; 2000 Apr 25):
 
 	Name         DSLIP Description                                  Info
 	------------ ----- -------------------------------------------- ----
 	SQL::
 	::Schema     bdpO? Convert a data dictionary to SQL statements  TODD
-	
+
 	SQL::Schema::
 	::Constraint       A constraint of a database table  
 	::Function         A function stored within the database  
@@ -270,7 +270,7 @@ I<Note that this list is new and is mostly incomplete.>
 
 =head2 DBIx::Abstract
 
-Module List:
+Module List (release 1.004; 2003 Feb 17):
 
 	Name       DSLIP Description                                  Info
 	---------- ----- -------------------------------------------- ----
@@ -279,7 +279,7 @@ Module List:
 
 =head2 DBIx::AnyDBD
 
-Module List:
+Module List (release 2.01; 2002 Sep 04):
 
 	Name      DSLIP Description                                  Info
 	--------- ----- -------------------------------------------- ----
@@ -296,7 +296,7 @@ Module List:
 
 =head2 DBIx::Browse
 
-Module List:
+Module List (release 2.09; 2002 Dec 10):
 
 	Name     DSLIP Description                                  Info
 	-------- ----- -------------------------------------------- ----

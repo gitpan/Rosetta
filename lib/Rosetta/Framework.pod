@@ -75,13 +75,13 @@ and any RDBMS).
 
 	#!/usr/bin/perl
 	use strict;
-	
+
 	&script_main();
-	
+
 	sub script_main {
 		my $base_url = 'http://'.($ENV{'HTTP_HOST'} || '127.0.0.1').$ENV{'SCRIPT_NAME'};
 		my ($curr_mode) = $ENV{'QUERY_STRING'} =~ m/mode=([^&]*)/;
-		
+
 		my $form_data_str = '';
 		read( STDIN, $form_data_str, $ENV{'CONTENT_LENGTH'} );
 		chomp( $form_data_str );
@@ -95,9 +95,9 @@ and any RDBMS).
 			$value =~ s/%([0-9a-fA-F]{2})/pack("c",hex($1))/ge;
 			$form_values{$key} = $value;
 		}
-		
+
 		my $fn_prefs = 'survey_prefs.pl';
-		
+
 		print
 			"Status: 200 OK\n",
 			"Content-type: text/html\n\n",
@@ -127,17 +127,17 @@ and any RDBMS).
 				(defined( $prefs ) ? "result not a hash ref, but '$prefs'" : 
 				$@ ? "compilation or runtime error of '$@'" : $!) );
 		}
-		
+
 		eval {
 			require Rosetta::Engine; # also compiles ...::* modules
 		};
 		if( $@ ) {
 			return( "Error: can't compile Rosetta::Engine/::* modules: $@" );
 		}
-		
+
 		my $engine = Rosetta::Engine->new();
 		$engine->throw_error( 0 ); # on error, ret result obj, do not throw exception
-	
+
 		my $dbh = $engine->execute_command( {
 			'type' => 'database_connect',
 			'args' => $prefs->{pdbi_connect_args}, # includes what driver to use
@@ -145,19 +145,19 @@ and any RDBMS).
 		if( $dbh->is_error() ) {
 			return( "Error: can't connect to database: ".$dbh->get_error() );
 		}
-		
+
 		my $html_output = &script_while_connected( $prefs, $dbh, $curr_mode, $form_values );
-		
+
 		my $rv = $dbh->execute_command( {
 			'type' => 'database_disconnect',
 		} );
 		if( $rv->is_error() ) {
 			return( "Error: can't disconnect from database: ".$rv->get_error() );
 		}
-		
+
 		return( $html_output );
 	}
-	
+
 	sub script_while_connected {
 		my ($prefs, $dbh, $curr_mode, $form_values) = @_;
 
@@ -167,7 +167,7 @@ and any RDBMS).
 		}
 
 		my $dd_table = Rosetta::Schema::Table->new( 'survey_data' );
-		
+
 		foreach my $question (@{$questions}) {
 			unless( ref( $question ) eq 'HASH' and $question->{visible_title} ) {
 				return( "Error: invalid question defined in prefs file" );
@@ -182,25 +182,25 @@ and any RDBMS).
 		if( $curr_mode eq 'install' ) {
 			return( &script_do_install( $dbh, $dd_table, $questions, $form_values ) );
 		}
-		
+
 		if( $curr_mode eq 'remove' ) {
 			return( &script_do_remove( $dbh, $dd_table, $questions, $form_values ) );
 		}
-		
+
 		if( $curr_mode eq 'fillin' ) {
 			return( &script_do_fillin( $dbh, $dd_table, $questions, $form_values ) );
 		}
-		
+
 		if( $curr_mode eq 'report' ) {
 			return( &script_do_report( $dbh, $dd_table, $questions, $form_values ) );
 		}
-		
+
 		return( "This is a simple demo.  Click on the menu items to do them." );
 	}
-	
+
 	sub script_to_install {
 		my ($dbh, $dd_table, $questions, $form_values) = @_;
-		
+
 		unless( $form_values->{OK} ) {  
 			# user is seeing screen for first time (did not click 'OK' button)
 			return( join( "", 
@@ -212,21 +212,21 @@ and any RDBMS).
 				"</ol>\n",
 			) );
 		}
-		
+
 		# user saw screen and clicked the 'OK' button, so try to install;
 		# the following makes a Command of type 'table_create' and executes it
-		
+
 		my $rv = $dbh->execute_command( $dd_table->new_command_create() );
 		if( $rv->is_error() ) {
 			return( "Error: can't create survey table: ".$rv->get_error() );
 		}
-		
+
 		return( "The new schema was successfully created." );
 	}
-	
+
 	sub script_to_remove {
 		my ($dbh, $dd_table, $questions, $form_values) = @_;
-		
+
 		unless( $form_values->{OK} ) {  
 			# user is seeing screen for first time (did not click 'OK' button)
 			return( join( "", 
@@ -238,21 +238,21 @@ and any RDBMS).
 				"</ol>\n",
 			) );
 		}
-		
+
 		# user saw screen and clicked the 'OK' button, so try to destroy;
 		# the following makes a Command of type 'table_destroy' and executes it
-		
+
 		my $rv = $dbh->execute_command( $dd_table->new_command_destroy() );
 		if( $rv->is_error() ) {
 			return( "Error: can't remove survey table: ".$rv->get_error() );
 		}
-		
+
 		return( "The new schema was successfully removed." );
 	}
-	
+
 	sub script_to_fillin {
 		my ($dbh, $dd_table, $questions, $form_values) = @_;
-	
+
 		unless( $form_values->{OK} ) {  
 			# user is seeing screen for first time (did not click 'OK' button)
 			return( join( "", 
@@ -265,7 +265,7 @@ and any RDBMS).
 					} @{$questions}),
 			) );
 		}
-		
+
 		# user saw screen and clicked the 'OK' button, so try to destroy;
 		# the following makes a Command of type 'data_insert' and executes it
 		my $dd_view = Rosetta::Schema::Table->new( $dd_table );
@@ -273,13 +273,13 @@ and any RDBMS).
 		if( $rv->is_error() ) {
 			return( "Error: can't save form values in database: ".$rv->get_error() );
 		}
-		
+
 		return( "Your form submission was saved successfully." );
 	}
-	
+
 	sub script_to_report {
 		my ($dbh, $dd_table, $questions, $form_values) = @_;
-		
+
 		# the following makes a Command of type 'data_select' and executes it
 		my $dd_view = Rosetta::Schema::Table->new( $dd_table );
 		my $cursor = $dbh->execute_command( $dd_view->new_command_select() );
@@ -305,7 +305,7 @@ and any RDBMS).
 			);
 		}
 		push( @html_output, "</table>\n" );
-		
+
 		return( join( "", @html_output ) );
 	}
 
@@ -540,7 +540,8 @@ all of these exist yet, as they are being implemented over time.
 	Rosetta (a placeholder in the public eye for the whole framework; a shim)
 
 	Rosetta::Framework (POD only, holds main framework documentation)
-	
+	Rosetta::SimilarModules (POD only, compares and contrasts Rosetta with other modules)
+
 	Rosetta::Locale (constant data resources, user-readable text base class, allows var subst)
 	Rosetta::Locale::en (English localization)
 	Rosetta::Locale::fr (French localization)
@@ -591,9 +592,9 @@ all of these exist yet, as they are being implemented over time.
 =head2 In unknown distributions
 
 	Rosetta::* ... who knows ...
-	
+
 	Rosetta::Adapter::* ... I like the name so it might be used for something
-	
+
 	RosettaX::* ... unofficial extensions or wrappers to Rosetta are allowed here ...
 
 =head1 SCHEDULE FOR DEVELOPMENT
@@ -1065,16 +1066,16 @@ Here are the component definitions, not quite complete:
 
 	<database> := DATABASE 
 		HAS (<namespace>{0,})
-	
+
 	<namespace> := NAMESPACE 
 		ID (<entity-id>) 
 		HIERARCHY (<entity-id>{0,2})  # eg: Oracle user/schema name, db instance name
 		HAS (<schema-object>{0,})
-	
+
 	<entity-id> := ...  # scalar value: either an alphanumeric string or an integer
-	
+
 	<schema-object> := (<table>|<sequence>|<view>|<procedure>|<trigger>)
-	
+
 	<table> := TABLE 
 		ID (<table-id>)
 		COLUMNS (<table-column>{1,})
@@ -1088,7 +1089,7 @@ Here are the component definitions, not quite complete:
 		TYPE (<data-type>)
 		[IS REQUIRED (<boolean>)]  # results in NOT NULL if true; NULL if false
 		[DEFAULT (<column-default>)]
-	
+
 	<column-id> := <entity-id>
 
 	<data-type> := 
@@ -1101,54 +1102,54 @@ Here are the component definitions, not quite complete:
 	<data-size> := ...  # an integer; if not given, has default val based on <base-type>
 
 	<boolean> := (false|true)  # alternately 0 = false; 1 = true
-	
+
 	<column-default> := ((LITERAL (<literal-value>))|(SEQUENCE (<sequence-value>)))
-	
+
 	<literal-value> :=  # any string or numerical value
-	
+
 	<sequence-value> := ...  # not defined yet
 
 	<unique-key> :=  
 		ID (<entity-name>)
 		HAS (<column-id>{1,})
-	
+
 	<foreign-key> :=  
 		ID (<entity-name>)
 		HAS (<column-id>{1,})
 		SOURCE TABLE (<table-name>)
 		SOURCE COLS (<column-id>{1,})
-	
+
 	<sequence> := ...  # not defined yet
-	
+
 	<view> := ...  # not defined yet
-	
+
 	<procedure> := ...  # not defined yet
 
 	<trigger> := ...  # not defined yet
-	
+
 	<select> := SELECT
 		INTERFACE (<column-declaration>{1,})
 		FROM (<select-from>)  # does not select from Views, only tables and literals
-	
+
 	<column-declaration> := 
 		ID (<column-id>) 
 		TYPE (<data-type>)
-	
+
 	<select-from> := (<literal-row>|<source-union>|<source-table>|<source-join>)
-	
+
 	<literal-row> := LITERAL ((<column-id> IS <literal-value>){1,})
-	
+
 	<source-union> := UNION (<select-from>{1,})  # members are selects with same interface
-	
+
 	<source-table> := TABLE 
 		ID (<table-id>)
 		IMPLEMENTATION ((<column-declaration> IS <fomula-node>){1,})
 		[WHERE (<formula-node>)]  # formula-node must return a boolean value
 		[GROUP (<column-declaration>{1,})]  # to expand with formulas
 		[ORDER (<column-declaration>{1,})]  # to expand with formulas
-	
+
 	<formula-node> := ((LITERAL <literal-value>)|(COLUMN <column-declaration>)|<formula>)
-		
+
 	<formula> :=
 		TYPE (<formula-type>)
 		[ARGS (<formula-node>{1,})]  # required when arg-count is greater than zero
@@ -1169,9 +1170,9 @@ Here are the component definitions, not quite complete:
 		[WHERE (<formula-node>)]  # formula-node must return a boolean value
 		[GROUP (<column-declaration>{1,})]  # to expand with formulas
 		[ORDER (<column-declaration>{1,})]  # to expand with formulas
-	
+
 	<alias-id> := <entity-id>
-	
+
 	<join-relation> := RELATION
 		TYPE (equal|left)
 		LHS TABLE (<alias-id>)
@@ -1193,7 +1194,7 @@ This stuff is an older draft of the previous section, in a way.
 		calc_type (means 'function name'; eg: sum, concat, and, or, ifnull, switch/choose/decode)
 		data_type -> data_type (for function output)
 		arg_count (int; number of function inputs; null means open-ended, like for 'concat')
-	
+
 	matrix (interface)
 		matrix_id
 		is_table (means 'is named', 'is stored in rdbms', 'has constraints', 'is not select or view')
@@ -1203,7 +1204,7 @@ This stuff is an older draft of the previous section, in a way.
 		is_join (means 'each column from exactly one source', 'each row from one or more sources')
 		is_unique (means 'is distinct' or 'group by all cols' or 'no two rows ident for every col')
 		seq_num (if necessary)
-	
+
 	matrix_col (interface)
 		matrix_col_id
 		matrix_id -> matrix
@@ -1214,39 +1215,39 @@ This stuff is an older draft of the previous section, in a way.
 
 	schema
 		schema_name
-	
+
 	matrix_stored (used when 'is table' or 'is view')
 		matrix_id -> matrix
 		schema_name -> schema
 		matrix_name (either table name or view name or some temporary unique thing)
-		
+
 	matrix_stored_col (used when 'is table')
 		matrix_col_id -> matrix_col
 		is_req (means 'is not null')
-	
+
 	matrix_union (used when 'is union')
 		matrix_id -> matrix (output/parent)
 		source_id -> matrix (input/child)
 		seq_num (if necessary)
-	
+
 	matrix_hierarchy (used when 'is hierarchy'; may need split if multi cols in relation)
 		matrix_id -> matrix (output/parent)
 		self_col_id -> matrix_col (eg: the primary key)
 		parent_col_id -> matrix_col (eg: the primary key of the parent record)
-	
+
 	matrix_join_src (used when 'is join')
 		matrix_id -> matrix (output/parent)
 		source_alias (name to use in 'from matrix_name as alias_name'
 		source_id -> matrix (input/child)
 		seq_num (if necessary)
-	
+
 	matrix_join_rel (used when 'is join' and more than one matrix_join_src)
 		matrix_id -> matrix (output/parent)
 		is_equal_join (means 'is not left join' and 'is not outer join')
 		is_left_join (means 'is not equal join' or 'is outer join?')
 		lhs_src_alias -> matrix_join_src (all rows are returned on left join)
 		rhs_src_alias -> matrix_join_src (rows may be missing on left join)
-	
+
 	matrix_calc_node (used when not 'is table')
 		calc_id
 		matrix_id -> matrix (used by node tree that is in)
@@ -1255,11 +1256,11 @@ This stuff is an older draft of the previous section, in a way.
 		source_alias_name -> matrix_join_src (set if leaf, retval from col and not literal)
 		source_col_id -> matrix_col (set if leaf, retval from col and not literal)
 		literal_value (set if leaf, retval is literal and not col)
-	
+
 	matrix_view_col (used when not 'is table')
 		matrix_col_id -> matrix_col (used in)
 		matrix_calc -> matrix_calc_node (root node of column calculation tree)
-	
+
 	matrix_where (used when not 'is table')
 		matrix_id -> matrix (used in)
 		matrix_calc -> matrix_calc_node (root node of where-clause calc tree; must return boolean)
@@ -1271,14 +1272,14 @@ This stuff is an older draft of the previous section, in a way.
 	schema
 		cols
 			schema_name - type=entitynm; req=1; ukey=primary
-	
+
 	table
 		cols
 			schema_name - type=entitynm; req=1; ukey=primary
 			table_name - type=entitynm; req=1; ukey=primary
 		fkeys
 			fk_schema - table=schema; cols=schema_name
-	
+
 	table_col
 		cols
 			schema_name - type=entitynm; req=1; ukey=primary
@@ -1291,7 +1292,7 @@ This stuff is an older draft of the previous section, in a way.
 		fkeys
 			fk_table - table=table; cols=schema_name,table_name
 			fk_data_type - table=data_type; cols=data_type 
-	
+
 	table_ukey
 		cols
 			schema_name - type=entitynm; req=1; ukey=primary
@@ -1299,7 +1300,7 @@ This stuff is an older draft of the previous section, in a way.
 			ukey_name - type=entitynm; req=1; ukey=primary
 		fkeys
 			fk_table - table=table; cols=schema_name,table_name
-	
+
 	table_ukey_col
 		cols
 			schema_name - type=entitynm; req=1; ukey=primary
@@ -1309,7 +1310,7 @@ This stuff is an older draft of the previous section, in a way.
 		fkeys
 			fk_table_ukey - table=table_ukey; cols=schema_name,table_name,ukey_name
 			fk_table_col - table=table_col; cols=schema_name,table_name,table_col
-	
+
 	table_fkey
 		cols
 			schema_name - type=entitynm; req=1; ukey=primary
@@ -1320,7 +1321,7 @@ This stuff is an older draft of the previous section, in a way.
 		fkeys
 			fk_table - table=table; cols=schema_name,table_name
 			fk_f_table - table=table; cols=f_schema_name(schema_name),f_table_name(table_name)
-	
+
 	table_fkey_col
 		cols
 			schema_name - type=entitynm; req=1; ukey=primary
@@ -1345,7 +1346,7 @@ This stuff is an older draft of the previous section, in a way.
 			fk_schema - table=schema; cols=schema_name
 			fk_join_type - table=join_type; cols=join_type
 			fk_union_type - table=union_type; cols=union_type
-	
+
 	view_col - desc column set of result; in case of unions, describes output of all source subselects or tables
 		cols
 			schema_name - type=entitynm; req=1; ukey=primary
@@ -1353,7 +1354,7 @@ This stuff is an older draft of the previous section, in a way.
 			view_col - type=entitynm; req=1; ukey=primary
 		fkeys
 			fk_view - table=view; cols=schema_name,view_name
-	
+
 	view_src - for subselects or tables in joins or unions or where_condition
 		cols
 			schema_name - type=entitynm; req=1; ukey=primary
@@ -1366,7 +1367,7 @@ This stuff is an older draft of the previous section, in a way.
 			fk_view - table=view; cols=schema_name,view_name
 			fk_s_table - table=table; cols=s_schema_name(schema_name),s_table_name(table_name)
 			fk_s_view - table=view; cols=s_schema_name(schema_name),s_view_name(view_name)
-	
+
 	view_src_col - for subselects or tables in joins or unions or where_condition
 		cols
 			schema_name - type=entitynm; req=1; ukey=primary
@@ -1401,7 +1402,7 @@ This stuff is an older draft of the previous section, in a way.
 			fk_parent - table=view_col_def; cols=parent_col_def_id(col_def_id)
 			fk_def_view_col - table=view_col; cols=def_schema_name(schema_name),def_view_name(view_name),def_view_col(view_col)
 			fk_def_view_col - table=view_src_col; cols=col_schema_name(schema_name),col_view_name(view_name),col_src_name(src_name)
-	
+
 	view_join_def - not needed for unions; used with joins
 
 	view_filter_def - not needed for unions (subquery does it); used with joins
@@ -1409,7 +1410,7 @@ This stuff is an older draft of the previous section, in a way.
 	view_grouping_def - not needed for unions (subquery does it); used with joins
 
 	view_ordering_def - not needed for unions (subquery does it if necessary); used with joins
-	
+
 	... um ... stuff ...
 
 =head1 AUTHOR

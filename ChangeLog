@@ -1,3 +1,23 @@
+2003-03-09   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.061.
+
+	* This is a small bugfix release that mainly is for fixing documentation.  
+	A lot of it was formatting issues that was easy to miss before; the other 
+	bullet points below list the non-formatting issues.  These files 
+	had formatting fixes: Framework.pod, SimilarModules.pod, ChangeLog.
+
+	* Updated these sections in "ReadMe": PREFACE, INSTALLATION, TO DO.
+
+	* Updated BRIEF MODULE LIST in Framework.pod to add SimilarModules.pod.
+
+	* Updated SimilarModules.pod so that each module list shown for other
+	people's frameworks includes the framework release version and date for
+	which I was looking at them, so it is easier to validate my information.
+
+	* Updated Rosetta.pm (now at v0.061) replacing references to
+	"Rosetta::Framework.pod" with "lib/Rosetta/Framework.pod".
+
 2003-03-08   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.06.
@@ -69,7 +89,7 @@
 2003-02-10   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.04.
-	
+
 	* The file Documentation.pod was renamed to Framework.pod; that file's
 	internal name as declared in the POD is Rosetta::Framework; the file was
 	also moved into lib/Rosetta/; any references to this file in other files
@@ -148,9 +168,9 @@
 	left out some significant parts due to time constraints), and several new
 	sections on framework design.  In particular, the structure of the
 	internally used "schema" was fleshed out.  
-	
+
 	* These were the main sections with updates:
-	
+
 		- ABSTRACT - new section
 		- SYNOPSIS - expanded to a complete Perl script with config file
 		- DESCRIPTION - several more paragraphs added
@@ -161,9 +181,9 @@
 		- ROSETTA NATIVE DATA DICTIONARY STRUCTURE - new section
 		- A BASIC TABLE STRUCTURE FOR STORING ROSETTA SCHEMAS - new section
 		- MODULE DETAILS
-	
+
 	* These other sections had little or no updates:
-	
+
 		- NAME
 		- PREFACE
 		- DEPENDENCIES
@@ -171,7 +191,7 @@
 		- MODULE DETAILS
 		- AUTHOR
 		- SEE ALSO
-	
+
 	* Generally speaking, this release should be a lot better than the previous
 	one, although there are still large gaps or sections needing improving.
 	Subsequent releases will probably start including a code implementation,
@@ -180,7 +200,7 @@
 2003-01-21   Darren Duncan <perl@DarrenDuncan.net>
 
 	The next version of the Module List will list the following module:
-	
+
 	  modid:       Rosetta
 	  DSLIP:       cdpOp
 	  description: Framework for RDBMS-generic apps and schemas
@@ -188,9 +208,9 @@
 	  chapterid:    7 (Database_Interfaces)
 	  enteredby:   ANDK (Andreas J. Kšnig)
 	  enteredon:   Tue Jan 21 08:20:47 2003 GMT
-	
+
 	The resulting entry will be:
-	
+
 	Rosetta           cdpOp Framework for RDBMS-generic apps and schemas DUNCAND
 
 2003-01-05 thru 2003-01-19   Darren Duncan <perl@DarrenDuncan.net>
@@ -213,7 +233,7 @@
 
 	* On January 9th, a module registration request was sent to
 	modules@perl.org for "Rosetta".  
-	
+
 	* On January 19th, a follow up to that request was sent which had a much 
 	better description of what the framework would do, taken from its brand 
 	new "ABSTRACT" POD, part of 0.02 in development.
@@ -239,7 +259,7 @@
 	initial titles of DBIx::Portable and DBIx::Portable::*.  The modules are to
 	comprise an RDBMS-generic DB framework for any application to use.  This
 	development effort was discussed with the victoria.pm Perl Mongers group.
-	
+
 	* Modules based on a template created by h2xs 1.18.
 
 2002-07-28
