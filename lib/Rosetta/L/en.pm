@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 ######################################################################
 
@@ -116,9 +116,6 @@ my %text_strings = (
 	'ROS_I_NEW_INTF_NODE_TYPE_NOT_SUPP' =>
 		"new(): the given SSM_NODE argument, having a Node Type of '{NTYPE}', ".
 		"can not be associated with a '{ITYPE}' Interface",
-	'ROS_I_NEW_INTF_NODE_CMD_TYPE_NOT_SUPP' =>
-		"new(): the given SSM_NODE 'command' Node argument, having a command ".
-		"type of '{CTYPE}', can not be associated with a '{ITYPE}' Interface",
 
 	'ROS_I_DESTROY_HAS_CHILD' => 
 		"destroy(): this Interface has child Interfaces of its ".
@@ -135,6 +132,19 @@ my %text_strings = (
 		"prepare(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
 		"did not return a Rosetta::Interface object, but rather: '{VALUE}'",
 
+	'ROS_I_PREPARE_CTYPE_NOT_IMPL' =>
+		"prepare(): the '{CTYPE}' Command Type is not implemented for 'application' Interfaces",
+	'ROS_I_PREPARE_ROUTINES_NOT_IMPL' =>
+		"prepare(): Routine commands are not implemented for 'application' Interfaces",
+	'ROS_I_PREPARE_INTERR_BAD_NTYPE' =>
+		"prepare(): Internal Error: somehow a '{NTYPE}' SSM Node was allowed in ".
+		"as a command for 'application' Interfaces; this should never happen",
+
+	'ROS_I_PREPARE_ENGINE_NO_LOAD' =>
+		"prepare(): the Engine class '{NAME}' failed to load: {ERR}",
+	'ROS_I_PREPARE_ENGINE_NO_ENGINE' =>
+		"prepare(): the class '{NAME}' does not sub-class Rosetta::Engine so it is not a valid Engine class",
+
 	'ROS_I_EXECUTE_BAD_ARG' =>
 		"execute(): invalid BIND_VARS argument; it must be a hash ref if ".
 		"it is defined, but you tried to set it to '{ARG}'",
@@ -150,11 +160,6 @@ my %text_strings = (
 
 	'ROS_E_METH_NOT_IMPL' =>
 		"{METH}(): this method is not implemented by the Rosetta '{CLASS}' Engine class",
-
-	'ROS_G_ENGINE_NO_LOAD' =>
-		"the Engine class '{NAME}' failed to load: {ERR}",
-	'ROS_G_ENGINE_NO_ENGINE' =>
-		"the class '{NAME}' does not sub-class Rosetta::Engine so it is not a valid Engine class",
 );
 
 ######################################################################

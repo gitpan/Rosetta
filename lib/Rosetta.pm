@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.12';
+$VERSION = '0.13';
 
 use Locale::KeyedText 0.03;
 use SQL::SyntaxModel 0.15;
@@ -130,37 +130,8 @@ my $SSMNTP_LINKPRD = 'data_link_product';
 my $SSMNTP_COMMAND = 'command';
 my $SSMNTP_ROUTINE = 'routine';
 
-# These are SQL::SyntaxModel-recognized Command Types and allowed contexts:
-my %SSM_CMD_PREP_CNTXTS = (
-	$INTFTP_APPLICATION => {map { ($_ => 1) } qw(
-		DB_LIST DB_INFO DB_VERIFY DB_CREATE DB_DELETE DB_CLONE DB_MOVE
-		DB_OPEN 
-	)},
-	$INTFTP_ENVIRONMENT => {map { ($_ => 1) } qw(
-		DB_LIST DB_INFO DB_VERIFY DB_CREATE DB_DELETE DB_CLONE DB_MOVE
-		DB_OPEN 
-	)},
-	$INTFTP_CONNECTION => {map { ($_ => 1) } qw(
-		DB_CLOSE 
-		DB_PING DB_ATTACH DB_DETACH 
-		TRA_OPEN 
-	)},
-	$INTFTP_TRANSACTION => {map { ($_ => 1) } qw(
-		TRA_CLOSE
-		TABLE_LIST TABLE_INFO TABLE_VERIFY
-		TABLE_CREATE TABLE_DELETE TABLE_CLONE TABLE_UPDATE
-		VIEW_LIST VIEW_INFO VIEW_VERIFY
-		VIEW_CREATE VIEW_DELETE VIEW_CLONE VIEW_UPDATE
-		ROUTINE_LIST ROUTINE_INFO ROUTINE_VERIFY 
-		ROUTINE_CREATE ROUTINE_DELETE ROUTINE_CLONE ROUTINE_UPDATE
-		USER_LIST USER_INFO USER_VERIFY
-		USER_CREATE USER_DELETE USER_CLONE USER_UPDATE USER_GRANT USER_REVOKE
-		REC_FETCH 
-		REC_VERIFY REC_INSERT REC_UPDATE 
-		REC_DELETE REC_REPLACE REC_CLONE REC_LOCK REC_UNLOCK
-		CALL_PROC CALL_FUNC
-	)},
-);
+# These are SQL::SyntaxModel-recognized Command Types 
+# that the Rosetta core explicitely deals with:
 my $SSM_CMDTP_DB_OPEN = 'DB_OPEN';
 
 ######################################################################
@@ -360,15 +331,6 @@ sub _validate_ssm_node {
 			{ 'NTYPE' => $node_type, 'ITYPE' => $intf_type } );
 	}
 
-	if( $node_type eq $SSMNTP_COMMAND ) {
-		my $allowed_cmd_types = $SSM_CMD_PREP_CNTXTS{$intf_type};
-		my $cmd_type = $ssm_node->get_enumerated_attribute( 'command_type' );
-		unless( $allowed_cmd_types->{$cmd_type} ) {
-			$interface->_throw_error_message( 'ROS_I_NEW_INTF_NODE_CMD_TYPE_NOT_SUPP', 
-				{ 'CTYPE' => $cmd_type, 'ITYPE' => $intf_type } );
-		}
-	}
-
 	# $ssm_node seems to check out fine.
 }
 
@@ -531,12 +493,12 @@ sub _prepare_with_no_engine {
 			# Now repeat the command we ourselves were given against a specific Environment Interface.
 			$preparation = $environment->prepare( $command );
 		} else {
-			die "when no Engine, command not implemented yet";
+			$application->_throw_error_message( 'ROS_I_PREPARE_CTYPE_NOT_IMPL', { 'CTYPE' => $cmd_type } );
 		}
 	} elsif( $node_type eq $SSMNTP_ROUTINE ) {
-		die "when no Engine, routine not implemented yet";
+		$application->_throw_error_message( 'ROS_I_PREPARE_ROUTINES_NOT_IMPL' );
 	} else {
-		die "when no Engine, we should never get here";
+		$application->_throw_error_message( 'ROS_I_PREPARE_INTERR_BAD_NTYPE', { 'NTYPE' => $node_type } );
 	}
 	return( $preparation );
 }
@@ -556,11 +518,11 @@ sub _get_or_make_environment_preparation {
 		# a bare "require $engine_name;" yields "can't find module in @INC" error in Perl 5.6
 		eval "require $engine_name;";
 		if( $@ ) {
-			$application->_throw_error_message( 'ROS_G_ENGINE_NO_LOAD', 
+			$application->_throw_error_message( 'ROS_I_PREPARE_ENGINE_NO_LOAD', 
 				{ 'NAME' => $engine_name, 'ERR' => $@ } );
 		}
 		unless( UNIVERSAL::isa( $engine_name, 'Rosetta::Engine' ) ) {
-			$application->_throw_error_message( 'ROS_G_ENGINE_NO_ENGINE', 
+			$application->_throw_error_message( 'ROS_I_PREPARE_ENGINE_NO_ENGINE', 
 				{ 'NAME' => $engine_name } );
 		}
 		my $engine = $engine_name->new();
@@ -1088,7 +1050,7 @@ be conceptually thought of as implementing an embedded SQL database;
 alternately, it is a command interpreter.  This module is implemented with 2
 main classes that work together, which are "Interface" and "Engine".  To use
 Rosetta, you first create a root Interface object (or several; one is normal)
-using Rosetta->new_interface(), which provides a context in which you can
+using Rosetta->new_application(), which provides a context in which you can
 prepare and execute commands against a database or three.  One of your first
 commands is likely to open a connection to a database, during which you
 associate a separately available Engine plug-in of your choice with said
@@ -1110,17 +1072,20 @@ is typically spawned which represents the results of your command, be it an
 error condition or a database connection handle or a transaction context handle
 or a select cursor handle or a miscellaneous returned data container.  Each
 Interface object has a "type" property which says what kind of thing it
-represents and how it behaves.  All Interface types have a "get_error_message()" method
-but only a cursor type, for example, has a "fetch_row()" method.  For
-simplicity, all Interface objects are explicitly defined to have all possible
-Interface methods (no "autoload" et al is used); however, an inappropriately
-called method will throw an exception saying so, so it is as if Perl had a
-normal run-time error due to calling a non-existent method.
+represents and how it behaves.  All Interface types have a
+"get_error_message()" method but only a cursor type, for example, has a
+"fetch_row()" method.  For simplicity, all Interface objects are explicitly
+defined to have all possible Interface methods (no "autoload" et al is used);
+however, an inappropriately called method will throw an exception saying so, so
+it is as if Perl had a normal run-time error due to calling a non-existent
+method.
 
 Each Interface object may also have its own Engine object associated with it 
 behind the scenes, with all the Engine objects in a mirroring tree structure; 
 but that may not always be true.  One example is right when you start out, or 
-if you try to open a database connection using a non-existent Engine module.
+if you try to open a database connection using a non-existent Engine module.  
+Specifically, both Application Interfaces and Error Interfaces never have 
+their own associated Engine; every other type of Interface must have one.
 
 This diagram shows all of the Interface types and how they are allowed to 
 relate to each other parent-child wise in an Interface tree:
@@ -1399,11 +1364,12 @@ Interface methods, which just turn around and call them.  Every Engine method
 takes as its first argument a reference to the Interface object that it is
 implementing (the Interface shim provides it); otherwise, each method's
 argument list is the same as its same-named Interface method.  These are the
-methods: destroy(), prepare(), execute(), finalize(), has_more_rows(),
-fetch_row(), fetch_all_rows().  Every Engine must also implement a new() method
-which will be called in the form [class-name-or-object-ref]->new() and must
-instantiate the Engine object; typically this is called by the parent Engine,
-which also makes the Interface for the new Engine.
+methods: destroy(), prepare(), execute(), get_supported_features(), finalize(),
+has_more_rows(), fetch_row(), fetch_all_rows().  Every Engine must also
+implement a new() method which will be called in the form
+[class-name-or-object-ref]->new() and must instantiate the Engine object;
+typically this is called by the parent Engine, which also makes the Interface
+for the new Engine.
 
 =head1 BUGS
 

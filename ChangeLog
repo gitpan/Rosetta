@@ -1,3 +1,37 @@
+2004-03-25   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.29.
+
+	* Updates in this release consist mainly of shunting some detail work out
+	of the 'Rosetta' distribution and towards the upcoming new
+	'Rosetta-Extensions' distribution.  The rationale is that
+	Rosetta-Extensions can then be released more frequently without requiring
+	corresponding Rosetta releases to maintain compatibility.  This is not to
+	say that some detail work won't be moved into the Rosetta core later, but
+	in the short term it seems best to keep it out.
+
+	* The new()/prepare() methods will no longer check that the Command Type of 
+	a given "command" SSM Node is appropriate for the Interface type; it is 
+	better, at least for now, that the Engine does this check.  However, if the 
+	invocant of prepare() is an 'application', then a more limited check is 
+	still done, since the Rosetta core itself needs to implement them.  Several 
+	small documentation fixes were also made in Rosetta.pm.
+
+	* Corresponding updates in Rosetta.pm (now v0.13) and en.pm (now v.0.04)
+	related mainly to the prepare() method; several hard-coded "die" were
+	replaced with proper localized exceptions; several other exceptions were
+	renamed or moved.
+
+	* Updated Framework.pod to mention some additions to Rosetta-Extensions;
+	for example, that distro will contain the localized generic database error
+	messages for Engines instead of Rosetta::L::en.  It will also contain the 
+	initial set of Rosetta::Validator modules.
+
+	* All details in the TODO file of 'Rosetta' have been moved to the TODO in
+	'Rosetta-Extensions', which is where they are relevant.  The TODO in
+	'Rosetta' now simply says to look over there; the 'Rosetta' core is
+	initially complete and most near-term work will now be in the other dist.
+
 2004-03-22   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.28.

@@ -433,16 +433,19 @@ I<Any indented package names represent inner classes of what they are beneath.>
 	
 =head2 In temporary distribution "Rosetta-Extensions"
 
-During the short term, these following 4 modules will have their first
+During the short term, these following modules will have their first
 versions, both v0.01 and several later, released all as part of a single
 distribution, Extensions.  The idea here is to keep down the number of
 distributions that are always being released in tandem, because each saw major
 changes in each update round.  Once these are modestly stable I will probably
 split them up such as is seen in the other module blocks, below.
 
+	Rosetta::Extensions (a small place-holder POD file to represent the distribution on CPAN)
+	Rosetta::Engine::L::en (a set of generic database error strings for engines, in English)
 	Rosetta::Engine::Generic (A catch-all Engine for any DBI-supported SQL database)
 	Rosetta::Utility::SQLBuilder (generate ANSI/ISO SQL-1999 and other SQL variants)
 	Rosetta::Utility::SQLParser (parse ANSI/ISO SQL-1999 and other SQL variants)
+	Rosetta::Validator (a common comprehensive test suite to run against all Engines)
 	Rosetta::Emulator::DBI (emulates DBI/DBD::*, but result is more portable)
 
 =head2 In distribution "Rosetta-Utilities" or a multiplicity of similarly named
