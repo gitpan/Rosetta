@@ -442,8 +442,8 @@ emulator would provide.
 =head1 STRUCTURE
 
 The modules composing the Rosetta framework are grouped into several main
-categories, which can be called: "Schema", "Engine", "Driver", "Emulator", and
-others.
+categories, which can be called: "Schema", "Engine", "Driver", "Locale",
+"Emulator", and others.
 
 These classes do not export any functions or methods, so you need to call them
 using object notation.  This means using B<Class-E<gt>function()> for functions
@@ -477,6 +477,18 @@ they can generate an RNI data dictionary from it when desired.  Nothing talks
 to an RDBMS product except a Driver module, and nothing talks to a driver
 module except the Engine modules.
 
+The Locale modules function as constant data resources, mainly holding
+user-readable text such as database error messages and so forth, so that this
+text is separate from normal module code and easy to edit.  These are part of
+the Rosetta core, and are used by the Engine and Driver modules.  There are
+multiple Locale files rather than just one partly so that each file can have a
+different localization; adding a new user language is as easy as adding another
+file.  The set of text strings being stored should be comprehensive enough that
+any Driver module can use them, and therefore not need their own Locale files
+for displaying error messages.  All strings are mapped to short codes (eg:
+'R001372'); these codes are what the normal module code uses to display a
+particular message.
+
 The Emulator modules are extensions that are purely optional for use, and they
 are intended to facilitate rapid adaption (hot-swapping) of Rosetta into an
 existing application that is already built around a different database
@@ -495,9 +507,9 @@ This briefly illustrates the relationship of the module groups:
 	          |
 	          |
 	        Driver--------------\
-	called by |   uses   used by \
-	          |                   \
-	  invokes |                    \
+	called by | | uses   used by \
+	          | Locale            \
+	  invokes | |                  \
 	        Engine--------------Schema
 	called by | \ uses   used by /  |
 	          |  \              /   |
@@ -520,13 +532,19 @@ the main APPLICATION will still always go through Engine.
 
 Note that the exact module names and descriptions listed within each grouping
 are an older draft and are subject to near-future revisions or rewrites,
-including addition of more modules or removal of some existing ones.
+including addition of more modules or removal of some existing ones.  Also, not 
+all of these exist yet, as they are being implemented over time.
 
 =head2 In distribution "Rosetta"
 
 	Rosetta (a placeholder in the public eye for the whole framework; a shim)
 
 	Rosetta::Framework (POD only, holds main framework documentation)
+	
+	Rosetta::Locale (constant data resources, user-readable text base class, allows var subst)
+	Rosetta::Locale::en (English localization)
+	Rosetta::Locale::fr (French localization)
+	Rosetta::Locale::* ... like German, Spanish, Dutch, Chinese, etc
 
 	Rosetta::Schema (represents one database schema; owned by one database user)
 	Rosetta::Schema::DataType (metadata for individual atomic or scalar values)
@@ -1401,106 +1419,11 @@ This stuff is an older draft of the previous section, in a way.
 
 =head1 MODULE DETAILS
 
-Below is some more detailed documentation for a few classes, as they have been 
-written.  These are by no means complete and are subject to change.
-
-=head2 Rosetta::Schema::DataType
-
-This Schema module is a Schema class that describes a simple data type, which
-serves as meta-data for a single scalar unit of data, or a column whose members
-are all of the same data type, such as is in a regular database table or in
-row-sets read from or to be written to one.  This class would be used both when
-manipulating database schema and when manipulating database data.  
-
-Here is some sample code for defining common data types with this class:
-
-	my %data_types = map { 
-			( $_->{name}, Rosetta::Schema::DataType->new( $_ ) ) 
-			} (
-		{ 'name' => 'boolean', 'base_type' => 'boolean', },
-		{ 'name' => 'byte' , 'base_type' => 'int', 'size' => 1, }, #  3 digits
-		{ 'name' => 'short', 'base_type' => 'int', 'size' => 2, }, #  5 digits
-		{ 'name' => 'int'  , 'base_type' => 'int', 'size' => 4, }, # 10 digits
-		{ 'name' => 'long' , 'base_type' => 'int', 'size' => 8, }, # 19 digits
-		{ 'name' => 'float' , 'base_type' => 'float', 'size' => 4, },
-		{ 'name' => 'double', 'base_type' => 'float', 'size' => 8, },
-		{ 'name' => 'datetime', 'base_type' => 'datetime', },
-		{ 'name' => 'str4' , 'base_type' => 'str', 'size' =>  4, 'store_fixed' => 1, },
-		{ 'name' => 'str10', 'base_type' => 'str', 'size' => 10, 'store_fixed' => 1, },
-		{ 'name' => 'str30', 'base_type' => 'str', 'size' =>    30, },
-		{ 'name' => 'str2k', 'base_type' => 'str', 'size' => 2_000, },
-		{ 'name' => 'bin1k' , 'base_type' => 'binary', 'size' =>  1_000, },
-		{ 'name' => 'bin32k', 'base_type' => 'binary', 'size' => 32_000, },
-	);
-
-These are the main class properties:
-
-=over 4
-
-=item 0
-
-B<name> - This mandatory string property is a convenience for calling code or
-users to easily know when multiple pieces of data are of the same type.  Its
-main programatic use is for hashing DataType objects.  That is, if the same
-data type is used in many places, and those places don't want to have their own
-DataType objects or share references to one, they can store the 'name' string
-instead, and separately have a single DataType object in a hash to lookup when
-the string is encountered in processing.  Only the other class properties are
-what the Driver modules actually use when mapping the Schema data types to native
-RDBMS product data types.  This property is case-sensitive.
-
-=item 0
-
-B<base_type> - This mandatory string property is the starting point for Driver
-modules to map this data type to a native RDBMS product data type.  It is
-limited to a pre-defined set of values which are what any Rosetta
-modules should know about: 'boolean', 'int', 'float', 'datetime', 'str',
-'binary'.  More base types could be added later, but it should be possible to
-define what you want by setting other appropriate class properties along with
-one of the above base types.  This property is set case-insensitive but it is
-stored and returned in lower-case.
-
-=item 0
-
-B<size> - This integer property is recommended for use with all base_type
-values except 'boolean' and 'datetime', for which it has no effect.  With the
-base types of 'int' and 'float', it is the fixed size in bytes used to store a
-numerical data, which also determines the maximum storable number.  With the
-'binary' base_type, it is the maximum size in bytes that can be stored, but the
-actual size is only as large as the binary data being stored.  With the 'str'
-base_type, it is the maximum size in characters that can be stored, but the
-actual size is only as large as the string data being stored; however, if the
-boolean property 'store_fixed' is true then a fixed size of characters is
-always allocated even if it isn't filled, where possible.  If 'size' is not
-defined then it will default to 4 for 'int' and 'float', and to 250 for 'str'
-and 'binary'.  This behaviour may be changed to default to the largest value
-possible for the base data type in question, but that wasn't done because the
-maximum varies based on the implementing RDBMS product, and maximum may not be 
-what is usually desired.
-
-=item 0
-
-B<store_fixed> - This boolean property is optional for use with the 'str'
-base_type, and it has no effect for the other base types.  While string data is
-by default stored in a flexible and space-saving format (like 'varchar'), if
-this property is true, then the Driver modules will attempt to map to a fixed
-size type instead (like 'char') for storage.  With most database products,
-fixed-size storage is only applicable to fields with smaller size limits, such
-as 255 or less.  Setting this property won't necessarily change what value is
-stored or retrieved, but with some products the returned values may be padded
-with spaces.
-
-=back
-
-Other class properties may be added in the future where appropriate.  Some such
-properties can describe constraints that would apply to all data of this type,
-such as that it must match the format of a telephone number or postal code or
-ip address, or it has to be one of a specific set of pre-defined (not looked up
-in an external list) values; however, this functionality may be too advanced to
-do until later, or would be implemented elsewhere.  Other possible properties
-might be 'hints' for certain Drivers to use an esoteric native data type for
-greater efficiency or compatability. This class would be used both when
-manipulating database schema and when manipulating database data.
+Below is some more detailed documentation for a few classes, as they have been
+written.  Not all modules are listed.  If details for a module have been written 
+and don't appear here, then that module was implemented in code already, and it 
+is in its own file with complete POD therein.  This documentation section is 
+temporary and its contents will be moved to other files.
 	
 =head2 Rosetta::Schema::Table
 

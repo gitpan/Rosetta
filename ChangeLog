@@ -1,3 +1,35 @@
+2003-03-04   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.05.
+
+	* Created new file lib/Rosetta/Schema/DataType.pm which implements the
+	class Rosetta::Schema::DataType (v0.01); this is the first module to be
+	coded, and it is complete as of its first version.  The already written POD
+	for this class that was in Rosetta::Framework under the section MODULE
+	DETAILS has been removed from that file and put in the new file instead,
+	with updates.
+
+	* Added new file t/Rosetta-Schema-DataType.t, to completely test the newly
+	coded module.
+
+	* Updated lib/Rosetta.pm (now at v0.05) and t/Rosetta.t to add the "use
+	warnings" pragma at the top of each file beside "use strict"; the
+	previously mentioned two new files also have the added pragma, which should
+	save users from having to put -w on the command line for these modules.
+
+	* Updated Rosetta::Framework further, in the STRUCTURE and BRIEF MODULE
+	LIST sections, to add references to a new set of core modules,
+	Rosetta::Locale::*.  These are to function as constant data resources,
+	mainly holding user-readable text such as database error messages and so
+	forth, so that this text is separate from normal module code and easy to
+	edit.  This is a set of files partly so that each file can have a different
+	localization; adding a new user language is as easy as adding another file.
+	 The set of text strings being stored should be comprehensive enough that
+	any Driver module can use them, and therefore not need their own Locale
+	files for displaying error messages.  All strings are mapped to short codes
+	(eg: 'R001372'); these codes are what the normal module code uses to
+	display a particular message.
+
 2003-02-10   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.04.

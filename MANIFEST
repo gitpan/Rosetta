@@ -1,7 +1,9 @@
 ChangeLog
 lib/Rosetta.pm
 lib/Rosetta/Framework.pod
+lib/Rosetta/Schema/DataType.pm
 Makefile.PL
 MANIFEST
 ReadMe
 t/Rosetta.t
+t/Rosetta-Schema-DataType.t

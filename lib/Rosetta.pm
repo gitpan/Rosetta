@@ -18,8 +18,9 @@ require 5.004;
 # accountable for any problems resulting from its use.
 
 use strict;
+use warnings;
 use vars qw($VERSION);
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 ######################################################################
 
