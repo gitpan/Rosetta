@@ -11,7 +11,7 @@ require 5.004;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.031';
+$VERSION = '0.032';
 
 ######################################################################
 
@@ -1373,8 +1373,8 @@ sub add_node_attributes {
 	my %first_attrs = $type_info->{'first_attrs'} ? %{$type_info->{'first_attrs'}} : ();
 	# The idea is that attr names in the above hash are sorted before those that aren't.
 	# It makes sure dependant attrs are processed after what they depend on.
-	my @attr_name_list = !%first_attrs ? (keys %{$attrs}) : 
-		(sort { ($first_attrs{$b}||0) <=> ($first_attrs{$a}||0) } keys %{$attrs});
+	my @attr_name_list = !%first_attrs ? (sort keys %{$attrs}) : 
+		(sort { (($first_attrs{$b}||0) <=> ($first_attrs{$a}||0)) or ($b cmp $a) } keys %{$attrs});
 
 	foreach my $attr_name (@attr_name_list) {
 		my $attr_info = $type_info->{'attributes'}->{$attr_name};
@@ -1499,7 +1499,8 @@ sub get_child_nodes {
 		my $c_list = $self->{$PROP_CHILD_NODES}->{$node_type};
 		return( [$c_list ? @{$c_list} : ()] );
 	} else {
-		return( [map { @{$_} } values %{$self->{$PROP_CHILD_NODES}}] );
+		my $children = $self->{$PROP_CHILD_NODES};
+		return( [map { @{$children->{$_}} } sort keys %{$children}] );
 	}
 }
 
@@ -1534,7 +1535,7 @@ sub set_child_nodes {
 
 sub _unlink_all_child_nodes_recursive {
 	my ($self) = @_;
-	foreach my $node_type (keys %{$self->{$PROP_CHILD_NODES}}) {
+	foreach my $node_type (sort keys %{$self->{$PROP_CHILD_NODES}}) {
 		my $children_by_type = $self->{$PROP_CHILD_NODES}->{$node_type};
 		foreach my $child_to_remove (@{$children_by_type}) {
 			$child_to_remove->{$PROP_PARENT_NODE} = undef;
@@ -1639,7 +1640,7 @@ sub _get_all_properties {
 
 	my %attrs_out = ();
 	my %attrs_out_pnid = ();
-	foreach my $attr_name (keys %{$self->{$PROP_NODE_ATTRS}}) {
+	foreach my $attr_name (sort keys %{$self->{$PROP_NODE_ATTRS}}) {
 		my $attr_value = $self->{$PROP_NODE_ATTRS}->{$attr_name};
 		if( ref($attr_value) eq ref($self) ) {
 			if( $attr_value->{$PROP_PARENT_NODE} ) {

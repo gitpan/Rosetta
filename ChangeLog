@@ -1,3 +1,18 @@
+2003-07-11   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.152.
+
+	* The previous release failed to fix the test failure on CPAN's
+	"sun4-solaris 2.8" testbed (the test worked fine on 3 other platforms), and
+	so I have thought of another thing to change that might resolve it. 
+	Several places in SQL::ObjectModel where a hash was being iterated through
+	are now sorting the hash elements by key before using them, so serialized
+	data that would be affected by this should now look the same on platforms
+	where Perl uses a different hashing algorithm.  I should have thought of
+	this before (as I had on my other Perl distributions) but didn't.  If this
+	doesn't fix the problem on Solaris then I am open to suggestions. 
+	SQL::ObjectModel now is version 0.032; the test script now refers to that.
+
 2003-07-10   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.151.
