@@ -1,32 +1,18 @@
 ONE DEVELOPMENT TRACK
 
-r0.19 - Update SQL::SyntaxModel to not leave objects in a possibly inconsistant
-state when it throws exceptions on input errors; this wouldn't be a problem if
-the program died as usual, but it might if a programmer had caught the
-exception with an "eval" and then tried to use the object.  
+r0.20 - Create the Locale::KeyedText module and other Locale modules.  These
+will be needed by the other code modules.  In release 0.19 SQL::SyntaxModel
+contains code for invoking the prospective Locale::KeyedText, but that is
+commented out; this code will be enabled in 0.20.  The french language module
+will only contain mock text (to be replaced later) since I'm not fluent in
+non-english languages.
 
-- I will probably still use exceptions internally, but they will be caught by
-in-class caller methods where appropriate so that proper state clean-up can be
-done.  I will also split all of my publically-callable methods into a public
-wrapper and an internal work-doer.  The wrapper will either re-throw a clean
-exception, using croak() so the debugger points one to the external calling
-code, or it will just return undef on failure, first putting the input error
-message in an object property, as is the user's preference.  The property will
-be set anyway. I may make it a user-option to either just
-roll-back-to-nothingness the particular Node that caused the error, or roll
-back all the changes that the external call to the method had caused; the
-latter is probably what they would expect to happen.
-
-- Create the Locale::KeyedText module and other Locale modules.  These
-will be needed by the other code modules. The french module will only contain
-mock text (to be replaced later) since I'm not fluent in non-english languages.
-
-r0.20 - Update DataDictionary.pod and SyntaxModel.pm so they describe the main 
+r0.21 - Update DataDictionary.pod and SyntaxModel.pm so they describe the main 
 yet-missing features, such as applications, commands, and command vars.  Also 
 update the SYNOPSIS POD (and test script) so that the views go in the application 
 space rather than the database space, where they actually belong.
 
-r0.21 - Create modules Rosetta, Rosetta::_::Engine, Rosetta::_::Connection, as
+r0.22 - Create modules Rosetta, Rosetta::_::Engine, Rosetta::_::Connection, as
 well as Rosetta::Driver::Null.  Or alternately, make what these become,
 following the inevitable major design updates started at the same time.
 

@@ -101,166 +101,109 @@ a type of documentation.  They will be improved.
 	#ifndef _libSQLSM_h
 	#define _libSQLSM_h
 
-	#include "libSQLSM_types.h"
-	#include "libSQLSM_tree.h"
+	/************************************************************************/
+	/* define some simple data types here */
+
+	typedef unsigned char sqlsm_dt_flag; /* stores only two values: 0 (false) or 1 (true) */
+	typedef unsigned char sqlsm_dt_octet; /* a generic eight-bit value */
+	typedef unsigned int  sqlsm_dt_scale; /* a precise integer between 0 and +4,294,967,295 */
+	typedef struct {
+		sqlsm_dt_octet* string_data; /* not null terminated */
+		sqlsm_dt_scale  used_octets;
+		sqlsm_dt_scale  buff_octets;
+	} sqlsm_dt_label; /* an arbitrary sized UTF-8 character string, up to 4 gigabytes */
+
+	typedef enum { 
+		SQLSM_LITP_NUM_INT , /* an exact integral or whole number */
+		SQLSM_LITP_NUM_EXA , /* an exact decimal or fractional number */
+		SQLSM_LITP_NUM_APR , /* an approximately represented number (eg: floating point) */
+		SQLSM_LITP_STR_BIT , /* a string of bits or generic binary data */
+		SQLSM_LITP_STR_CHAR, /* a string of characters (encoding spec separately) */
+		SQLSM_LITP_BOOLEAN , /* two values: false or true */
+		SQLSM_LITP_DATETIME, /* a date or time or both */
+		SQLSM_LITP_INTERVAL  /* the amount of a time difference between two events */
+	} sqlsm_dt_literal_type; 
+
+	typedef enum { 
+		SQLSM_CHENTP_UTF8 , /* unicode UTF-8  */
+		SQLSM_CHENTP_UTF16, /* unicode UTF-16 */
+		SQLSM_CHENTP_UTF32, /* unicode UTF-32 */
+		SQLSM_CHENTP_ASC  , /* 8-bit ascii    */
+		SQLSM_CHENTP_EBS    /* 8-bit ebsdic   */
+		/* others will be added as appropriate */
+	} sqlsm_dt_char_enc_type; 
+
+	typedef struct {
+		sqlsm_dt_literal_type  literal_type ; /* says how to interpret other struct properties */
+		sqlsm_dt_scale         fixed_octets ; /* when literal is NUM_INT, NUM_APR; usu 1,2,4,8 */
+		sqlsm_dt_char_enc_type char_enc_type; /* when literal is a STR_CHAR, how it is encoded */
+		sqlsm_dt_octet*        literal_data ; /* not null terminated (or null part of trail junk) */
+			/* above never ref'd by mult structs; struct itself can be ref'd by multiple vars */
+		sqlsm_dt_scale         used_octets  ; /* doesn't include any trailing null with strings */
+		sqlsm_dt_scale         buff_octets  ; /* does include or surpass any trailing null */
+		/* other metadata may be added as appropriate; we may embed some fixed width type data */
+		sqlsm_dt_scale         malcvar_refs ; /* count of refs to this struct from malloc'd vars */
+	} sqlsm_dt_literal; 
+
+	/************************************************************************/
+	/* define some simple data types here */
+
+	typedef enum {
+		SQLSM_ENST_FOO, /* replace with semi-long actual list of generic enumerated value sets */
+		SQLSM_ENST_BAR
+	} sqlsm_dt_enum_set;
+
+	typedef enum {
+		SQLSM_ENIT_FOO, /* replace with long actual list of generic enumerated value set members */
+		SQLSM_ENIT_BAR  /* this enum may need repl w const list or ml en union, if sev key can't have same int */
+	} sqlsm_dt_enum_item;
+
+	typedef enum {
+		SQLSM_NDTP_FOO, /* replace with semi-short actual list of Node Types */
+		SQLSM_NDTP_BAR
+	} sqlsm_dt_node_type;
+
+	typedef enum {
+		SQLSM_NDATNM_FOO, /* replace with actual list of Node Attribute Names */
+		SQLSM_NDATNM_BAR  /* this enum may need repl w const list or ml en union, if sev key can't have same int */
+	} sqlsm_dt_node_atnm;
+
+	typedef struct {
+		sqlsm_dt_node_type  node_type  ; /* what type of Node this is */
+		sqlsm_dt_scale      node_id    ; /* uniq ident for Node within Container+Type */
+		sqlsm_dt_container* container  ; /* (ref) what Container this Node lives in, if any */
+		sqlsm_dt_literal*   at_literals; /* (array) attrs of Node which are literals */
+		sqlsm_dt_enum_item* at_enums   ; /* (array) attrs of Node which are enumerated values */
+		union { /* when 'container' is null, use 'id'; when it isn't null, use 'ref' */
+			sqlsm_dt_scale id ; /* id that has to be resolved to point to a Node */
+			sqlsm_dt_node* ref; /* pointer to a Node */
+		} id_or_ref*        at_nodes   ; /* (array of id_or_ref) attrs of Node which are Nodes */
+			/* Note: if it would be better, we may combine all at* into one longer union list */
+		sqlsm_dt_node_atnm  p_node_atnm; /* name of at_nodes attribute which is our primary parent */
+		sqlsm_dt_flag       is_linked  ; /* true when actual refs in at_nodes are recipricated */
+		sqlsm_dt_node_dll*  child_nodes; /* (list of refs) recipr to Nodes whose at_nodes ref to us */
+	} sqlsm_dt_node;
+
+	typedef struct {
+		sqlsm_dt_node*     item; /* the actual Node represented by this list item */
+		sqlsm_dt_node_dll* next; /* next Node in list, if any */
+		sqlsm_dt_node_dll* prev; /* previous Node in list, if any */
+	} sqlsm_dt_node_dll; /* doubly-linked-list; use when number of list items not known in advance */
+
+	typedef struct {
+		sqlsm_dt_node_dll** all_nodes; /* (array of list of refs) all Nodes in this Container */
+			/* first dimension has one array element per allowed Node Type */
+			/* second dimension is a doubly-linked-list of all Nodes having that Node Type */
+			/* that list will probably get replaced with something more efficient at */
+			/* making sure each Node Id is only used once; and list order doesn't matter here */
+	} sqlsm_dt_container;
+
+	/************************************************************************/
+	/* define some accessor functions here */
+
+	/************************************************************************/
 
 	#endif /* _libSQLSM_h */
-
-=head1 CONTENT OF libSQLSM_types.h
-
-	#ifndef _libSQLSM_types_h
-	#define _libSQLSM_types_h
-
-	#ifdef __cplusplus
-	extern "C" {
-	#endif
-
-	/************************************************************************/
-	/* define some constant values here */
-
-	#define FALSE 0
-	#define TRUE  1
-
-	/************************************************************************/
-	/* define some simple data types here */
-
-	typedef unsigned char dt_sqlsm_boolean; /* stores only two values: 0 (false) or 1 (true) */
-
-	typedef unsigned char     dt_sqlsm_uint8 ; /* a precise integer between 0 and           +255 */
-	typedef unsigned short    dt_sqlsm_uint16; /* a precise integer between 0 and        +65,535 */
-	typedef unsigned int      dt_sqlsm_uint32; /* a precise integer between 0 and +4,294,967,295 */
-	typedef unsigned longlong dt_sqlsm_uint64; /* a precise integer between 0 and      +(2^64)-1 */
-
-	typedef char     dt_sqlsm_sint8 ; /* a precise integer between           -128 and           +127 */
-	typedef short    dt_sqlsm_sint16; /* a precise integer between        -32,768 and        +32,767 */
-	typedef int      dt_sqlsm_sint32; /* a precise integer between -2,147,483,648 and +2,147,483,647 */
-	typedef longlong dt_sqlsm_sint64; /* a precise integer between        -(2^63) and      +(2^63)-1 */
-
-	typedef float  dt_sqlsm_float32; /* a 32-bit imprecise fractional number */
-	typedef double dt_sqlsm_float64; /* a 64-bit imprecise fractional number */
-
-	/* a precise fractional number stored as a variable length string, up to 65K digits */
-	typedef struct {
-		char*           data      ;
-		dt_sqlsm_uint16 used_bytes;
-		dt_sqlsm_uint16 buff_bytes;
-	} dt_sqlsm_decimal; 
-
-	/* an arbitrary sized unit of binary data, up to 4 gigabytes (32-bit size count) */
-	typedef struct {
-		char*           data      ;
-		dt_sqlsm_uint32 used_bytes;
-		dt_sqlsm_uint32 buff_bytes;
-	} dt_sqlsm_binary32; 
-
-	/* an arbitrary sized unit of binary data, up to 16 exabytes (64-bit size count) */
-	typedef struct {
-		char*           data      ;
-		dt_sqlsm_uint64 used_bytes;
-		dt_sqlsm_uint64 buff_bytes;
-	} dt_sqlsm_binary64; 
-
-	/* enumeration of character encoding types */
-	typedef enum { 
-		SQLSM_STR_ENC_U8 , /* 8-bit unicode  */
-		SQLSM_STR_ENC_U16, /* 16-bit unicode */
-		SQLSM_STR_ENC_U32, /* 32-bit unicode */
-		SQLSM_STR_ENC_ASC, /* 8-bit ascii    */
-		SQLSM_STR_ENC_EBS  /* 8-bit ebsdic   */
-	} en_sqlsm_str_enc_type; 
-
-	/* an arbitrary sized unit of text data that is not null terminated, up to 4 gigabytes */
-	typedef struct {
-		char*                 data      ; /* actual string data, which may contain nulls */
-		dt_sqlsm_uint32       used_bytes; /* size of memory used by data in bytes */
-		dt_sqlsm_uint32       buff_bytes; /* max size of contiguous memory data could grow into */
-		en_sqlsm_str_enc_type enc_type  ; /* string encoding type that data is using */
-	} dt_sqlsm_string32; 
-
-	/* an arbitrary sized unit of text data that is not null terminated, up to 16 exabytes */
-	typedef struct {
-		char*                 data      ; /* actual string data, which may contain nulls */
-		dt_sqlsm_uint64       used_bytes; /* size of memory used by data in bytes */
-		dt_sqlsm_uint64       buff_bytes; /* max size of contiguous memory data could grow into */
-		en_sqlsm_str_enc_type enc_type  ; /* string encoding type that data is using */
-	} dt_sqlsm_string64; 
-
-	/* a date and time (whose representation isn't decided yet) */
-	typedef struct {
-		char*          data      ;
-		dt_sqlsm_uint8 used_bytes;
-		dt_sqlsm_uint8 buff_bytes;
-	} dt_sqlsm_datetime; 
-
-	/************************************************************************/
-	/* define some accessor functions here */
-
-	/************************************************************************/
-
-	#ifdef __cplusplus
-	}
-	#endif
-
-	#endif /* _libSQLSM_types_h */
-
-=head1 CONTENT OF libSQLSM_tree.h
-
-	#ifndef _libSQLSM_tree_h
-	#define _libSQLSM_tree_h
-
-	#ifdef __cplusplus
-	extern "C" {
-	#endif
-
-	#include "libSQLSM_types.h"
-
-	/************************************************************************/
-	/* define some simple data types here */
-
-	/* enumeration of basic data types */
-	typedef enum { 
-		BIN,     /* binary data */
-		STR,     /* text data */
-		NUM,     /* a number, either integral or fractional */
-		BOOL,    /* a boolean */
-		DATETIME /* a date and time; this may be split into more types */
-		/* may add geographical types */
-		/* may add enumerated or set types */
-	} en_sqlsm_datatype_base; 
-
-	/* enumeration of ways to handle latin character data */
-	typedef enum { 
-		PRESERVE, /* preserve existing case, upper and lower */
-		TOUPPER,  /* convert to upper case */
-		TOLOWER   /* convert to lower case */
-	} en_sqlsm_datatype_case; 
-
-	/* meta-data for a scalar unit of data, such as a db table column */
-	typedef struct {
-		dt_sqlsm_string32      name          ; /* unique user-readable data type */
-		en_sqlsm_datatype_base base_type     ; /* basic underlying data type */
-		dt_sqlsm_uint64        size          ; /* in bytes for BIN, STR, NUM */
-		dt_sqlsm_boolean       store_fixed   ; /* true = try to store fixed size; default is var size */
-		en_sqlsm_str_enc_type  str_encoding  ; /* string encoding type for STR data */
-		dt_sqlsm_boolean       str_trim_white; /* true = trim bounding whitespace on save */
-		en_sqlsm_datatype_case str_latin_case; /* says how to handle latin text case on save */
-		dt_sqlsm_string32      str_pad_char  ; /* if def, use char to pad fixed-width strs on save */
-		dt_sqlsm_boolean       str_trim_pad  ; /* true = trim padding of fixed-width strs on read */
-		dt_sqlsm_boolean       int_unsigned  ; /* true = only INTs >= 0 can be stored */
-		dt_sqlsm_uint16        dec_precision ; /* allowed max prec for DEC nums; must be < size */
-		/* others may be added such as min/max allowed num or date values or which calendar to use */
-	} st_sqlsm_datatype; 
-
-	/************************************************************************/
-	/* define some accessor functions here */
-
-	/************************************************************************/
-
-	#ifdef __cplusplus
-	}
-	#endif
-
-	#endif /* _libSQLSM_tree_h */
 
 =head1 SEE ALSO
 

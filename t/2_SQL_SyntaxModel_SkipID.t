@@ -7,7 +7,7 @@ BEGIN { $| = 1; print "1..5\n"; }
 END {print "not ok 1\n" unless $loaded;}
 use t_SQL_SyntaxModel;
 use t_SQL_SyntaxModel_SkipID;
-use SQL::SyntaxModel::SkipID 0.06;
+use SQL::SyntaxModel::SkipID 0.07;
 $loaded = 1;
 print "ok 1\n";
 use strict;

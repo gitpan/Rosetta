@@ -1,3 +1,163 @@
+2003-12-18   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.19.
+
+	* This is a major functionality update release, focused exclusively in 3
+	files: SQL::SyntaxModel, SQL::SyntaxModel::SkipID, SQL::SyntaxModel::API_C.
+	The first two of those each had their version numbers incremented from 0.06
+	to 0.07.  No other files were changed at all, except that the module
+	version numbers looked for by the test scripts are incremented, and except
+	for the ChangeLog and TODO files, and except for the distro version number
+	in Makefile.PL.
+
+	* The modules now require Perl 5.006, up from 5.004, partly because the
+	newer version lets you throw objects as exceptions, and because it adds the
+	'use base' pragma, and possibly for other reasons.  The modules also no
+	longer use Carp.
+
+	* SQL::SyntaxModel was almost entirely rewritten; it is still based on the
+	previous design, but more than 90% of the code and around 50% of the POD
+	documentation was changed.  The most significant change is that the few
+	large and complicated methods of 0.06 (40; 21 pub + 19 priv) have been
+	replaced with many small and simple methods in 0.07 (89; 71 pub + 10 priv).
+	Related to this, some of the input constraints (such as mandatory
+	properties) which the module used to enforce up front are now deferred
+	until you ask.  Both of these changes should make this module orders of
+	magnitude easier to use, giving you a much finer degree of control over how
+	it works, and in particular it is now practical to build its objects
+	piecemeal (such as if a user is editing them manually).
+
+	* The old "attributes" list Node property has been split into 4 different
+	properties: "literal attributes" (the usual numbers and strings and
+	booleans), "enumerated attributes" (allowed values are predefined by the
+	class), "node attributes" (references to one Node from another), and the
+	special "node id" (unique integer identifier for a Node in a Container). So
+	we now have 4 properties whose rules for dealing with them are each simpler
+	than the complex rules for dealing with the old combined property. Note
+	that while Node attributes are now physically separated, they all still
+	have unique names between the combined group.  Ideally you should code your
+	program to use the separate accessor methods for each type of attribute,
+	for better performance and reliability, but for the moment I have also kept
+	wrapper methods that you can reach all attributes through regardless of
+	their major type.  The wrappers are significantly slower, but they give a
+	semblence of backwards compatibility.
+
+	* The old "parent node" Node property has been replaced by a "primary
+	parent node attribute name" property.  The property in 0.06 stored a
+	reference to the current Node's primary parent, and this duplicated one of
+	the Node attributes that had a reference to the same Node.  In 0.07 the
+	duplication is gone and the attribute holds the only reference; the new
+	"primary parent" property now just holds the name of what attribute to go 
+	to for the parent.
+
+	* Node objects can now exist apart from a Container; in fact, they are
+	initially created that way, and then putting them in a Container is a
+	separate step.  This contributes towards their new ease of use, as you can
+	build them piecemeal and otherwise use them in your code far away from
+	where any Containers are.  But Nodes still don't link together except
+	within the context of a Container.  A side effect of this change is that it
+	is now a lot easier to duplicate Nodes or move Nodes from one Container to
+	another, should you want to do that.
+
+	* The reciprocation of references from a child Node to its parent Nodes,
+	which is what makes a parent aware that it even has children, can now be
+	deferred (and is by default).  As a result, a Node that is under
+	construction within a Container will not have other Nodes trying to use it
+	before it is ready.  This is another reliability and simplicity feature.
+
+	* The concept of "super-nodes" physically representable by Node objects no 
+	longer exists.  That concept, renamed to "pseudo-nodes", now only exists 
+	within the context of get_all_properties[/*]() outputs.
+
+	* Each method is now arranged differently such that all preconditions are
+	tested prior to storing any input; this means that if a method throws an
+	exception (such as on bad input), you can now be confident that the objects
+	are unchanged at best, or consistant or recoverable at worst.  By contrast,
+	0.06 made changes hot, so if a first change worked but a second didn't,
+	then the objects may not have been in a consistant state, and the program
+	would have been better to exit than to try using them afterwards.
+
+	* Each method now throws machine-readable exceptions on failure, so that
+	the calling code now can discern what the problem was (and where and how),
+	so it knows how to recover gracefully.
+
+	* SyntaxModel.pm is now physically reorganized for easier maintenance. Most
+	of the POD is now at the end of the file, rather than above or mixed in
+	with the code; this also means the Perl parser has less file to read
+	through to get all the code.  Within the code, the methods for Node objects
+	now appear first, with Container methods afterwards; in 0.06 the Container
+	methods appeared first.  Within the POD, that long and unweildy SYNOPSIS
+	code has been moved to the very end of the file, after everything else, and
+	renamed to CONTRIVED EXAMPLE, so you no longer have to wade through it to
+	get to the important stuff; the new SYNOPSIS at the top is currently empty
+	except for a comment to look below.
+
+	* Other changes within the POD are as follows: Added new FAULT TOLERANCE
+	AND MULTI-THREADING SUPPORT and NODE EVOLUTION STATES sections.  Mostly
+	rewrote DEPENDENCIES, SYNTAX, BUGS, and all the method descriptions. 
+	Slight changes to DESCRIPTION, STRUCTURE and BRIEF NODE TYPE LIST.  The
+	remaining parts, NAME, COPYRIGHT AND LICENSE, BRIEF NODE RELATIONSHIP LIST
+	and SEE ALSO, were left completely unchanged.
+
+	* SQL::SyntaxModel::SkipID was updated to remain compatible with the
+	changes to its parent class.  It can now override or extend its parent's
+	functionality in a clean way, without requiring the parent to have
+	unpleasant hacks or placeholders in it for the child class to work.  SkipID
+	now has 11 distinct or overriding methods, down from 12 before; half of
+	them are largely unchanged, including the 2 bigger ones (that add new
+	functions), and the other half were rewritten or replaced.  The POD and
+	code in SkipID was rearranged to mirror the new SQL::SyntaxModel
+	arrangement, such as Node methods above Container ones, and most POD at the
+	end of the file, and SYNOPSIS converted to CONTRIVED EXAMPLE at the end.
+
+	* SQL::SyntaxModel::API_C had its "code" portion mostly rewritten to bring
+	it up to date with the current SQL::SyntaxModel organizational structure;
+	in fact, some of the Perl module's design changes were done to make it work
+	more like the prospective C module would, so functionality and APIs are
+	easier to map between them.  Now all of the C headers for libSQLSM will be 
+	in one file, since there are sufficiently few of them.
+
+	* The 0.07 releases of SQL::SyntaxModel and SkipID intentionally have a few
+	extra, deprecated bits in them so that they are backwards compatible with
+	the 0.06 releases of both, or at least to the extent that all of my testing
+	scripts and SYNOPSIS / CONTRIVED EXAMPLE code worked against both when left
+	completely unchanged, producing the same output from the same input.  This
+	is why the test code was left the same from the last release to this one.
+
+	* Some performance tests were run, to compare the speed of the 0.06 and 0.07 
+	releases, and the results are below.  For these tests, both versions got the 
+	same input and received the same output.  However, the newer module versions 
+	were significantly slower, as the old-style inputs are no longer optimal for 
+	them.  The speed tests were run using the Perl v5.6.0 built for darwin, that 
+	was bundled with Mac OS X 10.2.6.  (The normal tests were run under both that 
+	Perl and a Perl v5.8.1rc4 that I build myself from source under the same OS.)
+
+	Each pair of adjacent rows shows version 0.06 and 0.07 using the same input.
+	The 'INB6' means input that the core SQL::SyntaxModel would accept, and the 
+	'INE6' means input that only SkipID would accept.  'MakeAndBreak' creates a 
+	Container and populates it with Nodes, then lets it go out of scope and 
+	auto-destroy itself.  'Output' calls get_all_properties_as_xml_str() on one 
+	identical pre-populated Container.  They are the same as the t/* code.
+
+		Benchmark: timing 1000 iterations of MakeAndBreak...
+		SSM    006 INB6:  54 wallclock secs ( 53.36 usr +  0.00 sys =  53.36 CPU) @ 18.74/s (n=1000)
+		SSM    007 INB6:  99 wallclock secs ( 97.95 usr +  0.00 sys =  97.95 CPU) @ 10.21/s (n=1000)
+		SSMSID 006 INB6:  72 wallclock secs ( 70.87 usr +  0.00 sys =  70.87 CPU) @ 14.11/s (n=1000)
+		SSMSID 007 INB6: 131 wallclock secs (129.59 usr +  0.00 sys = 129.59 CPU) @  7.72/s (n=1000)
+		SSMSID 006 INE6:  94 wallclock secs ( 93.70 usr +  0.00 sys =  93.70 CPU) @ 10.67/s (n=1000)
+		SSMSID 007 INE6: 253 wallclock secs (251.48 usr +  0.00 sys = 251.48 CPU) @  3.98/s (n=1000)
+
+		Benchmark: timing 1000 iterations of Output...
+		SSM    006 INB6: 35 wallclock secs (34.20 usr +  0.00 sys = 34.20 CPU) @ 29.24/s (n=1000)
+		SSM    007 INB6: 34 wallclock secs (32.33 usr +  0.00 sys = 32.33 CPU) @ 30.93/s (n=1000)
+		SSMSID 006 INB6: 35 wallclock secs (34.54 usr +  0.00 sys = 34.54 CPU) @ 28.95/s (n=1000)
+		SSMSID 007 INB6: 33 wallclock secs (32.81 usr +  0.00 sys = 32.81 CPU) @ 30.48/s (n=1000)
+		SSMSID 006 INE6: 35 wallclock secs (34.46 usr +  0.00 sys = 34.46 CPU) @ 29.02/s (n=1000)
+		SSMSID 007 INE6: 37 wallclock secs (35.85 usr +  0.00 sys = 35.85 CPU) @ 27.89/s (n=1000)
+
+	The memory usage figures for each test were constant and small, indicating
+	no memory leaks.
+
 2003-09-26   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.18.

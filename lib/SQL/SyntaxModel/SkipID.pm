@@ -7,13 +7,25 @@ SQL::SyntaxModel::SkipID - Use SQL::SyntaxModels without inputting Node IDs
 ######################################################################
 
 package SQL::SyntaxModel::SkipID;
-require 5.004;
+use 5.006;
 use strict;
 use warnings;
-use vars qw($VERSION @ISA);
-$VERSION = '0.06';
+use vars qw($VERSION);
+$VERSION = '0.07';
+
+use SQL::SyntaxModel 0.07;
 
 ######################################################################
+
+=head1 DEPENDENCIES
+
+Perl Version: 5.006
+
+Standard Modules: I<none>
+
+Nonstandard Modules: 
+
+	SQL::SyntaxModel 0.07 (parent class)
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -64,31 +76,699 @@ would appreciate being informed any time you create a modified version of
 SQL::SyntaxModel that you are willing to distribute, because that is a
 practical way of suggesting improvements to the standard version.
 
-=head1 DEPENDENCIES
-
-Perl Version:
-
-	5.004
-
-Standard Modules:
-
-	Carp
-
-Nonstandard Modules:
-
-	SQL::SyntaxModel 0.06 (parent class)
-
 =cut
 
 ######################################################################
+######################################################################
 
-use Carp;
-use SQL::SyntaxModel 0.06;
-@ISA = qw( SQL::SyntaxModel );
+package # hide this class name from PAUSE indexer
+SQL::SyntaxModel::SkipID::_::Shared; # has no properties, subclassed by main and Container and Node
+use base qw( SQL::SyntaxModel::_::Shared );
 
 ######################################################################
 
+# These are duplicate declarations of some properties in the SQL::SyntaxModel parent class.
+my $NPROP_NODE_TYPE   = 'node_type';
+my $NPROP_NODE_ID     = 'node_id';
+my $NPROP_CONTAINER   = 'container';
+my $NPROP_CHILD_NODES = 'child_nodes';
+my $CPROP_ALL_NODES   = 'all_nodes';
+my $MPROP_CONTAINER   = 'container';
+
+# These are Container properties that SQL::SyntaxModel::SkipID added:
+my $CPROP_LAST_NODES = 'last_nodes'; # hash of node refs; find last node created of each node type
+my $CPROP_HIGH_IDS   = 'last_id'; # hash of int; = highest node_id num currently in use by each node_type
+
+# More duplicate declarations:
+my $ATTR_ID      = 'id'; # attribute name to use for the node id
+
+# More duplicate declarations:
+my $ARG_NODE_TYPE = 'NODE_TYPE'; # str - what type of Node we are
+my $ARG_ATTRS     = 'ATTRS'; # hash - our attributes, including refs/ids of parents we will have
+my $ARG_CHILDREN  = 'CHILDREN'; # list of refs to new Nodes we will become primary parent of
+
+# This constant is used by the related node searching feature, and relates 
+# to the %NODE_TYPES_EXTRA_DETAILS hash, below.
+my $S = '.'; # when same node type directly inside itself, make sure on parentmost of current
+my $P = '..'; # means go up one parent level
+my $HACK1 = '[]'; # means use [view_src.name+table_col.name] to find a view_src_col in current view_rowset
+
+my %NODE_TYPES_EXTRA_DETAILS = (
+	'data_type' => {
+		'link_search_attr' => 'name',
+		'def_attr' => 'basic_type',
+		'attr_defaults' => {
+			'basic_type' => ['lit','str'],
+		},
+	},
+	'database' => {
+		'link_search_attr' => 'name',
+		'def_attr' => 'id',
+	},
+	'namespace' => {
+		'link_search_attr' => 'name',
+		'def_attr' => 'id',
+	},
+	'table' => {
+		'link_search_attr' => 'name',
+		'def_attr' => 'name',
+		'attr_defaults' => {
+			'order' => ['uid'],
+		},
+	},
+	'table_col' => {
+		'link_search_attr' => 'name',
+		'def_attr' => 'name',
+		'attr_defaults' => {
+			'order' => ['uid'],
+			'required_val' => ['lit',0],
+		},
+	},
+	'table_ind' => {
+		'search_paths' => {
+			'f_table' => [$P,$P], # match child table in current namespace
+		},
+		'link_search_attr' => 'name',
+		'def_attr' => 'name',
+		'attr_defaults' => {
+			'order' => ['uid'],
+		},
+	},
+	'table_ind_col' => {
+		'search_paths' => {
+			'table_col' => [$P,$P], # match child col in current table
+			'f_table_col' => [$P,'f_table'], # match child col in foreign table
+		},
+		'def_attr' => 'table_col',
+		'attr_defaults' => {
+			'order' => ['uid'],
+		},
+	},
+	'view' => {
+		'search_paths' => {
+			'match_table' => [$P], # match child table in current namespace
+		},
+		'link_search_attr' => 'name',
+		'def_attr' => 'name',
+		'attr_defaults' => {
+			'view_type' => ['lit','caller'],
+			'may_write' => ['lit',0],
+		},
+	},
+	'view_col' => {
+		'link_search_attr' => 'name',
+		'def_attr' => 'name',
+		'attr_defaults' => {
+			'order' => ['uid'],
+		},
+	},
+	'view_rowset' => {
+		'attr_defaults' => {
+			'p_rowset_order' => ['uid'],
+		},
+	},
+	'view_src' => {
+		'search_paths' => {
+			'match_table' => [$P,$S,$P,$P], # match child table in current namespace
+			'match_view' => [$P,$S,$P,$P], # match child view in current namespace
+		},
+		'link_search_attr' => 'name',
+		'def_attr' => 'name',
+		'attr_defaults' => {
+			'order' => ['uid'],
+		},
+	},
+	'view_src_col' => {
+		'search_paths' => {
+			'match_table_col' => [$P,'match_table'], # match child col in other table
+			'match_view_col' => [$P,'match_view'], # match child col in other view
+		},
+		'link_search_attr' => 'match_table_col',
+		'def_attr' => 'match_table_col',
+	},
+	'view_join' => {
+		'search_paths' => {
+			'lhs_src' => [$P], # match child view_src in current view_rowset
+			'rhs_src' => [$P], # match child view_src in current view_rowset
+		},
+	},
+	'view_join_col' => {
+		'search_paths' => {
+			'lhs_src_col' => [$P,'lhs_src',['table_col',[$P,'match_table']]], # ... recursive code
+			'rhs_src_col' => [$P,'rhs_src',['table_col',[$P,'match_table']]], # ... recursive code
+		},
+	},
+	'view_col_def' => {
+		'search_paths' => {
+			'view_col' => [$S,$P,$S,$P], # match child col in current view
+			'src_col' => [$S,$P,$HACK1,['table_col',[$P,'match_table']]], # match a src+table_col in current namespace
+			'f_view' => [$S,$P,$S,$P,$P], # match child view in current namespace
+			'ufunc' => [$S,$P,$S,$P,$P], # match child block in current namespace
+		},
+		'attr_defaults' => {
+			'p_expr_order' => ['uid'],
+		},
+	},
+	'view_part_def' => {
+		'search_paths' => {
+			'src_col' => [$S,$P,$HACK1,['table_col',[$P,'match_table']]], # match a src+table_col in current namespace
+			'f_view' => [$S,$P,$S,$P,$P], # match child view in current namespace
+			'ufunc' => [$S,$P,$S,$P,$P], # match child block in current namespace
+		},
+		'attr_defaults' => {
+			'p_expr_order' => ['uid'],
+		},
+	},
+	'sequence' => {
+		'link_search_attr' => 'name',
+		'def_attr' => 'name',
+	},
+	'block' => {
+		'link_search_attr' => 'name',
+		'def_attr' => 'name',
+	},
+	'block_var' => {
+		'search_paths' => {
+			'data_type' => [$P,$S,$P,$P,$P], # match child datatype of root
+			'c_view' => [$P,$S,$P], # match child view in current namespace
+		},
+		'link_search_attr' => 'name',
+		'def_attr' => 'name',
+	},
+	'block_stmt' => {
+		'search_paths' => {
+			'dest_var' => [$P], # match child block_var in current block
+			'c_block' => [$P], # link to child block of current block
+		},
+	},
+	'block_expr' => {
+		'search_paths' => {
+			'src_var' => [$S,$P,$P], # match child block_var in current block
+			'ufunc' => [$S,$P,$S,$P,$P], # match child block in current namespace
+		},
+	},
+	'user' => {
+		'link_search_attr' => 'name',
+		'def_attr' => 'name',
+	},
+	'privilege' => {
+		'link_search_attr' => 'name',
+		'def_attr' => 'name',
+	},
+	'application' => {
+		'link_search_attr' => 'name',
+		'def_attr' => 'id',
+	},
+	'command_var' => {
+		'link_search_attr' => 'name',
+		'def_attr' => 'name',
+	},
+);
+
+######################################################################
+
+sub _get_static_const_container_class_name {
+	# This function is intended to be overridden by sub-classes.
+	# It is intended only to be used when making new objects.
+	return( 'SQL::SyntaxModel::SkipID::_::Container' );
+}
+
+sub _get_static_const_node_class_name {
+	# This function is intended to be overridden by sub-classes.
+	# It is intended only to be used when making new objects.
+	return( 'SQL::SyntaxModel::SkipID::_::Node' );
+}
+
+######################################################################
+######################################################################
+
+package # hide this class name from PAUSE indexer
+SQL::SyntaxModel::SkipID::_::Node;
+#use base qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::_::Node );
+use vars qw( @ISA );
+@ISA = qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::_::Node );
+
+######################################################################
+
+sub set_node_attribute {
+	my ($node, $attr_name, $attr_value) = @_;
+	eval {
+		$node->SUPER::set_node_attribute( $attr_name, $attr_value );
+	};
+	if( my $exception = $@ ) {
+		if( $exception =~ m/SSM_N_SET_NODE_AT_BAD_ARG_VAL/ ) {
+			# We were given a non-Node and non-Id $attr_value.
+			# Now look for something we can actually use for a value.
+			$attr_value = $node->_set_node_attribute__do_when_no_id_match( $attr_name, $attr_value );
+			# Since we got here, $attr_value contains a positive search result.
+			# Try calling superclass method again with new value.
+			return( $node->SUPER::set_node_attribute( $attr_name, $attr_value ) );
+		}
+		die $exception; # We can't do anything with this type of exception, so re-throw it.
+	}
+	return( 1 ); # The superclass was able to handle the input without error.
+}
+
+sub _set_node_attribute__do_when_no_id_match {
+	# Method only gets called when $attr_value is valued and doesn't match an id or Node.
+	my ($self, $attr_name, $attr_value) = @_;
+	my $exp_node_type = $self->expected_node_attribute_type( $attr_name );
+
+	my $container = $self->{$NPROP_CONTAINER};
+	my $node_type = $self->{$NPROP_NODE_TYPE};
+
+	my $node_info_extras = $NODE_TYPES_EXTRA_DETAILS{$node_type};
+	my $search_path = $node_info_extras->{'search_paths'}->{$attr_name};
+
+	my $attr_value_out = undef;
+	if( !$search_path ) {
+		# No specific search path given, so search all nodes of the type.
+		$attr_value_out = $self->_find_node_by_link_search_attr( $exp_node_type, $attr_value );
+	} elsif( $attr_value ) { # note: attr_value may be a defined empty string
+		unless( $self->get_parent_node() ) {
+			# Note: due to the above sorting, any attrs which could have set the 
+			# parent would be evaluated before ...no_id_match called for first time.
+			# We auto-set the parent here, earlier than create_node() would have, 
+			# so that the current unresolved attr can use it in its search path.
+			$container->_create_node_tree__do_when_parent_not_set( $self );
+		}
+		my $curr_node = $self;
+		$attr_value_out = $self->_search_for_node( 
+			$attr_value, $exp_node_type, $search_path, $curr_node );
+	}
+
+	if( $attr_value_out ) {
+		return( $attr_value_out );
+	} else {
+		$self->_throw_error_message( 'SSMSID_N_SET_AT_NODE_NO_ID_MATCH', 
+			{ 'ATNM' => $attr_name, 'HOSTTYPE' => $node_type, 
+			'ARG' => $attr_value, 'EXPTYPE' => $exp_node_type } );
+		# set_node_attribute(): invalid ATTRS argument element; 
+		# when trying to set '$ATNM' attribute of a '$HOSTTYPE' Node; 
+		# '$ARG' is not a Node ref and it does not 
+		# match the id of any existing '$EXPTYPE' Node
+	}
+}
+
+sub _find_node_by_link_search_attr {
+	my ($self, $exp_node_type, $attr_value) = @_;
+	my $container = $self->{$NPROP_CONTAINER};
+	my $link_search_attr = $NODE_TYPES_EXTRA_DETAILS{$exp_node_type}->{'link_search_attr'};
+	foreach my $scn (values %{$container->{$CPROP_ALL_NODES}->{$exp_node_type}}) {
+		if( $scn->get_attribute( $link_search_attr ) eq $attr_value ) {
+			return( $scn );
+		}
+	}
+}
+
+sub _search_for_node {
+	my ($self, $search_attr_value, $exp_node_type, $search_path, $curr_node) = @_;
+
+	my $recurse_next = undef;
+
+	foreach my $path_seg (@{$search_path}) {
+		if( ref($path_seg) eq 'ARRAY' ) {
+			# We have arrived at the parent of a possible desired node, but picking 
+			# the correct child is more complicated, and will be done below.
+			$recurse_next = $path_seg;
+			last;
+		} elsif( $path_seg eq $S ) {
+			# Want to progress search via consec parents of same node type to first.
+			my $start_type = $curr_node->{$NPROP_NODE_TYPE};
+			while( $curr_node->get_parent_node() and $start_type eq
+					$curr_node->get_parent_node()->{$NPROP_NODE_TYPE} ) {
+				$curr_node = $curr_node->get_parent_node();
+			}
+		} elsif( $path_seg eq $P ) {
+			# Want to progress search to the parent of the current node.
+			if( $curr_node->get_parent_node() ) {
+				# There is a parent node, so move to it.
+				$curr_node = $curr_node->get_parent_node();
+			} else {
+				# There is no parent node; search has failed.
+				$curr_node = undef;
+				last;
+			}
+		} elsif( $path_seg eq $HACK1 ) {
+			# Assume curr_node is now a 'view_rowset'; we want to find a view_src_col below it.
+			# search_attr_value should be an array having 2 elements: view_src.name+table_col.name.
+			# Progress search down one child node, so curr_node becomes a 'view_src'.
+			my $to_be_curr_node = undef;
+			my ($col_name, $src_name) = @{$search_attr_value};
+			foreach my $scn (@{$curr_node->{$NPROP_CHILD_NODES}}) {
+				if( $scn->{$NPROP_NODE_TYPE} eq 'view_src' ) {
+					if( $scn->get_attribute( 'name' ) eq $src_name ) {
+						# We found a node in the correct path that we can link.
+						$to_be_curr_node = $scn;
+						$search_attr_value = $col_name;
+						last;
+					}
+				}
+			}
+			$curr_node = $to_be_curr_node;
+		} else {
+			# Want to progress search via an attribute of the current node.
+			if( my $attval = $curr_node->get_attribute( $path_seg ) ) {
+				# The current node has that attribute, so move to it.
+				$curr_node = $attval;
+			} else {
+				# There is no attribute present; search has failed.
+				$curr_node = undef;
+				last;
+			}
+		}
+	}
+
+	my $node_to_link = undef;
+
+	if( $curr_node ) {
+		# Since curr_node is still defined, the search succeeded, 
+		# or the search path was an empty list (means search self).
+		my $link_search_attr = $NODE_TYPES_EXTRA_DETAILS{$exp_node_type}->{'link_search_attr'};
+		foreach my $scn (@{$curr_node->{$NPROP_CHILD_NODES}}) {
+			if( $scn->{$NPROP_NODE_TYPE} eq $exp_node_type ) {
+				if( $recurse_next ) {
+					my ($i_exp_node_type, $i_search_path) = @{$recurse_next};
+					my $i_node_to_link = undef;
+					$i_node_to_link = $self->_search_for_node( 
+						$search_attr_value, $i_exp_node_type, $i_search_path, $scn );
+
+					if( $i_node_to_link ) {
+						if( $scn->get_attribute( $link_search_attr ) eq $i_node_to_link ) {
+							$node_to_link = $scn;
+							last;
+						}
+					}
+				} else {
+					if( $scn->get_attribute( $link_search_attr ) eq $search_attr_value ) {
+						# We found a node in the correct path that we can link.
+						$node_to_link = $scn;
+						last;
+					}
+				}
+			}
+		}
+	}
+
+	return( $node_to_link );
+}
+
+######################################################################
+
+sub set_attributes {
+	my ($node, $attrs) = @_;
+	defined( $attrs ) or $attrs = {};
+
+	my $node_type = $node->{$NPROP_NODE_TYPE};
+	my $node_info_extras = $NODE_TYPES_EXTRA_DETAILS{$node_type};
+
+	unless( ref($attrs) eq 'HASH' ) {
+		my $def_attr = $node_info_extras->{'def_attr'};
+		unless( $def_attr ) {
+			$node->_throw_error_message( 'SSMSID_N_SET_AT_BAD_ARGS', 
+				{ 'ARG' => $attrs, 'HOSTTYPE' => $node_type } );
+			# set_attributes(): invalid ATTRS argument; 
+			# it is not a hash ref, but rather is '$ARG'; ".
+			# also, nodes of type '$HOSTTYPE' have no default ".
+			# attribute to associate the given value with
+		}
+		$attrs = { $def_attr => $attrs };
+	}
+
+	my $attr_defaults = $node_info_extras && $node_info_extras->{'attr_defaults'};
+	# This is placed here so that default strs can be processed into nodes below.
+	if( $attr_defaults ) {
+		my $container = $node->{$NPROP_CONTAINER};
+		foreach my $attr_name (keys %{$attr_defaults}) {
+			unless( defined( $node->get_attribute( $attr_name ) ) ) {
+				unless( exists( $attrs->{$attr_name} ) ) {
+					my ($def_type,$arg) = @{$attr_defaults->{$attr_name}};
+					if( $def_type eq 'uid' ) { # used for 'id' elsewhere; values given to 'order' here
+						$attrs->{$attr_name} = 1 + $container->{$CPROP_HIGH_IDS}->{$node_type};
+					} else { # $def_type eq 'lit'
+						$attrs->{$attr_name} = $arg;
+					}
+				}
+			}
+		}
+	}
+
+	if( my $new_node_id = delete( $attrs->{$ATTR_ID} ) ) {
+		$node->set_node_id( $new_node_id );
+	}
+	my $valid_p_node_atnms = $node->valid_node_type_parent_attribute_names( $node_type );
+	foreach my $attr_name (@{$valid_p_node_atnms}) {
+		my $attr_value = delete( $attrs->{$attr_name} ) or next;
+		my $exp_node_type = $node->valid_node_type_node_attributes( $node_type, $attr_name );
+		$node->set_node_attribute( $attr_name, $attr_value );
+	}
+	$node->SUPER::set_attributes( $attrs ); # set other attributes
+}
+
+######################################################################
+
+sub create_child_node_tree {
+	# this function is deprecated, probably
+	my ($node, $args) = @_;
+	defined( $args ) or $node->_throw_error_message( 'SSM_N_CR_NODE_TREE_NO_ARGS' ); # same er as p
+
+	unless( ref( $args ) eq 'HASH' ) {
+		$args = { $ARG_NODE_TYPE => $args };
+	}
+
+	my $new_child = $node->create_empty_node( $args->{$ARG_NODE_TYPE} );
+
+	my $child_node_type = $new_child->{$NPROP_NODE_TYPE};
+
+	my $container = $node->{$NPROP_CONTAINER};
+
+	$new_child->{$NPROP_NODE_ID} ||= 1 + $container->{$CPROP_HIGH_IDS}->{$child_node_type};
+
+	$new_child->put_in_container( $container );
+	$new_child->add_reciprocal_links();
+
+	$node->add_child_node( $new_child ); # sets more attributes in new_child
+
+	$new_child->collect_inherited_attributes();
+	$new_child->set_attributes( $args->{$ARG_ATTRS} ); # handles node id and all attribute types
+	$new_child->test_mandatory_attributes();
+
+	$container->{$CPROP_LAST_NODES}->{$child_node_type} = $new_child; # assign reference
+	my $child_node_id = $new_child->{$NPROP_NODE_ID};
+	if( $child_node_id > $container->{$CPROP_HIGH_IDS}->{$child_node_type} ) {
+		$container->{$CPROP_HIGH_IDS}->{$child_node_type} = $child_node_id;
+	}
+
+	$new_child->create_child_node_trees( $args->{$ARG_CHILDREN} );
+
+	return( $new_child );
+}
+
+######################################################################
+######################################################################
+
+package # hide this class name from PAUSE indexer
+SQL::SyntaxModel::SkipID::_::Container;
+#use base qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::_::Container );
+use vars qw( @ISA );
+@ISA = qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel::_::Container );
+
+######################################################################
+
+sub create_node_tree {
+	my ($container, $args) = @_;
+	defined( $args ) or $container->_throw_error_message( 'SSM_C_CR_NODE_TREE_NO_ARGS' ); # same er as p
+
+	unless( ref( $args ) eq 'HASH' ) {
+		$args = { $ARG_NODE_TYPE => $args };
+	}
+
+	my $node = $container->create_empty_node( $args->{$ARG_NODE_TYPE} );
+
+	my $node_type = $node->{$NPROP_NODE_TYPE};
+
+	$node->{$NPROP_NODE_ID} ||= 1 + $container->{$CPROP_HIGH_IDS}->{$node_type};
+
+	$node->put_in_container( $container );
+	$node->add_reciprocal_links();
+	$node->set_attributes( $args->{$ARG_ATTRS} ); # handles all attribute types; may override autogen node id
+
+	unless( $node->get_parent_node() ) {
+		$container->_create_node_tree__do_when_parent_not_set( $node );
+	}
+
+	$node->collect_inherited_attributes();
+	$node->test_mandatory_attributes();
+
+	$container->{$CPROP_LAST_NODES}->{$node_type} = $node; # assign reference
+	my $node_id = $node->{$NPROP_NODE_ID};
+	if( $node_id > $container->{$CPROP_HIGH_IDS}->{$node_type} ) {
+		$container->{$CPROP_HIGH_IDS}->{$node_type} = $node_id;
+	}
+
+	$node->create_child_node_trees( $args->{$ARG_CHILDREN} );
+
+	return( $node );
+}
+
+sub _create_node_tree__do_when_parent_not_set {
+	# Called either if a PARENT arg not given, or if it matched nothing.
+	my ($container, $node) = @_;
+	my $node_type = $node->{$NPROP_NODE_TYPE};
+	$node->node_types_with_pseudonode_parents( $node_type ) and return( 1 );
+	foreach my $attr_name (@{$node->valid_node_type_parent_attribute_names( $node_type )}) {
+		my $exp_node_type = $node->valid_node_type_node_attributes( $node_type, $attr_name );
+		if( my $parent = $container->{$CPROP_LAST_NODES}->{$exp_node_type} ) {
+			# The following two lines is what the old _make_child_to_parent_link did.
+			$node->set_node_attribute( $attr_name, $parent );
+			$node->set_parent_node_attribute_name( $attr_name );
+			last;
+		}
+	}
+	unless( $node->get_parent_node() ) {
+		$container->_throw_error_message( 'SSMSID_C_CR_NODE_TREE_NO_PRIMARY_P', 
+			{ 'TYPE' => $node_type, 'ID' => $node->{$NPROP_NODE_ID} } );
+		# create_node_tree(): invalid argument list; 
+		# the Node you are trying to create, of type '$TYPE' and id 
+		# '$ID', has no primary parent Node, and one is required
+	}
+}
+
+######################################################################
+######################################################################
+
+package # hide this class name from PAUSE indexer
+SQL::SyntaxModel::SkipID;
+#use base qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel );
+use vars qw( @ISA );
+@ISA = qw( SQL::SyntaxModel::SkipID::_::Shared SQL::SyntaxModel );
+
+######################################################################
+
+sub _set_initial_container_props {
+	my $container = $_[0]->{$MPROP_CONTAINER};
+	my $node_types = $container->valid_node_types();
+	$container->{$CPROP_LAST_NODES} = { map { ($_ => undef) } keys %{$node_types} };
+	$container->{$CPROP_HIGH_IDS} = { map { ($_ => 0) } keys %{$node_types} };
+	$_[0]->SUPER::_set_initial_container_props();
+}
+
+######################################################################
+######################################################################
+
+1;
+__END__
+
 =head1 SYNOPSIS
+
+I<See the CONTRIVED EXAMPLE documentation section at the end.>
+
+=head1 DESCRIPTION
+
+This Perl 5 object class is a completely optional extension to
+SQL::SyntaxModel, and is implemented as a sub-class of that module.  The public
+interface to this module is essentially the same as the other one, with the
+difference being that SQL::SyntaxModel::SkipID will accept a wider variety of
+input data formats into its methods.  Therefore, this module's documentation 
+does not list or explain its methods (see the parent class for that), but it 
+will mention any differences from the parent.
+
+The extension is intended to be fully parent-compatible, meaning that if
+you provide it input which would be acceptable to the stricter bare parent
+class, then you will get the same behaviour.  Where you will see the difference
+is when you provide certain kinds of input which would cause the parent class
+to return an error and/or throw an exception.
+
+One significant added feature, which is part of this module's name-sake, is
+that it will automatically generate (by serial number) a new Node's "id"
+attribute when your input doesn't provide one.  A related name-sake feature is
+that, when you want to refer to an earlier created Node by a later one, for
+purposes of linking them, you can refer to the earlier Node by a more
+human-readable attribute than the Node's "id" (or Node ref), such as its 'name'
+(which is also what actual SQL uses).  Between these two name-sake features, it
+is possible to use SQL::SyntaxModel without ever having to explicitely see a
+Node's "id" attribute.
+
+Note that, for the sake of avoiding conflicts, you should not be explicitely
+setting ids for some Nodes of a type, and having others auto-generated, unless
+you take extra precautions.  This is because while auto-generated Node ids will
+not conflict with prior explicit ones, later provided explicit ones may
+conflict with auto-generated ones.  How you can resolve this is to use the
+parent class' get_node() method to see if the id you want is already in use.
+The same caveats apply as if the auto-generator was a second concurrent user
+editing the object.  This said, you can mix references from one Node to another
+between id and non-id ref types without further consequence, because they don't
+change the id of a Node.
+
+Another added feature is that this class can automatically assign a parent Node
+for a newly created Node that doesn't explicitely specify a parent in some way,
+such as in a create_node() argument or by the fact you are calling
+add_child_node().  This automatic assignment is context-sensitive, whereby the
+most recent previously-created Node which is capable of becoming the new one's
+parent will do so.
+
+This module's added features can make it "easier to use" in some circumstances
+than the bare-bones SQL::SyntaxModel, including an appearance more like actual
+SQL strings, because matching descriptive terms can be used in multiple places.
+
+However, the functionality has its added cost in code complexity and
+reliability; for example, since non-id attributes are not unique, the module
+can "guess wrong" about what you wanted to do, and it won't work at all in some
+circumstances.  Additionally, since your code, by using this module, would use
+descriptive attributes to link Nodes together, you will have to update every
+place you use the attribute value when you change the original, so they
+continue to match; this is unlike the bare parent class, which always uses
+non-descriptive attributes for links, which you are unlikely to ever change.
+The added logic also makes the code slower and use more memory.
+
+=head1 BUGS
+
+First of all, see the BUGS main documentation section of the SQL::SyntaxModel,
+as everything said there applies to this module also.  Exceptions are below.
+
+The "use base ..." pragma doesn't seem to work properly (with Perl 5.6 at
+least) when I want to inherit from multiple classes, with some required parent
+class methods not being seen; I had to use the analagous "use vars @ISA; @ISA =
+..." syntax instead.
+
+The mechanisms for automatically linking nodes to each other, and particularly
+for resolving parent-child node relationships, are under-developed (somewhat
+hackish) at the moment and probably won't work properly in all situations.
+However, they do work for the CONTRIVED EXAMPLE code.  This linking code may 
+gradually be improved if there is a need.  
+
+Please note that SkipID.pm is not a priority for me in further development, and
+it mainly exists for historical sake, so that some older functionality that I
+went to the trouble to create for SQL::SyntaxModel in versions 0.01 thru 0.05
+would not simply vanish when I trimmed it from the core module.  Those who want
+the older functionality can still use it.  Any further development on my part
+will be limited mainly to keeping it compatible with changes to
+SQL::SyntaxModel such that it can still execute its SYNOPSIS Perl code
+correctly.  I have no plans to add significant new features to this module.
+
+Another main reason that I am keeping SkipID.pm maintained right now is that by 
+doing so I can expose and fix bugs in SQL::SyntaxModel itself which otherwise 
+wouldn't appear during that module's own (incomplete) testing.
+
+In the long run, if you would like to adopt SQL::SyntaxModel::SkipID with
+respect to CPAN and become the primary maintainer, then please write me to
+arrange it. The main things that I ask in return are to be credited as the
+original author, and for you to keep the module functionally compatible with
+new versions of the parent module as they are released (I will try to make it
+easy).
+
+=head1 SEE ALSO
+
+SQL::SyntaxModel, and other items in its SEE ALSO documentation.
+
+=head1 CONTRIVED EXAMPLE
+
+The following demonstrates input that can be provided to
+SQL::SyntaxModel::SkipID, along with a way to debug the result; it is a
+contrived example since the class normally wouldn't get used this way.  This
+code is exactly the same (except for framing) as that run by this module's
+current test script.  You can also run the CONTRIVED EXAMPLE code that comes
+with the parent class against this class and get the same output.
 
 	use strict;
 	use warnings;
@@ -387,630 +1067,6 @@ use SQL::SyntaxModel 0.06;
 		] },
 	] } );
 
-=head1 DESCRIPTION
-
-This Perl 5 object class is a completely optional extension to
-SQL::SyntaxModel, and is implemented as a sub-class of that module.  The public
-interface to this module is essentially the same as the other one, with the
-difference being that SQL::SyntaxModel::SkipID will accept a wider variety of
-input data formats into its methods.  Therefore, this module's documentation 
-does not list or explain its methods (see the parent class for that), but it 
-will mention any differences from the parent.
-
-The extension is intended to be fully parent-compatible, meaning that if
-you provide it input which would be acceptable to the stricter bare parent
-class, then you will get the same behaviour.  Where you will see the difference
-is when you provide certain kinds of input which would cause the parent class
-to return an error and/or throw an exception.
-
-One significant added feature, which is part of this module's name-sake, is
-that it will automatically generate (by serial number) a new Node's "id"
-attribute when your input doesn't provide one.  A related name-sake feature is
-that, when you want to refer to an earlier created Node by a later one, for
-purposes of linking them, you can refer to the earlier Node by a more
-human-readable attribute than the Node's "id" (or Node ref), such as its 'name'
-(which is also what actual SQL uses).  Between these two name-sake features, it
-is possible to use SQL::SyntaxModel without ever having to explicitely see a
-Node's "id" attribute.
-
-Note that, for the sake of avoiding conflicts, you should not be explicitely
-setting ids for some Nodes of a type, and having others auto-generated, unless
-you take extra precautions.  This is because while auto-generated Node ids will
-not conflict with prior explicit ones, later provided explicit ones may
-conflict with auto-generated ones.  How you can resolve this is to use the
-parent class' get_node() method to see if the id you want is already in use.
-The same caveats apply as if the auto-generator was a second concurrent user
-editing the object.  This said, you can mix references from one Node to another
-between id and non-id ref types without further consequence, because they don't
-change the id of a Node.
-
-Another added feature is that this class can automatically assign a parent Node
-for a newly created Node that doesn't explicitely specify a parent in some way,
-such as in a create_node() argument or by the fact you are calling
-add_child_node().  This automatic assignment is context-sensitive, whereby the
-most recent previously-created Node which is capable of becoming the new one's
-parent will do so.
-
-This module's added features can make it "easier to use" in some circumstances
-than the bare-bones SQL::SyntaxModel, including an appearance more like actual
-SQL strings, because matching descriptive terms can be used in multiple places.
-
-However, the functionality has its added cost in code complexity and
-reliability; for example, since non-id attributes are not unique, the module
-can "guess wrong" about what you wanted to do, and it won't work at all in some
-circumstances.  Additionally, since your code, by using this module, would use
-descriptive attributes to link Nodes together, you will have to update every
-place you use the attribute value when you change the original, so they
-continue to match; this is unlike the bare parent class, which always uses
-non-descriptive attributes for links, which you are unlikely to ever change.
-The added logic also makes the code slower and use more memory.
-
-=cut
-
-######################################################################
-
-# These are duplicate declarations of properties in the SQL::SyntaxModel parent class.
-my $MPROP_CONTAINER = 'container'; # holds all the actual Container properties for this class
-my $CPROP_ALL_NODES  = 'all_nodes'; # hash of hashes of Node refs; find any Node by node_type:node_id quickly
-my $NPROP_CONTAINER   = 'container'; # ref to Container this Node lives in
-my $NPROP_NODE_TYPE   = 'node_type'; # str - what type of Node this is
-my $NPROP_PARENT_NODE = 'parent_node'; # ref to primary parent Node; dupl attr unl parent is supernode
-my $NPROP_ATTRIBUTES  = 'attributes'; # hash - attributes of this Node, incl refs to all parent Nodes
-my $NPROP_CHILD_NODES = 'child_nodes'; # array - list of refs to other Nodes citing self as parent
-
-# These are Container properties that SQL::SyntaxModel::SkipID added:
-my $CPROP_LAST_NODES = 'last_nodes'; # hash of node refs; find last node created of each node type
-my $CPROP_HIGH_IDS   = 'last_id'; # hash of int; = highest node_id num currently in use by each node_type
-
-# These are duplicate declarations of arguments taken by the create_node() parent method:
-my $ARG_NODE_TYPE = 'NODE_TYPE'; # str - what type of Node we are
-my $ARG_ATTRS     = 'ATTRS'; # hash - our attributes, including refs/ids of parents we will have
-
-# Duplicate declaration: names of special Node attributes are declared here:
-my $ATTR_ID = 'id'; # int - unique identifier for a Node within its type
-
-# Duplicate declaration: this is used by error messages; errors will be reimplemented later:
-my $CLSNMC = 'SQL::SyntaxModel::SkipID';
-my $CLSNMN = 'SQL::SyntaxModel::SkipID::_::Node';
-
-# This constant is used by the related node searching feature, and relates 
-# to the %NODE_TYPES_EXTRA_DETAILS hash, below.
-#my $R = '/'; # start at the model's root node
-my $S = '.'; # when same node type directly inside itself, make sure on parentmost of current
-my $P = '..'; # means go up one parent level
-my $HACK1 = '[]'; # means use [view_src.name+table_col.name] to find a view_src_col in current view_rowset
-
-my %NODE_TYPES_EXTRA_DETAILS = (
-	'data_type' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'basic_type',
-		'attr_defaults' => {
-			'id' => ['uid'],
-			'basic_type' => ['lit','str'],
-		},
-	},
-	'database' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'id',
-		'attr_defaults' => {
-			'id' => ['uid'],
-		},
-	},
-	'namespace' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'id',
-		'attr_defaults' => {
-			'id' => ['uid'],
-		},
-	},
-	'table' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'name',
-		'attr_defaults' => {
-			'id' => ['uid'],
-			'order' => ['uid'],
-		},
-	},
-	'table_col' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'name',
-		'attr_defaults' => {
-			'id' => ['uid'],
-			'order' => ['uid'],
-			'required_val' => ['lit',0],
-		},
-	},
-	'table_ind' => {
-		'search_paths' => {
-			'f_table' => [$P,$P], # match child table in current namespace
-		},
-		'link_search_attr' => 'name',
-		'def_attr' => 'name',
-		'attr_defaults' => {
-			'id' => ['uid'],
-			'order' => ['uid'],
-		},
-	},
-	'table_ind_col' => {
-		'search_paths' => {
-			'table_col' => [$P,$P], # match child col in current table
-			'f_table_col' => [$P,'f_table'], # match child col in foreign table
-		},
-		'def_attr' => 'table_col',
-		'attr_defaults' => {
-			'id' => ['uid'],
-			'order' => ['uid'],
-		},
-	},
-	'view' => {
-		'search_paths' => {
-			'match_table' => [$P], # match child table in current namespace
-		},
-		'link_search_attr' => 'name',
-		'def_attr' => 'name',
-		'attr_defaults' => {
-			'id' => ['uid'],
-			'view_type' => ['lit','caller'],
-			'may_write' => ['lit',0],
-		},
-	},
-	'view_col' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'name',
-		'attr_defaults' => {
-			'id' => ['uid'],
-			'order' => ['uid'],
-		},
-	},
-	'view_rowset' => {
-		'attr_defaults' => {
-			'id' => ['uid'],
-			'p_rowset_order' => ['uid'],
-		},
-	},
-	'view_src' => {
-		'search_paths' => {
-			'match_table' => [$P,$S,$P,$P], # match child table in current namespace
-			'match_view' => [$P,$S,$P,$P], # match child view in current namespace
-		},
-		'link_search_attr' => 'name',
-		'def_attr' => 'name',
-		'attr_defaults' => {
-			'id' => ['uid'],
-			'order' => ['uid'],
-		},
-	},
-	'view_src_col' => {
-		'search_paths' => {
-			'match_table_col' => [$P,'match_table'], # match child col in other table
-			'match_view_col' => [$P,'match_view'], # match child col in other view
-		},
-		'link_search_attr' => 'match_table_col',
-		'def_attr' => 'match_table_col',
-		'attr_defaults' => {
-			'id' => ['uid'],
-		},
-	},
-	'view_join' => {
-		'search_paths' => {
-			'lhs_src' => [$P], # match child view_src in current view_rowset
-			'rhs_src' => [$P], # match child view_src in current view_rowset
-		},
-		'attr_defaults' => {
-			'id' => ['uid'],
-		},
-	},
-	'view_join_col' => {
-		'search_paths' => {
-			'lhs_src_col' => [$P,'lhs_src',['table_col',[$P,'match_table']]], # ... recursive code
-			'rhs_src_col' => [$P,'rhs_src',['table_col',[$P,'match_table']]], # ... recursive code
-		},
-		'attr_defaults' => {
-			'id' => ['uid'],
-		},
-	},
-	'view_col_def' => {
-		'search_paths' => {
-			'view_col' => [$S,$P,$S,$P], # match child col in current view
-			'src_col' => [$S,$P,$HACK1,['table_col',[$P,'match_table']]], # match a src+table_col in current namespace
-			'f_view' => [$S,$P,$S,$P,$P], # match child view in current namespace
-			'ufunc' => [$S,$P,$S,$P,$P], # match child block in current namespace
-		},
-		'attr_defaults' => {
-			'id' => ['uid'],
-			'p_expr_order' => ['uid'],
-		},
-	},
-	'view_part_def' => {
-		'search_paths' => {
-			'src_col' => [$S,$P,$HACK1,['table_col',[$P,'match_table']]], # match a src+table_col in current namespace
-			'f_view' => [$S,$P,$S,$P,$P], # match child view in current namespace
-			'ufunc' => [$S,$P,$S,$P,$P], # match child block in current namespace
-		},
-		'attr_defaults' => {
-			'id' => ['uid'],
-			'p_expr_order' => ['uid'],
-		},
-	},
-	'sequence' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'name',
-		'attr_defaults' => {
-			'id' => ['uid'],
-		},
-	},
-	'block' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'name',
-		'attr_defaults' => {
-			'id' => ['uid'],
-		},
-	},
-	'block_var' => {
-		'search_paths' => {
-			'data_type' => [$P,$S,$P,$P,$P], # match child datatype of root
-			'c_view' => [$P,$S,$P], # match child view in current namespace
-		},
-		'link_search_attr' => 'name',
-		'def_attr' => 'name',
-	},
-	'block_stmt' => {
-		'search_paths' => {
-			'dest_var' => [$P], # match child block_var in current block
-			'c_block' => [$P], # link to child block of current block
-		},
-	},
-	'block_expr' => {
-		'search_paths' => {
-			'src_var' => [$S,$P,$P], # match child block_var in current block
-			'ufunc' => [$S,$P,$S,$P,$P], # match child block in current namespace
-		},
-	},
-	'user' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'name',
-		'attr_defaults' => {
-			'id' => ['uid'],
-		},
-	},
-	'privilege' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'name',
-		'attr_defaults' => {
-			'id' => ['uid'],
-		},
-	},
-	'application' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'id',
-		'attr_defaults' => {
-			'id' => ['uid'],
-		},
-	},
-	'command_var' => {
-		'link_search_attr' => 'name',
-		'def_attr' => 'name',
-	},
-);
-
-######################################################################
-
-sub _get_container_class_name {
-	return( 'SQL::SyntaxModel::SkipID::_::Container' );
-}
-
-sub _set_initial_container_props {
-	my $container = $_[0]->{$MPROP_CONTAINER};
-	my $node_types = $container->_get_static_const_node_types();
-	$container->{$CPROP_LAST_NODES} = { map { ($_ => undef) } keys %{$node_types} };
-	$container->{$CPROP_HIGH_IDS} = { map { ($_ => 0) } keys %{$node_types} };
-	$_[0]->SUPER::_set_initial_container_props();
-}
-
-######################################################################
-
-package # hide this class name from PAUSE indexer
-SQL::SyntaxModel::SkipID::_::Container;
-use vars qw(@ISA);
-@ISA = qw( SQL::SyntaxModel::_::Container );
-
-######################################################################
-
-sub create_node {
-	my ($self, $args) = @_;
-	unless( ref( $args ) eq 'HASH' ) {
-		$args = { $ARG_NODE_TYPE => $args };
-	}
-	return( $self->SUPER::create_node( $args ) );
-}
-
-sub _get_node_class_name {
-	return( 'SQL::SyntaxModel::SkipID::_::Node' );
-}
-
-sub _create_node__do_when_parent_not_set {
-	# Called either if a PARENT arg not given, or if it matched nothing.
-	my ($self, $node) = @_;
-	my $node_types = $self->_get_static_const_node_types();
-	my $node_type = $node->{$NPROP_NODE_TYPE};
-	my $type_info = $node_types->{$node_type};
-	my $attr_name = $type_info->{'parent_node_attr'};
-	my $exp_node_type = $type_info->{'attributes'}->{$attr_name}->[1];
-	if( my $parent = $self->{$CPROP_LAST_NODES}->{$exp_node_type} ) {
-		$node->_make_child_to_parent_link( $parent, $attr_name );
-	} else {
-		$self->SUPER::_create_node__do_when_parent_not_set( $node );
-	}
-}
-
-sub _create_node__post_proc {
-	my ($self, $node) = @_;
-	my $node_type = $node->{$NPROP_NODE_TYPE};
-	$self->{$CPROP_LAST_NODES}->{$node_type} = $node; # assign reference
-	my $super_node_types = $self->_get_static_const_super_node_types();
-	unless( $super_node_types->{$node_type} ) {
-		my $node_id = $node->{$NPROP_ATTRIBUTES}->{$ATTR_ID};
-		if( $node_id > $self->{$CPROP_HIGH_IDS}->{$node_type} ) {
-			$self->{$CPROP_HIGH_IDS}->{$node_type} = $node_id;
-		}
-	}
-}
-
-######################################################################
-
-package # hide this class name from PAUSE indexer
-SQL::SyntaxModel::SkipID::_::Node;
-use vars qw(@ISA);
-@ISA = qw( SQL::SyntaxModel::_::Node );
-
-######################################################################
-
-sub _set_parent_node__do_when_no_id_match {
-	# Method only gets called when $new_parent is valued and doesn't match an id or Node.
-	my ($self, $new_parent, $attr_name, $exp_node_type) = @_; # $self eq $new_child
-	# See if PARENT matches a non-id node attribute we can link to.
-	# Note that this will only work properly if used attribute value is unique.
-	if( my $found = $self->_find_node_by_link_search_attr( $exp_node_type, $new_parent ) ) {
-		return( $self->_make_child_to_parent_link( $new_parent, $attr_name ) );
-	}
-	# If we get here there was no match, a value will be taken later from LAST NODES.
-}
-
-sub _find_node_by_link_search_attr {
-	my ($self, $exp_node_type, $attr_value) = @_;
-	my $container = $self->{$NPROP_CONTAINER};
-	my $link_search_attr = $NODE_TYPES_EXTRA_DETAILS{$exp_node_type}->{'link_search_attr'};
-	foreach my $scn (values %{$container->{$CPROP_ALL_NODES}->{$exp_node_type}}) {
-		if( $scn->{$NPROP_ATTRIBUTES}->{$link_search_attr} eq $attr_value ) {
-			return( $scn );
-		}
-	}
-}
-
-######################################################################
-
-sub _add_attributes {
-	my ($self, $attrs) = @_;
-	defined( $attrs ) or $attrs = {};
-
-	my $node_type = $self->{$NPROP_NODE_TYPE};
-	my $node_info_extras = $NODE_TYPES_EXTRA_DETAILS{$node_type};
-
-	unless( ref($attrs) eq 'HASH' ) {
-		my $def_attr = $node_info_extras->{'def_attr'};
-		unless( $def_attr ) {
-			Carp::confess( "$CLSNMN->add_attributes(): invalid ATTRS argument; ".
-				"it is not a hash ref, but rather is '$attrs'; ".
-				"also, nodes of type '$node_type' have no default ".
-				"attribute to associate the given value with" );
-		}
-		$attrs = { $def_attr => $attrs };
-	}
-
-	my $container = $self->{$NPROP_CONTAINER};
-
-	my $attr_defaults = $node_info_extras && $node_info_extras->{'attr_defaults'};
-	# This is placed here so that default strs can be processed into nodes below.
-	if( $attr_defaults ) {
-		foreach my $attr_name (keys %{$attr_defaults}) {
-			unless( exists( $self->{$NPROP_ATTRIBUTES}->{$attr_name} ) ) {
-				unless( exists( $attrs->{$attr_name} ) ) {
-					my ($def_type,$arg) = @{$attr_defaults->{$attr_name}};
-					if( $def_type eq 'uid' ) { # meant for 'id', but same values given to 'order'
-						$attrs->{$attr_name} = 1 + $container->{$CPROP_HIGH_IDS}->{$node_type};
-					} else { # $def_type eq 'lit'
-						$attrs->{$attr_name} = $arg;
-					}
-				}
-			}
-		}
-	}
-
-	$self->SUPER::_add_attributes( $attrs );
-}
-
-sub _sort_attrs_for_insert_order {
-	my ($self, $attrs) = @_;
-	my $node_types = $self->{$NPROP_CONTAINER}->_get_static_const_node_types();
-	my $type_info = $node_types->{$self->{$NPROP_NODE_TYPE}};
-	my $selfnode_attr = $type_info->{'parent_selfnode_attr'};
-	my $parent_attr = $type_info->{'parent_node_attr'};
-	return( 
-		$ATTR_ID, 
-		(($selfnode_attr and exists($attrs->{$selfnode_attr})) ? $selfnode_attr : ()), 
-		(($parent_attr and exists($attrs->{$parent_attr})) ? $parent_attr : ()), 
-		(sort grep { 
-			$_ ne $ATTR_ID 
-			and not ($parent_attr and $_ eq $parent_attr) 
-			and not ($selfnode_attr and $_ eq $selfnode_attr) 
-		} keys %{$attrs}), 
-	);
-}
-
-sub _add_attributes__do_when_no_id_match {
-	# Method only gets called when $attr_value is valued and doesn't match an id or Node.
-	my ($self, $attr_name, $attr_value, $exp_node_type) = @_;
-
-	my $container = $self->{$NPROP_CONTAINER};
-	my $node_type = $self->{$NPROP_NODE_TYPE};
-
-	my $node_info_extras = $NODE_TYPES_EXTRA_DETAILS{$node_type};
-	my $search_path = $node_info_extras->{'search_paths'}->{$attr_name};
-
-	my $attr_value_out = undef;
-	if( !$search_path ) {
-		# No specific search path given, so search all nodes of the type.
-		$attr_value_out = $self->_find_node_by_link_search_attr( $exp_node_type, $attr_value );
-	} elsif( $attr_value ) { # note: attr_value may be a defined empty string
-		unless( $self->{$NPROP_PARENT_NODE} ) {
-			# Note: due to the above sorting, any attrs which could have set the 
-			# parent would be evaluated before ...no_id_match called for first time.
-			# We auto-set the parent here, earlier than create_node() would have, 
-			# so that the current unresolved attr can use it in its search path.
-			$container->_create_node__do_when_parent_not_set( $self );
-		}
-		my $curr_node = $self;
-		$attr_value_out = $self->_search_for_node( 
-			$attr_value, $exp_node_type, $search_path, $curr_node );
-	}
-
-	if( $attr_value_out ) {
-		return( $attr_value_out );
-	} else {
-		$self->SUPER::_add_attributes__do_when_no_id_match( 
-			$attr_name, $attr_value, $exp_node_type );
-	}
-}
-
-sub _search_for_node {
-	my ($self, $search_attr_value, $exp_node_type, $search_path, $curr_node) = @_;
-
-	my $recurse_next = undef;
-
-	foreach my $path_seg (@{$search_path}) {
-		if( ref($path_seg) eq 'ARRAY' ) {
-			# We have arrived at the parent of a possible desired node, but picking 
-			# the correct child is more complicated, and will be done below.
-			$recurse_next = $path_seg;
-			last;
-		} elsif( $path_seg eq $S ) {
-			# Want to progress search via consec parents of same node type to first.
-			my $start_type = $curr_node->{$NPROP_NODE_TYPE};
-			while( $curr_node->{$NPROP_PARENT_NODE} and $start_type eq
-					$curr_node->{$NPROP_PARENT_NODE}->{$NPROP_NODE_TYPE} ) {
-				$curr_node = $curr_node->{$NPROP_PARENT_NODE};
-			}
-		} elsif( $path_seg eq $P ) {
-			# Want to progress search to the parent of the current node.
-			if( $curr_node->{$NPROP_PARENT_NODE} ) {
-				# There is a parent node, so move to it.
-				$curr_node = $curr_node->{$NPROP_PARENT_NODE};
-			} else {
-				# There is no parent node; search has failed.
-				$curr_node = undef;
-				last;
-			}
-		} elsif( $path_seg eq $HACK1 ) {
-			# Assume curr_node is now a 'view_rowset'; we want to find a view_src_col below it.
-			# search_attr_value should be an array having 2 elements: view_src.name+table_col.name.
-			# Progress search down one child node, so curr_node becomes a 'view_src'.
-			my $to_be_curr_node = undef;
-			my ($col_name, $src_name) = @{$search_attr_value};
-			foreach my $scn (@{$curr_node->{$NPROP_CHILD_NODES}}) {
-				if( $scn->{$NPROP_NODE_TYPE} eq 'view_src' ) {
-					if( $scn->{$NPROP_ATTRIBUTES}->{'name'} eq $src_name ) {
-						# We found a node in the correct path that we can link.
-						$to_be_curr_node = $scn;
-						$search_attr_value = $col_name;
-						last;
-					}
-				}
-			}
-			$curr_node = $to_be_curr_node;
-		} else {
-			# Want to progress search via an attribute of the current node.
-			if( $curr_node->{$NPROP_ATTRIBUTES}->{$path_seg} ) {
-				# The current node has that attribute, so move to it.
-				$curr_node = $curr_node->{$NPROP_ATTRIBUTES}->{$path_seg};
-			} else {
-				# There is no attribute present; search has failed.
-				$curr_node = undef;
-				last;
-			}
-		}
-	}
-
-	my $node_to_link = undef;
-
-	if( $curr_node ) {
-		# Since curr_node is still defined, the search succeeded, 
-		# or the search path was an empty list (means search self).
-		my $link_search_attr = $NODE_TYPES_EXTRA_DETAILS{$exp_node_type}->{'link_search_attr'};
-		foreach my $scn (@{$curr_node->{$NPROP_CHILD_NODES}}) {
-			if( $scn->{$NPROP_NODE_TYPE} eq $exp_node_type ) {
-				if( $recurse_next ) {
-					my ($i_exp_node_type, $i_search_path) = @{$recurse_next};
-					my $i_node_to_link = undef;
-					$i_node_to_link = $self->_search_for_node( 
-						$search_attr_value, $i_exp_node_type, $i_search_path, $scn );
-
-					if( $i_node_to_link ) {
-						if( $scn->{$NPROP_ATTRIBUTES}->{$link_search_attr} eq $i_node_to_link ) {
-							$node_to_link = $scn;
-							last;
-						}
-					}
-				} else {
-					if( $scn->{$NPROP_ATTRIBUTES}->{$link_search_attr} eq $search_attr_value ) {
-						# We found a node in the correct path that we can link.
-						$node_to_link = $scn;
-						last;
-					}
-				}
-			}
-		}
-	}
-
-	return( $node_to_link );
-}
-
-######################################################################
-
-1;
-__END__
-
-=head1 BUGS
-
-First of all, see the BUGS main documentation section of the SQL::SyntaxModel,
-as everything said there applies to this module also.  Exceptions are below.
-
-This module is currently in alpha development status.  All of the code in the
-SYNOPSIS section has been executed, which tests most internal functions and
-data, but no other tests have been made.
-
-The mechanisms for automatically linking nodes to each other, and particularly
-for resolving parent-child node relationships, are under-developed (somewhat
-hackish) at the moment and probably won't work properly in all situations.
-However, they do work for the sample code.  This linking code will gradually be
-improved if there is a need.  
-
-Please note that SkipID.pm is not a priority for me in further development, and
-it mainly exists for historical sake, so that some older functionality that I
-went to the trouble to create for SQL::SyntaxModel in versions 0.01 thru 0.05
-would not simply vanish when I trimmed it from the core module.  Those who want
-the older functionality can still use it.  Any further development on my part
-will be limited mainly to keeping it compatible with changes to
-SQL::SyntaxModel such that it can still execute its SYNOPSIS Perl code
-correctly.  I have no plans to add significant new features to this module.
-
-Likewise, if you would like to adopt SQL::SyntaxModel::SkipID with respect to
-CPAN and become the primary maintainer, then please write me to arrange it. 
-The main things that I ask in return are to be credited as the original author,
-and for you to keep the module functionally compatible with new versions of the
-parent module as they are released (I will try to make it easy).
-
-=head1 SEE ALSO
-
-SQL::SyntaxModel, and other items in its SEE ALSO documentation.
+	print $model->get_root_node()->get_all_properties_as_xml_str();
 
 =cut
