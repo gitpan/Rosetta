@@ -1,32 +1,28 @@
-# Before `make install' is performed this script should be runnable with
-# `make test'. After `make install' it should work as `perl Rosetta.t'
+#!perl
 
-######################### We start with some black magic to print on failure.
+use 5.008001; use utf8; use strict; use warnings;
 
 BEGIN { $| = 1; print "1..1\n"; }
-END {print "not ok 1\n" unless $loaded;}
-use Rosetta '0.39';
-use Rosetta::L::en '0.13';
-use Rosetta::Validator '0.39';
-use Rosetta::Validator::L::en '0.07';
-$loaded = 1;
-print "ok 1\n";
-use strict;
-use warnings;
 
-######################### End of black magic.
+######################################################################
+# First ensure the modules to test will compile, are correct versions:
 
-# Set this to 1 to see complete result text for each test
-my $verbose = shift( @ARGV ) ? 1 : 0;  # set from command line
+use Rosetta '0.40';
+use Rosetta::L::en '0.14';
+use Rosetta::Validator '0.40';
+use Rosetta::Validator::L::en '0.08';
 
 ######################################################################
 # Here are some utility methods:
 
-my $test_num = 1;  # same as the first test, above
+# Set this to 1 to see complete result text for each test
+my $verbose = shift( @ARGV ) ? 1 : 0;  # set from command line
+
+my $test_num = 0;
 
 sub result {
-	$test_num++;
 	my ($worked, $detail) = @_;
+	$test_num++;
 	$verbose or 
 		$detail = substr( $detail, 0, 50 ).
 		(length( $detail ) > 47 ? "..." : "");
@@ -52,13 +48,14 @@ sub error_to_string {
 }
 
 ######################################################################
+# Now perform the actual tests:
 
 message( "START TESTING Rosetta" );
 
 ######################################################################
 
 eval {
-	message( "No functional tests are written yet; they will come later" );
+	result( 1, "all modules compiled" );
 };
 $@ and result( 0, "TESTS ABORTED: ".error_to_string( $@ ) );
 

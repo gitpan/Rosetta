@@ -1,22 +1,21 @@
+#!perl
+
+use 5.008001; use utf8; use strict; use warnings;
+
+package Rosetta::L::en;
+our $VERSION = '0.14';
+
+######################################################################
+
+=encoding utf8
+
 =head1 NAME
 
 Rosetta::L::en - Localization of Rosetta for English
 
-=cut
-
-######################################################################
-
-package Rosetta::L::en;
-use 5.006;
-use strict;
-use warnings;
-our $VERSION = '0.13';
-
-######################################################################
-
 =head1 DEPENDENCIES
 
-Perl Version: 5.006
+Perl Version: 5.008001
 
 Standard Modules: I<none>
 
@@ -332,6 +331,6 @@ user text template string, if there is one, or undef if not.
 
 =head1 SEE ALSO
 
-perl(1), Locale::KeyedText, Rosetta.
+L<perl(1)>, L<Locale::KeyedText>, L<Rosetta>.
 
 =cut

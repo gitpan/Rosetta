@@ -1,30 +1,29 @@
+#!perl
+
+use 5.008001; use utf8; use strict; use warnings;
+
+package Rosetta::Validator;
+our $VERSION = '0.40';
+
+use Rosetta '0.40';
+
+######################################################################
+
+=encoding utf8
+
 =head1 NAME
 
 Rosetta::Validator - A common comprehensive test suite to run against all Engines
 
-=cut
-
-######################################################################
-
-package Rosetta::Validator;
-use 5.006;
-use strict;
-use warnings;
-our $VERSION = '0.39';
-
-use Rosetta '0.39';
-
-######################################################################
-
 =head1 DEPENDENCIES
 
-Perl Version: 5.006
+Perl Version: 5.008001
 
 Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	Rosetta 0.39
+	Rosetta 0.40
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -541,6 +540,6 @@ parts of it will be changed in the near future, perhaps in incompatible ways.
 
 =head1 SEE ALSO
 
-perl(1), Rosetta, SQL::Routine, Locale::KeyedText, Rosetta::Engine::Generic.
+L<perl(1)>, L<Rosetta>, L<SQL::Routine>, L<Locale::KeyedText>, L<Rosetta::Engine::Generic>.
 
 =cut

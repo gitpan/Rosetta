@@ -1,32 +1,31 @@
+#!perl
+
+use 5.008001; use utf8; use strict; use warnings;
+
+package Rosetta;
+our $VERSION = '0.40';
+
+use Locale::KeyedText '1.01';
+use SQL::Routine '0.52';
+
+######################################################################
+
+=encoding utf8
+
 =head1 NAME
 
 Rosetta - Rigorous database portability
 
-=cut
-
-######################################################################
-
-package Rosetta;
-use 5.006;
-use strict;
-use warnings;
-our $VERSION = '0.39';
-
-use Locale::KeyedText '1.00';
-use SQL::Routine '0.50';
-
-######################################################################
-
 =head1 DEPENDENCIES
 
-Perl Version: 5.006
+Perl Version: 5.008001
 
 Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	Locale::KeyedText 1.00 (for error messages)
-	SQL::Routine 0.50
+	Locale::KeyedText 1.01 (for error messages)
+	SQL::Routine 0.52
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -216,36 +215,23 @@ sub _throw_error_message {
 ######################################################################
 # These are 'protected' methods; only sub-classes should invoke them.
 
-sub _build_node {
-	my ($self, $container, $node_type, $attrs) = @_;
-	my $node_id = $container->get_next_free_node_id( $node_type );
-	return( $container->build_node( $node_type, { 'id' => $node_id, %{$attrs || {}} } ) );
-}
-
 sub _build_node_auto_name {
 	my ($self, $container, $node_type, $attrs) = @_;
-	my $node_id = $container->get_next_free_node_id( $node_type );
+	my $node_id = $container->get_next_free_node_id();
 	my $si_name = 'Rosetta Default '.
 		join( ' ', map { ucfirst( $_ ) } split( '_', $node_type ) ).' '.$node_id;
 	return( $container->build_node( $node_type, 
-		{ 'id' => $node_id, 'si_name' => $si_name, %{$attrs || {}} } ) );
-}
-
-sub _build_child_node {
-	my ($self, $pp_node, $node_type, $attrs) = @_;
-	my $container = $pp_node->get_container();
-	my $node_id = $container->get_next_free_node_id( $node_type );
-	return( $pp_node->build_child_node( $node_type, { 'id' => $node_id, %{$attrs || {}} } ) );
+		{ 'si_name' => $si_name, %{$attrs || {}} } ) );
 }
 
 sub _build_child_node_auto_name {
 	my ($self, $pp_node, $node_type, $attrs) = @_;
 	my $container = $pp_node->get_container();
-	my $node_id = $container->get_next_free_node_id( $node_type );
+	my $node_id = $container->get_next_free_node_id();
 	my $si_name = 'Rosetta Default '.
 		join( ' ', map { ucfirst( $_ ) } split( '_', $node_type ) ).' '.$node_id;
 	return( $pp_node->build_child_node( $node_type, 
-		{ 'id' => $node_id, 'si_name' => $si_name, %{$attrs || {}} } ) );
+		{ 'si_name' => $si_name, %{$attrs || {}} } ) );
 }
 
 ######################################################################
@@ -260,9 +246,12 @@ sub new_application {
 sub build_application {
 	my ($self) = @_;
 	my $container = SQL::Routine->new_container();
+	my $orig_asni_vl = $container->auto_set_node_ids();
+	$container->auto_set_node_ids( 1 );
 	my $app_bp_node = $self->_build_node_auto_name( $container, 'application' );
 	my $app_inst_node = $self->_build_node_auto_name( $container, 'application_instance', 
 		{ 'blueprint' => $app_bp_node } );
+	$container->auto_set_node_ids( $orig_asni_vl );
 	my $app_intf = Rosetta->new_application( $app_inst_node );
 	return( $app_intf );
 }
@@ -1013,8 +1002,9 @@ sub build_child_environment {
 		}
 	}
 	unless( $env_intf ) {
-		my $dlp_node = $app_intf->_build_node( $container, 'data_link_product', 
-			{ 'si_name' => $engine_name, 'product_code' => $engine_name } );
+		my $dlp_node = $container->build_node( 'data_link_product', 
+			{ 'id' => $container->get_next_free_node_id(), 
+			'si_name' => $engine_name, 'product_code' => $engine_name } );
 		$env_intf = $app_intf->do( $dlp_node ); # dies if bad Engine
 	}
 	return( $env_intf );
@@ -1045,6 +1035,9 @@ sub build_child_connection {
 	my $app_inst_node = $interface->get_root_interface()->get_srt_node();
 	my $app_bp_node = $app_inst_node->get_node_ref_attribute( 'blueprint' );
 
+	my $orig_asni_vl = $container->auto_set_node_ids();
+	$container->auto_set_node_ids( 1 );
+
 	my $cat_bp_node = $interface->_build_node_auto_name( $container, 'catalog' );
 
 	my $cat_link_bp_node = $interface->_build_child_node_auto_name( $app_bp_node, 'catalog_link', 
@@ -1056,13 +1049,12 @@ sub build_child_connection {
 	defined( $rt_id ) and $routine_node->set_node_id( $rt_id );
 	{
 		my $rtv_conn_cx_node = $routine_node->build_child_node( 'routine_var', 
-			{ 'id' => $container->get_next_free_node_id( 'routine_var' ),
-			'si_name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => $cat_link_bp_node } );
+			{ 'si_name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => $cat_link_bp_node } );
 		$routine_node->build_child_node_tree( 'routine_stmt', 
-			{ 'id' => $container->get_next_free_node_id( 'routine_stmt' ), 'call_sroutine' => 'RETURN' }, 
+			{ 'call_sroutine' => 'RETURN' }, 
 			[
-				[ 'routine_expr', { 'id' => $container->get_next_free_node_id( 'routine_expr' ),
-					'call_sroutine_arg' => 'RETURN_VALUE', 'cont_type' => 'CONN', 'valf_p_routine_var' => $rtv_conn_cx_node } ],
+				[ 'routine_expr', { 'call_sroutine_arg' => 'RETURN_VALUE', 
+					'cont_type' => 'CONN', 'valf_p_routine_item' => $rtv_conn_cx_node } ],
 			],
 		);
 	}
@@ -1073,17 +1065,19 @@ sub build_child_connection {
 	my $cat_inst_node = $interface->_build_node_auto_name( $container, 'catalog_instance', 
 		{ 'product' => $dsp_node, 'blueprint' => $cat_bp_node, %{$setup_options->{'catalog_instance'} || {}} } );
 	while( my ($opt_key, $opt_value) = each %{$setup_options->{'catalog_instance_opt'} || {}} ) {
-		$interface->_build_child_node( $cat_inst_node, 'catalog_instance_opt', 
+		$cat_inst_node->build_child_node( 'catalog_instance_opt', 
 			{ 'si_key' => $opt_key, 'value' => $opt_value } );
 	}
 
-	my $cat_link_inst_node = $interface->_build_child_node( $app_inst_node, 'catalog_link_instance', 
+	my $cat_link_inst_node = $app_inst_node->build_child_node( 'catalog_link_instance', 
 		{ 'product' => $dlp_node, 'blueprint' => $cat_link_bp_node, 'target' => $cat_inst_node, 
 		%{$setup_options->{'catalog_link_instance'} || {}} } );
 	while( my ($opt_key, $opt_value) = each %{$setup_options->{'catalog_link_instance_opt'} || {}} ) {
-		$interface->_build_child_node( $cat_link_inst_node, 'catalog_link_instance_opt', 
+		$cat_link_inst_node->build_child_node( 'catalog_link_instance_opt', 
 			{ 'si_key' => $opt_key, 'value' => $opt_value } );
 	}
+
+	$container->auto_set_node_ids( $orig_asni_vl );
 
 	my $conn_intf = $env_intf->do( $routine_node );
 	return( $conn_intf );
@@ -1127,19 +1121,24 @@ sub sroutine_catalog_list {
 	my $app_inst_node = $interface->get_root_interface()->get_srt_node();
 	my $app_bp_node = $app_inst_node->get_node_ref_attribute( 'blueprint' );
 
+	my $orig_asni_vl = $container->auto_set_node_ids();
+	$container->auto_set_node_ids( 1 );
+
 	my $routine_node = $interface->_build_child_node_auto_name( $app_bp_node, 'routine', 
 		{ 'routine_type' => 'FUNCTION', 'return_cont_type' => 'SRT_NODE_LIST' } );
 	defined( $rt_si_name ) and $routine_node->set_literal_attribute( 'si_name', $rt_si_name );
 	defined( $rt_id ) and $routine_node->set_node_id( $rt_id );
 	{
 		$routine_node->build_child_node_tree( 'routine_stmt', 
-			{ 'id' => $container->get_next_free_node_id( 'routine_stmt' ), 'call_sroutine' => 'RETURN' }, 
+			{ 'call_sroutine' => 'RETURN' }, 
 			[
-				[ 'routine_expr', { 'id' => $container->get_next_free_node_id( 'routine_expr' ),
-					'call_sroutine_arg' => 'RETURN_VALUE', 'cont_type' => 'SRT_NODE_LIST', 'valf_call_sroutine' => 'CATALOG_LIST' } ],
+				[ 'routine_expr', { 'call_sroutine_arg' => 'RETURN_VALUE', 
+					'cont_type' => 'SRT_NODE_LIST', 'valf_call_sroutine' => 'CATALOG_LIST' } ],
 			],
 		);
 	}
+
+	$container->auto_set_node_ids( $orig_asni_vl );
 
 	my $prep_intf = $interface->prepare( $routine_node );
 	return( $prep_intf );
@@ -1165,6 +1164,9 @@ sub sroutine_catalog_open {
 		@{$conn_routine_node->get_child_nodes( 'routine_var' )}
 		)[0]->get_node_ref_attribute( 'conn_link' );
 
+	my $orig_asni_vl = $container->auto_set_node_ids();
+	$container->auto_set_node_ids( 1 );
+
 	my $sdt_auth_node = $conn_intf->_build_node_auto_name( $container, 'scalar_data_type', 
 		{ 'base_type' => 'STR_CHAR', 'max_chars' => 20, 'char_enc' => 'UTF8' } );
 
@@ -1174,26 +1176,25 @@ sub sroutine_catalog_open {
 	defined( $rt_id ) and $routine_node->set_node_id( $rt_id );
 	{
 		my $rtc_conn_cx_node = $routine_node->build_child_node( 'routine_context', 
-			{ 'id' => $container->get_next_free_node_id( 'routine_context' ),
-			'si_name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => $cat_link_bp_node } );
+			{ 'si_name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => $cat_link_bp_node } );
 		my $rta_user_node = $routine_node->build_child_node( 'routine_arg', 
-			{ 'id' => $container->get_next_free_node_id( 'routine_arg' ),
-			'si_name' => 'login_name', 'cont_type' => 'SCALAR', 'scalar_data_type' => $sdt_auth_node } );
+			{ 'si_name' => 'login_name', 'cont_type' => 'SCALAR', 'scalar_data_type' => $sdt_auth_node } );
 		my $rta_pass_node = $routine_node->build_child_node( 'routine_arg', 
-			{ 'id' => $container->get_next_free_node_id( 'routine_arg' ),
-			'si_name' => 'login_pass', 'cont_type' => 'SCALAR', 'scalar_data_type' => $sdt_auth_node } );
+			{ 'si_name' => 'login_pass', 'cont_type' => 'SCALAR', 'scalar_data_type' => $sdt_auth_node } );
 		$routine_node->build_child_node_tree( 'routine_stmt', 
-			{ 'id' => $container->get_next_free_node_id( 'routine_stmt' ), 'call_sroutine' => 'CATALOG_OPEN' }, 
+			{ 'call_sroutine' => 'CATALOG_OPEN' }, 
 			[
-				[ 'routine_expr', { 'id' => $container->get_next_free_node_id( 'routine_expr' ),
-					'call_sroutine_cxt' => 'CONN_CX', 'cont_type' => 'CONN', 'valf_p_routine_cxt' => $rtc_conn_cx_node } ],
-				[ 'routine_expr', { 'id' => $container->get_next_free_node_id( 'routine_expr' ) + 1,
-					'call_sroutine_arg' => 'LOGIN_NAME', 'cont_type' => 'SCALAR', 'valf_p_routine_arg' => $rta_user_node } ],
-				[ 'routine_expr', { 'id' => $container->get_next_free_node_id( 'routine_expr' ) + 2,
-					'call_sroutine_arg' => 'LOGIN_PASS', 'cont_type' => 'SCALAR', 'valf_p_routine_arg' => $rta_pass_node } ],
+				[ 'routine_expr', { 'call_sroutine_cxt' => 'CONN_CX', 
+					'cont_type' => 'CONN', 'valf_p_routine_item' => $rtc_conn_cx_node } ],
+				[ 'routine_expr', { 'call_sroutine_arg' => 'LOGIN_NAME', 
+					'cont_type' => 'SCALAR', 'valf_p_routine_item' => $rta_user_node } ],
+				[ 'routine_expr', { 'call_sroutine_arg' => 'LOGIN_PASS', 
+					'cont_type' => 'SCALAR', 'valf_p_routine_item' => $rta_pass_node } ],
 			],
 		);
 	}
+
+	$container->auto_set_node_ids( $orig_asni_vl );
 
 	my $prep_intf = $conn_intf->prepare( $routine_node );
 	return( $prep_intf );
@@ -1219,22 +1220,26 @@ sub sroutine_catalog_close {
 		@{$conn_routine_node->get_child_nodes( 'routine_var' )}
 		)[0]->get_node_ref_attribute( 'conn_link' );
 
+	my $orig_asni_vl = $container->auto_set_node_ids();
+	$container->auto_set_node_ids( 1 );
+
 	my $routine_node = $conn_intf->_build_child_node_auto_name( $app_bp_node, 'routine', 
 		{ 'routine_type' => 'PROCEDURE' } );
 	defined( $rt_si_name ) and $routine_node->set_literal_attribute( 'si_name', $rt_si_name );
 	defined( $rt_id ) and $routine_node->set_node_id( $rt_id );
 	{
 		my $rtc_conn_cx_node = $routine_node->build_child_node( 'routine_context', 
-			{ 'id' => $container->get_next_free_node_id( 'routine_context' ),
-			'si_name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => $cat_link_bp_node } );
+			{ 'si_name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => $cat_link_bp_node } );
 		$routine_node->build_child_node_tree( 'routine_stmt', 
-			{ 'id' => $container->get_next_free_node_id( 'routine_stmt' ), 'call_sroutine' => 'CATALOG_CLOSE' }, 
+			{ 'call_sroutine' => 'CATALOG_CLOSE' }, 
 			[
-				[ 'routine_expr', { 'id' => $container->get_next_free_node_id( 'routine_expr' ),
-					'call_sroutine_cxt' => 'CONN_CX', 'cont_type' => 'CONN', 'valf_p_routine_cxt' => $rtc_conn_cx_node } ],
+				[ 'routine_expr', { 'call_sroutine_cxt' => 'CONN_CX', 
+					'cont_type' => 'CONN', 'valf_p_routine_item' => $rtc_conn_cx_node } ],
 			],
 		);
 	}
+
+	$container->auto_set_node_ids( $orig_asni_vl );
 
 	my $prep_intf = $conn_intf->prepare( $routine_node );
 	return( $prep_intf );
@@ -2346,10 +2351,11 @@ releases, once I start using it in a production environment myself.
 
 =head1 SEE ALSO
 
-perl(1), Rosetta::L::en, Rosetta::Features, Rosetta::Framework,
-Locale::KeyedText, SQL::Routine, Rosetta::Engine::Generic, DBI, Alzabo, SPOPS,
-Class::DBI, Tangram, HDB, DBIx::RecordSet, DBIx::SearchBuilder, SQL::Schema,
-DBIx::Abstract, DBIx::AnyDBD, DBIx::Browse, DBIx::SQLEngine, MKDoc::SQL,
-Data::Transactional, DBIx::ModelUpdate, and various other modules.
+L<perl(1)>, L<Rosetta::L::en>, L<Rosetta::Features>, L<Rosetta::Framework>,
+L<Locale::KeyedText>, L<SQL::Routine>, L<Rosetta::Engine::Generic>, L<DBI>,
+L<Alzabo>, L<SPOPS>, L<Class::DBI>, L<Tangram>, L<HDB>, L<Genezzo>,
+L<DBIx::RecordSet>, L<DBIx::SearchBuilder>, L<SQL::Schema>, L<DBIx::Abstract>,
+L<DBIx::AnyDBD>, L<DBIx::Browse>, L<DBIx::SQLEngine>, L<MKDoc::SQL>,
+L<Data::Transactional>, L<DBIx::ModelUpdate>, and various other modules.
 
 =cut
