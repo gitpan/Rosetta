@@ -1,0 +1,903 @@
+=head1 NAME
+
+Rosetta::DataDictionary - Describe a database suitable for storing Rosetta schemas.
+
+=head1 ABSTRACT
+
+See the file Rosetta::Framework for the main Rosetta documentation.
+
+=head1 COPYRIGHT AND LICENSE
+
+This file is part of the Rosetta database abstraction framework.
+
+Rosetta is Copyright (c) 1999-2003, Darren R. Duncan.  All rights reserved. 
+Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
+visit "http://www.DarrenDuncan.net" for more information.
+
+Rosetta is free software; you can redistribute it and/or modify it under the
+terms of the GNU General Public License (GPL) version 2 as published by the
+Free Software Foundation (http://www.fsf.org/).  You should have received a
+copy of the GPL as part of the Rosetta distribution, in the file named
+"LICENSE"; if not, write to the Free Software Foundation, Inc., 59 Temple
+Place, Suite 330, Boston, MA 02111-1307 USA.  
+
+Any versions of Rosetta that you modify and distribute must carry prominent
+notices stating that you changed the files and the date of any changes, in
+addition to preserving this original copyright notice and other credits. 
+Rosetta is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GPL for more details.
+
+Linking Rosetta statically or dynamically with other modules is making a
+combined work based on Rosetta.  Thus, the terms and conditions of the GPL
+cover the whole combination.
+
+As a special exception, the copyright holders of Rosetta give you permission to
+link Rosetta with independent modules that communicate with Rosetta solely
+through the "Driver" interface (because they are interfaces to or
+implementations of databases), regardless of the license terms of these
+independent modules, and to copy and distribute the resulting combined work
+under terms of your choice, provided that every copy of the combined work is
+accompanied by a complete copy of the source code of Rosetta (the version of
+Rosetta used to produce the combined work), being distributed under the terms
+of the GPL plus this exception.  An independent module is a module which is not
+derived from or based on Rosetta, and which is fully useable when not linked to
+Rosetta in any form.
+
+Note that people who make modified versions of Rosetta are not obligated to
+grant this special exception for their modified versions; it is their choice
+whether to do so.  The GPL gives permission to release a modified version
+without this exception; this exception also makes it possible to release a
+modified version which carries forward this exception.
+
+While it is by no means required, the copyright holders of Rosetta would
+appreciate being informed any time you create a modified version of Rosetta
+that you are willing to distribute, because that is a practical way of 
+suggesting improvements to the standard version.
+
+=head1 DESCRIPTION
+
+All concepts in the Rosetta Core, mainly those represented by the Schema
+modules, but to a lesser extent the Engine modules, can be represented by a
+data dictionary.  Such a data dictionary can be a linked in-memory set of
+objects (or serialized version thereof), or they can be represented by records
+in database tables having specific columns and constraints.  This documentation
+will attempt to explain the components of a Rosetta data dictionary and how
+they relate.  Since Rosetta doesn't actually use any database tables
+internally, and that it is your application which would map such database
+tables to Rosetta objects, you are free to modify this schema to your liking. 
+However, it is recommended that you mainly just add columns, such as for adding
+user visible text descriptions of each record, rather than changing or removing
+the suggested columns.
+
+=head1 STRUCTURE
+
+Here is a set of diagrams that show visually how the various tables relate.  The 
+structure of the individual tables themselves are explained in other sections 
+further below.  All of the relationships are either many-to-one or one to one; 
+most are optional, but for simplicity all lines are solid below.
+
+=head2 Commands and Results
+
+	cct_command_type
+	      |
+	     /|\
+	   command=>---command_list
+	    |  \|/ (a command can be executed multiple times for multiple results)
+	   /|\  |  (a result can be used as input or context for multiple commands)
+	   result
+	     \|/
+	      |
+	cct_result_type
+
+=head2 Data Types
+
+	cct_data_type
+	    |
+	   /|\
+	data_type=>---cct_str_latin_case
+	   \|/
+	    |
+	cct_str_enc
+
+=head2 Expression Types
+
+	cct_expr_type
+	    |
+	   /|\
+	expr_type=>---cct_standard_func
+
+=head2 Name Spaces
+
+	  table   sequence
+	   \|/      \|/
+	    |        |
+	namespace----+-<=procedure
+	    |        |
+	   /|\      /|\
+	  view    function
+	 (named)
+
+=head2 Tables
+
+	 trigger      data_type
+	   \|/            |
+	    |            /|\
+	  table------<=table_col=>----sequence
+	    |(2)          |(2)
+	   /|\           /|\
+	table_ind--<=table_ind_col
+	   \|/
+	    |
+	cct_index_type
+
+=head2 Views
+
+	 data_type
+	     |
+	    /|\
+	 view_col=>----view  cct_rs_merge_type  expr_type;(t;v_col via src)
+	     |           |     |                    |
+	    /|\         /|\   /|\                  /|\
+	view_col_src=>--view_rowset---<=view_src_filter;view_grp;view_grp_filter;view_order
+	    \|/             \|/
+	     |               |
+	     +------------view_src----<=view_join(/_col)
+	(t;v_col via src)   \|/           |(2)
+	                     |           /|\
+	                 table;view  cct_rs_join_type
+
+=head2 Other
+
+To be added: blocks, functions, procedures, triggers, sequences, etc.
+
+=head1 CONSTANT CODE TABLES
+
+These tables correspond to basic concepts that are hard-coded into Rosetta and
+they are intended to be read-only.  The table contents are meant for two main
+uses, one being for foreign key constraints on enumerated type columns in other
+tables, and the other being for a source of picklist values on forms that users
+define Rosetta schemas with.
+
+The values in these tables are stored in code by the Rosetta::Schema::Codes
+class.  You can get the values for these tables from that class, and don't have
+to code them yourself.  The other Rosetta classes use the Codes class
+internally for when they need to know this information, and hence are not
+susceptible to security risks from someone altering the following tables in the
+database.
+
+=head2 cct_command_type
+
+This table enumerates the basic types of Rosetta Commands that an application 
+can execute against a database or other Result context.
+
+Column List:
+
+	code - str,req - name of the command type
+	can_rd_db - bool,req - true when command may open/close db connection or confirm its existence
+	can_wr_db - bool,req - true when command may create/delete/move/copy db (what about expl save?)
+	can_rd_user - bool,req - true when command may confirm presence/details of database users
+	can_wr_user - bool,req - true when command may create/remove users or alter privileges
+	can_rd_sch - bool,req - true when command may confirm presence/details of table/view/block
+	can_wr_sch - bool,req - true when command may create/alter/delete tables/views/blocks/etc
+	can_rd_rec - bool,req - true when command may fetch/count table records, by any means
+	can_wr_rec - bool,req - true when command may insert or update or delete table records
+
+Index List:
+
+	primary - unique - [code]
+
+Record List:
+
+	|code        |rd|wd|ru|wu|rs|ws|rr|wr|
+	|------------|--|--|--|--|--|--|--|--|
+	|db_list     |1 |0 |0 |0 |0 |0 |0 |0 | - fetches a list of auto-detectable database instances
+	|db_info     |1 |0 |0 |0 |0 |0 |0 |0 | - fetches some detailed info about a database instance
+	|db_verify   |1 |0 |0 |0 |0 |0 |0 |0 | - compares a provided db spec to an actual database
+	|db_open     |1 |0 |0 |0 |0 |0 |0 |0 | - opens a connection between app and a database instance
+	|db_close    |1 |0 |0 |0 |0 |0 |0 |0 | - closes a connection between app and a database instance
+	|db_ping     |1 |0 |0 |0 |0 |0 |0 |0 | - verifies that a db connection is still open
+	|db_create   |0 |1 |0 |0 |0 |0 |0 |0 | - creates a new database instance
+	|db_delete   |0 |1 |0 |0 |0 |0 |0 |0 | - deletes a database instance
+	|db_clone    |1 |1 |0 |0 |0 |0 |0 |0 | - makes a clone of a db instance in another storage loc
+	|db_move     |1 |1 |0 |0 |0 |0 |0 |0 | - moves a db inst from one storage location to another
+	|user_list   |0 |0 |1 |0 |0 |0 |0 |0 | - fetches a list of users in open db instance
+	|user_info   |0 |0 |1 |0 |0 |0 |0 |0 | - fetches some detailed info about a database user
+	|user_verify |0 |0 |1 |0 |0 |0 |0 |0 | - compares a provided user spec to an actual user
+	|user_create |0 |0 |0 |1 |0 |0 |0 |0 | - creates new db user one can auth db_open with (if privs)
+	|user_delete |0 |0 |0 |1 |0 |0 |0 |0 | - deletes db user (as well as all schema it owns, if applic)
+	|user_clone  |0 |0 |1 |1 |0 |0 |0 |0 | - creates a clone of an existing user with different name
+	|user_grant  |0 |0 |0 |1 |0 |0 |0 |0 | - grants a db privilege to a db user
+	|user_revoke |0 |0 |0 |1 |0 |0 |0 |0 | - revokes a db privilege from a db user
+	|table_list  |0 |0 |0 |0 |1 |0 |0 |0 | - fetches a list of tables in schema of open db instance
+	|table_info  |0 |0 |0 |0 |1 |0 |0 |0 | - fetches some detailed info about a database instance
+	|table_verify|0 |0 |0 |0 |1 |0 |0 |0 | - compares a provided table spec to an actual table
+	|table_create|0 |0 |0 |0 |0 |1 |0 |0 | - creates a new table in schema of open db inst
+	|table_delete|0 |0 |0 |0 |0 |1 |0 |0 | - deletes an existing table in open db inst (if it can)
+	|table_clone |0 |0 |0 |0 |1 |1 |0 |0 | - creates a clone of an existing table with different name
+	|table_update|0 |0 |0 |0 |0 |1 |0 |0 | - alters schema for an existing table
+	|view_list   |0 |0 |0 |0 |1 |0 |0 |0 | - fetches a list of views in schema of open db instance
+	|view_info   |0 |0 |0 |0 |1 |0 |0 |0 | - fetches some detailed info about a database instance
+	|view_verify |0 |0 |0 |0 |1 |0 |0 |0 | - compares a provided view spec to an actual view
+	|view_create |0 |0 |0 |0 |0 |1 |0 |0 | - creates a new view in schema of open db inst
+	|view_delete |0 |0 |0 |0 |0 |1 |0 |0 | - deletes an existing view in open db inst (if it can)
+	|view_clone  |0 |0 |0 |0 |1 |1 |0 |0 | - creates a clone of an existing view with different name
+	|view_update |0 |0 |0 |0 |0 |1 |0 |0 | - alters schema for an existing view
+	|block_list  |0 |0 |0 |0 |1 |0 |0 |0 | - fetches a list of blocks/procs/funcs of open db instance
+	|block_info  |0 |0 |0 |0 |1 |0 |0 |0 | - fetches some detailed info about a database instance
+	|block_verify|0 |0 |0 |0 |1 |0 |0 |0 | - compares a provided block spec to an actual block
+	|block_create|0 |0 |0 |0 |0 |1 |0 |0 | - creates a new block in schema of open db inst
+	|block_delete|0 |0 |0 |0 |0 |1 |0 |0 | - deletes an existing block in open db inst (if it can)
+	|block_clone |0 |0 |0 |0 |1 |1 |0 |0 | - creates a clone of an existing block with different name
+	|block_update|0 |0 |0 |0 |0 |1 |0 |0 | - alters schema for an existing block
+	|rec_fetch   |0 |0 |0 |0 |0 |0 |1 |0 | - fetches records from a table or view of multiple tables
+	|rec_verify  |0 |0 |0 |0 |0 |0 |1 |0 | - compares a provided set of records to stored ones
+	|rec_insert  |0 |0 |0 |0 |0 |0 |0 |1 | - inserts new recs into a table or view of multiple tables
+	|rec_update  |0 |0 |0 |0 |0 |0 |0 |1 | - updates exist recs in a table or view of multiple tables
+	|rec_c_update|0 |0 |0 |0 |0 |0 |0 |1 | - updates exist recs with calculation rather than value list
+	|rec_delete  |0 |0 |0 |0 |0 |0 |0 |1 | - deletes exist recs from a table or view of multiple tables
+	|rec_replace |0 |0 |0 |0 |0 |0 |0 |1 | - either updates or inserts recs if they exist or not
+	|rec_clone   |0 |0 |0 |0 |0 |0 |0 |1 | - creates a clone of a record in same table/view (if possible)
+	|rec_lock    |0 |0 |0 |0 |0 |0 |1 |1 | - places a lock on recs for a consistant read plus update
+	|rec_unlock  |0 |0 |0 |0 |0 |0 |1 |1 | - releases an existing lock on recs
+	|tra_start   |0 |0 |0 |0 |0 |0 |0 |1 | - starts a new transactional context for later commands
+	|tra_commit  |0 |0 |0 |0 |0 |0 |0 |1 | - commits outstanding rec commands, releases locks
+	|tra_rollback|0 |0 |0 |0 |0 |0 |0 |1 | - rolls back outstanding rec commands, releases locks
+	|call_proc   |0 |0 |1 |1 |0 |0 |1 |1 | - calls a stored procedure to do some predefined task
+	|call_func   |0 |0 |1 |1 |0 |0 |1 |1 | - calls a stored function to do some predefined task
+
+	Note that the above list isn't technically true when certain types of databases are used, 
+	but this exception is something that would be abstracted away by the driver, so isn't part 
+	of the normal RNI.  The exception is with certain small RDBMS products which maintain their 
+	database entirely in RAM with periodic flushes to disk, such as with certain small scale 
+	products.  What happens is that all parts of the database are stored in a single file on 
+	disk, which is read fully into RAM by the 'db_open' command, and written fully to disk 
+	either on 'db_close' or other times.  Most databases by contrast save any changes to their 
+	state to disk immediately.  For those databases, 'wd' could be true for any command type.
+
+=head2 cct_result_type
+
+This table enumerates the basic types of Results that Rosetta can return from executing a 
+Command against a database or other Result context.
+
+Column List:
+
+	code - str,req - name of the command type
+	is_error - bool,req - true when result is an error condition
+	is_conn - bool,req - true when result is a database connection handle
+	is_trans - bool,req - true when result is a database transaction handle
+	is_curs - bool,req - true when result is a database record fetch cursor handle
+	is_rec - bool,req - true when result is a database row returned by a cursor
+	is_var - bool,req - true when result is a variable bound to a db command arg or large result
+	is_lit - bool,req - true when result is a literal value (may be multidimensional)
+
+Index List:
+
+	primary - unique - [code]
+
+Record List:
+
+	|code |er|co|tr|cu|re|va|li|
+	|-----|--|--|--|--|--|--|--|
+	|error|1 |0 |0 |0 |0 |0 |0 | - an error message
+	|conn |0 |1 |0 |0 |0 |0 |0 | - a database connection handle
+	|trans|0 |0 |1 |0 |0 |0 |0 | - a database transaction handle
+	|curs |0 |0 |0 |1 |0 |0 |0 | - a database record fetch cursor handle
+	|rec  |0 |0 |0 |0 |1 |0 |0 | - a database row returned by a cursor
+	|var  |0 |0 |0 |0 |0 |1 |0 | - a variable bound to a db command arg or large result
+	|lit  |0 |0 |0 |0 |0 |0 |1 | - a literal value (may be multidimensional)
+
+=head2 cct_data_type
+
+This table enumerates the basic data types that table columns or view columns 
+or block variables or arguments can be.
+
+Column List:
+
+	code - str,req - name of the base data type
+	size_undefined - bool,req - true when user can't customize space used by data type
+	size_is_bytes - bool,req - true when can customize type to a size measured in bytes
+	size_is_chars - bool,req - true when can customize type to a size measured in chars
+	size_is_fixed - bool - true when customized size is what data always takes up
+	size_is_max - bool - true when data can take up variable space with size the maximum possible
+	typ_min_size - uint - suggested typical minimum size to customize to
+	typ_max_size - uint - suggested typical maximum size to customize to
+	can_use_as_num - bool,req - true when data can be used in mathematics in its natural form
+
+Index List:
+
+	primary - unique - [code]
+
+Record List:
+
+	|code    |un|by|ch|if|im|min|       max|num|
+	|--------|--|--|--|--|--|---|----------|---|
+	|bin     |0 |1 |0 |0 |1 |  1|4294967295|0  | - stores anything as binary data
+	|str     |0 |0 |1 |0 |1 |  1|4294967295|0  | - stores character data
+	|bool    |1 |0 |0 |  |  |   |          |0  | - a boolean; only 2 values of false or true
+	|int     |0 |1 |0 |1 |0 |  1|         8|1  | - a precise integer
+	|float   |0 |1 |0 |1 |0 |  4|         8|1  | - an imprecise fractional number
+	|dec     |0 |1 |0 |1 |0 |  1|       255|1  | - a precise fractional number as base-10 str
+	|datetime|1 |0 |0 |  |  |   |          |0  | - a date or time or both (may be split up)
+
+	Geographical types are expected to be added as well.  Maybe enumerated or set types also.
+
+=head2 cct_str_enc
+
+This table enumerates the set of known character string encodings that can be
+used by character data, with Unicode being the recommended one to use when
+possible, and with Ascii being the most common legacy encoding.  Encodings are 
+only applicable to data which is measured in characters.
+
+Column List:
+
+	code - str,req - name of the character encoding
+	bytes_per_char - int,req - num bytes used to store each character; typically 1
+	has_latin_chars - bool,req - true when operations like upper/lowercase have any meaning
+
+Index List:
+
+	primary - unique - [code]
+
+Record List:
+
+	|code  |bpc|lat|
+	|------|---|---|
+	|utf8  |  1|1  | - 8 bit unicode
+	|utf16 |  2|1  | - 16 bit unicode
+	|utf32 |  4|1  | - 32 bit unicode
+	|ascii |  1|1  | - ascii
+	|ebsdic|  1|1  | - ebsdic
+
+	Note that some of these examples may be wrong for practical use and be changed later.
+
+=head2 cct_str_latin_case
+
+This table enumerates a set of options for normalizing the case of latin
+characters in strings, so that they can be matched reliably with case-sensitive
+(normal) string operations, even if they are conceptually case-insensitive.
+When this attribute is used with table columns, for example, it may cause data
+to be upper/lowercased prior to insertion, losing knowledge of the old case.
+
+One place that this is helpful is when dealing with database systems that are
+both case-insensitive and case-sensitive with the same data depending on how
+you access it.  For example, Oracle table and column names when declared as
+barewords, the normal SQL way, will match in a case-insensitive fashion with
+other barewords, but will match case-sensitive full-uppercase only when
+matching either with double-quoted strings or when looking in the special
+'user_tables' et al Oracle views.  (As if that paragraph is helpful?)
+
+Note that this table's function may be expanded later (with rename) to handle 
+things like whitespace trimming et al, or maybe it won't.
+
+Column List:
+
+	code - str,req - name of the latin case normalization type
+	uc_latin - bool,req - uppercase everything prior to writing, no change on reading
+	lc_latin - bool,req - lowercase everything prior to writing, no change on reading
+
+Index List:
+
+	primary - unique - [code]
+
+Record List:
+
+	|code    |uc|lc|
+	|--------|--|--|
+	|preserve|0 |0 | - everything is case-sensitive, no transformation is done (default)
+	|toupper |1 |0 | - uppercase everything prior to writing, no change on reading
+	|tolower |0 |1 | - lowercase everything prior to writing, no change on reading
+
+=head2 cct_index_type
+
+This table enumerates the basic index types that database tables can have
+applied to them; each instance of these can apply to multiple columns at once.  
+All indexes are intended to make accessing table data faster, but some also 
+will impose constraints on what data can be put in the columns.
+
+Column List:
+
+	code - str,req - name of the table index type
+	is_unique - bool,req - true if index imposes a unique key constraint
+	is_foreign - bool,req - true if index imposes a foreign key constraint
+
+Index List:
+
+	primary - unique - [code]
+
+Record List:
+
+	|code    |uk|fk|
+	|--------|--|--|
+	|noconstr|0 |0 | - index is simply to make db faster, no constraints are imposed
+	|unique  |1 |0 | - index imposes a unique key constraint on a set of columns
+	|foreign |0 |1 | - index imposes a many-to-one foreign key constraint on a set of columns
+	|uforeign|1 |1 | - index imposes a one-to-one foreign key (assuming target is a unique key)
+
+=head2 cct_rs_merge_type
+
+This table enumerates the standard ways that multiple compatible view row sets
+can be merged into a single row set, where all of the input row sets have the
+same set of columns as the the output row set, and each single output row
+matches a distinct input row.  A union is the most common such operation.  
+
+Column List:
+
+	code - str,req - name of the view row set merge type
+	max_inputs - int,req - number of input sets that this set merge operator can take; 0 = unlimited
+	keeps_all - bool,req - true if all input rows are always returned, false if some may not be
+	is_unique - bool,req - true if all returned rows are distinct, false if duplicates may occur
+
+Index List:
+
+	primary - unique - [code]
+
+Record List:
+
+	|code     |max|all|unq|
+	|---------|---|---|---|
+	|distinct |  1|0  |1  | - all distinct rows from a single input set, like a "select distinct ..."
+	|all      |  0|1  |0  | - all input rows are returned, like a "union all" (the default)
+	|union    |  0|0  |1  | - all distinct rows that are each in at least one input set
+	|intersect|  0|0  |1  | - all distinct rows that are each in every input set
+	|exclusive|  0|0  |1  | - all distinct rows that are each in exactly one input set (exclusive or)
+	|minus    | ?2|0  |1  | - all distinct rows from one input set that are not in the others
+
+=head2 cct_rs_join_type
+
+This table enumerates the standard ways that columns from two tables or views
+can be joined side by side into a single row set, where all values in each
+output column are from exactly one input, and values in columns from separate
+sources are aligned into common rows on related row values.  This is the most
+common way of "relating" data in relational databases.
+
+Column List:
+
+	code - str,req - name of the table or view join type
+	outer_join - bool,req - when true all rows from one source kept even if not matched in the other
+
+Index List:
+
+	primary - unique - [code]
+
+Record List:
+
+	|code |out|
+	|-----|---|
+	|equal|  0| - an equal-join; only rows with related entries in both sources are kept
+	|left |  1| - a left-join; all rows from first source kept even if not matched in second
+
+	A right-join may also be added, but its value is dubious at the moment.
+	Also, there is no concept of a "natural" join at this level of activity.
+
+=head2 cct_expr_type
+
+This table enumerates the basic expression types that views or blocks can contain.  An 
+expression is conceptually like a function which takes zero or more arguments and 
+returns a value; each argument is also an expression.  This is recursive until the 
+expression is one that either takes no arguments (includes constant values or names of 
+variables or columns).
+
+Column List:
+
+	code - str,req - name of the basic expression type
+	is_lit - bool,req - true when expression is a literal value such as a quoted string or number
+	is_var - bool,req - true when expression is a variable name, such as in a block or app call
+	is_col - bool,req - true when expression is a column name, such as in a view, or cursor in block
+	is_view - bool,req - true when expression is a view declaration, such as a subquery or cursor def
+	is_sfunc - bool,req - true when expression is a call to a standard built-in function
+	is_ufunc - bool,req - true when expression is a call to a user-defined stored function
+	can_have_args - bool,req - true when expression might have child expressions
+
+Index List:
+
+	primary - unique - [code]
+
+Record List:
+
+	|code |li|va|co|vw|sf|uf|ha|
+	|-----|--|--|--|--|--|--|--|
+	|lit  |1 |0 |0 |0 |0 |0 |0 |
+	|var  |0 |1 |0 |0 |0 |0 |0 |
+	|col  |0 |0 |1 |0 |0 |0 |0 |
+	|view |0 |0 |0 |1 |0 |0 |0 |
+	|sfunc|0 |0 |0 |0 |1 |0 |1 |
+	|ufunc|0 |0 |0 |0 |0 |1 |1 |
+
+=head2 cct_standard_func
+
+This table enumerates a list of the standard built in functions that can be used
+as parts of view definitions or code blocks like stored procedures or functions
+or triggers.
+
+Column List:
+
+	code - str,req - name of the standard function
+	can_have_args - bool,req - true when function can have any arguments
+	req_min_args - int,req - minimum num of args function must have, whether unlimited or not
+	req_arg_mult - int,req - all args over minimum must be supplied in this multiple (default=1)
+	unlim_args - bool,req - true when function can take any number of arguments over minimum
+	req_max_args - int,req - count of maximum args function can have when not unlimited
+	can_use_in_column - bool,req - true when func type may be used in view column def
+	can_use_in_filter - bool,req - true when func type may be used in view filter (where/having)
+	can_use_in_block - bool,req - true when func type may be used in a block (eg: stored proc)
+	data_type - str - basic data type that function returns
+
+Index List:
+
+	primary - unique - [code]
+
+Record List:
+
+I<This section still needs to be written>
+
+=head1 DEPRECATED POD: ROSETTA NATIVE DATA DICTIONARY STRUCTURE
+
+Here is a brief legend of syntax used here; it isn't perfect:
+
+	:= - means name on left is defined by expression on the right
+	TEXT - represents literal text (literal in serialized form anyway)
+	<text> - represents a named component that is defined near-by
+	() - represents a grouping or boundary of portions used together
+	| - an exclusive-or meaning to use either portion on left or on right
+	{n,n} - means allowed number of repetitions of on left (delimited by commas)
+	[] - represents an optional portion
+	# - start of a line comment
+	... definition is described by comment rather than given normally
+
+Here are the component definitions, not quite complete:
+
+	<database> := DATABASE 
+		HAS (<namespace>{0,})
+
+	<namespace> := NAMESPACE 
+		ID (<entity-id>) 
+		HIERARCHY (<entity-id>{0,2})  # eg: Oracle user/schema name, db instance name
+		HAS (<schema-object>{0,})
+
+	<entity-id> := ...  # scalar value: either an alphanumeric string or an integer
+
+	<schema-object> := (<table>|<sequence>|<view>|<procedure>|<trigger>)
+
+	<table> := TABLE 
+		ID (<table-id>)
+		COLUMNS (<table-column>{1,})
+		UNIQUE CONSTRAINT (<unique-key>{0,})  # refers to columns in same table only
+		FOREIGN CONSTRAINT (<foreign-key>{0,})  # refers to columns in same table only
+
+	<table-id> := <entity-id>
+
+	<table-column> := 
+		ID (<column-id>) 
+		TYPE (<data-type>)
+		[IS REQUIRED (<boolean>)]  # results in NOT NULL if true; NULL if false
+		[DEFAULT (<column-default>)]
+
+	<column-id> := <entity-id>
+
+	<data-type> := 
+		[NAME (<entity-id>)]
+		BASE (<base-type>)
+		[SIZE (<data-size>)]
+
+	<base-type> := (boolean|int|float|datetime|str|binary)
+
+	<data-size> := ...  # an integer; if not given, has default val based on <base-type>
+
+	<boolean> := (false|true)  # alternately 0 = false; 1 = true
+
+	<column-default> := ((LITERAL (<literal-value>))|(SEQUENCE (<sequence-value>)))
+
+	<literal-value> :=  # any string or numerical value
+
+	<sequence-value> := ...  # not defined yet
+
+	<unique-key> :=  
+		ID (<entity-name>)
+		HAS (<column-id>{1,})
+
+	<foreign-key> :=  
+		ID (<entity-name>)
+		HAS (<column-id>{1,})
+		SOURCE TABLE (<table-name>)
+		SOURCE COLS (<column-id>{1,})
+
+	<sequence> := ...  # not defined yet
+
+	<view> := ...  # not defined yet
+
+	<procedure> := ...  # not defined yet
+
+	<trigger> := ...  # not defined yet
+
+	<select> := SELECT
+		INTERFACE (<column-declaration>{1,})
+		FROM (<select-from>)  # does not select from Views, only tables and literals
+
+	<column-declaration> := 
+		ID (<column-id>) 
+		TYPE (<data-type>)
+
+	<select-from> := (<literal-row>|<source-union>|<source-table>|<source-join>)
+
+	<literal-row> := LITERAL ((<column-id> IS <literal-value>){1,})
+
+	<source-union> := UNION (<select-from>{1,})  # members are selects with same interface
+
+	<source-table> := TABLE 
+		ID (<table-id>)
+		IMPLEMENTATION ((<column-declaration> IS <fomula-node>){1,})
+		[WHERE (<formula-node>)]  # formula-node must return a boolean value
+		[GROUP (<column-declaration>{1,})]  # to expand with formulas
+		[ORDER (<column-declaration>{1,})]  # to expand with formulas
+
+	<formula-node> := ((LITERAL <literal-value>)|(COLUMN <column-declaration>)|<formula>)
+
+	<formula> :=
+		TYPE (<formula-type>)
+		[ARGS (<formula-node>{1,})]  # required when arg-count is greater than zero
+
+	<formula-type> := 
+		NAME (<formula-name>) 
+		RETURNS (<data-type>)
+		[ARG COUNT (<arg-count>)]
+
+	<formula-name> := (if|switch|and|or|add|mult|concat|substr|to_date|to_str|...)
+
+	<arg-count> := ...  # an integer; if not given, has default of infinity
+
+	<source-join> := JOIN
+		SOURCE ((<alias-id> IS <table-id>){1,})  # to expand with sub-selects
+		RELATION (<join-relation>{0,})  # refers to alias-id in SOURCE
+		IMPLEMENTATION ((<column-declaration> IS <fomula-node>){1,})  # col ids are for aliases
+		[WHERE (<formula-node>)]  # formula-node must return a boolean value
+		[GROUP (<column-declaration>{1,})]  # to expand with formulas
+		[ORDER (<column-declaration>{1,})]  # to expand with formulas
+
+	<alias-id> := <entity-id>
+
+	<join-relation> := RELATION
+		TYPE (equal|left)
+		LHS TABLE (<alias-id>)
+		LHS COLUMN (<column-id>)  # to adjust to work with alias-specific column-ids
+		LHS TABLE (<alias-id>)
+		LHS COLUMN (<column-id>)  # to adjust to work with alias-specific column-ids
+
+=head1 DEPRECATED POD: A BASIC TABLE STRUCTURE FOR STORING ROSETTA SCHEMAS
+
+This stuff is an older draft of the previous section, in a way.
+
+	data_type
+		data_type (string)
+		base_type (eg: boolean, int, float, datetime, str, binary)
+		size (in bytes for most types, in chars for strs)
+		store_fixed (boolean, true like 'char', false like 'varchar')
+
+	calc_type (used in both select column definitions and where clauses)
+		calc_type (means 'function name'; eg: sum, concat, and, or, ifnull, switch/choose/decode)
+		data_type -> data_type (for function output)
+		arg_count (int; number of function inputs; null means open-ended, like for 'concat')
+
+	matrix (interface)
+		matrix_id
+		is_table (means 'is named', 'is stored in rdbms', 'has constraints', 'is not select or view')
+		is_view (means 'is named', 'is actually or conceptually stored in rdbms','is join or union')
+		is_union (means 'each column from one or more sources', 'each row from exactly one source')
+		is_hierarchy (like a union, rows exactly one source, related by n-levels of self-relations)
+		is_join (means 'each column from exactly one source', 'each row from one or more sources')
+		is_unique (means 'is distinct' or 'group by all cols' or 'no two rows ident for every col')
+		seq_num (if necessary)
+
+	matrix_col (interface)
+		matrix_col_id
+		matrix_id -> matrix
+		col_name
+		data_type -> data_type
+		default_val (null by default, stored on unspec insert, ret in view when col not 'impemented')
+		seq_num (if necessary)
+
+	schema
+		schema_name
+
+	matrix_stored (used when 'is table' or 'is view')
+		matrix_id -> matrix
+		schema_name -> schema
+		matrix_name (either table name or view name or some temporary unique thing)
+
+	matrix_stored_col (used when 'is table')
+		matrix_col_id -> matrix_col
+		is_req (means 'is not null')
+
+	matrix_union (used when 'is union')
+		matrix_id -> matrix (output/parent)
+		source_id -> matrix (input/child)
+		seq_num (if necessary)
+
+	matrix_hierarchy (used when 'is hierarchy'; may need split if multi cols in relation)
+		matrix_id -> matrix (output/parent)
+		self_col_id -> matrix_col (eg: the primary key)
+		parent_col_id -> matrix_col (eg: the primary key of the parent record)
+
+	matrix_join_src (used when 'is join')
+		matrix_id -> matrix (output/parent)
+		source_alias (name to use in 'from matrix_name as alias_name'
+		source_id -> matrix (input/child)
+		seq_num (if necessary)
+
+	matrix_join_rel (used when 'is join' and more than one matrix_join_src)
+		matrix_id -> matrix (output/parent)
+		is_equal_join (means 'is not left join' and 'is not outer join')
+		is_left_join (means 'is not equal join' or 'is outer join?')
+		lhs_src_alias -> matrix_join_src (all rows are returned on left join)
+		rhs_src_alias -> matrix_join_src (rows may be missing on left join)
+
+	matrix_calc_node (used when not 'is table')
+		calc_id
+		matrix_id -> matrix (used by node tree that is in)
+		calc_type -> calc_type (says ret data type, leaf or not, or function vs col vs literal)
+		parent_calc_id -> matrix_calc_node (null if self is a root node, set if self is arg)
+		source_alias_name -> matrix_join_src (set if leaf, retval from col and not literal)
+		source_col_id -> matrix_col (set if leaf, retval from col and not literal)
+		literal_value (set if leaf, retval is literal and not col)
+
+	matrix_view_col (used when not 'is table')
+		matrix_col_id -> matrix_col (used in)
+		matrix_calc -> matrix_calc_node (root node of column calculation tree)
+
+	matrix_where (used when not 'is table')
+		matrix_id -> matrix (used in)
+		matrix_calc -> matrix_calc_node (root node of where-clause calc tree; must return boolean)
+
+=head1 DEPRECATED POD: ANOTHER WAY OF SAYING THAT
+
+This stuff is an older draft of the previous section, in a way.
+
+	schema
+		cols
+			schema_name - type=entitynm; req=1; ukey=primary
+
+	table
+		cols
+			schema_name - type=entitynm; req=1; ukey=primary
+			table_name - type=entitynm; req=1; ukey=primary
+		fkeys
+			fk_schema - table=schema; cols=schema_name
+
+	table_col
+		cols
+			schema_name - type=entitynm; req=1; ukey=primary
+			table_name - type=entitynm; req=1; ukey=primary
+			table_col - type=entitynm; req=1; ukey=primary
+			data_type - type=entitynm; req=1
+			is_req - type=boolean
+			default_val - type=generic
+			auto_inc - type=boolean
+		fkeys
+			fk_table - table=table; cols=schema_name,table_name
+			fk_data_type - table=data_type; cols=data_type 
+
+	table_ukey
+		cols
+			schema_name - type=entitynm; req=1; ukey=primary
+			table_name - type=entitynm; req=1; ukey=primary
+			ukey_name - type=entitynm; req=1; ukey=primary
+		fkeys
+			fk_table - table=table; cols=schema_name,table_name
+
+	table_ukey_col
+		cols
+			schema_name - type=entitynm; req=1; ukey=primary
+			table_name - type=entitynm; req=1; ukey=primary
+			ukey_name - type=entitynm; req=1; ukey=primary
+			table_col - type=entitynm; req=1; ukey=primary
+		fkeys
+			fk_table_ukey - table=table_ukey; cols=schema_name,table_name,ukey_name
+			fk_table_col - table=table_col; cols=schema_name,table_name,table_col
+
+	table_fkey
+		cols
+			schema_name - type=entitynm; req=1; ukey=primary
+			table_name - type=entitynm; req=1; ukey=primary
+			fkey_name - type=entitynm; req=1; ukey=primary
+			f_schema_name - type=entitynm; req=1
+			f_table_name - type=entitynm; req=1
+		fkeys
+			fk_table - table=table; cols=schema_name,table_name
+			fk_f_table - table=table; cols=f_schema_name(schema_name),f_table_name(table_name)
+
+	table_fkey_col
+		cols
+			schema_name - type=entitynm; req=1; ukey=primary
+			table_name - type=entitynm; req=1; ukey=primary
+			fkey_name - type=entitynm; req=1; ukey=primary
+			table_col - type=entitynm; req=1; ukey=primary
+			f_schema_name - type=entitynm; req=1
+			f_table_name - type=entitynm; req=1
+			f_table_col - type=entitynm; req=1
+		fkeys
+			fk_table_fkey - table=table_fkey; cols=schema_name,table_name,fkey_name
+			fk_table_col - table=table_col; cols=schema_name,table_name,table_col
+			fk_f_table_col - table=table_col; cols=f_schema_name(schema_name),f_table_name(table_name),f_table_col(table_col)
+
+	view - represents one select statement (main or sub) or stored view
+		cols
+			schema_name - type=entitynm; req=1; ukey=primary
+			view_name - type=entitynm; req=1; ukey=primary
+			join_type - type=boolean
+			union_type - type=boolean
+		fkeys
+			fk_schema - table=schema; cols=schema_name
+			fk_join_type - table=join_type; cols=join_type
+			fk_union_type - table=union_type; cols=union_type
+
+	view_col - desc column set of result; in case of unions, describes output of all source subselects or tables
+		cols
+			schema_name - type=entitynm; req=1; ukey=primary
+			view_name - type=entitynm; req=1; ukey=primary
+			view_col - type=entitynm; req=1; ukey=primary
+		fkeys
+			fk_view - table=view; cols=schema_name,view_name
+
+	view_src - for subselects or tables in joins or unions or where_condition
+		cols
+			schema_name - type=entitynm; req=1; ukey=primary
+			view_name - type=entitynm; req=1; ukey=primary
+			src_name - type=entitynm; req=1; ukey=primary
+			s_schema_name - type=entitynm
+			s_table_name - type=entitynm
+			s_view_name - type=entitynm
+		fkeys
+			fk_view - table=view; cols=schema_name,view_name
+			fk_s_table - table=table; cols=s_schema_name(schema_name),s_table_name(table_name)
+			fk_s_view - table=view; cols=s_schema_name(schema_name),s_view_name(view_name)
+
+	view_src_col - for subselects or tables in joins or unions or where_condition
+		cols
+			schema_name - type=entitynm; req=1; ukey=primary
+			view_name - type=entitynm; req=1; ukey=primary
+			src_name - type=entitynm; req=1; ukey=primary
+			view_col - type=entitynm; req=1; ukey=primary
+			s_schema_name - type=entitynm
+			s_table_name - type=entitynm
+			s_table_col - type=entitynm
+			s_view_name - type=entitynm
+			s_view_col - type=entitynm
+		fkeys
+			fk_view_src - table=view_src; cols=schema_name,view_name,src_name
+			fk_view_col - table=view_col; cols=schema_name,view_name,view_col
+			fk_s_table_col - table=table_col; cols=s_schema_name(schema_name),s_table_name(table_name),s_table_col(table_col)
+			fk_s_view_col - table=view_col; cols=s_schema_name(schema_name),s_view_name(view_name),s_view_col(view_col)
+
+	view_col_def
+		cols
+			col_def_id - type=int; req=1; ukey=primary; default=1; auto_inc=1
+			calc_type - type=entitynm; req=1 - eg: am scalar value or am view column or am func with args; data_type of output
+			parent_col_def_id - type=int - set if am arg for another view_col_def which is a func; am not root
+			def_schema_name - type=entitynm - set if am not an arg for a view_col_def; am root
+			def_view_name - type=entitynm - set if am not an arg for a view_col_def; am root
+			def_view_col - type=entitynm - set if am not an arg for a view_col_def; am root
+			col_schema_name - type=entitynm - opt 1 for here-value
+			col_view_name - type=entitynm - opt 1 for here-value
+			col_src_name - type=entitynm - opt 1 for here-value
+			literal_value - type=generic - opt 2 for here-value
+		fkeys
+			fk_calc_type - table=calc_type; cols=calc_type
+			fk_parent - table=view_col_def; cols=parent_col_def_id(col_def_id)
+			fk_def_view_col - table=view_col; cols=def_schema_name(schema_name),def_view_name(view_name),def_view_col(view_col)
+			fk_def_view_col - table=view_src_col; cols=col_schema_name(schema_name),col_view_name(view_name),col_src_name(src_name)
+
+	view_join_def - not needed for unions; used with joins
+
+	view_filter_def - not needed for unions (subquery does it); used with joins
+
+	view_grouping_def - not needed for unions (subquery does it); used with joins
+
+	view_ordering_def - not needed for unions (subquery does it if necessary); used with joins
+
+	... um ... stuff ...
+
+=head1 SEE ALSO
+
+perl(1), Rosetta::Framework.
+
+=cut

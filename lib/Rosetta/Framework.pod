@@ -132,8 +132,8 @@ suggesting improvements to the standard version.
 =head2 Content of settings file "survey_prefs.pl", used by script below:
 
 	my $rh_prefs = {
+		database_driver => 'Rosetta::Driver::MySQL',
 		database_open_args => {
-			driver => 'Rosetta::Driver::MySQL',
 			server => 'survey1',
 			user => 'joebloe',
 			pass => 'fdDF9X0sd7zy',
@@ -226,7 +226,8 @@ suggesting improvements to the standard version.
 
 		my $dbh = $engine->execute_command( {
 			'type' => 'database_open',
-			'args' => $prefs->{database_open_args}, # includes what driver to use
+			'driver' => $prefs->{database_driver},
+			'args' => $prefs->{database_open_args}, # includes server name, user/pass
 		} );
 		if( $dbh->is_error() ) {
 			return( "Error: can't open database: ".$dbh->get_error() );
@@ -354,7 +355,7 @@ suggesting improvements to the standard version.
 
 		# user saw screen and clicked the 'OK' button, so try to destroy;
 		# the following makes a Command of type 'data_insert' and executes it
-		my $dd_view = Rosetta::Schema::Table->new( $dd_table );
+		my $dd_view = Rosetta::Schema::View->new( $dd_table );
 		my $rv = $dbh->execute_command( $dd_view->new_command_insert( $form_values ) );
 		if( $rv->is_error() ) {
 			return( "Error: can't save form values in database: ".$rv->get_error() );
@@ -367,7 +368,7 @@ suggesting improvements to the standard version.
 		my ($dbh, $dd_table, $questions, $form_values) = @_;
 
 		# the following makes a Command of type 'data_select' and executes it
-		my $dd_view = Rosetta::Schema::Table->new( $dd_table );
+		my $dd_view = Rosetta::Schema::View->new( $dd_table );
 		my $cursor = $dbh->execute_command( $dd_view->new_command_select() );
 		if( $cursor->is_error() ) {
 			return( "Error: can't fetch form values from database: ".$cursor->get_error() );
@@ -681,6 +682,8 @@ all of these exist yet, as they are being implemented over time.
 	Rosetta (a placeholder in the public eye for the whole framework; a shim)
 
 	Rosetta::Framework (POD only, holds main framework documentation)
+	Rosetta::DataDictionary (POD only, describes a db suitable for storing Rosetta schemas)
+	Rosetta::API_C (POD only, describes the core C API for Rosetta)
 	Rosetta::SimilarModules (POD only, compares and contrasts Rosetta with other modules)
 
 	Rosetta::Locale (constant data resources, user-readable text base class, allows var subst)
@@ -689,20 +692,21 @@ all of these exist yet, as they are being implemented over time.
 	Rosetta::Locale::* ... like German, Spanish, Dutch, Chinese, etc
 
 	Rosetta::Schema (represents one database schema; owned by one database user)
+	Rosetta::Schema::Codes (declare base types or enums; meanings hard-coded in Rosetta)
 	Rosetta::Schema::DataType (metadata for individual atomic or scalar values)
 	Rosetta::Schema::Table (details of table columns are part of this class)
 	Rosetta::Schema::View (a parsed select, used for any DML like IUD, gen stored views)
-	Rosetta::Schema::User
-	Rosetta::Schema::Privilege (or PrivilegeType)
-	Rosetta::Schema::Procedure (or Function)
-	Rosetta::Schema::* ... like Trigger, Sequence, Package, whatever
+	Rosetta::Schema::Block (a block of code to run in a db; part of a proc, function, trigger)
+	Rosetta::Schema::Procedure (or Function; a named code block invokable from anywhere)
+	Rosetta::Schema::Trigger (a code block assoc with a table, only auto-called by db on events)
+	Rosetta::Schema::* ... like Sequence, Package, User, Privilege, PrivilegeType, whatever
 
 	Rosetta::Engine (base class to provide 'execute' function; calls Drivers)
 	Rosetta::Engine::Command (describes an action to do)
 	Rosetta::Engine::Result (result of action including errors)
-	Rosetta::Engine::Database (represents a connection)
+	Rosetta::Engine::Connection (represents a connection)
 	Rosetta::Engine::Transaction (represents context within connection)
-	Rosetta::Engine::Cursor (result of a selection command)
+	Rosetta::Engine::Cursor (result of a selection command; can be input to insert/update/delete)
 	Rosetta::Engine::* ... like DriverEngineGlobals or whatever
 
 	Rosetta::Driver (base class to provide common public interface)
@@ -724,6 +728,7 @@ all of these exist yet, as they are being implemented over time.
 	Rosetta::Driver::OpenBase (interface to OpenBase db)
 	Rosetta::Driver::FrontBase (interface to FrontBase db)
 	Rosetta::Driver::InterBase (binding to Borland InterBase embedded db)
+	Rosetta::Driver::Firebird (interface to Firebird db)
 	Rosetta::Driver::Solid (interface to Solid db)
 	Rosetta::Driver::Cache (interface to InterSystems Cache db)
 	Rosetta::Driver::xBase (binding to XBase db accessor library)
@@ -898,7 +903,7 @@ Subclasses include: Database.
 
 =item 0
 
-B<Rosetta::Engine::Database> - This Engine class represents a connection
+B<Rosetta::Engine::Connection> - This Engine class represents a connection
 to a database instance, and the simplest database applications use only one.
 You instantiate a Database object by executing a Command of type
 'database_open'; that command usually takes 4 arguments, the first of which
@@ -1049,386 +1054,9 @@ porting.  Since the intended feature set of Rosetta should be a superset
 of existing solutions' feature sets, it should be possible to emulate them with
 it.  
 
-=head1 ROSETTA NATIVE DATA DICTIONARY STRUCTURE
-
-All concepts in the Rosetta Core, mainly those represented by the Schema
-modules, but to a lesser extent the Engine modules, can be represented by a
-data dictionary; such a data dictionary can be a linked in-memory set of
-objects (or serialized version thereof), or they can be represented by records
-in database tables having specific columns and constraints.  This documentation
-will attempt to explain the components of a Rosetta data dictionary and how
-they relate; it is hierarchical-relational in design, and each component is
-expressed in terms of other components or atomic values like strings or
-numbers.  For simplicity of syntax, this documentation will pretend to describe
-command or expression strings that are loosely similar to SQL, even if what
-they represent is not intended to be used in a serialized form.
-
-Here is a brief legend of syntax used here; it isn't perfect:
-
-	:= - means name on left is defined by expression on the right
-	TEXT - represents literal text (literal in serialized form anyway)
-	<text> - represents a named component that is defined near-by
-	() - represents a grouping or boundary of portions used together
-	| - an exclusive-or meaning to use either portion on left or on right
-	{n,n} - means allowed number of repetitions of on left (delimited by commas)
-	[] - represents an optional portion
-	# - start of a line comment
-	... definition is described by comment rather than given normally
-
-Here are the component definitions, not quite complete:
-
-	<database> := DATABASE 
-		HAS (<namespace>{0,})
-
-	<namespace> := NAMESPACE 
-		ID (<entity-id>) 
-		HIERARCHY (<entity-id>{0,2})  # eg: Oracle user/schema name, db instance name
-		HAS (<schema-object>{0,})
-
-	<entity-id> := ...  # scalar value: either an alphanumeric string or an integer
-
-	<schema-object> := (<table>|<sequence>|<view>|<procedure>|<trigger>)
-
-	<table> := TABLE 
-		ID (<table-id>)
-		COLUMNS (<table-column>{1,})
-		UNIQUE CONSTRAINT (<unique-key>{0,})  # refers to columns in same table only
-		FOREIGN CONSTRAINT (<foreign-key>{0,})  # refers to columns in same table only
-
-	<table-id> := <entity-id>
-
-	<table-column> := 
-		ID (<column-id>) 
-		TYPE (<data-type>)
-		[IS REQUIRED (<boolean>)]  # results in NOT NULL if true; NULL if false
-		[DEFAULT (<column-default>)]
-
-	<column-id> := <entity-id>
-
-	<data-type> := 
-		[NAME (<entity-id>)]
-		BASE (<base-type>)
-		[SIZE (<data-size>)]
-
-	<base-type> := (boolean|int|float|datetime|str|binary)
-
-	<data-size> := ...  # an integer; if not given, has default val based on <base-type>
-
-	<boolean> := (false|true)  # alternately 0 = false; 1 = true
-
-	<column-default> := ((LITERAL (<literal-value>))|(SEQUENCE (<sequence-value>)))
-
-	<literal-value> :=  # any string or numerical value
-
-	<sequence-value> := ...  # not defined yet
-
-	<unique-key> :=  
-		ID (<entity-name>)
-		HAS (<column-id>{1,})
-
-	<foreign-key> :=  
-		ID (<entity-name>)
-		HAS (<column-id>{1,})
-		SOURCE TABLE (<table-name>)
-		SOURCE COLS (<column-id>{1,})
-
-	<sequence> := ...  # not defined yet
-
-	<view> := ...  # not defined yet
-
-	<procedure> := ...  # not defined yet
-
-	<trigger> := ...  # not defined yet
-
-	<select> := SELECT
-		INTERFACE (<column-declaration>{1,})
-		FROM (<select-from>)  # does not select from Views, only tables and literals
-
-	<column-declaration> := 
-		ID (<column-id>) 
-		TYPE (<data-type>)
-
-	<select-from> := (<literal-row>|<source-union>|<source-table>|<source-join>)
-
-	<literal-row> := LITERAL ((<column-id> IS <literal-value>){1,})
-
-	<source-union> := UNION (<select-from>{1,})  # members are selects with same interface
-
-	<source-table> := TABLE 
-		ID (<table-id>)
-		IMPLEMENTATION ((<column-declaration> IS <fomula-node>){1,})
-		[WHERE (<formula-node>)]  # formula-node must return a boolean value
-		[GROUP (<column-declaration>{1,})]  # to expand with formulas
-		[ORDER (<column-declaration>{1,})]  # to expand with formulas
-
-	<formula-node> := ((LITERAL <literal-value>)|(COLUMN <column-declaration>)|<formula>)
-
-	<formula> :=
-		TYPE (<formula-type>)
-		[ARGS (<formula-node>{1,})]  # required when arg-count is greater than zero
-
-	<formula-type> := 
-		NAME (<formula-name>) 
-		RETURNS (<data-type>)
-		[ARG COUNT (<arg-count>)]
-
-	<formula-name> := (if|switch|and|or|add|mult|concat|substr|to_date|to_str|...)
-
-	<arg-count> := ...  # an integer; if not given, has default of infinity
-
-	<source-join> := JOIN
-		SOURCE ((<alias-id> IS <table-id>){1,})  # to expand with sub-selects
-		RELATION (<join-relation>{0,})  # refers to alias-id in SOURCE
-		IMPLEMENTATION ((<column-declaration> IS <fomula-node>){1,})  # col ids are for aliases
-		[WHERE (<formula-node>)]  # formula-node must return a boolean value
-		[GROUP (<column-declaration>{1,})]  # to expand with formulas
-		[ORDER (<column-declaration>{1,})]  # to expand with formulas
-
-	<alias-id> := <entity-id>
-
-	<join-relation> := RELATION
-		TYPE (equal|left)
-		LHS TABLE (<alias-id>)
-		LHS COLUMN (<column-id>)  # to adjust to work with alias-specific column-ids
-		LHS TABLE (<alias-id>)
-		LHS COLUMN (<column-id>)  # to adjust to work with alias-specific column-ids
-
-=head1 A BASIC TABLE STRUCTURE FOR STORING ROSETTA SCHEMAS
-
-This stuff is an older draft of the previous section, in a way.
-
-	data_type
-		data_type (string)
-		base_type (eg: boolean, int, float, datetime, str, binary)
-		size (in bytes for most types, in chars for strs)
-		store_fixed (boolean, true like 'char', false like 'varchar')
-
-	calc_type (used in both select column definitions and where clauses)
-		calc_type (means 'function name'; eg: sum, concat, and, or, ifnull, switch/choose/decode)
-		data_type -> data_type (for function output)
-		arg_count (int; number of function inputs; null means open-ended, like for 'concat')
-
-	matrix (interface)
-		matrix_id
-		is_table (means 'is named', 'is stored in rdbms', 'has constraints', 'is not select or view')
-		is_view (means 'is named', 'is actually or conceptually stored in rdbms','is join or union')
-		is_union (means 'each column from one or more sources', 'each row from exactly one source')
-		is_hierarchy (like a union, rows exactly one source, related by n-levels of self-relations)
-		is_join (means 'each column from exactly one source', 'each row from one or more sources')
-		is_unique (means 'is distinct' or 'group by all cols' or 'no two rows ident for every col')
-		seq_num (if necessary)
-
-	matrix_col (interface)
-		matrix_col_id
-		matrix_id -> matrix
-		col_name
-		data_type -> data_type
-		default_val (null by default, stored on unspec insert, ret in view when col not 'impemented')
-		seq_num (if necessary)
-
-	schema
-		schema_name
-
-	matrix_stored (used when 'is table' or 'is view')
-		matrix_id -> matrix
-		schema_name -> schema
-		matrix_name (either table name or view name or some temporary unique thing)
-
-	matrix_stored_col (used when 'is table')
-		matrix_col_id -> matrix_col
-		is_req (means 'is not null')
-
-	matrix_union (used when 'is union')
-		matrix_id -> matrix (output/parent)
-		source_id -> matrix (input/child)
-		seq_num (if necessary)
-
-	matrix_hierarchy (used when 'is hierarchy'; may need split if multi cols in relation)
-		matrix_id -> matrix (output/parent)
-		self_col_id -> matrix_col (eg: the primary key)
-		parent_col_id -> matrix_col (eg: the primary key of the parent record)
-
-	matrix_join_src (used when 'is join')
-		matrix_id -> matrix (output/parent)
-		source_alias (name to use in 'from matrix_name as alias_name'
-		source_id -> matrix (input/child)
-		seq_num (if necessary)
-
-	matrix_join_rel (used when 'is join' and more than one matrix_join_src)
-		matrix_id -> matrix (output/parent)
-		is_equal_join (means 'is not left join' and 'is not outer join')
-		is_left_join (means 'is not equal join' or 'is outer join?')
-		lhs_src_alias -> matrix_join_src (all rows are returned on left join)
-		rhs_src_alias -> matrix_join_src (rows may be missing on left join)
-
-	matrix_calc_node (used when not 'is table')
-		calc_id
-		matrix_id -> matrix (used by node tree that is in)
-		calc_type -> calc_type (says ret data type, leaf or not, or function vs col vs literal)
-		parent_calc_id -> matrix_calc_node (null if self is a root node, set if self is arg)
-		source_alias_name -> matrix_join_src (set if leaf, retval from col and not literal)
-		source_col_id -> matrix_col (set if leaf, retval from col and not literal)
-		literal_value (set if leaf, retval is literal and not col)
-
-	matrix_view_col (used when not 'is table')
-		matrix_col_id -> matrix_col (used in)
-		matrix_calc -> matrix_calc_node (root node of column calculation tree)
-
-	matrix_where (used when not 'is table')
-		matrix_id -> matrix (used in)
-		matrix_calc -> matrix_calc_node (root node of where-clause calc tree; must return boolean)
-
-=head1 ANOTHER WAY OF SAYING THAT
-
-This stuff is an older draft of the previous section, in a way.
-
-	schema
-		cols
-			schema_name - type=entitynm; req=1; ukey=primary
-
-	table
-		cols
-			schema_name - type=entitynm; req=1; ukey=primary
-			table_name - type=entitynm; req=1; ukey=primary
-		fkeys
-			fk_schema - table=schema; cols=schema_name
-
-	table_col
-		cols
-			schema_name - type=entitynm; req=1; ukey=primary
-			table_name - type=entitynm; req=1; ukey=primary
-			table_col - type=entitynm; req=1; ukey=primary
-			data_type - type=entitynm; req=1
-			is_req - type=boolean
-			default_val - type=generic
-			auto_inc - type=boolean
-		fkeys
-			fk_table - table=table; cols=schema_name,table_name
-			fk_data_type - table=data_type; cols=data_type 
-
-	table_ukey
-		cols
-			schema_name - type=entitynm; req=1; ukey=primary
-			table_name - type=entitynm; req=1; ukey=primary
-			ukey_name - type=entitynm; req=1; ukey=primary
-		fkeys
-			fk_table - table=table; cols=schema_name,table_name
-
-	table_ukey_col
-		cols
-			schema_name - type=entitynm; req=1; ukey=primary
-			table_name - type=entitynm; req=1; ukey=primary
-			ukey_name - type=entitynm; req=1; ukey=primary
-			table_col - type=entitynm; req=1; ukey=primary
-		fkeys
-			fk_table_ukey - table=table_ukey; cols=schema_name,table_name,ukey_name
-			fk_table_col - table=table_col; cols=schema_name,table_name,table_col
-
-	table_fkey
-		cols
-			schema_name - type=entitynm; req=1; ukey=primary
-			table_name - type=entitynm; req=1; ukey=primary
-			fkey_name - type=entitynm; req=1; ukey=primary
-			f_schema_name - type=entitynm; req=1
-			f_table_name - type=entitynm; req=1
-		fkeys
-			fk_table - table=table; cols=schema_name,table_name
-			fk_f_table - table=table; cols=f_schema_name(schema_name),f_table_name(table_name)
-
-	table_fkey_col
-		cols
-			schema_name - type=entitynm; req=1; ukey=primary
-			table_name - type=entitynm; req=1; ukey=primary
-			fkey_name - type=entitynm; req=1; ukey=primary
-			table_col - type=entitynm; req=1; ukey=primary
-			f_schema_name - type=entitynm; req=1
-			f_table_name - type=entitynm; req=1
-			f_table_col - type=entitynm; req=1
-		fkeys
-			fk_table_fkey - table=table_fkey; cols=schema_name,table_name,fkey_name
-			fk_table_col - table=table_col; cols=schema_name,table_name,table_col
-			fk_f_table_col - table=table_col; cols=f_schema_name(schema_name),f_table_name(table_name),f_table_col(table_col)
-
-	view - represents one select statement (main or sub) or stored view
-		cols
-			schema_name - type=entitynm; req=1; ukey=primary
-			view_name - type=entitynm; req=1; ukey=primary
-			join_type - type=boolean
-			union_type - type=boolean
-		fkeys
-			fk_schema - table=schema; cols=schema_name
-			fk_join_type - table=join_type; cols=join_type
-			fk_union_type - table=union_type; cols=union_type
-
-	view_col - desc column set of result; in case of unions, describes output of all source subselects or tables
-		cols
-			schema_name - type=entitynm; req=1; ukey=primary
-			view_name - type=entitynm; req=1; ukey=primary
-			view_col - type=entitynm; req=1; ukey=primary
-		fkeys
-			fk_view - table=view; cols=schema_name,view_name
-
-	view_src - for subselects or tables in joins or unions or where_condition
-		cols
-			schema_name - type=entitynm; req=1; ukey=primary
-			view_name - type=entitynm; req=1; ukey=primary
-			src_name - type=entitynm; req=1; ukey=primary
-			s_schema_name - type=entitynm
-			s_table_name - type=entitynm
-			s_view_name - type=entitynm
-		fkeys
-			fk_view - table=view; cols=schema_name,view_name
-			fk_s_table - table=table; cols=s_schema_name(schema_name),s_table_name(table_name)
-			fk_s_view - table=view; cols=s_schema_name(schema_name),s_view_name(view_name)
-
-	view_src_col - for subselects or tables in joins or unions or where_condition
-		cols
-			schema_name - type=entitynm; req=1; ukey=primary
-			view_name - type=entitynm; req=1; ukey=primary
-			src_name - type=entitynm; req=1; ukey=primary
-			view_col - type=entitynm; req=1; ukey=primary
-			s_schema_name - type=entitynm
-			s_table_name - type=entitynm
-			s_table_col - type=entitynm
-			s_view_name - type=entitynm
-			s_view_col - type=entitynm
-		fkeys
-			fk_view_src - table=view_src; cols=schema_name,view_name,src_name
-			fk_view_col - table=view_col; cols=schema_name,view_name,view_col
-			fk_s_table_col - table=table_col; cols=s_schema_name(schema_name),s_table_name(table_name),s_table_col(table_col)
-			fk_s_view_col - table=view_col; cols=s_schema_name(schema_name),s_view_name(view_name),s_view_col(view_col)
-
-	view_col_def
-		cols
-			col_def_id - type=int; req=1; ukey=primary; default=1; auto_inc=1
-			calc_type - type=entitynm; req=1 - eg: am scalar value or am view column or am func with args; data_type of output
-			parent_col_def_id - type=int - set if am arg for another view_col_def which is a func; am not root
-			def_schema_name - type=entitynm - set if am not an arg for a view_col_def; am root
-			def_view_name - type=entitynm - set if am not an arg for a view_col_def; am root
-			def_view_col - type=entitynm - set if am not an arg for a view_col_def; am root
-			col_schema_name - type=entitynm - opt 1 for here-value
-			col_view_name - type=entitynm - opt 1 for here-value
-			col_src_name - type=entitynm - opt 1 for here-value
-			literal_value - type=generic - opt 2 for here-value
-		fkeys
-			fk_calc_type - table=calc_type; cols=calc_type
-			fk_parent - table=view_col_def; cols=parent_col_def_id(col_def_id)
-			fk_def_view_col - table=view_col; cols=def_schema_name(schema_name),def_view_name(view_name),def_view_col(view_col)
-			fk_def_view_col - table=view_src_col; cols=col_schema_name(schema_name),col_view_name(view_name),col_src_name(src_name)
-
-	view_join_def - not needed for unions; used with joins
-
-	view_filter_def - not needed for unions (subquery does it); used with joins
-
-	view_grouping_def - not needed for unions (subquery does it); used with joins
-
-	view_ordering_def - not needed for unions (subquery does it if necessary); used with joins
-
-	... um ... stuff ...
-
 =head1 SEE ALSO
 
-perl(1), Rosetta::API_C, Rosetta::SimilarModules, Rosetta, Rosetta::Schema::DataType,
-Rosetta::Schema::Table, Rosetta::Schema::View.
+perl(1), Rosetta::DataDictionary, Rosetta::API_C, Rosetta::SimilarModules, Rosetta, 
+Rosetta::Schema::DataType, Rosetta::Schema::Table, Rosetta::Schema::View.
 
 =cut

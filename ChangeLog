@@ -1,3 +1,31 @@
+2003-05-11   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.09.
+
+	* Updated a few documentation details in file lib/Rosetta/API_C.pod, in the
+	"CONTENT OF rosetta_schema_datatype.h" section.
+
+	* Updated section SYNOPSIS of Framework.pod to make a few small corrections 
+	or improvements.
+
+	* Updated section BRIEF MODULE LIST of Framework.pod, mainly for the Schema
+	modules (stored procedures et al are getting fleshed out; users are demoted
+	since they aren't really part of the schema).
+
+	* Added new file lib/Rosetta/DataDictionary.pod, which describes a database
+	that is suitable for storing all of the Rosetta Schema details, including
+	constant code tables, user data types, user tables, user views, and user
+	code blocks such as stored procedures, functions, and triggers.  This may
+	be expanded later to also describe not only users and privileges but also a
+	means for storing any kind of Command or Response object for such things as
+	logging database activity.  This new file is a rewritten replacement for
+	the last 3 main sections of Framework.pod, which were removed: "ROSETTA
+	NATIVE DATA DICTIONARY STRUCTURE", "A BASIC TABLE STRUCTURE FOR STORING
+	ROSETTA SCHEMAS", "ANOTHER WAY OF SAYING THAT".  However, since the new
+	file isn't finished yet, copies of the 3 old sections have been moved to
+	the bottom of the new file in their original form.  They will be removed
+	when they are fully redundant.
+
 2003-04-27   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.08.

@@ -201,14 +201,9 @@ a type of documentation.  They will be improved.
 	#include "rosetta_types.h"
 
 	/************************************************************************/
-	/* define some constant values here */
-
-	#define FALSE 0
-	#define TRUE  1
-
-	/************************************************************************/
 	/* define some simple data types here */
 
+	/* enumeration of basic data types */
 	typedef enum { 
 		BOOL,    /* a boolean */
 		BIN,     /* binary data */
@@ -219,14 +214,16 @@ a type of documentation.  They will be improved.
 		DATETIME /* a date and time; this may be split into more types */
 		/* may add geographical types */
 		/* may add enumerated or set types */
-	} en_rose_sch_datatype_base; /* enumeration of basic data types */
+	} en_rose_sch_datatype_base; 
 
+	/* enumeration of ways to handle latin character data */
 	typedef enum { 
 		PRESERVE, /* preserve existing case, upper and lower */
 		TOUPPER,  /* convert to upper case */
 		TOLOWER   /* convert to lower case */
-	} en_rose_sch_datatype_case; /* enumeration of ways to handle latin character data */
+	} en_rose_sch_datatype_case; 
 
+	/* meta-data for a scalar unit of data, such as a db table column */
 	typedef struct {
 		dt_rose_string            name          ; /* unique user-readable data type */
 		en_rose_sch_datatype_base base_type     ; /* basic underlying data type */
@@ -240,7 +237,7 @@ a type of documentation.  They will be improved.
 		dt_rose_boolean           int_unsigned  ; /* true = only INTs >= 0 can be stored */
 		dt_rose_uint16            dec_precision ; /* allowed max prec for DEC nums; must be < size */
 		/* others may be added such as min/max allowed num or date values or which calendar to use */
-	} st_rose_sch_datatype; /* meta-data for a scalar unit of data, such as a db table column */
+	} st_rose_sch_datatype; 
 
 	/************************************************************************/
 	/* define some accessor functions here */
