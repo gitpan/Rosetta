@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.13';
+$VERSION = '0.14';
 
 use Locale::KeyedText 0.03;
 
@@ -189,8 +189,10 @@ my %ENUMERATED_TYPES = (
 	'standard_proc' => { map { ($_ => 1) } qw(
 		RETURN 
 		CURSOR_OPEN CURSOR_CLOSE CURSOR_FETCH SELECT_INTO
-		INSERT UPDATE DELETE COMMIT ROLLBACK
-		ROUTINE THROW 
+		INSERT UPDATE DELETE 
+		COMMIT ROLLBACK
+		LOCK UNLOCK 
+		ROUTINE 
 		PLAIN THROW TRY CATCH IF ELSEIF ELSE SWITCH CASE OTHERWISE FOREACH 
 		FOR WHILE UNTIL MAP GREP REGEXP 
 	) },
@@ -198,8 +200,12 @@ my %ENUMERATED_TYPES = (
 		ROOT SCHEMA_OWNER DATA_EDITOR ANONYMOUS
 	) },
 	'command_type' => { map { ($_ => 1) } qw(
-		DB_LIST DB_INFO DB_VERIFY DB_OPEN DB_CLOSE DB_ATTACH DB_DETACH DB_PING 
-		DB_CREATE DB_DELETE DB_CLONE DB_MOVE
+		DB_LIST DB_INFO DB_VERIFY DB_CREATE DB_DELETE DB_CLONE DB_MOVE
+		DB_OPEN 
+		DB_CLOSE 
+		DB_PING DB_ATTACH DB_DETACH 
+		TRA_OPEN 
+		TRA_CLOSE
 		TABLE_LIST TABLE_INFO TABLE_VERIFY
 		TABLE_CREATE TABLE_DELETE TABLE_CLONE TABLE_UPDATE
 		VIEW_LIST VIEW_INFO VIEW_VERIFY
@@ -208,9 +214,9 @@ my %ENUMERATED_TYPES = (
 		ROUTINE_CREATE ROUTINE_DELETE ROUTINE_CLONE ROUTINE_UPDATE
 		USER_LIST USER_INFO USER_VERIFY
 		USER_CREATE USER_DELETE USER_CLONE USER_UPDATE USER_GRANT USER_REVOKE
-		REC_FETCH REC_VERIFY REC_INSERT REC_UPDATE 
+		REC_FETCH 
+		REC_VERIFY REC_INSERT REC_UPDATE 
 		REC_DELETE REC_REPLACE REC_CLONE REC_LOCK REC_UNLOCK
-		TRA_START TRA_COMMIT TRA_ROLLBACK
 		CALL_PROC CALL_FUNC
 	) },
 );
@@ -1181,6 +1187,22 @@ sub get_node {
 
 ######################################################################
 
+sub get_child_nodes {
+	my ($container, $node_type) = @_;
+	my $pseudonodes = $container->{$CPROP_PSEUDONODES};
+	if( defined( $node_type ) ) {
+		unless( $NODE_TYPES{$node_type} ) {
+			$container->_throw_error_message( 'SSM_C_GET_CH_NODES_BAD_TYPE', { 'TYPE' => $node_type } );
+		}
+		my $p_pseudonode = $NODE_TYPES{$node_type}->{$TPI_P_PSEUDONODE} or return( [] );
+		return( [grep { $_->{$NPROP_NODE_TYPE} eq $node_type } @{$pseudonodes->{$p_pseudonode}}] );
+	} else {
+		return( [map { @{$pseudonodes->{$_}} } @L2_PSEUDONODE_LIST] );
+	}
+}
+
+######################################################################
+
 sub with_all_nodes_test_mandatory_attributes {
 	my ($container) = @_;
 	foreach my $nodes_by_type (values %{$container->{$CPROP_ALL_NODES}}) {
@@ -1938,6 +1960,9 @@ sub move_before_sibling {
 sub get_child_nodes {
 	my ($node, $node_type) = @_;
 	if( defined( $node_type ) ) {
+		unless( $NODE_TYPES{$node_type} ) {
+			$node->_throw_error_message( 'SSM_N_GET_CH_NODES_BAD_TYPE', { 'TYPE' => $node_type } );
+		}
 		return( [grep { $_->{$NPROP_NODE_TYPE} eq $node_type } @{$node->{$NPROP_CHILD_NODES}}] );
 	} else {
 		return( [@{$node->{$NPROP_CHILD_NODES}}] );
@@ -2716,6 +2741,18 @@ This "getter" method returns a reference to one of this Container's member
 Nodes, which has a Node Type of NODE_TYPE, and a Node Id of NODE_ID.  You may
 not request a pseudo-node (it doesn't actually exist).
 
+=head2 get_child_nodes([ NODE_TYPE ])
+
+	my $ra_node_list = $model->get_child_nodes();
+	my $ra_node_list = $model->get_child_nodes( 'catalog' );
+
+This "getter" method returns a list of this Container's child Nodes, in a new
+array ref.  A Container's child Nodes are defined as being all Nodes in the
+Container whose Node Type defines them as always having a pseudo-Node parent. 
+If the optional argument NODE_TYPE is defined, then only child Nodes of that
+Node Type are returned; otherwise, all child Nodes are returned.  All Nodes are
+returned in the same order they were added.
+
 =head2 with_all_nodes_test_mandatory_attributes()
 
 	my $model->with_all_nodes_test_mandatory_attributes();
@@ -3041,8 +3078,8 @@ lets you specify which parent's child list you want to move in; if you do not
 provide an PARENT value, then the current Node's primary parent Node is used,
 if possible.  This method will throw an exception if the current Node and the
 specified sibling or parent Nodes are not appropriately related to each other
-(parent <lt>-<gt> child).  If you want to move the current Node to follow the
-sibling instead, then invoke this method on the sibling.
+(parent <-> child).  If you want to move the current Node to follow the sibling
+instead, then invoke this method on the sibling.
 
 =head2 get_child_nodes([ NODE_TYPE ])
 
@@ -3274,6 +3311,6 @@ SQL::SyntaxModel::API_C, SQL::SyntaxModel::ByTree, SQL::SyntaxModel::SkipID,
 Rosetta, Rosetta::Framework, DBI, SQL::Statement, SQL::Translator, SQL::YASP,
 SQL::Generator, SQL::Schema, SQL::Abstract, SQL::Snippet, SQL::Catalog,
 DB::Ent, DBIx::Abstract, DBIx::AnyDBD, DBIx::DBSchema, DBIx::Namespace,
-DBIx::SearchBuilder, TripleStore.
+DBIx::SearchBuilder, TripleStore, and various other modules.
 
 =cut

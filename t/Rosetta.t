@@ -5,9 +5,8 @@
 
 BEGIN { $| = 1; print "1..1\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use Rosetta 0.10;
-use Rosetta::L::en 0.01;
-use Rosetta::Engine::Null 0.01;
+use Rosetta 0.11;
+use Rosetta::L::en 0.02;
 $loaded = 1;
 print "ok 1\n";
 use strict;

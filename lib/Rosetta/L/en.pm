@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ######################################################################
 
@@ -78,8 +78,6 @@ my %text_strings = (
 		"Locale::KeyedText::Message object; you tried to set it to '{ERR}'",
 	'ROS_I_NEW_INTF_NO_ERR' => 
 		"new(): missing ERR_MSG argument; it is mandatory for '{TYPE}' Interfaces",
-	'ROS_I_NEW_INTF_YES_PARENT' => 
-		"new(): the PARENT_INTF argument must be undefined for '{TYPE}' Interfaces",
 	'ROS_I_NEW_INTF_YES_ENG' => 
 		"new(): the ENGINE argument must be undefined for '{TYPE}' Interfaces",
 	'ROS_I_NEW_INTF_NO_ENG' => 
@@ -87,13 +85,9 @@ my %text_strings = (
 	'ROS_I_NEW_INTF_BAD_ENG' => 
 		"new(): invalid ENGINE argument; an Engine may only be a ".
 		"Rosetta::Engine (subclass) object; you tried to set it to '{ENG}'",
-	'ROS_I_NEW_INTF_NODE_TYPE_NOT_SUPP' =>
-		"new(): the given SSM_NODE argument, having a Node Type of '{NTYPE}', ".
-		"can not be associated with a '{ITYPE}' Interface",
-	'ROS_I_NEW_INTF_YES_NODE' => 
-		"new(): the SSM_NODE argument must be undefined for '{TYPE}' Interfaces; ".
-		"this Interface property would be set for you by using its parent Preparation",
 
+	'ROS_I_NEW_INTF_YES_PARENT' => 
+		"new(): the PARENT_INTF argument must be undefined for '{TYPE}' Interfaces",
 	'ROS_I_NEW_INTF_NO_PARENT' => 
 		"new(): missing PARENT_INTF argument; it is mandatory for '{TYPE}' Interfaces",
 	'ROS_I_NEW_INTF_BAD_PARENT' => 
@@ -106,6 +100,9 @@ my %text_strings = (
 		"new(): invalid PARENT_INTF argument; a '{TYPE}' Interface may not have a ".
 		"'{PPTYPE}' Interface as its grand-parent (but its '{PTYPE}' parent type is okay)",
 
+	'ROS_I_NEW_INTF_YES_NODE' => 
+		"new(): the SSM_NODE argument must be undefined for '{TYPE}' Interfaces; ".
+		"this Interface property would be set for you by using its parent Preparation",
 	'ROS_I_NEW_INTF_NO_NODE' => 
 		"new(): missing SSM_NODE argument; it is mandatory for '{TYPE}' Interfaces",
 	'ROS_I_NEW_INTF_BAD_NODE' => 
@@ -116,6 +113,12 @@ my %text_strings = (
 	'ROS_I_NEW_INTF_NODE_NOT_SAME_CONT' =>
 		"new(): invalid SSM_NODE argument; that Node is not in the same Container ".
 		"as the Node associated with PARENT_INTF, so it can not be used",
+	'ROS_I_NEW_INTF_NODE_TYPE_NOT_SUPP' =>
+		"new(): the given SSM_NODE argument, having a Node Type of '{NTYPE}', ".
+		"can not be associated with a '{ITYPE}' Interface",
+	'ROS_I_NEW_INTF_NODE_CMD_TYPE_NOT_SUPP' =>
+		"new(): the given SSM_NODE 'command' Node argument, having a command ".
+		"type of '{CTYPE}', can not be associated with a '{ITYPE}' Interface",
 
 	'ROS_I_DESTROY_HAS_CHILD' => 
 		"destroy(): this Interface has child Interfaces of its ".
@@ -132,6 +135,9 @@ my %text_strings = (
 		"prepare(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
 		"did not return a Rosetta::Interface object, but rather: '{VALUE}'",
 
+	'ROS_I_EXECUTE_BAD_ARG' =>
+		"execute(): invalid BIND_VARS argument; it must be a hash ref if ".
+		"it is defined, but you tried to set it to '{ARG}'",
 	'ROS_I_EXECUTE_MISC_EXCEPTION' =>
 		"execute(): the Rosetta Engine that implements this '{ITYPE}' Interface ".
 		"has thrown a non-Locale::KeyedText::Message exception: '{VALUE}'",
@@ -144,6 +150,11 @@ my %text_strings = (
 
 	'ROS_E_METH_NOT_IMPL' =>
 		"{METH}(): this method is not implemented by the Rosetta '{CLASS}' Engine class",
+
+	'ROS_G_ENGINE_NO_LOAD' =>
+		"the Engine class '{NAME}' failed to load: {ERR}",
+	'ROS_G_ENGINE_NO_ENGINE' =>
+		"the class '{NAME}' does not sub-class Rosetta::Engine so it is not a valid Engine class",
 );
 
 ######################################################################

@@ -850,13 +850,28 @@ present, no DDL-type actions are supported in routines.
 	INSERT - inserts a row into a table/view
 	UPDATE - updates a row in a table/view
 	DELETE - deletes a row in a table/view
-	COMMIT - commits the current transaction
-	ROLLBACK - rolls back the current transaction
-
-	whatsits:
-	ROUTINE,THROW
-	PLAIN,THROW,TRY,CATCH,IF,ELSEIF,ELSE,SWITCH,CASE,OTHERWISE,FOREACH,
-	FOR,WHILE,UNTIL,MAP,GREP,REGEXP
+	COMMIT - commits the current transaction, then starts a new one
+	ROLLBACK - rolls back the current transaction, then starts a new one
+	LOCK - 
+	UNLOCK - 
+	ROUTINE - 
+	PLAIN - 
+	THROW - 
+	TRY - 
+	CATCH - 
+	IF - 
+	ELSEIF - 
+	ELSE - 
+	SWITCH - 
+	CASE - 
+	OTHERWISE - 
+	FOREACH - 
+	FOR - 
+	WHILE - 
+	UNTIL - 
+	MAP - 
+	GREP - 
+	REGEXP - 
 
 =head2 user_type
 
@@ -876,25 +891,45 @@ not be in a database routine, although some commands may be redundant with what
 some routines can do, like DML.  Note that in many cases "db" can mean either
 "database" or "data source" or "catalog link"; "ds" may be used instead.
 
-These commands apply to whole databases and most of them are not dependant on a 
-pre-existing context; one or two may make or depend on a db Connection context.
+Each Command is context-sensitive, meaning that it can only be run in the
+presence of a certain environment or system state or type of resource handle.
+There are several such context types, into which the Commands are grouped.  The
+result of executing a command often is a resource handle or something that
+provides a different context type for subsequent commands.
+
+These commands must be called in a "void" context and do not return any context:
 
 	DB_LIST      - fetches a list of auto-detectable database instances
 	DB_INFO      - fetches some detailed info about a database instance
 	DB_VERIFY    - compares a provided db spec to an actual database
-	DB_OPEN      - opens a link or connection to a database instance from an application
-	DB_CLOSE     - closes a link or connection to a database instance from an application
-	DB_ATTACH    - attaches a link or connection to a database instance from another db instance
-	DB_DETACH    - detaches a link or connection to a database instance from another db instance
-	DB_PING      - verifies that a db connection is still open, that the db is accessible
 	DB_CREATE    - creates a new database instance
 	DB_DELETE    - deletes a database instance
 	DB_CLONE     - makes a clone of a db instance in another storage loc
 	DB_MOVE      - moves a db inst from one storage location to another
 
-These DDL commands can only be used within the context of a database
-Connection, as usually is created by a DB_OPEN command, and destroyed by a
-DB_CLOSE.
+These commands must be called in a "void" context and return a "connection" context:
+
+	DB_OPEN      - opens a link or connection to a database instance from an application
+
+These commands must be called in a "connection" context and destroy that context:
+
+	DB_CLOSE     - closes a link or connection to a database instance from an application
+
+These commands must be called in a "connection" context:
+
+	DB_PING      - verifies that a db connection is still open, that the db is accessible
+	DB_ATTACH    - attaches a link or connection to a database instance from another db instance
+	DB_DETACH    - detaches a link or connection to a database instance from another db instance
+
+These commands must be called in a "connection" context and return a "transaction" context:
+
+	TRA_OPEN     - opens a "lightweight connection" or transactional context to a db from an app
+
+These commands must be called in a "transaction" context and destroy that context:
+
+	TRA_CLOSE    - closes a "lightweight connection" or transactional context to a db from an app
+
+These commands must be called in a "transaction" context:
 
 	TABLE_LIST   - fetches a list of tables in schema of open db instance
 	TABLE_INFO   - fetches some detailed info about a database instance
@@ -917,9 +952,6 @@ DB_CLOSE.
 	ROUTINE_DELETE - deletes an existing routine in open db inst (if it can)
 	ROUTINE_CLONE  - creates a clone of an existing routine with different name
 	ROUTINE_UPDATE - alters schema for an existing routine
-
-These commands may or may not be easily implementable by routines.
-
 	USER_LIST    - fetches a list of users in open db instance
 	USER_INFO    - fetches some detailed info about a database user
 	USER_VERIFY  - compares a provided user spec to an actual user
@@ -930,10 +962,12 @@ These commands may or may not be easily implementable by routines.
 	USER_GRANT   - grants a db privilege to a db user
 	USER_REVOKE  - revokes a db privilege from a db user
 
-These DML commands can only be used within the context of a database
-Connection.  They may also be ignored in favor of the "routine" alternatives.
+These commands must be called in a "transaction" context and return a "cursor" context:
 
 	REC_FETCH    - fetches records from a table or view of multiple tables
+
+These commands must be called in a "transaction" context:
+
 	REC_VERIFY   - compares a provided set of records to stored ones
 	REC_INSERT   - inserts new recs into a table or view of multiple tables
 	REC_UPDATE   - updates exist recs in a table or view of multiple tables
@@ -942,9 +976,9 @@ Connection.  They may also be ignored in favor of the "routine" alternatives.
 	REC_CLONE    - creates a clone of a record in same table/view (if possible)
 	REC_LOCK     - places a lock on recs for a consistant read plus update
 	REC_UNLOCK   - releases an existing lock on recs
-	TRA_START    - starts a new transactional context for later commands
-	TRA_COMMIT   - commits outstanding rec commands, releases locks
-	TRA_ROLLBACK - rolls back outstanding rec commands, releases locks
+
+These commands must be called in a "transaction" or "connection" context, maybe more:
+
 	CALL_PROC    - calls a stored procedure to do some predefined task
 	CALL_FUNC    - calls a stored function to do some predefined task
 
@@ -973,9 +1007,9 @@ described by one (possibly 'wrapped') line, in this format:
 	<attr-name> - <major-type>.<minor-type>[ - <mandatory-flag>] - <description>
 
 In the above usage, the major-type is shortened from its full name like this:
-"literal" -<gt> "L", "enumerated" -<gt> "E", "node_ref" -<gt> "N".  When the
-major-type is "node_id", then "NODE_ID" appears in place of the combined major
-and minor types on the line.
+"literal" -> "L", "enumerated" -> "E", "node_ref" -> "N".  When the major-type
+is "node_id", then "NODE_ID" appears in place of the combined major and minor
+types on the line.
 
 The mandatory-flag indicates whether the attribute is mandatory.  If it is
 absent, then the attribute is optional under all local (considering only that

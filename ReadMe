@@ -9,7 +9,6 @@ CONTENTS
 * Keeping Up To Date
 * Dependencies
 * Support
-* Bugs
 * Credits
 * Copyright And License
 
@@ -63,13 +62,6 @@ Currently I don't have any support arranged with other people, lists, newsgroups
 or otherwise.  Feel free to ask me if you can't figure things out on your own, or
 another person whom you know has used this.  I may start a mailing list for 
 support issues later, so that users of my modules can help each other with them.
-
-BUGS
-
-It appears that the Pod::Man with Perl 5.6.0 (and perhaps other versions)
-doesn't support the "head3" directive.  I would have liked to use this in
-lib/Rosetta/SimilarModules.pod, but can't so my level 3 headings there are
-one-line paragraphs instead.
 
 CREDITS
 

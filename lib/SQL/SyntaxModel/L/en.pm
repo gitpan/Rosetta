@@ -11,7 +11,7 @@ use 5.006;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 ######################################################################
 
@@ -76,6 +76,9 @@ my %text_strings = (
 		"get_node(): missing NODE_ID argument",
 	'SSM_C_GET_NODE_BAD_TYPE' => 
 		"get_node(): invalid NODE_TYPE argument; there is no Node Type named '{TYPE}'",
+
+	'SSM_C_GET_CH_NODES_BAD_TYPE' => 
+		"get_child_nodes(): invalid NODE_TYPE argument; there is no Node Type named '{TYPE}'",
 
 	'SSM_N_NEW_NODE_NO_ARGS' => 
 		"new_node(): missing NODE_TYPE argument",
@@ -268,6 +271,9 @@ my %text_strings = (
 	'SSM_N_MOVE_PRE_SIB_S_NOT_S' => 
 		"move_before_sibling(): invalid SIBLING argument; ".
 		"the current Node does not share PARENT (or its primary parent) with that Node",
+
+	'SSM_N_GET_CH_NODES_BAD_TYPE' => 
+		"get_child_nodes(): invalid NODE_TYPE argument; there is no Node Type named '{TYPE}'",
 
 	'SSM_N_ADD_CH_NODE_NO_ARGS' => 
 		"add_child_node(): missing NEW_CHILD argument",

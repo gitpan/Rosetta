@@ -1,3 +1,95 @@
+2004-03-21   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.27.
+
+	* Dropped the module Rosetta::Engine::Null from this distribution as it no
+	longer seems to serve a purpose.  The current replacement plan is that
+	tests of the Rosetta core by itself will test how it behaves without any
+	Engine modules being present, so Null is no longer necessary as a
+	placeholder for one.  Moreover, the comprehensive tests in the upcoming
+	Validator distribution will take over where the basic core tests leave off,
+	and test the full RNI against each available actual Engine.  All references
+	to Null in other files (save the ChangeLog) were removed.
+
+	* Dropped the documentation file Rosetta::SimilarModules from this
+	distribution as its actual value seems dubious at the moment.  All of the
+	'similar' modules referenced by it are now just listed in the SEE ALSO of
+	Rosetta itself; more modules were also added to said SEE ALSO.  Something
+	functionally like the removed file may re-appear later if one is needed,
+	but none will be in the short term.  All references to SimilarModules in
+	other files (save the ChangeLog) were removed; the entire BUGS section in
+	the ReadMe was also removed, since it only existed concerning a POD problem
+	in SimilarModules.
+
+	* Added new Container method get_child_nodes() to SQL::SyntaxModel (now
+	v0.14) which lets you fetch all Nodes that have pseudo-Node parents, or
+	just those of one Node type.  The addition of this method allows a SSM
+	object to be a lot more discoverable; previously you could only fetch a
+	Node from a Container if you either knew its Node Id or you had a related
+	Node in hand.  Also, the Node method get_child_nodes() now throws an
+	exception if given a bad (non-existing Type) argument.  It's en.pm file is
+	correspondingly updated (now v0.04).  Trivial SEE ALSO change too.
+
+	* Updated Language.pod mainly to reorganize the ENUMERATED ATTRIBUTE TYPES 
+	details for command_type (mainly) and standard_proc.  No other changes in 
+	that file.  Corresponding small data changes were made in SyntaxModel.pm.
+
+	* Multiple updates to Rosetta.pm (now v0.11) and its en.pm file (now
+	v0.02).  Most code changes were in: new() and its support functions,
+	prepare() and its support functions, execute().  Smaller code changes in:
+	destroy(), finalize(), has_more_rows(), fetch_row(), fetch_all_rows().
+	Added new method get_supported_features().  Added new main documentation
+	section FEATURE SUPPORT VALIDATION.  Small updates to SYNOPSIS.
+
+	* Multiple updates to Framework.pod, entirely in BRIEF MODULE LIST and
+	OLDER DOCUMENTATION (except a bit in SEE ALSO).  Mainly this saw various
+	not yet existing modules reorganized: the Rosetta-Engines distribution is
+	now split, a new Rosetta::Engine::Generic module was added which will be my
+	first "catch all" Engine, the utility modules like for SQL generating or
+	parsing are now in a Utilities distro rather than with Engines or
+	Emulators, a temporary Rosetta-Extensions distro will be created first to
+	hold my initial Engine and Emulator and SQL generator and parser; the
+	distro will go away or be split up when said modules get to alpha status.
+
+	* No changes were made to ByTree.pm, SkipID.pm, their en.pm files, or the
+	t_*.pm files.  Nor to API_C.pod.
+
+	* This is the current file manifest; this distribution is scheduled to be
+	split up 4 ways following this 0.27 release; each of the 4 pieces will be
+	a release 0.28; the list shows the state of things prior to the split-up:
+
+		- ChangeLog
+		- INSTALL
+		- lib/Rosetta.pm
+		- lib/Rosetta/Framework.pod
+		- lib/Rosetta/L/en.pm
+		- lib/SQL/SyntaxModel.pm
+		- lib/SQL/SyntaxModel/API_C.pod
+		- lib/SQL/SyntaxModel/ByTree.pm
+		- lib/SQL/SyntaxModel/ByTree/L/en.pm
+		- lib/SQL/SyntaxModel/L/en.pm
+		- lib/SQL/SyntaxModel/Language.pod
+		- lib/SQL/SyntaxModel/SkipID.pm
+		- lib/SQL/SyntaxModel/SkipID/L/en.pm
+		- lib/t_SQL_SyntaxModel.pm
+		- lib/t_SQL_SyntaxModel_ByTree.pm
+		- lib/t_SQL_SyntaxModel_SkipID.pm
+		- LICENSE
+		- Makefile.PL
+		- MANIFEST
+		- META.yml                                Module meta-data (added by MakeMaker)
+		- ReadMe
+		- t/SQL_SyntaxModel.t
+		- t/SQL_SyntaxModel_ByTree.t
+		- t/SQL_SyntaxModel_SkipID.t
+		- t/Rosetta.t
+		- TODO
+
+	* Note that the 0.27 release is the last one with the current ChangeLog
+	details, detailing releases 0.01 thru 0.27 and before.  The ChangeLog with
+	each 0.28 release will eschew these details, making 0.28 more or less the
+	beginning of time, save a few sentences to mention what came before.
+
 2004-03-08   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.26.
@@ -11,7 +103,7 @@
 	* Updated the external dependency of this distribution on Locale::KeyedText
 	so that v0.03 of that module is now required.  Corresponding to this, every
 	reference to Locale::KeyedText::_::[Message/Translator] is changed to refer
-	to Locale::KeyedText::[Message/Translator]; the classes	were renamed.
+	to Locale::KeyedText::[Message/Translator]; the classes were renamed.
 
 	* Updated SyntaxModel.pm (now v0.13), and Rosetta.pm (now v0.10), and both
 	ByTree.pm and SkipID.pm (each now v0.12), to reorganize and more properly
