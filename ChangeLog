@@ -1,5 +1,24 @@
 2003-06-11   Darren Duncan <perl@DarrenDuncan.net>
 
+	* Release 0.131.
+
+	* This is primarily a bugfix release for the documentation, mainly for
+	replacing references to "Rosetta" with references to "SQL::ObjectModel", or
+	for updating SEE ALSO or DEPENDENCIES. Files updated include:
+	Framework.pod, ObjectModel.pm, DataDictionary.pod, API_C.pod, Rosetta.pm,
+	ObjectModel.t, Rosetta.t.  Also removed mistaken Rosetta::Driver detail
+	reference from Framework.pod.
+
+	* Added new class SQL::ObjectModel::Command to Framework.pod reference. 
+	While both Command objects describe an action to do, the SQL::ObjectModel
+	version is static and is what you would pass to DBI->prepare(); any code
+	using it needs to do their own prompting for bind vars specified within. 
+	The Rosetta Command object encapsulates the other kind and also
+	encapsulates the resolved bind vars; code using the latter would call both
+	DBI->prepare() and DBI->execute().
+
+2003-06-11   Darren Duncan <perl@DarrenDuncan.net>
+
 	* Release 0.13.
 
 	* A few small fixes were made to DataDictionary.pod that were discovered 

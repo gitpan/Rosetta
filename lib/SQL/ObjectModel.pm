@@ -11,7 +11,7 @@ require 5.004;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.01';
+$VERSION = '0.011';
 
 ######################################################################
 
@@ -326,14 +326,15 @@ These are the recognized basic types:
 	'str'       # eg: 'Hello World'
 	'binary'    # eg: '\0x24\0x00\0xF4\0x1A'
 
-It is intended that the Rosetta core and your application would always describe
-data types for columns in terms of these objects; the base types were named
-after what programmers are used to casting program variables as so they would
-be easy to adapt.  This is an alternative to RDBMS specific terms like
+It is intended that the SQL::ObjectModel and your application would always
+describe data types for columns in terms of these objects; the base types were
+named after what programmers are used to casting program variables as so they
+would be easy to adapt.  This is an alternative to RDBMS specific terms like
 "varchar2(40)" or "number(6)" or "text" or "blob(4000)", which you would have
-to change for each database; the Rosetta::Driver::* modules are the only ones
-that need to know what the database uses internally.  Of course, if you prefer 
-the SQL terms, you can easily name your DataType objects after them.
+to change for each database; the Rosetta::Driver::* modules (or other modules
+of your choice) are the only ones that need to know what the database uses
+internally.  Of course, if you prefer the SQL terms, you can easily name your
+DataType objects after them.
 
 =head2 SQL::ObjectModel::Table
 
@@ -348,7 +349,7 @@ count of stored records, or the current values of sequences attached to
 columns.  This class would be used both when manipulating database schema and
 when manipulating database data.
 
-This class can generate Rosetta::Engine::Command objects having types of:
+This class can generate SQL::ObjectModel::Command objects having types of:
 'table_verify', 'table_create', 'table_alter', 'table_destroy'.
 
 =head2 SQL::ObjectModel::View
@@ -357,11 +358,11 @@ Each SQL::ObjectModel::View object describes a single database view, which
 conceptually looks like a table, but it is used differently.  Tables and views
 are similar in that they both represent or store a matrix of data, which has
 uniquely identifiable columns, and rows which can be uniquely identifiable but
-may not be.  With the way that Rosetta implements views, you can do all of the
+may not be.  With the way that SQL::ObjectModel implements views, you can do all of the
 same DML operations with them that you can do with tables: select, insert,
 update, delete rows; that said, the process for doing any of those with views
 is more complicated than with tables, but this complexity is usually internal
-to Rosetta so you shouldn't have to code any differently between them.  Tables
+to SQL::ObjectModel so you shouldn't have to code any differently between them.  Tables
 and views are different in that tables actually store data in themselves, while
 views don't.  A view is actually a custom abstracted interface to one or more
 database tables which are related to each other in a specific way; when you
@@ -371,9 +372,9 @@ stored in one (simplest case) or more tables.
 Views are also conceptually just select queries (and with some RDBMS systems,
 that is exactly how they are stored), but SQL::ObjectModel::View objects have
 enough meta-data so that if a program wants to, for example, modify a row
-selected through one, Rosetta could calculate which composite table rows to
+selected through one, SQL::ObjectModel could calculate which composite table rows to
 update (views built in to RDBMS systems are typically read-only by contrast). 
-Given that Rosetta views are used mainly just for DML, they do not need to be
+Given that SQL::ObjectModel views are used mainly just for DML, they do not need to be
 stored in a database like a table, and so they do not need to have names like
 tables do.  However, if you want to store a view in the database like an RDBMS
 native view, for added select performance, this class will let you associate a
@@ -384,7 +385,7 @@ a count of stored records.  This class can be used both when manipulating
 database schema (stored RDBMS native views) and when manipulating database data
 (normal use).
 
-This class can generate Rosetta::Engine::Command objects having types of:
+This class can generate SQL::ObjectModel::Command objects having types of:
 'data_select', 'data_insert', 'data_update', 'data_delete', 'data_lock',
 'data_unlock', 'view_verify', 'view_create', 'view_alter', 'view_destroy'.
 
@@ -412,7 +413,7 @@ RDBMS product data types.  This property is case-sensitive.
 
 B<base_type> - This mandatory string property is the starting point for Driver
 modules to map this data type to a native RDBMS product data type.  It is
-limited to a pre-defined set of values which are what any Rosetta
+limited to a pre-defined set of values which are what any SQL::ObjectModel
 modules should know about: 'boolean', 'int', 'float', 'datetime', 'str',
 'binary'.  More base types could be added later, but it should be possible to
 define what you want by setting other appropriate class properties along with
@@ -826,7 +827,7 @@ sub store_fixed {
 =head2 valid_types([ TYPE ])
 
 This function returns a hash ref having as keys all of the basic data types
-that Rosetta recognizes, any of which is valid input to the base_type() method,
+that SQL::ObjectModel recognizes, any of which is valid input to the base_type() method,
 and having as values the default storage size reserved for table columns of
 that type, which are valid input to the size() method.  This list contains the
 same types listed in the DESCRIPTION.  If the optional string argument, TYPE,
@@ -993,6 +994,7 @@ __END__
 
 =head1 SEE ALSO
 
-perl(1), SQL::ObjectModel::DataDictionary, Rosetta, Rosetta::Framework.
+perl(1), SQL::ObjectModel::DataDictionary, SQL::ObjectModel::API_C, 
+Rosetta, Rosetta::Framework, DBI.
 
 =cut

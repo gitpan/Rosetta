@@ -8,7 +8,7 @@
 
 BEGIN { $| = 1; print "1..70\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use SQL::ObjectModel 0.01;
+use SQL::ObjectModel 0.011;
 $loaded = 1;
 print "ok 1\n";
 use strict;

@@ -15,7 +15,7 @@ require 5.004;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.07';
+$VERSION = '0.071';
 
 ######################################################################
 
@@ -79,7 +79,15 @@ suggesting improvements to the standard version.
 
 =head2 Nonstandard Modules
 
-	SQL::ObjectModel
+	SQL::ObjectModel 0.011
+
+=cut
+
+######################################################################
+
+use SQL::ObjectModel 0.011;
+
+######################################################################
 
 =head1 SYNOPSIS
 

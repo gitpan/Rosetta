@@ -248,6 +248,6 @@ a type of documentation.  They will be improved.
 
 =head1 SEE ALSO
 
-perl(1), SQL::ObjectModel::DataDictionary, Rosetta, Rosetta::Framework.
+perl(1), SQL::ObjectModel, SQL::ObjectModel::DataDictionary, Rosetta, Rosetta::Framework.
 
 =cut

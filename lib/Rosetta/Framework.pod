@@ -370,7 +370,7 @@ distribution will be dependant on the new "SQL-ObjectModel" distribution.
 			) );
 		}
 
-		# user saw screen and clicked the 'OK' button, so try to destroy;
+		# user saw screen and clicked the 'OK' button, so try to fillin;
 		# the following makes a Command of type 'data_insert' and executes it
 		my $dd_view = SQL::ObjectModel->new_view( $dd_table );
 		my $rv = $dbh->execute_command( $dd_view->new_command_insert( $form_values ) );
@@ -680,12 +680,12 @@ speed and memory efficiency but also compatability; it will allow Rosetta (and
 through it Perl) to use databases which previously had no Perl bindings or DBI
 drivers before.  Moreover, the potential user base would increase sharply
 because users of other languages like PHP or Python would be able to use it.
-The C version of Rosetta will probably have the "Schema" and "Engine" modules
-being mostly reduced to struct definitions, macros for manipulating the
-structs, header files, and a small amount of implementation code.  Most of the
-normal implementation C code would be derived from the other modules,
-particularly the "Driver", "Proxy", "Validator", "Emulator" ones.  The pure
-Perl version will probably stay around after that conversion should it be
+The C version of Rosetta will probably have the "Schema" (SQL::ObjectModel) and
+"Engine" modules being mostly reduced to struct definitions, macros for
+manipulating the structs, header files, and a small amount of implementation
+code.  Most of the normal implementation C code would be derived from the other
+modules, particularly the "Driver", "Proxy", "Validator", "Emulator" ones.  The
+pure Perl version will probably stay around after that conversion should it be
 useful, but it won't have as large of a database support.  I have no plans to
 make a pure Java version, but rather, the C version would bind to Java
 environments using a Java Bean.
@@ -711,6 +711,7 @@ To become "Locale-KeyedText" or similar:
 To become "SQL-ObjectModel" or similar:
 
 	SQL::ObjectModel (Unserialized SQL objects, use like XML DOM)
+		SQL::ObjectModel::Command (describes an action to do and what bind vars should be prompted for)
 		SQL::ObjectModel::Codes (declare base types or enums; meanings hard-coded in SQL::ObjectModel)
 		SQL::ObjectModel::DataType (metadata for individual atomic or scalar values)
 		SQL::ObjectModel::Table (details of table columns are part of this class)
@@ -731,7 +732,7 @@ To stay "Rosetta":
 
 	Rosetta (Framework for RDBMS-generic apps and schemas)
 		Rosetta::Engine (base class to provide 'execute' function; calls Drivers)
-		Rosetta::Engine::Command (describes an action to do)
+		Rosetta::Engine::Command (describes an action to do, and bundles resolved bind vars)
 		Rosetta::Engine::Result (result of action including errors)
 		Rosetta::Engine::Connection (represents a connection)
 		Rosetta::Engine::Transaction (represents context within connection)
@@ -851,9 +852,25 @@ Note also that a bunch of summary documentation was dropped between release
 Note the third: now that some of these modules have been implemented, their 
 updated descriptions here are more accurate.
 
-=head2 Schema Modules
+=head2 Schema (SQL::ObjectModel) Modules
 
 =over 4
+
+=item 0
+
+B<SQL::ObjectModel::Command> - This Schema class describes an action that needs
+to be done against a database; the action may include several steps, and all of
+them must be done when executing the Command.  A Command object has one
+mandatory string property named 'type' (eg: 'database_open', 'table_create',
+'data_insert'), which sets the context for all of its other properties, which
+are in a hash property named 'args'.  Elements of 'args' often include other
+Schema class objects like 'Table' or 'DataType'.  Like all Schema objects, this
+is static and context-independant; it is intended to be serialized and passed
+to code like DBI->prepare().   While bind vars are often used with them (such
+as values to insert or update, or record matching conditions), it is always up
+to the calling code to resolve the bind vars such as with a user prompt (as
+SQL*Plus does), and pass those to code like DBI->execute().  I<See also
+Rosetta::Engine::Command.>
 
 =item 0
 
@@ -876,7 +893,7 @@ details.  This class does not describe anything that is changed by DML
 activity, such as a count of stored records, or the current values of sequences
 attached to columns.  This class would be used both when manipulating database
 schema and when manipulating database data.  This class can generate
-Rosetta::Engine::Command objects having types of: 'table_verify',
+SQL::ObjectModel::Command objects having types of: 'table_verify',
 'table_create', 'table_alter', 'table_destroy'.
 
 =item 0
@@ -895,7 +912,7 @@ views don't.  A view is actually a custom abstracted interface to one or more
 database tables which are related to each other in a specific way; when you
 issue DML against a view, you are actually fetching from or modifying the data
 stored in one (simplest case) or more tables.  This class can generate
-Rosetta::Engine::Command objects having types of: 'data_select', 'data_insert',
+SQL::ObjectModel::Command objects having types of: 'data_select', 'data_insert',
 'data_update', 'data_delete', 'data_lock', 'data_unlock', 'view_verify',
 'view_create', 'view_alter', 'view_destroy'.
 
@@ -920,13 +937,12 @@ drivers or connections.  Subclasses include: Result, Database.
 
 =item 0
 
-B<Rosetta::Engine::Command> - This Schema class describes an action
-that needs to be done against a database; the action may include several steps,
-and all of them must be done when executing the Command.  A Command object has
-one mandatory string property named 'type' (eg: 'database_open',
-'table_create', 'data_insert'), which sets the context for all of its other
-properties, which are in a hash property named 'args'.  Elements of 'args' 
-often include other Engine class objects like 'Table' or 'DataType'.
+B<Rosetta::Engine::Command> - This Engine class describes an action that needs
+to be done against a database; its objects encapsulate
+SQL::ObjectModel::Command objects and also encapsulates the resolved bind vars,
+or live objects like 'Cursor'.  Code using these objects should be doing
+something like both calling DBI->prepare() and DBI->execute().  I<See also
+SQL::ObjectModel::Command.>
 
 =item 0
 
@@ -964,14 +980,6 @@ order, and row limiting or paging.
 =head2 Driver Modules
 
 =over 4
-
-=item 0
-
-B<Rosetta::Driver> - This class defines the specific public API that all
-Driver classes must have, which is what the appropriate Engine classes will call
-them with; it is an error condition if you pass a module as a driver and that
-module doesn't subclass this one; also, do not instantiate this class directly,
-as it doesn't implement the methods it declares.
 
 =item 0
 

@@ -1,6 +1,6 @@
 =head1 NAME
 
-SQL::ObjectModel::DataDictionary - Describe a database suitable for storing Rosetta schemas.
+SQL::ObjectModel::DataDictionary - Describe a database suitable for storing SQL::ObjectModels.
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -53,15 +53,14 @@ practical way of suggesting improvements to the standard version.
 
 =head1 DESCRIPTION
 
-All concepts in the Rosetta Core, mainly those represented by the Schema
-modules, but to a lesser extent the Engine modules, can be represented by a
+All concepts in a SQL::ObjectModel can be represented by a
 data dictionary.  Such a data dictionary can be a linked in-memory set of
 objects (or serialized version thereof), or they can be represented by records
 in database tables having specific columns and constraints.  This documentation
-will attempt to explain the components of a Rosetta data dictionary and how
-they relate.  Since Rosetta doesn't actually use any database tables
+will attempt to explain the components of a SQL::ObjectModel data dictionary and how
+they relate.  Since SQL::ObjectModel doesn't actually use any database tables
 internally, and that it is your application which would map such database
-tables to Rosetta objects, you are free to modify this schema to your liking. 
+tables to SQL::ObjectModel objects, you are free to modify this schema to your liking. 
 However, it is recommended that you mainly just add columns, such as for adding
 user visible text descriptions of each record, rather than changing or removing
 the suggested columns.
@@ -161,15 +160,15 @@ most are optional, but for simplicity all lines are solid below.
 
 =head1 CONSTANT CODE TABLES
 
-These tables correspond to basic concepts that are hard-coded into Rosetta and
+These tables correspond to basic concepts that are hard-coded into SQL::ObjectModel and
 they are intended to be read-only.  The table contents are meant for two main
 uses, one being for foreign key constraints on enumerated type columns in other
 tables, and the other being for a source of picklist values on forms that users
-define Rosetta schemas with.
+define SQL::ObjectModels with.
 
 The values in these tables are stored in code by the SQL::ObjectModel::Codes
 class.  You can get the values for these tables from that class, and don't have
-to code them yourself.  The other Rosetta classes use the Codes class
+to code them yourself.  The other SQL::ObjectModel classes use the Codes class
 internally for when they need to know this information, and hence are not
 susceptible to security risks from someone altering the following tables in the
 database.
@@ -368,7 +367,7 @@ Record List:
 
 =head2 cct_view_type
 
-This table enumerates the basic types that a view can be, since Rosetta "views"
+This table enumerates the basic types that a view can be, since SQL::ObjectModel "views"
 have a broader meaning than in classic SQL.  There are 4 main types.
 
 First, the "classic" type of view is stored in a database schema as a schema
@@ -613,7 +612,7 @@ Record List:
 
 =head2 cct_block_type
 
-This table enumerates the basic types that a blocks can be, since Rosetta
+This table enumerates the basic types that a blocks can be, since SQL::ObjectModel
 "blocks" are generic enough that each of the following can be represented by
 them: stored procedures and functions, triggers, and packages containing stored
 procedures and functions; all of the previous can also have nested stored
@@ -715,7 +714,7 @@ Record List:
 
 =head2 cct_command_type
 
-This table enumerates the basic types of Rosetta Commands that an application 
+This table enumerates the basic types of SQL::ObjectModel Commands that an application 
 can execute against a database or other Result context.  Note that in many cases 
 "db" can mean either "database" or "data source"; "ds" may be used instead.
 
@@ -806,7 +805,7 @@ Record List:
 
 =head2 cct_result_type
 
-This table enumerates the basic types of Results that Rosetta can return from executing a 
+This table enumerates the basic types of Results that SQL::ObjectModel can return from executing a 
 Command against a database or other Result context.
 
 Column List:
@@ -839,7 +838,7 @@ Record List:
 =head1 DATA TYPES
 
 This table is for storing "user" definitions of data types.  Each of these
-would correspond to a basic type that is recognized in code by Rosetta, and
+would correspond to a basic type that is recognized in code by SQL::ObjectModel, and
 allows the users to customize details such as the type names or in some cases
 their scale or precision or certain other constraints.
 
@@ -852,7 +851,7 @@ custom types everywhere as if they were types built-in to the database.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
-to anything in the Rosetta code.
+to anything in the SQL::ObjectModel code.
 
 =head2 data_type
 
@@ -917,14 +916,14 @@ Example Record List:
 
 =head1 DATABASES AND NAME SPACES
 
-Rosetta data dictionaries can be and are used to describe both things
+SQL::ObjectModel data dictionaries can be and are used to describe both things
 that are stored in a database schema and things which are not stored
 there, but are used in connection with database schema by applications.
 Items which are stored in a database can be accessed by other items
 stored in a database, like named stored procedures or packages, and they
 can not directly bind to application variables.  Items not stored in a
 database can be bound and customized to application variables, such as
-normal 'select' SQL.  There are two root tables in Rosetta data
+normal 'select' SQL.  There are two root tables in SQL::ObjectModel data
 dictioaries, into which almost everything else is grouped.  'database'
 groups what can be stored in a database, and 'application' groups what
 can not be.  The current version of DataDictionary.pod does not 
@@ -952,16 +951,16 @@ user), and other databases do not support multiple name spaces (most?).  In
 many cases this table only ever contains one record, where all schema objects 
 share the same (or only) namespace.
 
-Rosetta will let you define your schema objects (tables, views, procedures,
+SQL::ObjectModel will let you define your schema objects (tables, views, procedures,
 etc) as if multiple namespaces were supported natively, and if you are
-deploying to a database that doesn't, then Rosetta can put a common name prefix
+deploying to a database that doesn't, then SQL::ObjectModel can put a common name prefix
 in front of all the schema objects (the namespace name), to simulate the
 lacking functionality.  That said, it is better for you to design your schemas 
 so different namespaces don't contain same-named objects anyway, if practical.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
-to anything in the Rosetta code.
+to anything in the SQL::ObjectModel code.
 
 Column List:
 
@@ -997,7 +996,7 @@ may change depending on what the implementing database is.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
-to anything in the Rosetta code.
+to anything in the SQL::ObjectModel code.
 
 =head2 table
 
@@ -1185,7 +1184,7 @@ Example Record List:
 These tables are for storing user definitions of database views, which are
 interfaces to one or more tables that are related in a specific way.  Each view
 looks outwardly like a table, in that it has rows or columns, but it does not
-describe how data is stored, but mainly just how it is retrieved.  Rosetta
+describe how data is stored, but mainly just how it is retrieved.  SQL::ObjectModel
 "views" are used for more types of things than SQL views are; see the
 cct_view_type table description above for details.
 
@@ -1195,7 +1194,7 @@ name in the schema may change depending on what the implementing database is.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
-to anything in the Rosetta code.
+to anything in the SQL::ObjectModel code.
 
 =head2 view
 
@@ -1214,7 +1213,7 @@ utility that lets users make direct changes to a table.
 
 Since the ability to change database records is more complicated than simply
 viewing records, and usually requires more information to be available (such as
-primary keys for rows being updated), Rosetta allows you to store a hint with a
+primary keys for rows being updated), SQL::ObjectModel allows you to store a hint with a
 view, called "may_write", that says whether or not you will even try to make
 updates against a view, so we will know in advance and save ourselves
 unnecessary work or complexity.  The flag defaults to false.
@@ -1745,7 +1744,7 @@ This section still needs to be written.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
-to anything in the Rosetta code.
+to anything in the SQL::ObjectModel code.
 
 To be added: sequence.
 
@@ -1764,7 +1763,7 @@ name in the schema may change depending on what the implementing database is.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
-to anything in the Rosetta code.
+to anything in the SQL::ObjectModel code.
 
 =head2 block
 
@@ -1922,7 +1921,7 @@ This section still needs to be written.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
-to anything in the Rosetta code.
+to anything in the SQL::ObjectModel code.
 
 To be added: user, privilege.
 
@@ -1932,7 +1931,7 @@ This section still needs to be written.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
-to anything in the Rosetta code.
+to anything in the SQL::ObjectModel code.
 
 To be added: command, result.
 
