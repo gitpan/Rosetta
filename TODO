@@ -1,8 +1,5 @@
 ONE DEVELOPMENT TRACK
 
-r0.12 - Update Rosetta::DataDictionary to add descriptions for procedures,
-functions, other blocks, sequences, packages.
-
 r0.13 - Create the modules that are being renamed from
 Rosetta::Locale/::en/::fr.  These will be needed by the other code modules. 
 The french module will only contain mock text (to be replaced later) since I'm

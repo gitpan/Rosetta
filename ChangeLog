@@ -1,3 +1,46 @@
+2003-06-10   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.12.
+
+	* The DataDictionary.pod documentation file saw some more large changes,
+	increasing in size from 85K to 96K (added 11K).  Mainly this saw the
+	entirety of the "BLOCKS" main section being written, and the corresponding
+	sub section of "STRUCTURE" was also written.  The previously referenced
+	entities named [procedure, function, block] are now consolidated into
+	"block".  Added two new main sections "SEQUENCES" and "USERS" (and
+	corresponding STRUCTURE parts), but they are currently placeholders.  Made
+	several updates to CONSTANT CODE TABLES.  "NAME SPACES AND SCHEMA OBJECTS"
+	was renamed to "DATABASES AND NAME SPACES".  The "object" table no longer
+	exists, with details stored there moved into: "table", "view", "sequence",
+	"block".  Other small fixes or changes were made.  The most important 
+	parts of this document are now complete (codes, tables, views, blocks).
+
+	* Small updates to BRIEF MODULE LIST in Framework.pod.
+
+	* This is the current file manifest; several of these are scheduled to be
+	renamed or merged in release 0.13, as a precursor for the distribution
+	being split up:
+
+		- ChangeLog
+		- INSTALL
+		- lib/Rosetta.pm
+		- lib/Rosetta/API_C.pod
+		- lib/Rosetta/DataDictionary.pod
+		- lib/Rosetta/Framework.pod
+		- lib/Rosetta/Schema/DataType.pm
+		- lib/Rosetta/Schema/Table.pm
+		- lib/Rosetta/Schema/View.pm
+		- lib/Rosetta/SimilarModules.pod
+		- LICENSE
+		- Makefile.PL
+		- MANIFEST
+		- ReadMe
+		- t/Rosetta.t
+		- t/Rosetta-Schema-DataType.t
+		- t/Rosetta-Schema-Table.t
+		- t/Rosetta-Schema-View.t
+		- TODO
+
 2003-06-03   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.11.

@@ -709,16 +709,17 @@ To become "Locale-KeyedText" or similar:
 To become "SQL-ObjectModel" or similar:
 
 	Rosetta::DataDictionary (POD only, describes a db suitable for storing Rosetta schemas)
+	Rosetta::API_C (POD only, describes the core C API for Rosetta)
 
 	Rosetta::Schema (represents one database schema; owned by one database user)
 	Rosetta::Schema::Codes (declare base types or enums; meanings hard-coded in Rosetta)
 	Rosetta::Schema::DataType (metadata for individual atomic or scalar values)
 	Rosetta::Schema::Table (details of table columns are part of this class)
 	Rosetta::Schema::View (a parsed select, used for any DML like IUD, gen stored views)
+	Rosetta::Schema::Sequence (a sequence generator)
 	Rosetta::Schema::Block (a block of code to run in a db; part of a proc, function, trigger)
-	Rosetta::Schema::Procedure (or Function; a named code block invokable from anywhere)
 	Rosetta::Schema::Trigger (a code block assoc with a table, only auto-called by db on events)
-	Rosetta::Schema::* ... like Sequence, Package, User, Privilege, PrivilegeType, whatever
+	Rosetta::Schema::* ... like User, Privilege, PrivilegeType, whatever
 
 	Rosetta::Schema::Locale::en (English localization of input error messages)
 	Rosetta::Schema::Locale::fr (French localization of input error messages)
@@ -729,7 +730,6 @@ To stay "Rosetta":
 	Rosetta (a placeholder in the public eye for the whole framework; a shim)
 
 	Rosetta::Framework (POD only, holds main framework documentation)
-	Rosetta::API_C (POD only, describes the core C API for Rosetta)
 	Rosetta::SimilarModules (POD only, compares and contrasts Rosetta with other modules)
 
 	Rosetta::Engine (base class to provide 'execute' function; calls Drivers)

@@ -87,16 +87,18 @@ most are optional, but for simplicity all lines are solid below.
 	    |         |
 	cct_str_enc   cct_datetime_calendar
 
-=head2 Name Spaces and Schema Objects
+=head2 Databases and Name Spaces
 
-	             table   sequence
-	               |        | 
-	               |        |
-	namespace--<=object-----+-<=procedure;function;package
-	              \|/       |
-	               |        | 
-	   cct_object_type     view
-	                      (named)
+	   user
+	   \|/
+	    |
+	 database   view(named)
+	    |       \|/
+	   /|\       |
+	namespace----+-<=block(named)
+	    |        |
+	   /|\      /|\
+	  table   sequence
 
 =head2 Tables
 
@@ -115,11 +117,11 @@ most are optional, but for simplicity all lines are solid below.
 
 	 data_type   cct_view_type
 	     |           |
-	    /|\         /|\                     cct_basic_expr_type;view;
-	 view_col=>----view  cct_rs_merge_type  user_func;cct_standard_func
-	     |           |     |                    |
-	    /|\         /|\   /|\                  /|\
-	view_col_def=>--view_rowset---<=view_part_expr;=>---view_src_col
+	    /|\         /|\                     cct_view_part;cct_basic_expr_type;view;
+	 view_col=>----view  cct_rs_merge_type  cct_standard_func;block(user_func)
+	     |           |     |                   |
+	    /|\         /|\   /|\                 /|\
+	view_col_def=>--view_rowset---<=view_part_def;=>---view_src_col
 	    \|/             \|/         view_hierarchy         |(2)
 	     |               |                                /|\
 	view_src_col=>----view_src----<=view_join---<=view_join_col
@@ -127,10 +129,26 @@ most are optional, but for simplicity all lines are solid below.
 	                     |           /|\
 	                 table;view  cct_rs_join_type
 
+=head2 Sequences
+
+	sequence
+
 =head2 Blocks
 
-To be added: blocks, functions, procedures, triggers, sequences, etc.
-Also include: cct_basic_stmt_type, cct_standard_proc.
+	 table   cct_block_type   data_type
+	   |            |             |
+	  /|\          /|\           /|\
+	trigger-------block-----<=block_var=>---cct_basic_var_type
+	                |   -------|  |
+	               /|\ /|\       /|\
+	            block_stmt----block_expr=>---cct_basic_expr_type;view;
+	            \|/    \|/                   cct_standard_func;block(user_func)
+	             |      ----------|
+	cct_basic_stmt_type   cct_standard_proc
+
+=head2 Users
+
+	user---<=privilege
 
 =head2 Commands and Results
 
@@ -160,15 +178,48 @@ internally for when they need to know this information, and hence are not
 susceptible to security risks from someone altering the following tables in the
 database.
 
-=head2 cct_basic_data_type
+=head2 cct_basic_var_type
 
-This table enumerates the basic data types that table columns or view columns 
-or block variables or arguments can be.
+This table enumerates the basic variable or container types that block
+variables or arguments or return types can be, or which functions can
+take or return, or that intermediate values for expressions are stored
+in.  Some types can contain single distinct values, such as scalars, and some 
+can have multiple distinct values, such as records.  The type of a table column 
+is usually just one value.
 
 Column List:
 
 	code - str,req - name of the base data type
-	scratch_only - bool,req - true when for scratch data only, table cols can not be of this type
+	is_ref - bool,req - if true, var stores reference to var type otherwise desc here
+	is_scalar - bool,req - true when variable can only hold a single distinct value at once
+	is_record - bool,req - true when var holds multiple distinct values, each keyed by a str/name
+	is_array - bool,req - true when var holds ordered list of sca/rec elems, accessible in any order
+	is_cursor - bool,req - true when var holds a SQL-select definition; rec only acc sequentially
+	can_use_in_table - bool,req - true when may be used for a table column
+
+Index List:
+
+	primary - unique - [code]
+
+Record List:
+
+	|code  |rf|sc|re|ar|cu|ta|
+	|------|--|--|--|--|--|--|
+	|scalar|0 |1 |0 |0 |0 |1 | - a single value
+	|record|0 |0 |1 |0 |0 |0 | - a list of scalars (can differ in type), keyed by a string/column-name
+	|array |0 |0 |0 |1 |0 |0 | - an ordered list of elements/records, all same type, can be read in any order
+	|cursor|0 |0 |0 |0 |1 |0 | - an ordered list of elements/records, can only/usually be read in sequential order
+	|ref   |1 |0 |0 |1 |0 |1 | - reference to a record, such as in object-relational databases
+
+=head2 cct_basic_data_type
+
+This table enumerates the basic scalar data value types that table
+columns or view columns or block variables or arguments can be.
+
+Column List:
+
+	code - str,req - name of the base data type
+	is_storable - bool,req - true when may be used for a table col, false only be intermediate val
 	size_undefined - bool,req - true when user can't customize space used by data type
 	size_is_bytes - bool,req - true when can customize type to a size measured in bytes
 	size_is_chars - bool,req - true when can customize type to a size measured in chars
@@ -184,17 +235,16 @@ Index List:
 
 Record List:
 
-	|code    |scr|un|by|ch|if|im|min|       max|num|
-	|--------|---|--|--|--|--|--|---|----------|---|
-	|bin     |0  |0 |1 |0 |0 |1 |  1|4294967295|0  | - stores anything as binary data
-	|str     |0  |0 |0 |1 |0 |1 |  1|4294967295|0  | - stores character data
-	|bool    |0  |1 |0 |0 |  |  |   |          |0  | - a boolean; only 2 values of false or true
-	|int     |0  |0 |1 |0 |1 |0 |  1|         8|1  | - a precise integer
-	|float   |0  |0 |1 |0 |1 |0 |  4|         8|1  | - an imprecise fractional number
-	|dec     |0  |0 |1 |0 |1 |0 |  1|       255|1  | - a precise fractional number as base-10 str
-	|datetime|0  |1 |0 |0 |  |  |   |          |0  | - a date or time or both (may be split up)
-	|numeric |1  |  |  |  |  |  |   |          |   | - a num type for math exprs, can be int or not
-	|typeless|1  |  |  |  |  |  |   |          |   | - represents data of any type, for switch stmts
+	|code    |st|un|by|ch|if|im|min|       max|num|
+	|--------|--|--|--|--|--|--|---|----------|---|
+	|bin     |1 |0 |1 |0 |0 |1 |  1|4294967295|0  | - stores anything as binary data
+	|str     |1 |0 |0 |1 |0 |1 |  1|4294967295|0  | - stores character data
+	|bool    |1 |1 |0 |0 |  |  |   |          |0  | - a boolean; only 2 values of false or true
+	|int     |1 |0 |1 |0 |1 |0 |  1|         8|1  | - a precise integer
+	|float   |1 |0 |1 |0 |1 |0 |  4|         8|1  | - an imprecise fractional number
+	|dec     |1 |0 |1 |0 |1 |0 |  1|       255|1  | - a precise fractional number as base-10 str
+	|datetime|1 |1 |0 |0 |  |  |   |          |0  | - a date or time or both (may be split up)
+	|numeric |0 |  |  |  |  |  |   |          |1  | - a num type for math exprs, can be int or not
 
 	Geographical types are expected to be added as well.  Maybe enumerated or set types also.
 
@@ -294,40 +344,6 @@ Record List:
 
 	Note that some of these examples may be wrong for practical use and be changed later.
 
-=head2 cct_object_type
-
-This table enumerates the basic types of objects that a database schema can
-contain, examples being tables, views, procedures, functions, and perhaps
-sequences and packages.
-
-Note: "package" is an Oracle term, and its use here may be replaced with a
-different name if other databases have equivalent functionality.
-
-Column List:
-
-	code - str,req - name of the schema object type
-	is_table - bool,req - true when schema object is a table
-	is_view - bool,req - true when schema object is a view
-	is_procedure - bool,req - true when schema object is a procedure
-	is_function - bool,req - true when schema object is a function
-	is_sequence - bool,req - true when schema object is a sequence
-	is_package - bool,req - true when schema object is a package
-
-Index List:
-
-	primary - unique - [code]
-
-Record List:
-
-	|code |ta|vi|pr|fu|se|pa|
-	|-----|--|--|--|--|--|--|
-	|table|1 |0 |0 |0 |0 |0 | - a table
-	|view |0 |1 |0 |0 |0 |0 | - a view
-	|proc |0 |0 |1 |0 |0 |0 | - a procedure
-	|func |0 |0 |0 |1 |0 |0 | - a function
-	|seq  |0 |0 |0 |0 |1 |0 | - a sequence
-	|pkg  |0 |0 |0 |0 |0 |1 | - a package having procedures and functions
-
 =head2 cct_index_type
 
 This table enumerates the basic index types that database tables can have
@@ -381,7 +397,7 @@ only if their parent views can.
 
 Column List:
 
-	code - str,req - name of the table index type
+	code - str,req - name of the view type
 	inherit_props - bool,req - true when view declared inside another, inherits parent attrs
 	can_have_vars - bool,req - true when view can or might have variables
 
@@ -451,13 +467,14 @@ Record List:
 	|equal|  0| - an equal-join; only rows with related entries in both sources are kept
 	|left |  1| - a left-join; all rows from first source kept even if not matched in second
 
-	A right-join may also be added, but its value is dubious at the moment.
+	A right-join may also be added, but its value is dubious at the moment.  
 	Also, there is no concept of a "natural" join at this level of activity.
+	Full outer join may also be added.
 
 =head2 cct_view_part
 
 This table enumerates the standard parts of a view definition which exist in 
-the SQL following the "from" part.  See "view_part_expr" for an explanation.
+the SQL following the "from" part.  See "view_part_def" for an explanation.
 
 Column List:
 
@@ -492,7 +509,7 @@ Column List:
 	is_col - bool,req - true when expression is a column name, such as in a view, or cursor in block
 	is_view - bool,req - true when expression is a view declaration, such as a subquery or cursor def
 	is_sfunc - bool,req - true when expression is a call to a standard built-in function
-	is_ufunc - bool,req - true when expression is a call to a user-defined stored function
+	is_ufunc - bool,req - true when expression is a call to a user-defined stored function (block)
 	can_have_args - bool,req - true when expression might have child expressions
 
 Index List:
@@ -508,7 +525,7 @@ Record List:
 	|col  |0 |0 |1 |0 |0 |0 |0 | - a column name, such as in a view or cursor in block
 	|view |0 |0 |0 |1 |0 |0 |0 | - a view declaration, such as a subquery or a cursor
 	|sfunc|0 |0 |0 |0 |1 |0 |1 | - a standard built-in function; one of cct_standard_func
-	|ufunc|0 |0 |0 |0 |0 |1 |1 | - a user defined stored function
+	|ufunc|0 |0 |0 |0 |0 |1 |1 | - a user defined stored function (block)
 
 =head2 cct_standard_func
 
@@ -527,6 +544,7 @@ Column List:
 	can_use_in_column - bool,req - true when func type may be used in view column def, [having/order]
 	can_use_in_filter - bool,req - true when func type may be used in view filter (where)
 	can_use_in_block - bool,req - true when func type may be used in a block (eg: stored proc)
+	is_aggregate_func - bool,req - true when is an aggregate func (a grouping func, like 'count')
 	data_type - str - basic data type that function returns
 
 Index List:
@@ -536,63 +554,109 @@ Index List:
 
 Record List:
 
-	|code   |ha|mn|ml|ul|mx|cc|cf|cb|datatype|
-	|-------|--|--|--|--|--|--|--|--|--------|
-	|to_num |1 | 1|  |0 | 1|1 |1 |1 |numeric | - cast arg as numeric (might take more args)
-	|to_bool|1 | 1|  |0 | 1|1 |1 |1 |bool    | - cast arg as boolean (might take more args)
-	|to_int |1 | 1|  |0 | 1|1 |1 |1 |int     | - cast arg as integer (might take more args)
-	|to_str |1 | 1|  |0 | 1|1 |1 |1 |str     | - cast arg as string (might take more args)
-	|to_date|1 | 1|  |0 | 1|1 |1 |1 |datetime| - cast arg as datetime (might take more args)
-	|not    |1 | 1|  |0 | 1|1 |1 |1 |bool    | - a logical 'not', true iif lone arg is false
-	|and    |1 | 2| 1|1 |  |1 |1 |1 |bool    | - a logical 'and', true iif every arg is true
-	|or     |1 | 2| 1|1 |  |1 |1 |1 |bool    | - a logical 'or', true iif at least one arg is true
-	|xor    |1 | 2| 1|1 |  |1 |1 |1 |bool    | - a logical 'xor', true iif 1+ arg true and 1+ arg false
-	|eq     |1 | 2|  |0 | 2|1 |1 |1 |bool    | - true if both args are equal (both args cast same tp)
-	|ne     |1 | 2|  |0 | 2|1 |1 |1 |bool    | - true if both args are unequal (when same data type)
-	|lt     |1 | 2|  |0 | 2|1 |1 |1 |bool    | - true if first arg is less than second
-	|gt     |1 | 2|  |0 | 2|1 |1 |1 |bool    | - true if first arg is greater than second
-	|le     |1 | 2|  |0 | 2|1 |1 |1 |bool    | - true if first arg is less than or equal to second
-	|ge     |1 | 2|  |0 | 2|1 |1 |1 |bool    | - true if first arg is greater than or equal to second
-	|is_null|1 | 1|  |0 | 1|1 |1 |1 |bool    | - true if only arg is a null value
-	|nvl    |1 | 2|  |0 | 2|1 |1 |1 |typeless| - returns arg 1 if it is not null, else arg 2
-	|switch |1 | 2| 2|1 |  |1 |1 |1 |typeless| - a logical switch-case expr (like Oracle 'decode')
-	|like   |1 | 2| 1|0 | 4|1 |1 |1 |bool    | - true if first arg contains second; args 3,4 are flags
-	|add    |1 | 2| 1|1 |  |1 |1 |1 |numeric | - result of adding all args as numbers
-	|sub    |1 | 2| 1|1 |  |1 |1 |1 |numeric | - result of subtracting all subsequent args from first
-	|mul    |1 | 2| 1|1 |  |1 |1 |1 |numeric | - result of multiplying all arguments
-	|div    |1 | 2|  |0 | 2|1 |1 |1 |numeric | - result of dividing first argument by second
-	|divi   |1 | 2|  |0 | 2|1 |1 |1 |int     | - integral division of first arg by second
-	|mod    |1 | 2|  |0 | 2|1 |1 |1 |int     | - modulus of integral division of first arg by second
-	|round  |1 | 1| 1|0 | 2|1 |1 |1 |numeric | - rounds first arg to N dec places; N is second arg or 0
-	|exp    |1 | 2| 1|0 | 2|1 |1 |1 |numeric | - raises first arg to the power of the second
-	|log    |1 | 2| 1|0 | 2|1 |1 |1 |numeric | - logarithm of the first arg on the base of second
-	|min    |1 | 1| 1|1 |  |1 |1 |1 |numeric | - minimum arg value of all arguments
-	|max    |1 | 1| 1|1 |  |1 |1 |1 |numeric | - maximum arg value of all arguments
-	|avg    |1 | 1| 1|1 |  |1 |1 |1 |numeric | - average value of all arguments
-	|sconcat|1 | 1| 1|1 |  |1 |1 |1 |str     | - str concat of all arguments
-	|slength|1 | 1|  |0 | 1|1 |1 |1 |int     | - length of input string in characters
-	|sindex |1 | 2| 1|0 | 3|1 |1 |1 |int     | - pos in arg 1 of arg 2 if present, start at arg 3
-	|substr |1 | 2| 1|0 | 3|1 |1 |1 |str     | - substr in arg 1 starting pos arg 2 of length arg 3
-	|srepeat|1 | 1| 1|0 | 2|1 |1 |1 |str     | - str concat arg 1 to self repeated by arg 2 instances
-	|strim  |1 | 1|  |0 | 1|1 |1 |1 |str     | - trims leading and trailing whitespace from arg 1
-	|spad   |1 | 2| 1|0 | 3|1 |1 |1 |str     | - lengthens arg 1 to length of arg 2 using arg 3 or space
-	|spadl  |1 | 2| 1|0 | 3|1 |1 |1 |str     | - like spad but add filler on left rather than right
-	|lc     |1 | 1|  |0 | 1|1 |1 |1 |str     | - lowercases latin chars in a string
-	|uc     |1 | 1|  |0 | 1|1 |1 |1 |str     | - uppercases latin chars in a string
-	|gcount |0 | 0|  |0 | 0|1 |0 |0 |int     | - count of rows a view/cursor can see
-	|gmin   |1 | 1|  |0 | 1|1 |0 |0 |numeric | - minimum of values in all records in one view col
-	|gmax   |1 | 1|  |0 | 1|1 |0 |0 |numeric | - maximum of values in all records in one view col
-	|gsum   |1 | 1|  |0 | 1|1 |0 |0 |numeric | - sum of values in all records in one view col
-	|gavg   |1 | 1|  |0 | 1|1 |0 |0 |numeric | - average of values in all records in one view col
-	|gconcat|1 | 1|  |0 | 1|1 |0 |0 |str     | - str concat of values in all records in one view col
-	|crowid |0 | 0|  |0 | 0|1 |0 |0 |str     | - unique database-generated row id of returned row (=rowid?)
-	|crownum|0 | 0|  |0 | 0|1 |0 |0 |int     | - row number of returned row, before sorting (eg:Oracle)
-	|clevel |0 | 0|  |0 | 0|1 |0 |0 |int     | - when using st-wi-cn-by, what hierarchy level row is in (eg:Oracle)
+	|code   |ha|mn|ml|ul|mx|cc|cf|cb|ag|datatype|
+	|-------|--|--|--|--|--|--|--|--|--|--------|
+	|to_num |1 | 1|  |0 | 1|1 |1 |1 |0 |numeric | - cast arg as numeric (might take more args)
+	|to_bool|1 | 1|  |0 | 1|1 |1 |1 |0 |bool    | - cast arg as boolean (might take more args)
+	|to_int |1 | 1|  |0 | 1|1 |1 |1 |0 |int     | - cast arg as integer (might take more args)
+	|to_str |1 | 1|  |0 | 1|1 |1 |1 |0 |str     | - cast arg as string (might take more args)
+	|to_date|1 | 1|  |0 | 1|1 |1 |1 |0 |datetime| - cast arg as datetime (might take more args)
+	|not    |1 | 1|  |0 | 1|1 |1 |1 |0 |bool    | - a logical 'not', true iif lone arg is false
+	|and    |1 | 2| 1|1 |  |1 |1 |1 |0 |bool    | - a logical 'and', true iif every arg is true
+	|or     |1 | 2| 1|1 |  |1 |1 |1 |0 |bool    | - a logical 'or', true iif at least one arg is true
+	|xor    |1 | 2| 1|1 |  |1 |1 |1 |0 |bool    | - a logical 'xor', true iif 1+ arg true and 1+ arg false
+	|eq     |1 | 2|  |0 | 2|1 |1 |1 |0 |bool    | - true if both args are equal (both args cast same tp)
+	|ne     |1 | 2|  |0 | 2|1 |1 |1 |0 |bool    | - true if both args are unequal (when same data type)
+	|lt     |1 | 2|  |0 | 2|1 |1 |1 |0 |bool    | - true if first arg is less than second
+	|gt     |1 | 2|  |0 | 2|1 |1 |1 |0 |bool    | - true if first arg is greater than second
+	|le     |1 | 2|  |0 | 2|1 |1 |1 |0 |bool    | - true if first arg is less than or equal to second
+	|ge     |1 | 2|  |0 | 2|1 |1 |1 |0 |bool    | - true if first arg is greater than or equal to second
+	|is_null|1 | 1|  |0 | 1|1 |1 |1 |0 |bool    | - true if only arg is a null value
+	|nvl    |1 | 2|  |0 | 2|1 |1 |1 |0 |        | - returns arg 1 if it is not null, else arg 2
+	|switch |1 | 2| 2|1 |  |1 |1 |1 |0 |        | - a logical switch-case expr (like Oracle 'decode')
+	|like   |1 | 2| 1|0 | 4|1 |1 |1 |0 |bool    | - true if first arg contains second; args 3,4 are flags
+	|add    |1 | 2| 1|1 |  |1 |1 |1 |0 |numeric | - result of adding all args as numbers
+	|sub    |1 | 2| 1|1 |  |1 |1 |1 |0 |numeric | - result of subtracting all subsequent args from first
+	|mul    |1 | 2| 1|1 |  |1 |1 |1 |0 |numeric | - result of multiplying all arguments
+	|div    |1 | 2|  |0 | 2|1 |1 |1 |0 |numeric | - result of dividing first argument by second
+	|divi   |1 | 2|  |0 | 2|1 |1 |1 |0 |int     | - integral division of first arg by second
+	|mod    |1 | 2|  |0 | 2|1 |1 |1 |0 |int     | - modulus of integral division of first arg by second
+	|round  |1 | 1| 1|0 | 2|1 |1 |1 |0 |numeric | - rounds first arg to N dec places; N is second arg or 0
+	|exp    |1 | 2| 1|0 | 2|1 |1 |1 |0 |numeric | - raises first arg to the power of the second
+	|log    |1 | 2| 1|0 | 2|1 |1 |1 |0 |numeric | - logarithm of the first arg on the base of second
+	|min    |1 | 1| 1|1 |  |1 |1 |1 |0 |numeric | - minimum arg value of all arguments
+	|max    |1 | 1| 1|1 |  |1 |1 |1 |0 |numeric | - maximum arg value of all arguments
+	|avg    |1 | 1| 1|1 |  |1 |1 |1 |0 |numeric | - average value of all arguments
+	|sconcat|1 | 1| 1|1 |  |1 |1 |1 |0 |str     | - str concat of all arguments
+	|slength|1 | 1|  |0 | 1|1 |1 |1 |0 |int     | - length of input string in characters
+	|sindex |1 | 2| 1|0 | 3|1 |1 |1 |0 |int     | - pos in arg 1 of arg 2 if present, start at arg 3
+	|substr |1 | 2| 1|0 | 3|1 |1 |1 |0 |str     | - substr in arg 1 starting pos arg 2 of length arg 3
+	|srepeat|1 | 1| 1|0 | 2|1 |1 |1 |0 |str     | - str concat arg 1 to self repeated by arg 2 instances
+	|strim  |1 | 1|  |0 | 1|1 |1 |1 |0 |str     | - trims leading and trailing whitespace from arg 1
+	|spad   |1 | 2| 1|0 | 3|1 |1 |1 |0 |str     | - lengthens arg 1 to length of arg 2 using arg 3 or space
+	|spadl  |1 | 2| 1|0 | 3|1 |1 |1 |0 |str     | - like spad but add filler on left rather than right
+	|lc     |1 | 1|  |0 | 1|1 |1 |1 |0 |str     | - lowercases latin chars in a string
+	|uc     |1 | 1|  |0 | 1|1 |1 |1 |0 |str     | - uppercases latin chars in a string
+	|gcount |0 | 0|  |0 | 0|1 |0 |0 |1 |int     | - count of rows a view/cursor can see
+	|gmin   |1 | 1|  |0 | 1|1 |0 |0 |1 |numeric | - minimum of values in all records in one view col
+	|gmax   |1 | 1|  |0 | 1|1 |0 |0 |1 |numeric | - maximum of values in all records in one view col
+	|gsum   |1 | 1|  |0 | 1|1 |0 |0 |1 |numeric | - sum of values in all records in one view col
+	|gavg   |1 | 1|  |0 | 1|1 |0 |0 |1 |numeric | - average of values in all records in one view col
+	|gconcat|1 | 1|  |0 | 1|1 |0 |0 |1 |str     | - str concat of values in all records in one view col
+	|gevery |1 | 1|  |0 | 1|1 |0 |0 |1 |bool    | - is true when all rec values in one col are true
+	|gany   |1 | 1|  |0 | 1|1 |0 |0 |1 |bool    | - is true when at least one rec value in one col is true
+	|gsome  |1 | 1|  |0 | 1|1 |0 |0 |1 |bool    | - is true when some rec values are true
+	|crowid |0 | 0|  |0 | 0|1 |0 |0 |0 |str     | - unique database-generated row id of returned row (=rowid?)
+	|crownum|0 | 0|  |0 | 0|1 |0 |0 |0 |int     | - row number of returned row, before sorting (eg:Oracle)
+	|clevel |0 | 0|  |0 | 0|1 |0 |0 |0 |int     | - when using st-wi-cn-by, what hierarchy level row is in (eg:Oracle)
 
 	Note that the function list is incomplete and will grow over time.  It does not currently 
 	mention functions for working with view/cursor subqueries, such as "in" (field in subquery), 
 	and also doesn't include any list operators, such as for comparing a list of field names to 
 	a subquery that returns multiple columns (as I suspect MySQL 4.1 supports).
+
+=head2 cct_block_type
+
+This table enumerates the basic types that a blocks can be, since Rosetta
+"blocks" are generic enough that each of the following can be represented by
+them: stored procedures and functions, triggers, and packages containing stored
+procedures and functions; all of the previous can also have nested stored
+procedures and functions; all of the previous can have nested un-named blocks
+as well.  
+
+All block types (except packages?) can incorporate a series of commands plus
+conditionals or iterators, and all kinds can declare or use local variables,
+and they can all contain other blocks of certain types.  As such, blocks
+arranged in a hierarchy of parents and children, where a root block is one that
+is not contained in another.  All block types can take arguments of some sort,
+but your choice of type can severely limit what kinds of arguments you can
+take.  Only some block types, functions mainly, can return a value.  Only some
+block types have names.
+
+Column List:
+
+	code - str,req - name of the block type
+	is_unnamed - bool,req - true when block has no name; it is a scope inside a larger block
+	has_ret_val - bool,req - true when block is like a function and should return a value
+	is_package - bool,req - true when child blocks are publically visible in schema
+	is_trigger - bool,req - true when block is the root of a trigger on a table
+
+Index List:
+
+	primary - unique - [code]
+
+Record List:
+
+	|code|unn|ret|pkg|trg|
+	|----|---|---|---|---|
+	|pack|0  |0  |1  |0  | - an Oracle package; a namespace for related funcs and procs
+	|trig|0  |0  |0  |1  | - a trigger on a table
+	|proc|0  |0  |0  |0  | - a named stored procedure, plain or nested or in package
+	|func|0  |1  |0  |0  | - a named stored function, plain or nested or in package
+	|loop|1  |0  |0  |0  | - a loop/iterator context inside a block, such as a 'foreach'
+	|cond|1  |0  |0  |0  | - a conditional context inside a block, such as an 'if'
+
+	This list is probably missing some items.
 
 =head2 cct_basic_stmt_type
 
@@ -617,9 +681,12 @@ Record List:
 	|code |sp|up|as|lo|
 	|-----|--|--|--|--|
 	|sproc|1 |0 |0 |0 | - a call to a standard built-in procedure; one of cct_standard_proc
-	|uproc|0 |1 |0 |0 | - a call to a user defined stored procedure
+	|uproc|0 |1 |0 |0 | - a call to a user defined stored procedure (block)
 	|assig|0 |0 |1 |0 | - an assignment of an expression value to a variable
 	|logic|0 |0 |0 |1 | - some control-flow logic operation ...
+
+	To add: any view related operations like select/insert/update/delete.
+	Where allowed, also to add user related operations or commit/rollback, etc.
 
 =head2 cct_standard_proc
 
@@ -852,7 +919,33 @@ Example Record List:
 	|datetime|datetime|     |  |   |  |  |  |  | | |abs| - a date or time or both, non-calendar specific
 	|dtchines|datetime|     |  |   |  |  |  |  | | |chi| - a date or time or both, in the Chinese calendar
 
-=head1 NAME SPACES AND SCHEMA OBJECTS
+=head1 DATABASES AND NAME SPACES
+
+Rosetta data dictionaries can be and are used to describe both things
+that are stored in a database schema and things which are not stored
+there, but are used in connection with database schema by applications.
+Items which are stored in a database can be accessed by other items
+stored in a database, like named stored procedures or packages, and they
+can not directly bind to application variables.  Items not stored in a
+database can be bound and customized to application variables, such as
+normal 'select' SQL.  There are two root tables in Rosetta data
+dictioaries, into which almost everything else is grouped.  'database'
+groups what can be stored in a database, and 'application' groups what
+can not be.  The current version of DataDictionary.pod does not 
+explicitely describe 'application' or what is under it.
+
+=head2 database
+
+Each record in this table corresponds to a distinct "database" or
+"data source" or "database instance" or "server" or "host" which contains
+everything else, both schema and users.  This is what an application
+"connects to" when it will use a database.  Usually this will contain just 
+one record, if you are only using one database.  The rationale for being able 
+to describe multiple databases in the same data dictionary is, for example, 
+when one database wants to talk directly to another.
+
+This documentation is not yet complete, or referenced.  It may also be dropped 
+if 'namespace' fills its role well enough.
 
 =head2 namespace
 
@@ -896,51 +989,6 @@ Example Record List:
 Note: it may not be practical in real life to have databases directly querying
 each other, but for when you do want to, some database engines do support it.
 
-=head2 object
-
-Each record in this table represents a root-level component of a database
-schema, which has a name and is visible to all other objects in the same schema
-without using public synonyms.
-
-Note: "package" is an Oracle term, and its use here may be replaced with a
-different name if other databases have equivalent functionality.
-
-Column List:
-
-	namespace_id - int,req - the namespace that this schema object is in
-	object_name - str,req - the name this schema object is identified by
-	object_order - int,req - to explicitely define what order objects are declared in
-	object_type - str,req - what type of object this is; eg: table, view, procedure
-	public_syn - str - a name for the object outside of any namespace; Oracle public synonym
-	table_id - int - if this object is a named table, access the object details through this
-	view_id - int - if this object is a named view, access the object details through this
-	procedure_id - int - if this object is a named procedure, access the object details through this
-	function_id - int - if this object is a named function, access the object details through this
-	sequence_id - int - if this object is a named sequence, access the object details through this
-	package_id - int - if this object is a named Oracle package, access the object details through this
-
-Index List:
-
-	primary - unique - [namespace_id,object_name]
-	ak_order - unique - [namespace_id,object_order]
-	ak_public - unique - [public_syn]
-	fk_object_type - foreign - [object_type]->[cct_object_type]:[code]
-	fk_table - foreign - [table_id]->[table]:[table_id]
-	fk_view - foreign - [view_id]->[view]:[view_id]
-	fk_procedure - foreign - [procedure_id]->[procedure]:[procedure_id]
-	fk_function - foreign - [function_id]->[function]:[function_id]
-	fk_sequence - foreign - [sequence_id]->[sequence]:[sequence_id]
-	fk_package - foreign - [package_id]->[package]:[package_id]
-
-Example Record List:
-
-	|ns|name        |ord|type |public_syn  |tb|vw|pr|fu|se|pa|
-	|--|------------|---|-----|------------|--|--|--|--|--|--|
-	| 1|user_auth   |  1|table|user_auth   | 1|  |  |  |  |  | - authentication related details for application users
-	| 1|user_profile|  2|table|user_profile| 2|  |  |  |  |  | - public personal details for application users
-	| 1|user_pref   |  3|table|user_pref   | 3|  |  |  |  |  | - application preference values for users
-	| 1|person      |  4|table|person      | 4|  |  |  |  |  | - core data node in a genealogical program
-
 =head1 TABLES
 
 These tables are for storing user definitions of database tables, which are
@@ -949,8 +997,7 @@ more indexes or constraints.
 
 All tables are uniquely identified here by an "id", which is different from the
 table name that is stored in the database schema; the actual name in the schema
-may change depending on what the implementing database is.  See the section
-NAME SPACES AND SCHEMA OBJECTS for the mapping.
+may change depending on what the implementing database is.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
@@ -959,32 +1006,37 @@ to anything in the Rosetta code.
 =head2 table
 
 Each record in this table uniquely corresponds to one database table, and has
-some core details, but while the table name and parent name space would
-conceptually belong here, those are in a separate table elsewhere.
+some core details.
 
 Column List:
 
 	table_id - int,req - unique identifier for this table
+	namespace_id - int,req - the namespace that this table is in
+	table_name - str,req - the name this table is identified by
+	table_order - int,req - to explicitely define what order tables are declared in
+	public_syn - str - a name for the table outside of any namespace; Oracle public synonym
 	storage_file - str - where applicable, explicitely say where to store table (aka, "tablespace")
 
 Undecided Possible Extra Column:
 
 	is_temporary - bool - does table even go in the schema, or just a connection-specific place
-	max_rows - int - says what the maximum number of rows to return is (like MySQL's "limit" clause)
-	skip_rows - int - says what the index of the first row to return is
 
 Index List:
 
 	primary - unique - [table_id]
+	ak_name - unique - [namespace_id,table_name]
+	ak_order - unique - [namespace_id,table_order]
+	ak_public - unique - [public_syn]
+	fk_namespace - foreign - [namespace_id]->[namespace]:[namespace_id]
 
 Example Record List:
 
-	|id|file  |
-	|--|------|
-	| 1|user  | - user_auth    - authentication related details for application users
-	| 2|user  | - user_profile - public personal details for application users
-	| 3|user  | - user_pref    - application preference values for users
-	| 4|person| - person       - core data node in a genealogical program
+	|id|ns|name        |ord|public_syn  |file  |
+	|--|--|------------|---|------------|------|
+	| 1| 1|user_auth   |  1|user_auth   |user  | - authentication related details for application users
+	| 2| 1|user_profile|  2|user_profile|user  | - public personal details for application users
+	| 3| 1|user_pref   |  3|user_pref   |user  | - application preference values for users
+	| 4| 1|person      |  4|person      |person| - core data node in a genealogical program
 
 =head2 table_col
 
@@ -1143,8 +1195,7 @@ cct_view_type table description above for details.
 
 All views are uniquely identified here by an "id", which is different from the
 view name that is stored in the database schema (where applicable); the actual
-name in the schema may change depending on what the implementing database is. 
-See the section NAME SPACES AND SCHEMA OBJECTS for the mapping.
+name in the schema may change depending on what the implementing database is.
 
 Because all of the records in these tables are user defined, the provided 
 record list is simply some example or "synopsis" data; none of it corresponds 
@@ -1153,8 +1204,7 @@ to anything in the Rosetta code.
 =head2 view
 
 Each record in this table uniquely corresponds to one database view, and has
-some core details, but while the view name and parent name space would
-conceptually belong here, those are in a separate table elsewhere.
+some core details.
 
 Views are often fully defined using a set of multiple records in various
 view/_* tables, which makes them fully customizable.  However, a short-cut is
@@ -1177,23 +1227,39 @@ Column List:
 
 	view_id - int,req - unique identifier for this view
 	view_type - str,req - what kind of view this is; eg: object, caller, cursor, inside
+	namespace_id - int - the namespace that this view is in, if any
+	view_name - str - the name this view is identified by, if any
+	view_order - int - to explicitely define what order views are declared in, if named
+	public_syn - str - a name for the view outside of any namespace, if named; Oracle public synonym
 	may_write - bool,req - true when we should at least try allowing updates through the view
 	match_table - int - when set, the view matches exactly the interface for one table
+
+Undecided Possible Extra Columns:
+
+	page_rows - bool,req - true when we should page the resulting rows so only some are returned
+	maxr_lit_val - int - if paging, this literal value says maximum rows to be returned
+	maxr_var_name - str - if paging, get max rows from the caller bind variable (?) named here
+	skipr_lit_val - int - if paging, this literal value says rows to skip before returning any
+	skipr_var_name - str - if paging, get skip rows from the caller bind variable (?) named here
 
 Index List:
 
 	primary - unique - [view_id]
+	ak_name - unique - [namespace_id,view_name]
+	ak_order - unique - [namespace_id,view_order]
+	ak_public - unique - [public_syn]
 	fk_view_type - foreign - [view_type]->[cct_view_type]:[code]
+	fk_namespace - foreign - [namespace_id]->[namespace]:[namespace_id]
 	fk_match_table - foreign - [match_table]->[table]:[table_id]
 
 Example Record List:
 
-	|id|type  |wr|match|
-	|--|------|--|-----|
-	| 1|caller| 1|     | - user - joins the "user_auth" and "user_profile" tables
-	| 2|caller| 0|     | - person_with_parents - joins the "person" table with itself twice
-	| 3|caller| 0|     | - user_theme - shows how many users use each theme pref value
-	| 4|caller| 1|    4| - person - simply the "person" table
+	|id|type  |ns|name|ord|pub|wr|match|
+	|--|------|--|----|---|---|--|-----|
+	| 1|caller|  |    |   |   |1 |     | - user - joins the "user_auth" and "user_profile" tables
+	| 2|caller|  |    |   |   |0 |     | - person_with_parents - joins the "person" table with itself twice
+	| 3|caller|  |    |   |   |0 |     | - user_theme - shows how many users use each theme pref value
+	| 4|caller|  |    |   |   |1 |    4| - person - simply the "person" table
 
 =head2 view_col
 
@@ -1457,6 +1523,9 @@ be part of a view rowset definition (similar to Oracle's start-with-connect-by
 feature).  Only one is allowed per view rowset, and it is probably evaluated
 between the SQL "where" and "group by", where applicable.
 
+Note: Apparently SQL99 allows recursive queries with "WITH clause" which is
+a standard way of doing the same thing as Oracle's CONNECT BY.
+
 Column List:
 
 	view_id - int,req - unique identifier for this view
@@ -1478,7 +1547,7 @@ Index List:
 Note that the current structure only allows queries like "... start with
 [start_src_col] = [start_lit_val/src_name] connect by prior [conn_src_col] =
 [p_conn_src_col] ...", but this probably isn't adequate for all uses, and will
-be improved.  We may eliminate this table in favor of view_part_expr.
+be improved.  We may eliminate this table in favor of view_part_def.
 
 =head2 view_col_def
 
@@ -1508,7 +1577,7 @@ Column List:
 	src_col - str - if expr_type is 'col', then put the source table/view column name here
 	f_view_id - int - if expr_type is 'view', then put the view/subquery id here
 	sfunc_code - str - if expr_type is 'sfunc', then put the standard built-in function name/code here
-	ufunc_id - int - if expr_type is 'ufunc', then put the user-defined stored function id here
+	ufunc_id - int - if expr_type is 'ufunc', then put the user-defined stored function (block) id here
 
 Index List:
 
@@ -1516,11 +1585,11 @@ Index List:
 	ak_order - unique - [view_id,col_name,rowset_num,p_expr_num,p_expr_order]
 	fk_view_col - foreign - [view_id,col_name]->[view_col]:[view_id,col_name]
 	fk_rowset - foreign - [view_id,rowset_num]->[view_rowset]:[view_id,rowset_num]
+	fk_expr_type - foreign - [c_expr_type]->[cct_basic_expr_type]:[code]
 	fk_src_col - foreign - [view_id,rowset_num,src_name,src_col]->[view_src_col]:[view_id,rowset_num,src_name,col_name]
 	fk_f_view - foreign - [f_view_id]->[view]:[view_id]
-	fk_expr_type - foreign - [c_expr_type]->[cct_basic_expr_type]:[code]
 	fk_sfunc_code - foreign - [sfunc_code]->[cct_standard_func]:[code]
-	fk_ufunc - foreign - [ufunc_id]->[function]:[function_id]
+	fk_ufunc - foreign - [ufunc_id]->[block]:[block_id]
 
 Example Record List:
 
@@ -1551,7 +1620,7 @@ Example Record List:
 	| 3|theme_count  | 1| 1|   |  1|sfunc|   |   |            |             |   |gcount|  |
 	| 3|theme_count  | 1| 2|  1|  1|col  |   |   |user_pref   |pref_value   |   |      |  |
 
-=head2 view_part_expr
+=head2 view_part_def
 
 The records in this table are intended to describe most of the parts of a SQL
 "select" which is the basis for a view rowset definition.  The parts described
@@ -1595,7 +1664,7 @@ Column List:
 	src_col - str - if expr_type is 'col', then put the source table/view column name here
 	f_view_id - int - if expr_type is 'view', then put the view/subquery id here
 	sfunc_code - str - if expr_type is 'sfunc', then put the standard built-in function name/code here
-	ufunc_id - int - if expr_type is 'ufunc', then put the user-defined stored function id here
+	ufunc_id - int - if expr_type is 'ufunc', then put the user-defined stored function (block) id here
 
 Index List:
 
@@ -1603,11 +1672,11 @@ Index List:
 	ak_order - unique - [view_id,rowset_num,view_part,p_expr_num,p_expr_order]
 	fk_rowset - foreign - [view_id,rowset_num]->[view_rowset]:[view_id,rowset_num]
 	fk_view_part - foreign - [view_part]->[cct_view_part]:[code]
+	fk_expr_type - foreign - [c_expr_type]->[cct_basic_expr_type]:[code]
 	fk_src_col - foreign - [view_id,rowset_num,src_name,src_col]->[view_src_col]:[view_id,rowset_num,src_name,src_col]
 	fk_f_view - foreign - [f_view_id]->[view]:[view_id]
-	fk_expr_type - foreign - [c_expr_type]->[cct_basic_expr_type]:[code]
 	fk_sfunc_code - foreign - [sfunc_code]->[cct_standard_func]:[code]
-	fk_ufunc - foreign - [ufunc_id]->[function]:[function_id]
+	fk_ufunc - foreign - [ufunc_id]->[block]:[block_id]
 
 Example Record List:
 
@@ -1674,7 +1743,7 @@ view_grp records are used, that view rowset may only use the columns being
 grouped on in its output column definition.  Certain standard functions can
 only be used when grouping.
 
-=head1 BLOCKS
+=head1 SEQUENCES
 
 This section still needs to be written.
 
@@ -1682,8 +1751,183 @@ Because all of the records in these tables are user defined, the provided
 record list is simply some example or "synopsis" data; none of it corresponds 
 to anything in the Rosetta code.
 
-To be added: blocks, functions, procedures, triggers, sequences, etc.
-Also include: cct_basic_stmt_type, cct_standard_proc.
+To be added: sequence.
+
+=head1 BLOCKS
+
+These tables are for storing user definitions of code blocks, which are
+composed of a series of commands plus conditionals and iterations.  Types of
+blocks include stored procedures and functions, triggers, and packages
+containing stored procedures and functions; all of the previous can also have
+nested stored procedures and functions; all of the previous can have nested
+un-named blocks as well.
+
+All blocks are uniquely identified here by an "id", which is different from the
+view name that is stored in the database schema (where applicable); the actual
+name in the schema may change depending on what the implementing database is.
+
+Because all of the records in these tables are user defined, the provided 
+record list is simply some example or "synopsis" data; none of it corresponds 
+to anything in the Rosetta code.
+
+=head2 block
+
+Each record in this table uniquely corresponds to one database block, and has
+some core details.
+
+Column List:
+
+	block_id - int,req - unique identifier for this block
+	p_block_id - int - parent block of this one, if any; empty if this is the root block
+	p_block_order - int,req - order of this block among its siblings; 1 if no siblings
+	block_type - str,req - what kind of block this is; eg: object, caller, cursor, inside
+	namespace_id - int - the namespace that this block is in, if any
+	block_name - str - the name this block is identified by, if any
+	block_order - int - to explicitely define what order blocks are declared in, if named
+	public_syn - str - a name for the block outside of any namespace, if named; Oracle public synonym
+
+Undecided Possible Extra Columns:
+
+	return_type - str,req - if this block returns a value, this is its data type
+
+Index List:
+
+	primary - unique - [block_id]
+	ak_name - unique - [namespace_id,block_name]
+	ak_order - unique - [namespace_id,block_order]
+	ak_public - unique - [public_syn]
+	fk_block_type - foreign - [block_type]->[cct_block_type]:[code]
+	fk_namespace - foreign - [namespace_id]->[namespace]:[namespace_id]
+
+Undecided Possible Extra Indexes:
+
+	fk_return_type - foreign - [return_type]->[data_type]:[name]
+
+=head2 block_var
+
+Each record in this table is for declaring a variable within the scope of a
+block; it can be used by that block and by any child blocks, where applicable.  
+If the current block is a package, these are package-level variables.
+
+A variable could also be an input and/or output argument to the block, which is 
+determined by its type.
+
+Column List:
+
+	block_id - int,req - what block this variable is in
+	var_name - str,req - unique identifier for variable within view
+	var_order - int,req - what order variables are declared in
+	var_type - str,req - what basic variable type the variable is
+	is_argument - bool,req - true if this variable is a block argument (needs fleshing out)
+	data_type - str - if the var type is 'scalar', this is its user customized data type
+	init_lit_val - str - if var type is 'scalar', an initial value for var can go here
+	view_id - int - if var type is 'cursor', then put the view defining it here
+
+Undecided Possible Extra Columns:
+
+	is_constant - bool - if the var type is 'scalar', this says its value may not be changed
+
+Index List:
+
+	primary - unique - [block_id,var_name]
+	ak_order - unique - [block_id,var_order]
+	fk_block - foreign - [block_id]->[block]:[block_id]
+	fk_var_type - foreign - [var_type]->[cct_basic_var_type]:[code]
+	fk_data_type - foreign - [data_type]->[data_type]:[name]
+	fk_view - foreign - [view_id]->[view]:[view_id]
+
+=head2 block_stmt
+
+Each record in this table represents a command or statement or line within a
+block, which includes such operations as variable assignment or reading a
+cursor or executing a DML operation.  In the case of an assignment, it is the
+block_expr record(s) which refer to the block_stmt record.  If this statement
+is something which opens a new unnamed block context, the block record is 
+referred to by the block_stmt record.
+
+Column List:
+
+	block_id - int,req - what block this statement is in
+	stmt_num - int,req - unique identifier for stmt within block, and what order it executes in
+	stmt_type - str,req - what type of stmt this is; eg: assignment, condit, call, loop, dml, return
+	dest_var_name - str - if the stmt type is 'assign', this var is where the expression result goes
+	c_block_id - int - if the stmt type starts an unnamed block context, this is the child block id
+
+Index List:
+
+	primary - unique - [block_id,stmt_num]
+	fk_block - foreign - [block_id]->[block]:[block_id]
+	fk_dest_var - foreign - [block_id,dest_var_name]->[block_var]:[block_id,var_name]
+	fk_c_block - foreign - [c_block_id]->[block]:[block_id]
+
+=head2 block_expr
+
+Each record in this table uniquely corresponds to a sub-expression that is part
+of a main/root expression which is the right hand side of a variable assignment
+statement in a block.  All of these sub-expressions form a hierarchy where
+children are "arguments" to their parent expressions.  The root expression is
+expected to return a value that can be stored in the block variable on the left
+side of the statement.
+
+Column List:
+
+	block_id - int,req - unique identifier for this block
+	stmt_num - int,req - unique identifier for block statement this expression is part of
+	expr_num - int,req - unique identifier for sub-expression within block statement
+	p_expr_num - int - parent expression of this one, if any; empty if this is the root expression
+	p_expr_order - int,req - order of this expression among its siblings; 1 if no siblings
+	expr_type - str,req - what type of expression this is; eg: literal, variable, column, function
+	lit_val - str - if expr_type is 'lit', then store the literal value here
+	src_var_name - str - if expr_type is 'var', then put the block variable name here
+	sfunc_code - str - if expr_type is 'sfunc', then put the standard built-in function name/code here
+	ufunc_id - int - if expr_type is 'ufunc', then put the user-defined stored function (block) id here
+
+Index List:
+
+	primary - unique - [block_id,stmt_num,expr_num]
+	ak_order - unique - [block_id,stmt_num,p_expr_num,p_expr_order]
+	fk_stmt - foreign - [block_id,stmt_num]->[block_stmt]:[block_id,stmt_num]
+	fk_expr_type - foreign - [c_expr_type]->[cct_basic_expr_type]:[code]
+	fk_src_var_name - foreign - [block_id,src_var_name]->[block_var]:[block_id,var_name]
+	fk_sfunc_code - foreign - [sfunc_code]->[cct_standard_func]:[code]
+	fk_ufunc - foreign - [ufunc_id]->[block]:[block_id]
+
+=head2 trigger
+
+This table is basically an intersection table between a table and a block. 
+Each record in this table uniquely corresponds to a single trigger, which is a
+special unnamed block that is associated with a table and which executes
+automatically when certain kinds of DML activity happen to the table.  Triggers
+can be set to run before or after said activity, either once per SQL statement
+execution or once per each row worked on; they can run on inserts and/or
+updates and/or deletes.
+
+Column List:
+
+	table_id - int,req - unique identifier for the table to watch
+	block_id - int,req - unique identifier for the block to execute
+	run_before - bool,req - true when the block should execute before attempted change is made
+	run_after - bool,req - true when the block should execute after attempted change is made
+	on_insert - bool,req - true when block should execute when a record insert is attempted
+	on_update - bool,req - true when block should execute when a record update is attempted
+	on_delete - bool,req - true when block should execute when a record delete is attempted
+	for_each_row - bool,req - true when block is re-executed for each row affected; false is once
+
+Index List:
+
+	primary - unique - [table_id,block_id]
+	fk_table - foreign - [table_id]->[table]:[table_id]
+	fk_block - foreign - [block_id]->[block]:[block_id]
+
+=head1 USERS
+
+This section still needs to be written.
+
+Because all of the records in these tables are user defined, the provided 
+record list is simply some example or "synopsis" data; none of it corresponds 
+to anything in the Rosetta code.
+
+To be added: user, privilege.
 
 =head1 COMMANDS AND RESULTS
 
