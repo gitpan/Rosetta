@@ -1,3 +1,39 @@
+2003-03-08   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.06.
+
+	* Created new documentation-only file lib/Rosetta/SimilarModules.pod, which
+	is where all of the comparisons between Rosetta and other database-related
+	modules and frameworks will go.  There are so many modules to compare with
+	that this documentation needs its own file.
+
+	* Updated the SEE ALSO lines of all the modules.  Now Framework.pod is the
+	place where all of the other Rosetta modules are listed. SimilarModules.pod
+	has the list of other people's modules.  All other modules simply list
+	Framework.pod and SimilarModules.pod in their SEE ALSO. DataType is now at
+	v0.02 and Rosetta.pm is at v0.06 because of this change.
+
+	* Added new modules lib/Rosetta/Schema/Table.pm and
+	lib/Rosetta/Schema/View.pm (both are v0.01), which complement the already
+	completed DataType.pm.  There are also two new test files, one for each new
+	module. Given the greater complexity of the new modules relative to
+	DataType, and the desire to expedite this release, the two new modules will
+	only be partly done in this release, and their test files won't do
+	anything. Table.pm and View.pm should be finished probably by release 0.08
+	or 0.09.
+
+	* References in Framework.pod to a planned module Rosetta::Schema::DataSet
+	have been removed, as that module's functionality is now part of
+	Rosetta::Schema::View.  Also added references to Rosetta::Schema::User and 
+	Rosetta::Schema::Privilege (or PrivilegeType).
+
+	* Removed the entire MODULE DETAILS section from Framework.pod, and divided
+	its contents into the new Table.pm and View.pm.
+
+	* Updated STRUCTURE section in Framework.pod to move the Locale group in
+	the diagram so it is beside Schema; this signifies that both of these 2
+	named groups are used by the 4 other groups in more or less the same way.
+
 2003-03-04   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.05.

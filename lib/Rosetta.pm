@@ -20,7 +20,7 @@ require 5.004;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 ######################################################################
 
@@ -104,7 +104,6 @@ Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>.
 
 =head1 SEE ALSO
 
-perl(1), DBI, DBD::*, Alzabo, SQL::Schema, DBIx::AnyDBD, SQL::Builder,
-DBIx::Browse, DBIx::Abstract, DBIx::SearchBuilder, and various other modules.
+perl(1), Rosetta::Framework, Rosetta::SimilarModules.
 
 =cut

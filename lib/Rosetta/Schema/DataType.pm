@@ -20,7 +20,7 @@ require 5.004;
 use strict;
 use warnings;
 use vars qw($VERSION);
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 ######################################################################
 
@@ -443,6 +443,6 @@ Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>.
 
 =head1 SEE ALSO
 
-perl(1), Rosetta::Framework.
+perl(1), Rosetta::Framework, Rosetta::SimilarModules.
 
 =cut

@@ -36,7 +36,7 @@ distributions don't exist yet.)
 
 All of my modules have complete POD inside of them, so please refer to that for
 a description of module-specific details such as their method APIs.  The file
-"Rosetta::Framework.pod" contains the main POD documentation for the Rosetta
+"lib/Rosetta/Framework.pod" contains the main POD documentation for the Rosetta
 framework taken as a whole, including the purpose and overall design structure
 of the distribution; it should be read first.
 

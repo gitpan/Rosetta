@@ -1,0 +1,340 @@
+=head1 NAME
+
+Rosetta::SimilarModules - Compare and contrast Rosetta with other modules
+
+=head1 DESCRIPTION
+
+Many thousands of reusable Perl modules have been created and shared by as many
+generous programmers, with CPAN being the most popular repository.  These
+modules serve a wide variety of functions, and demonstrate the great power and
+flexability of Perl for solving day to day problems.  One of the most popular
+tasks that module authors make them do is work with databases, which is
+certainly reasonable given that databases are one of the primary or popular
+functions of computers in general.  The Rosetta framework comprises only a
+handful of modules out of the good hundred or more available.  A so common
+question that application or script writers would ask is, with so many options
+to choose from, which option is the best fit for them?  This choice is made
+more complicated, and yet in some ways easier, by the fact that there is a fair
+amount of redundant functionality between the options.
+
+This document is meant to help you by briefly outlining the main features and
+scope of each of the other database-related frameworks and modules out there as
+I see them, and mainly showing how they compare and contrast with the Rosetta
+framework.  Given that Rosetta is intended to be very comprehensive, it is
+reasonable to guess that most existing modules will have at least some overlap
+in functionality upon which to base a comparison.  This includes modules that
+are drivers to connect to specific databases through which queries can be
+executed, and modules that model or generate database schema, and modules that
+generate SQL, and modules that simulate functionality for databases that don't
+have it, and modules that abstract multiple databases behind one interface.
+
+All database-related modules that I can find will be listed here, whether they
+are on CPAN or not, in at least two groups: the first is for frameworks of
+multiple modules that work together; the second is for individual modules that
+are standalone offerings.  For each framework of module I have provided 3 main
+types of information: the first is a few sentences summarizing the module or
+framework on its own; the second is a list of commonalities it shares with
+Rosetta; the third is a list of differences between it and Rosetta.
+
+Each module has a one-liner about it in CPAN Module List format; if there is an
+actual Module List entry, I use that; otherwise I construct one using the
+module's NAME.  Note that not all modules mentioned below are on CPAN or in the 
+official Module List.
+
+Please note that given the large number, I have only actually tried executing a
+few of these.  Most of my notes I am making based just on the documentation
+that the module authors have provided, and from looking at the source code.
+
+I<As a further note, given that the Rosetta framework is relatively new and
+still under construction, the comparisons in this document are intended to be
+relative to where Rosetta will be when it is done, and not where it is *now*.>
+
+=head1 LARGER FRAMEWORK COMPARISONS
+
+I<Note that this list is new and is mostly incomplete.>
+
+=head2 DBI and DBD::*
+
+Module List - DBI Core Framework:
+
+	Name            DSLIP Description                                  Info
+	------------    ----- -------------------------------------------- ----
+	DBI             MmcOp Generic Database Interface (see DBD modules) DBIML
+
+	DBI::
+	::DBD                 Perl DBI Database Driver Writer's Guide
+	::FAQ                 The Frequently Asked Questions for the Perl5 Database Interface
+	::Profile             Performance profiling and benchmarking for the DBI
+	::ProfileData         manipulate DBI::ProfileDumper data dumps
+	::ProfileDumper       profile DBI usage and output data to a file
+	::ProxyServer         a server for the DBD::Proxy driver
+
+	DBI::Const::
+	::GetInfoReturn       Data and functions for describing GetInfo results
+	::GetInfoType         Data describing GetInfo type codes
+
+	DBI::Const::GetInfo::
+	::ANSI                ISO/IEC SQL/CLI Constants for GetInfo
+	::ODBC                ODBC Constants for GetInfo
+
+	DBI::DBD::
+	::Metadata            Generate the code and data for some DBI metadata methods
+
+	DBI::ProfileDumper::
+	::Apache              capture DBI profiling data from Apache/mod_perl
+
+	DBD::
+	::ExampleP
+	::NullP
+	::Proxy               A proxy driver for the DBI
+	::Sponge
+
+Module List - Official DBI Driver Extensions (in their own distributions):
+
+	Name           DSLIP Description                                  Info
+	------------   ----- -------------------------------------------- ----
+	DBD::
+	::ADO          bmpO? Database interface modules of MS ADO for DBI TLOWERY
+	::ASAny        adcO? Adaptive Server Anywhere Driver for DBI      SMIRNIOS
+	::Altera       bdpO? Altera SQL Server for DBI - pure Perl code   DSOUFLIS
+	::CSV          adcO? SQL engine and DBI driver for CSV files      JZUCKER
+	::DB2          adcO? DB2 Driver for DBI                           MHM
+	::DtfSQLmac    RdpO? dtF/SQL (Mac OS edition) driver for DBI      TWEGNER
+	::Empress      adcO? Empress RDBMS Driver                         SWILLIAM
+	::Excel        adpO? Excel database driver for the DBI module     KWITKNR
+	::FreeTDS      adcO? DBI driver for MS SQLServer and Sybase       SPANNRING
+	::Illustra     bmcO? Illustra Driver for DBI                      PMH
+	::Informix     MmcO? Informix Driver for DBI                      JOHNL
+	::Informix4    adcO? DBI driver for Informix SE 4.10              GTHYNI
+	::Ingres       bmcO? Ingres Driver for DBI                        HTOUG
+	::InterBase    bmcO? DBI driver for InterBase RDBMS server        EDPRATOMO
+	::Multiplex    RmpO? Spreading database load across servers       TKISHEL
+	::ODBC         amcO? ODBC Driver for DBI                          DBIML
+	::Oracle       MmcO? Oracle Driver for DBI                        DBIML
+	::PgPP         bdpOp Pure Perl PostgreSQL driver for the DBI      OYAMA
+	::PrimeBase    bmc?p A primeBase database interface               PRIMEBASE
+	::QBase        amcO? QBase Driver for DBI                         BENLI
+	::RAM          bmpO? a DBI driver for files and data structures   JZUCKER
+	::RDB          Rdof? DBI driver for Oracle RDB (OpenVMS only)     ASTILLER
+	::Recall       adpOp Transparent database replication layer       AGUL
+	::SQLrelay     bdpO? SQLrelay driver for DBI                      DMOW
+	::SearchServer cdcO? PCDOCS/Fulcrum SearchServer Driver for DB    SHARI
+	::Solid        amcO? Solid Driver for DBI                         TWENRICH
+	::Sprite       RdpO? Sprite driver                                TURNERJW
+	::Sqlflex      RdcO? SQLFLEX driver for DBI                       INFOFLEX
+	::Sybase       bmcO? Sybase Driver for DBI                        MEWP
+	::Unify        bdcO? Unify driver for DBI                         HMBRAND
+	::XBase        RmpO? XBase driver for DBI                         JANPAZ
+	::mSQL         RmcO? Msql Driver for DBI                          JWIED
+	::mysql        RmcO? Mysql Driver for DBI                         JWIED
+	::mysqlPP      bdpOp Pure Perl MySQL driver for the DBI           OYAMA
+	::pNET         amcO? DBD proxy driver                             JWIED
+
+=head2 Alzabo
+
+Module List:
+
+	Name               DSLIP Description                                  Info
+	------------       ----- -------------------------------------------- ----
+	Alzabo             RdpOp A data modelling tool and RDBMS-OO mapper    DROLSKY
+
+	Alzabo::
+	::BackCompat             Convert old data structures  
+	::ChangeTracker          Saves a set of changes as callbacks that can be backed out if needed  
+	::Column                 Column objects  
+	::ColumnDefinition       Holds the type attribute for a column  
+	::Config                 Alzabo configuration information  
+	::Create                 Loads all Alzabo::Create::* classes  
+	::Debug                  Creates constants used to turn on debugging      
+	::Driver                 Alzabo base class for RDBMS drivers  
+	::Exceptions             Creates all exception subclasses used in Alzabo.  
+	::ForeignKey             Foreign key (relation) objects  
+	::Index                  Index objects  
+	::MethodMaker            Auto-generate useful methods based on an existing schema  
+	::ObjectCache            A simple in-memory cache for row objects.  
+	::RDBMSRules             Base class for Alzabo RDBMS rulesets  
+	::Runtime                Loads all Alzabo::Runtime::* classes  
+	::SQLMaker               Alzabo base class for RDBMS drivers  
+	::Schema                 Schema objects  
+	::Table                  Table objects  
+
+	Alzabo::Create::
+	::Column                 Column objects for use in schema creation  
+	::ColumnDefinition       Column definition object for schema creation  
+	::ForeignKey             Foreign key objects for schema creation.  
+	::Index                  Index objects for schema creation  
+	::Schema                 Schema objects for schema creation  
+	::Table                  Table objects for schema creation  
+
+	Alzabo::Driver::
+	::MySQL                  MySQL specific Alzabo driver subclass  
+	::PostgreSQL             PostgreSQL specific Alzabo driver subclass  
+
+	Alzabo::ObjectCache::
+	::Sync                   Base class for syncing classes  
+	
+	Alzabo::ObjectCache::Store::
+	::BerkeleyDB             Cache objects in a BerkeleyDB file  
+	::LRU                    Make any storage module an LRU  
+	::Memory                 Cache objects in memory  
+	::Null                   Doesn't really store anything  
+	::RDBMS                  Cache objects in an RDBMS backend  
+
+	Alzabo::ObjectCache::Sync::	
+	::BerkeleyDB             Uses a DBM file to sync object caches  
+	::DBM                    Base class for syncing modules that use DBM files  
+	::DB_File                Uses a Berkeley DB file to sync object caches  
+	::IPC                    Uses a IPC file to sync object caches  
+	::Mmap                   Uses a Mmap file to sync object caches  
+	::Null                   No inter-process cache syncing  
+	::RDBMS                  Uses an RDBM backend to sync object caches  
+	::SDBM_File              
+
+	Alzabo::RDBMSRules::
+	::MySQL                  MySQL specific database rules.  
+	::PostgreSQL             PostgreSQL specific database rules  
+
+	Alzabo::Runtime::		
+	::CachedRow              Cached row objects  
+	::Column                 Column objects  
+	::ColumnDefinition       Column definition objects  
+	::Cursor                 Base class for Alzabo cursors  
+	::ForeignKey             Foreign key objects  
+	::Index                  Index objects  
+	::JoinCursor             Cursor that returns arrays of Alzabo::Runtime::Row objects  
+	::PotentialRow           Row objects that aren't yet in the database  
+	::Row                    Row objects  
+	::RowCursor              Cursor that returns Alzabo::Runtime::Row objects  
+	::Schema                 Schema objects  
+	::Table                  Table objects  
+
+	Alzabo::SQLMaker::
+	::MySQL                  Alzabo SQL making class for MySQL  
+	::PostgreSQL             Alzabo SQL making class for PostgreSQL  
+
+=head1 SMALLER FRAMEWORK COMPARISONS
+
+I<Note that this list is new and is mostly incomplete.>
+
+=head2 DBIx::SearchBuilder
+
+Module List:
+
+	Name            DSLIP Description                                  Info
+	------------    ----- -------------------------------------------- ----
+	DBIx::
+	::SearchBuilder ????? Perl extension for easy SQL SELECT Statement generation  JESSE
+	
+	DBIx::SearchBuilder::
+	::Handle              Perl extension which is a generic DBI handle
+	::Record              Perl extension for subclassing, so you can deal with a Record
+	
+	DBIx::SearchBuilder::Handle::
+	::Oracle              an oracle specific Handle object
+	::Pg
+	::mysql               a mysql specific Handle object
+	::mysqlPP
+	
+	DBIx::SearchBuilder::Record::
+	::Cachable
+
+=head2 SQL::Schema
+
+Module List:
+
+	Name         DSLIP Description                                  Info
+	------------ ----- -------------------------------------------- ----
+	SQL::
+	::Schema     bdpO? Convert a data dictionary to SQL statements  TODD
+	
+	SQL::Schema::
+	::Constraint       A constraint of a database table  
+	::Function         A function stored within the database  
+	::Package          A package stored within the database  
+	::Procedure        A procedure stored within the database  
+	::Sequence         An Oracle sequence  
+	::Source           A source stored within the database  
+	::Table            A database table  
+	::Trigger          A database trigger  
+	::View             A database view  
+
+	SQL::Schema::Package::
+	::Body             A package's body stored within the database  
+
+	SQL::Schema::Table::
+	::Column           A column of a database table  
+
+=head1 INDIVIDUAL MODULE COMPARISONS (1 core module)
+
+I<Note that this list is new and is mostly incomplete.>
+
+=head2 DBIx::Abstract
+
+Module List:
+
+	Name       DSLIP Description                                  Info
+	---------- ----- -------------------------------------------- ----
+	DBIx::
+	::Abstract RmpO? Wrapper for DBI that generates SQL           TURNERA
+
+=head2 DBIx::AnyDBD
+
+Module List:
+
+	Name      DSLIP Description                                  Info
+	--------- ----- -------------------------------------------- ----
+	DBIx::
+	::AnyDBD  bdpO? Module to make cross db applications easier  MSERGEANT
+
+	Example::
+	::DB            Example class for DBIx::AnyDBD usage  	 
+
+	Example::DB::
+	::Default 
+	::Oracle
+	::Pg
+
+=head2 DBIx::Browse
+
+Module List:
+
+	Name     DSLIP Description                                  Info
+	-------- ----- -------------------------------------------- ----
+	DBIx::
+	::Browse bdpOg A class to browse related tables via CGI/Web EJDRS
+
+	DBIx::Browse::
+	::CGI 	       Perl extension to browse tables with a CGI interface.
+
+=head1 BUGS
+
+It appears that the Pod::Man with Perl 5.6.0 (and perhaps other versions)
+doesn't support the "head3" directive.  I would have liked to use this, but
+can't so my level 3 headings are one-line paragraphs instead.
+
+=head1 AUTHOR
+
+Copyright (c) 1999-2003, Darren R. Duncan.  All rights reserved.  This module
+is free software; you can redistribute it and/or modify it under the same terms
+as Perl itself.  However, I do request that this copyright information and
+credits remain attached to the file.  If you modify this module and
+redistribute a changed version then please attach a note listing the
+modifications.  This module is available "as-is" and the author can not be held
+accountable for any problems resulting from its use.
+
+I am always interested in knowing how my work helps others, so if you put this
+module to use in any of your own products or services then I would appreciate
+(but not require) it if you send me the website url for said product or
+service, so I know who you are.  Also, if you make non-proprietary changes to
+the module because it doesn't work the way you need, and you are willing to
+make these freely available, then please send me a copy so that I can roll
+desirable changes into the main release.
+
+Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>.
+
+=head1 SEE ALSO
+
+perl(1), Rosetta::Framework, DBI, DBD::*, Alzabo, DBIx::SearchBuilder, SQL::Schema, 
+DBIx::Abstract, DBIx::AnyDBD, DBIx::Browse, and various other modules.
+
+=cut

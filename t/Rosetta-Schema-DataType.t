@@ -8,7 +8,7 @@
 
 BEGIN { $| = 1; print "1..69\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use Rosetta::Schema::DataType 0.01;
+use Rosetta::Schema::DataType 0.02;
 $loaded = 1;
 print "ok 1\n";
 use strict;

@@ -507,10 +507,10 @@ This briefly illustrates the relationship of the module groups:
 	          |
 	          |
 	        Driver--------------\
-	called by | | uses   used by \
-	          | Locale            \
-	  invokes | |                  \
-	        Engine--------------Schema
+	called by |   uses   used by \
+	          |                   \
+	  invokes |                    \
+	        Engine--------------Schema;Locale (both used by same 4 groups)
 	called by | \ uses   used by /  |
 	          |  \              /   |
 	  invokes |   \            /   /
@@ -549,10 +549,11 @@ all of these exist yet, as they are being implemented over time.
 	Rosetta::Schema (represents one database schema; owned by one database user)
 	Rosetta::Schema::DataType (metadata for individual atomic or scalar values)
 	Rosetta::Schema::Table (details of table columns are part of this class)
-	Rosetta::Schema::DataSet (independent but used by View; a parsed select)
-	Rosetta::Schema::View (not only stored views, but regular selects and other DML)
+	Rosetta::Schema::View (a parsed select, used for any DML like IUD, gen stored views)
+	Rosetta::Schema::User
+	Rosetta::Schema::Privilege (or PrivilegeType)
 	Rosetta::Schema::Procedure (or Function)
-	Rosetta::Schema::* ... like User, Trigger, Sequence, Package, whatever
+	Rosetta::Schema::* ... like Trigger, Sequence, Package, whatever
 
 	Rosetta::Engine (base class to provide 'execute' function; calls Drivers)
 	Rosetta::Engine::Command (describes an action to do)
@@ -791,62 +792,56 @@ Note also that a bunch of summary documentation was dropped between release
 0.01 and 0.02, since it was at least partly redundant with other additions in
 0.02; the remaining parts should be brought back soon.
 
+Note the third: now that some of these modules have been implemented, their 
+updated descriptions here are more accurate.
+
 =head2 SCHEMA MODULES
 
 =over 4
 
 =item 0
 
-B<Rosetta::Schema::DataType> - This Schema class describes a simple
-data type, which serves as meta-data for a single scalar unit of data, or a
-column whose members are all of the same data type, such as is in a regular
-database table or in row-sets read from or to be written to one.  This class
+B<Rosetta::Schema::DataType> - This Schema class describes a simple data type,
+which serves as metadata for a single atomic or scalar unit of data, or a
+column whose members are all of the same data type, such as in a regular
+database table or in row sets read from or to be written to one.  This class
 would be used both when manipulating database schema and when manipulating
 database data.
 
 =item 0
 
-B<Rosetta::Schema::Table> - This Schema class describes a single
-database table, and would be used for such things as managing schema for the
-table (eg: create, alter, destroy), and describing the table's "public
-interface" so other functionality like views or various DML operations know how
-to use the table. In its simplest sense, a Table object consists of a table
-name, a list of table columns, a list of keys, a list of constraints, and a few
-other implementation details.  This class does not describe anything that is
-changed by DML activity, such as a count of stored records, or the current
-values of sequences attached to columns.  This class can generate Command
-objects having types of: 'table_verify', 'table_create', 'table_alter',
-'table_destroy'.
+B<Rosetta::Schema::Table> - This Schema class describes a single database
+table, and would be used for such things as managing schema for the table (eg:
+create, alter, destroy), and describing the table's "public interface" so other
+functionality like views or various DML operations know how to use the table.
+In its simplest sense, a Table object consists of a table name, a list of table
+columns, a list of keys, a list of constraints, and a few other implementation
+details.  This class does not describe anything that is changed by DML
+activity, such as a count of stored records, or the current values of sequences
+attached to columns.  This class would be used both when manipulating database
+schema and when manipulating database data.  This class can generate
+Rosetta::Engine::Command objects having types of: 'table_verify',
+'table_create', 'table_alter', 'table_destroy'.
 
 =item 0
 
-B<Rosetta::Schema::DataSet> - This Schema class is meta-data from which
-DML command templates can be generated.  Conceptually, a DataSet looks like a
-Table, since both represent or store a matrix of data, which has uniquely
-identifiable columns, and rows which can be uniquely identifiable but may not
-be.  But unlike a Table, a DataSet does not have a name.  In its simplest use,
-a DataSet is an interface to a single database table, and its public interface
-is identical to that of said table; this interface can be used to fetch or
-modify data stored in the table.  This class can generate Command objects
-having types of: 'data_select', 'data_insert', 'data_update', 'data_delete',
-'data_lock', 'data_unlock'.  I<Note: this paragraph was a rough draft.>
-
-=item 0
-
-B<Rosetta::Schema::View> - This Schema class describes a single
-database view, and would be used for such things as managing schema for the
-view (eg: create, alter, destroy), and describing the view's "public interface"
-(it looks like a table, with columns and rows) so other functionality like
-various DML operations or other views know how to use the view.  Conceptually
-speaking, a database view is an abstracted interface to one or more database
-tables which are related to each other in a specific way; a view has its own
-name and can generally be used like a table.  A View object has only two
-properties, which are a name and a DataSet object; put another way, a View
-object simply associates a name with a DataSet object.  This class does not
-describe anything that is changed by DML activity, such as a count of stored
-records, or the current values of sequences attached to columns.  This class
-can generate Command objects having types of: 'view_verify', 'view_create',
-'view_alter', 'view_destroy'.
+B<Rosetta::Schema::View> - This Schema class describes a single database view,
+which conceptually looks like a table, but it is used differently.  Tables and
+views are similar in that they both represent or store a matrix of data, which
+has uniquely identifiable columns, and rows which can be uniquely identifiable
+but may not be.  With the way that Rosetta implements views, you can do all of
+the same DML operations with them that you can do with tables: select, insert,
+update, delete rows; that said, the process for doing any of those with views
+is more complicated than with tables, but this complexity is usually internal
+to Rosetta so you shouldn't have to code any differently between them.  Tables
+and views are different in that tables actually store data in themselves, while
+views don't.  A view is actually a custom abstracted interface to one or more
+database tables which are related to each other in a specific way; when you
+issue DML against a view, you are actually fetching from or modifying the data
+stored in one (simplest case) or more tables.  This class can generate
+Rosetta::Engine::Command objects having types of: 'data_select', 'data_insert',
+'data_update', 'data_delete', 'data_lock', 'data_unlock', 'view_verify',
+'view_create', 'view_alter', 'view_destroy'.
 
 =back
 
@@ -1417,362 +1412,6 @@ This stuff is an older draft of the previous section, in a way.
 	
 	... um ... stuff ...
 
-=head1 MODULE DETAILS
-
-Below is some more detailed documentation for a few classes, as they have been
-written.  Not all modules are listed.  If details for a module have been written 
-and don't appear here, then that module was implemented in code already, and it 
-is in its own file with complete POD therein.  This documentation section is 
-temporary and its contents will be moved to other files.
-	
-=head2 Rosetta::Schema::Table
-
-This Schema module is a Schema class that describes a single database table,
-and would be used for such things as managing schema for the table (eg: create,
-alter, destroy), and describing the table's "public interface" so other
-functionality like views or various DML operations know how to use the table.
-In its simplest sense, a Table object consists of a table name, a list of table
-columns, a list of keys, a list of constraints, and a few other implementation
-details.  This class does not describe anything that is changed by DML
-activity, such as a count of stored records, or the current values of sequences
-attached to columns.  This class can generate Command objects having types of: 
-'table_verify', 'table_create', 'table_alter', 'table_destroy'.
-
-Here is sample code for defining a few tables with this class:
-
-	my %table_info = map { 
-			( $_->{name}, Rosetta::Schema::Table->new( $_ ) ) 
-			} (
-		{
-			'name' => 'user_auth',
-			'column_list' => [
-				{
-					'name' => 'user_id', 'data_type' => 'int', 'is_req' => 1,
-					'default_val' => 1, 'auto_inc' => 1,
-				},
-				{ 'name' => 'login_name'   , 'data_type' => 'str20'  , 'is_req' => 1, },
-				{ 'name' => 'login_pass'   , 'data_type' => 'str20'  , 'is_req' => 1, },
-				{ 'name' => 'private_name' , 'data_type' => 'str100' , 'is_req' => 1, },
-				{ 'name' => 'private_email', 'data_type' => 'str100' , 'is_req' => 1, },
-				{ 'name' => 'may_login'    , 'data_type' => 'boolean', 'is_req' => 1, },
-				{ 
-					'name' => 'max_sessions', 'data_type' => 'byte', 'is_req' => 1, 
-					'default_val' => 3, 
-				},
-			],
-			'unique_key_list' => [
-				{ 'name' => 'PRIMARY'         , 'column_list' => [ 'user_id'      , ], },
-				{ 'name' => 'sk_login_name'   , 'column_list' => [ 'login_name'   , ], },
-				{ 'name' => 'sk_private_email', 'column_list' => [ 'private_email', ], },
-			],
-			'primary_key' => 'PRIMARY', # from unique keys list, others are surrogate
-		},
-		{
-			'name' => 'user_profile',
-			'column_list' => [
-				{ 'name' => 'user_id'     , 'data_type' => 'int'   , 'is_req' => 1, },
-				{ 'name' => 'public_name' , 'data_type' => 'str250', 'is_req' => 1, },
-				{ 'name' => 'public_email', 'data_type' => 'str250', 'is_req' => 0, },
-				{ 'name' => 'web_url'     , 'data_type' => 'str250', 'is_req' => 0, },
-				{ 'name' => 'contact_net' , 'data_type' => 'str250', 'is_req' => 0, },
-				{ 'name' => 'contact_phy' , 'data_type' => 'str250', 'is_req' => 0, },
-				{ 'name' => 'bio'         , 'data_type' => 'str250', 'is_req' => 0, },
-				{ 'name' => 'plan'        , 'data_type' => 'str250', 'is_req' => 0, },
-				{ 'name' => 'comments'    , 'data_type' => 'str250', 'is_req' => 0, },
-			],
-			'unique_key_list' => [
-				{ 'name' => 'PRIMARY'       , 'column_list' => [ 'user_id'    , ], },
-				{ 'name' => 'sk_public_name', 'column_list' => [ 'public_name', ], },
-			],
-			'primary_key' => 'PRIMARY', # from unique keys list, others are surrogate
-			'foreign_key_list => [
-				{ 
-					'name' => 'fk_user',
-					'foreign_table' => 'user_auth',
-					'column_list' => [ 
-						{ 'name' => 'user_id', 'foreign_column' => 'user_id' },
-					], 
-				},
-			],
-		},
-		{
-			'name' => 'user_pref',
-			'column_list' => [
-				{ 'name' => 'user_id'   , 'data_type' => 'int'     , 'is_req' => 1, },
-				{ 'name' => 'pref_name' , 'data_type' => 'entitynm', 'is_req' => 1, },
-				{ 'name' => 'pref_value', 'data_type' => 'generic' , 'is_req' => 0, },
-			],
-			'unique_key_list' => [
-				{ 'name' => 'PRIMARY', 'column_list' => [ 'user_id', 'pref_name', ], },
-			],
-			'primary_key' => 'PRIMARY', # from unique keys list, others are surrogate
-			'foreign_key_list => [
-				{ 
-					'name' => 'fk_user',
-					'foreign_table' => 'user_auth',
-					'column_list' => [ 
-						{ 'name' => 'user_id', 'foreign_column' => 'user_id' },
-					], 
-				},
-			],
-		},
-		{
-			'name' => 'person',
-			'column_list' => [
-				{
-					'name' => 'person_id', 'data_type' => 'int', 'is_req' => 1,
-					'default_val' => 1, 'auto_inc' => 1,
-				},
-				{ 'name' => 'alternate_id', 'data_type' => 'str20' , 'is_req' => 0, },
-				{ 'name' => 'name'        , 'data_type' => 'str100', 'is_req' => 1, },
-				{ 'name' => 'sex'         , 'data_type' => 'str1'  , 'is_req' => 0, },
-				{ 'name' => 'father_id'   , 'data_type' => 'int'   , 'is_req' => 0, },
-				{ 'name' => 'mother_id'   , 'data_type' => 'int'   , 'is_req' => 0, },
-			],
-			'unique_key_list' => [
-				{ 'name' => 'PRIMARY'        , 'column_list' => [ 'person_id'   , ], },
-				{ 'name' => 'sk_alternate_id', 'column_list' => [ 'alternate_id', ], },
-			],
-			'primary_key' => 'PRIMARY', # from unique keys list, others are surrogate
-			'foreign_key_list => [
-				{ 
-					'name' => 'fk_father',
-					'foreign_table' => 'person',
-					'column_list' => [ 
-						{ 'name' => 'father_id', 'foreign_column' => 'person_id' },
-					], 
-				},
-				{ 
-					'name' => 'fk_mother',
-					'foreign_table' => 'person',
-					'column_list' => [ 
-						{ 'name' => 'mother_id', 'foreign_column' => 'person_id' },
-					], 
-				},
-			],
-		},
-	);
-
-These are the main class properties:
-
-=over 4
-
-=item 0
-
-B<name> - This mandatory string property is a unique identifier for this table 
-within a single database, or within a single schema in a multiple-schema 
-database.  This property is case-sensitive so it works with database products 
-that have case-sensitive schema (eg: MySQL), but it is still a good idea to 
-never name your tables such that they would conflict if case-insensitive, so 
-that the right thing can happen with a case-insensitive database product 
-(eg: Oracle in standard usage).
-
-=item 0
-
-B<column_list> - This mandatory array property is a list of the column
-definitions that constitute this table.  Each array element is a hash (or
-pseudo-object) having these properties:
-
-=over 4
-
-=item 0
-
-B<name> - This mandatory string property is a unique identifier for this column
-within the table currently being defined.  It has the same case-sensitivity
-rules governing the table name itself.
-
-=item 0
-
-B<data_type> - This mandatory property is either a DataType object or a string
-having the name of a DataType object, which can be used to lookup said object
-that was defined somewhere else but near-by.  It is case-sensitive.
-
-=item 0
-
-B<is_req> - This boolean property is optional but recommended; if not
-explicitely set, it will default to false, unless the column has been marked as
-part of a unique key, in which case it will default to true.  If this property
-is true, then the column will require a value, and any DML operations that try
-to set the column to null will fail.  (A true value is like 'not null' and a
-false value is like 'null'.)
-
-=item 0
-
-B<default_val> - This scalar property is optional and if set its value must be
-something that is valid for the data type of this column.  The current
-behaviour for what would happen if it isn't is undefined.
-
-=item 0
-
-B<auto_inc> - This boolean property is optional for use when the base_type of
-this column's data type is 'int', and it has no effect for the other base types
-(but support for other base types may be added).  If this property is true,
-then the Driver modules will attempt to mark this column as auto-incrementing;
-its value will be set from a special table-specific numerical sequence that
-increments by 1.  This property may be replaced with a different feature.
-
-=back
-
-=item 0
-
-B<unique_key_list> - This array property is a list of the unique keys (or keys
-or unique constraints) that apply to this table.  Each array element is a hash
-(or pseudo-object) for describing a single key and has these properties:
-'name', 'column_list'.  The 'name' property is a mandatory string and is a
-unique identifier for this key within the table; it has the same
-case-sensitivity rules governing table and column names.  The 'column_list'
-property is an array with at least one element; each element is a string that
-must match the name of a column declared in this table.  A key can be composed 
-of one or more columns, and more than one key may use the same column.
-
-=item 0
-
-B<primary_key> - This string property is optional and if it is set then it must
-match the 'name' of an 'unique_key_list' element in the current table.  This
-property is for identifying the primary key of the table; any other elements of
-'unique_key_list' that exist will become surrogate (alternate) keys. 
-Additionally, any columns used in a primary key must have their 'is_req'
-properties set to true (as required by either ANSI SQL or some databases).
-
-=item 0
-
-B<foreign_key_list> - This array property is a list of the foreign key
-constraints that are on column sets.  Given that foreign keys define a
-relationship between two tables where values must be present in table A in
-order to be stored in table B, this class is defined to describe a relationship
-between said two tables in the object representing table B.  Each array element
-is a hash (or pseudo-object) for describing a single constraint and has these
-properties: 'name', 'foreign_table', 'column_list'.  The 'name' property is a
-mandatory string and is a unique identifier for this constraint within the
-table; it has the same case-sensitivity rules governing table and column names.
-The 'foreign_table' property is a mandatory string which must match the 'name'
-of a previously defined table.  The 'column_list' property is an array with at
-least one element; each element is a hash having two values; the 'name' value
-is a mandatory string that must match the name of a column declared in this
-table; the 'foreign_column' value is a mandatory string that must match the
-name of a column declared in the table whose name is in 'foreign_table'.  A
-foreign key constraint can be composed of one or more columns, and more than
-one constraint may use the same column; for each column used in this table, a
-separate column must be matched in the other table, and the other column needs
-to have the same data type.
-
-=item 0
-
-B<index_list> - This array property has the same format as 'unique_key_list'
-but it is not for creating unique constraints; rather, it is for indicating
-that we will often be doing DML operations that lookup records by values in
-specific column-sets, and we want to index those columns for better fetch
-performance (but slower modify performance).  Note that indexing already
-happens with column-sets used for unique or presumably foreign keys, so 
-specifying them here as well is probably redundant.
-
-=back
-
-=head2 Rosetta::Schema::DataSet
-
-This Schema module is a Schema class that is meta-data from which DML command
-templates can be generated.  Conceptually, a DataSet looks like a Table, since
-both represent or store a matrix of data, which has uniquely identifiable
-columns, and rows which can be uniquely identifiable but may not be.  But
-unlike a Table, a DataSet does not have a name.  In its simplest use, a DataSet
-is an interface to a single database table, and its public interface is
-identical to that of said table; this interface can be used to fetch or modify
-data stored in the table.  This class can generate Command objects having types
-of: 'data_select', 'data_insert', 'data_update', 'data_delete', 'data_lock',
-'data_unlock'.  I<Note: this paragraph was a rough draft.>
-
-=head2 Rosetta::Schema::View
-
-This Schema module is a Schema class that describes a single database view,
-and would be used for such things as managing schema for the view (eg: create,
-alter, destroy), and describing the view's "public interface" (it looks like a
-table, with columns and rows) so other functionality like various DML
-operations or other views know how to use the view.  Conceptually speaking, a
-database view is an abstracted interface to one or more database tables which
-are related to each other in a specific way; a view has its own name and can
-generally be used like a table.  A View object has only two properties, which
-are a name and a DataSet object; put another way, a View object simply
-associates a name with a DataSet object.  This class does not describe anything
-that is changed by DML activity, such as a count of stored records, or the
-current values of sequences attached to columns.  This class can generate
-Command objects having types of: 'view_verify', 'view_create', 'view_alter',
-'view_destroy'.
-
-Here is sample code for defining a few views with this class (rough draft):
-
-	my %view_info = map { 
-			( $_->{name}, Rosetta::Schema::View->new( $_ ) ) 
-			} (
-		{
-			'name' => 'user',
-			'source_list' => [
-				{ 'name' => 'user_auth', 'source' => $table_info{user_auth}, },
-				{ 'name' => 'user_profile', 'source' => $table_info{user_profile}, },
-			],
-			'column_list' => [
-				{ 'name' => 'user_id'      , 'source' => 'user_auth'   , },
-				{ 'name' => 'login_name'   , 'source' => 'user_auth'   , },
-				{ 'name' => 'login_pass'   , 'source' => 'user_auth'   , },
-				{ 'name' => 'private_name' , 'source' => 'user_auth'   , },
-				{ 'name' => 'private_email', 'source' => 'user_auth'   , },
-				{ 'name' => 'may_login'    , 'source' => 'user_auth'   , },
-				{ 'name' => 'max_sessions' , 'source' => 'user_auth'   , },
-				{ 'name' => 'public_name'  , 'source' => 'user_profile', },
-				{ 'name' => 'public_email' , 'source' => 'user_profile', },
-				{ 'name' => 'web_url'      , 'source' => 'user_profile', },
-				{ 'name' => 'contact_net'  , 'source' => 'user_profile', },
-				{ 'name' => 'contact_phy'  , 'source' => 'user_profile', },
-				{ 'name' => 'bio'          , 'source' => 'user_profile', },
-				{ 'name' => 'plan'         , 'source' => 'user_profile', },
-				{ 'name' => 'comments'     , 'source' => 'user_profile', },
-			],
-			'join_list' => [
-				{
-					'lhs_source' => 'user_auth', 
-					'rhs_source' => 'user_profile',
-					'join_type' => 'left',
-					'column_list' => [
-						{ 'lhs_column' => 'user_id', 'rhs_column' => 'user_id', },
-					],
-				},
-			],
-		},
-		{
-			'name' => 'person_with_parents',
-			'source_list' => [
-				{ 'name' => 'self', 'source' => $table_info{person}, },
-				{ 'name' => 'father', 'source' => $table_info{person}, },
-				{ 'name' => 'mother', 'source' => $table_info{person}, },
-			],
-			'column_list' => [
-				{ 'name' => 'self_id'    , 'source' => 'self'  , 'column' => 'person_id', },
-				{ 'name' => 'self_name'  , 'source' => 'self'  , 'column' => 'name'     , },
-				{ 'name' => 'father_id'  , 'source' => 'father', 'column' => 'person_id', },
-				{ 'name' => 'father_name', 'source' => 'father', 'column' => 'name'     , },
-				{ 'name' => 'mother_id'  , 'source' => 'mother', 'column' => 'person_id', },
-				{ 'name' => 'mother_name', 'source' => 'mother', 'column' => 'name'     , },
-			],
-			'join_list => [
-				{
-					'lhs_source' => 'self', 
-					'rhs_source' => 'father',
-					'join_type' => 'left',
-					'column_list' => [
-						{ 'lhs_column' => 'person_id', 'rhs_column' => 'person_id', },
-					],
-				},
-				{
-					'lhs_source' => 'self', 
-					'rhs_source' => 'mother',
-					'join_type' => 'left',
-					'column_list' => [
-						{ 'lhs_column' => 'person_id', 'rhs_column' => 'person_id', },
-					],
-				},
-			],
-		},
-	);
-
 =head1 AUTHOR
 
 Copyright (c) 1999-2003, Darren R. Duncan.  All rights reserved.  This module
@@ -1795,7 +1434,7 @@ Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>.
 
 =head1 SEE ALSO
 
-perl(1), DBI, DBD::*, Alzabo, SQL::Schema, DBIx::AnyDBD, SQL::Builder,
-DBIx::Browse, DBIx::Abstract, DBIx::SearchBuilder, and various other modules.
+perl(1), Rosetta::SimilarModules, Rosetta, Rosetta::Schema::DataType,
+Rosetta::Schema::Table, Rosetta::Schema::View.
 
 =cut
