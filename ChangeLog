@@ -1,3 +1,14 @@
+2003-03-29   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.062.
+
+	* This release is mainly a test to see how CPAN indexes handle a
+	distribution named after a registered module where that module doesn't
+	actually exist.  The files lib/Rosetta.pm and t/Rosetta.t were removed from
+	the distribution to facilitate the test.  The rationale is that these files
+	never actually did anything except serve as placeholders for the framework
+	on CPAN indexes, but they may not be needed.  There were no other changes.
+
 2003-03-09   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.061.

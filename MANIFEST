@@ -1,5 +1,4 @@
 ChangeLog
-lib/Rosetta.pm
 lib/Rosetta/Framework.pod
 lib/Rosetta/Schema/DataType.pm
 lib/Rosetta/Schema/Table.pm
@@ -8,7 +7,6 @@ lib/Rosetta/SimilarModules.pod
 Makefile.PL
 MANIFEST
 ReadMe
-t/Rosetta.t
 t/Rosetta-Schema-DataType.t
 t/Rosetta-Schema-Table.t
 t/Rosetta-Schema-View.t
