@@ -588,7 +588,7 @@ Engines or connections.  Subclasses include: Result, Connection.
 
 B<Rosetta::Command> - This Interface class describes an action that needs
 to be done against a database; its objects encapsulate
-SQL::SyntaxModel::Command objects and also encapsulates the resolved bind vars,
+SQL::SyntaxModel::Command objects and also encapsulates the resolved host params,
 or live objects like 'Cursor'.  Code using these objects should be doing
 something like both calling DBI->prepare() and DBI->execute().  I<See also
 SQL::SyntaxModel::Command.>
@@ -677,9 +677,10 @@ subselects.  This Engine is intended mainly for programs that are used by one
 person at a time, as locks will grab the whole database.  Given that the actual
 database is embedded into the Engine, we simply use the latest version
 available at the time of each Engine update, so mention of version ranges being
-supported or not is not applicable.  That said, v2.8.15 is the current stable
-branch, and v3.0.4 is the current beta branch, which will move into production
-within a month or two.
+supported or not is not applicable.  That said, given that SQLite recently went
+through a major revision that involves a file format change, where the current
+version can't read files of the older version, this class will temporarily
+embed both main versions, v2.8.15 and v3.0.6, with the 2.x support deprecated.
 
 =item
 
@@ -692,31 +693,32 @@ before 8.x, like 7.3, will not be supported unless there is a great demand.
 
 B<Rosetta::Engine::PostgreSQL> - This class implements an Engine for talking to
 PostgreSQL databases.  It is intended to be used only with PostgreSQL versions
-7.4.3 and later, with version 8.0.0 or greater being strongly recommended. That
+7.4.5 and later, with version 8.0.0 or greater being strongly recommended. That
 said, which version you should use depends on your stage of development.
-PostgreSQL 8.0.0 officially went beta on 2004.08.10, while the officially
-stable 7.4.3 was released on 2004.06.15.  Support for 7.3.x in this module will
+PostgreSQL 8.0.0 reached 2nd-beta on 2004.09.08, while the officially
+stable 7.4.5 was released on 2004.08.23.  Support for 7.3.x in this module will
 be present in the short term, but it is deprecated.  7.2.x and earlier will not
 be supported at all, without great demand.
 
 =item
 
 B<Rosetta::Engine::MySQL> - This class implements an Engine for talking to
-MySQL databases.  It is intended to be used only with MySQL versions 4.0.20 and
-later, with version 4.1.3 or greater being strongly recommended.  That said,
-which version you should use depends on your stage of development.  MySQL AB
-had declared the 4.0.x series to be production quality at v4.0.12 (2003.03.15),
-and since then this line had over a year's worth of bug-fix improvements. 
-MySQL AB had declared the 4.1.x series to be beta quality at v4.1.3
-(2004.06.28), and previously was at alpha quality at v4.1.0 (2003.04.10); they
-initially said the 4.1.x line would be production ready 8 months after its
-alpha release.  MySQL AB provided a preview release of the 5.0.x line on
-2003.12.22, which is v5.0.0; at the same time that the 4.1.x line was declared
-stable, the 5.0.x line was declared alpha, without a version increment; they
-initially said 5.0.x would be production ready 6 months after 4.1.x was. 
-Support for 3.23.x in this module will be present in the short term, but it is
-deprecated.  3.22.x and earlier will not be supported at all, without great
-demand.
+MySQL databases.  It is intended to be used only with MySQL versions 4.0.21 and
+later, with version 4.1.4 or greater being strongly recommended; you can also
+consider 5.0.1 or greater.  That said, which version you should use depends on
+your stage of development.  MySQL AB had declared the 4.0.x series to be
+production quality at v4.0.12 (2003.03.15), and since then this line had over a
+year's worth of bug-fix improvements.  MySQL AB had declared the 4.1.x series
+to be gamma quality at v4.1.4 (2004.08.26), and previously was at beta quality
+at v4.1.3 (2004.06.28), and previously was at alpha quality at v4.1.0
+(2003.04.10); they initially said the 4.1.x line would be production ready 8
+months after its alpha release.  MySQL AB provided a preview release of the
+5.0.x line on 2003.12.22, which is v5.0.0; at the same time that the 4.1.x line
+was declared beta, the 5.0.x line was declared alpha, without a version
+increment; they initially said 5.0.x would be production ready 6 months after
+4.1.x was.  Support for 3.23.x in this module will be present in the short term,
+but it is deprecated.  3.22.x and earlier will not be supported at all, without
+great demand.
 
 =item
 

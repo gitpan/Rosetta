@@ -10,8 +10,7 @@ package Rosetta::Validator::L::en;
 use 5.006;
 use strict;
 use warnings;
-use vars qw($VERSION);
-$VERSION = '0.03';
+our $VERSION = '0.04';
 
 ######################################################################
 

@@ -5,10 +5,10 @@
 
 BEGIN { $| = 1; print "1..1\n"; }
 END {print "not ok 1\n" unless $loaded;}
-use Rosetta 0.34;
-use Rosetta::L::en 0.09;
-use Rosetta::Validator 0.04;
-use Rosetta::Validator::L::en 0.03;
+use Rosetta 0.35;
+use Rosetta::L::en 0.10;
+use Rosetta::Validator 0.05;
+use Rosetta::Validator::L::en 0.04;
 $loaded = 1;
 print "ok 1\n";
 use strict;

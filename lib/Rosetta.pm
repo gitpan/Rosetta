@@ -10,11 +10,10 @@ package Rosetta;
 use 5.006;
 use strict;
 use warnings;
-use vars qw($VERSION);
-$VERSION = '0.34';
+our $VERSION = '0.35';
 
-use Locale::KeyedText 0.06;
-use SQL::SyntaxModel 0.38;
+use Locale::KeyedText 0.07;
+use SQL::SyntaxModel 0.41;
 
 ######################################################################
 
@@ -26,8 +25,8 @@ Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	Locale::KeyedText 0.06 (for error messages)
-	SQL::SyntaxModel 0.38
+	Locale::KeyedText 0.07 (for error messages)
+	SQL::SyntaxModel 0.41
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -92,7 +91,7 @@ my $IPROP_CHILD_INTFS = 'child_intfs'; # array - list of refs to child Interface
 my $IPROP_ENGINE = 'engine'; # ref to Engine implementing this Interface if any
 	# This Engine object would store its own state internally, which includes such things 
 	# as various DBI dbh/sth/rv handles where appropriate, and any generated SQL to be 
-	# generated, as well as knowledge of how to translate named bind params to positional ones.
+	# generated, as well as knowledge of how to translate named host variables to positional ones.
 	# The Engine object would never store a reference to the Interface object that it 
 	# implements, as said Interface object would pass a reference to itself as an argument 
 	# to any Engine methods that it invokes.  Of course, if this Engine implements a 
@@ -389,7 +388,7 @@ sub _validate_ssm_node {
 	unless( $ssm_node->are_reciprocal_links() ) {
 		$interface->_throw_error_message( $error_key_pfx.'_NODE_NOT_RECIP_LINKS' );
 	}
-	$given_container->test_deferrable_constraints(); # SSM throws own exceptions on problem.
+	$given_container->assert_deferrable_constraints(); # SSM throws own exceptions on problem.
 	if( $parent_intf ) {
 		my $expected_container = $parent_intf->{$IPROP_SSM_NODE}->get_container();
 		# Above line assumes parent Intf's Node not taken from Container since put in parent.
@@ -1123,7 +1122,8 @@ sub prepare_cmd_db_open {
 	my ($app_eng, $app_intf, $command_bp_node) = @_;
 
 	# First, figure out link product by cross-referencing app inst with command-spec link bp.
-	my $cat_link_bp_node = $command_bp_node->get_node_ref_attribute( 'command_arg_1' );
+	my $cat_link_bp_node = $command_bp_node->get_child_nodes( 'command_arg' 
+		)->[0]->get_node_ref_attribute( 'catalog_link' );
 	my $app_inst_node = $app_intf->get_ssm_node();
 	my $cat_link_inst_node = undef;
 	foreach my $link (@{$app_inst_node->get_child_nodes( 'catalog_link_instance' )}) {
@@ -1401,7 +1401,7 @@ compliance, so you write in standard SQL that just works anywhere.  Supported
 advanced features include generation and invocation of database stored
 routines, select queries (or views or cursors) of any complexity, [ins,upd,del]
 against views, multiple column keys, nesting, multiple schemas, separation of
-global from site-specific details, bind variables, unicode, binary data,
+global from site-specific details, host parameters, unicode, binary data,
 triggers, transactions, locking, constraints, data domains, localization,
 proxies, and database to database links.  At the same time, Rosetta is designed
 to be fast and efficient.  Rosetta is designed to work equally well with both
@@ -1453,7 +1453,7 @@ database and an application, that shuttles mostly opaque boxes back and forth;
 it is a courier that does its transport job very well, while it knows little
 about what it is carrying.  More specifically, it knows a fair amount about
 what it shuttles *from* the database, but considerably less about what is
-shuttled *to* the database (opaque SQL strings, save bind variables).  It is up
+shuttled *to* the database (opaque SQL strings, save host parameters).  It is up
 to the application to know and speak the same language as the database, meaning
 the SQL dialect that is in the boxes, so that the database understands what it
 is given.  I see Rosetta by itself as a communications pipe that *does*

@@ -10,10 +10,9 @@ package Rosetta::Validator;
 use 5.006;
 use strict;
 use warnings;
-use vars qw($VERSION);
-$VERSION = '0.04';
+our $VERSION = '0.05';
 
-use Rosetta 0.34;
+use Rosetta 0.35;
 
 ######################################################################
 
@@ -25,7 +24,7 @@ Standard Modules: I<none>
 
 Nonstandard Modules: 
 
-	Rosetta 0.34
+	Rosetta 0.35
 
 =head1 COPYRIGHT AND LICENSE
 

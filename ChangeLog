@@ -1,3 +1,28 @@
+2004-09-09   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Release 0.35.
+
+	* New code file versions are: Rosetta.pm v0.35, Rosetta/L/en.pm v0.10, 
+	Validator.pm v0.05, and Validator/L/en.pm v0.04.
+
+	* Updated all versioned *.pm files to use the modern syntax "our $VERSION =
+	..." instead of "use vars qw($VERSION); $VERSION = ...".
+
+	* Updated external dependencies on Locale::KeyedText to v0.07 and on
+	SQL::SyntaxModel to v0.41.
+
+	* Changed the only reference on the SSM 'command' Node attribute
+	'command_arg_1', in Dispatcher.prepare_cmd_db_open(), to a reference on
+	that Node's child 'command_arg' Node.
+
+	* Renamed the only SSM call, in Interface._validate_ssm_node(), on
+	test_deferrable_constraints() to assert_deferrable_constraints().
+
+	* Renamed all references of "bind variables" to "host parameters", since
+	that is the official name for them in the SQL-2003 standard.
+
+	* A few minor updates in Framework.pod regarding database product versions.
+
 2004-08-19   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Release 0.34.
