@@ -9,7 +9,7 @@ WriteMakefile(
 	'PREREQ_PM' => {
 		'Test::More' => '0.47', # but only for the test suite
 		'Locale::KeyedText' => '1.03',
-		'SQL::Routine' => '0.58',
+		'SQL::Routine' => '0.59',
 	},
 );
 

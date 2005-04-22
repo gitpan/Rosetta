@@ -2,10 +2,10 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta;
-our $VERSION = '0.43';
+our $VERSION = '0.44';
 
 use Locale::KeyedText 1.03;
-use SQL::Routine 0.58;
+use SQL::Routine 0.59;
 
 ######################################################################
 
@@ -24,7 +24,7 @@ Core Modules: I<none>
 Non-Core Modules: 
 
 	Locale::KeyedText 1.03 (for error messages)
-	SQL::Routine 0.58
+	SQL::Routine 0.59
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -99,6 +99,8 @@ my $IPROP_SRT_NODE = 'srt_node'; # ref to SQL::Routine Node providing context fo
 	# If we are an 'Application' Interface, this would be an 'application_instance' Node.
 	# If we are a 'Preparation' Interface, this would be a 'routine' Node.
 	# If we are any other kind of interface, this is a second ref to same SRT the parent 'prep' has.
+my $IPROP_SRT_CONT = 'srt_cont'; # ref to SQL::Routine Container that srt_node lives in
+	# We must ref the Container explicitly, or it can easily be garbage collected from under us
 my $IPROP_ROUTINE = 'routine'; # ref to a Perl anonymous subroutine; this property must be 
 	# set for Preparation interfaces and must not be set for other types.
 	# An Engine's prepare() method will create this sub when it creates a Preparation Interface.
@@ -342,6 +344,7 @@ sub new {
 	$interface->{$IPROP_ENGINE} = ($intf_type eq $INTFTP_APPLICATION) ? 
 		Rosetta::Dispatcher->new() : $engine;
 	$interface->{$IPROP_SRT_NODE} = $srt_node;
+	$interface->{$IPROP_SRT_CONT} = $srt_node && $srt_node->get_container();
 	$interface->{$IPROP_ROUTINE} = $routine;
 	$interface->{$IPROP_TRACE_FH} = undef;
 	$parent_intf and push( @{$parent_intf->{$IPROP_CHILD_INTFS}}, $interface );
@@ -636,7 +639,7 @@ sub get_srt_node {
 sub get_srt_container {
 	my ($interface) = @_;
 	if( my $app_intf = $interface->{$IPROP_ROOT_INTF} ) {
-		return $app_intf->{$IPROP_SRT_NODE}->get_container();
+		return $app_intf->{$IPROP_SRT_CONT};
 	}
 	return;
 }
@@ -1108,12 +1111,6 @@ sub _destroy_interface_tree {
 		$child->_destroy_interface_tree();
 	}
 	$interface->destroy();
-}
-
-sub destroy_interface_tree_and_srt_container {
-	my ($interface) = @_;
-	my $container = $interface->destroy_interface_tree();
-	$container->destroy();
 }
 
 ######################################################################
@@ -1726,7 +1723,6 @@ INTERFACE FUNCTIONS AND METHODS FOR RAPID DEVELOPMENT:
 	build_child_connection( SETUP_OPTIONS[, RT_SI_NAME[, RT_ID]] )
 	validate_connection_setup_options( SETUP_OPTIONS )
 	destroy_interface_tree()
-	destroy_interface_tree_and_srt_container()
 
 CONNECTION INTERFACE METHODS FOR RAPID DEVELOPMENT:
 

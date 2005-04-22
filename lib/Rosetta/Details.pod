@@ -669,13 +669,6 @@ an 'Error' or 'Success' Interface object because those types do not live in
 Interface trees, and lack the circular refs to prevent them being
 auto-destroyed when references to them are gone.
 
-=head2 destroy_interface_tree_and_srt_container()
-
-	$app_intf->destroy_interface_tree_and_srt_container();
-
-This function is like destroy_interface_tree() except that it will also destroy
-the SQL::Routine model that the invoked-on Interface tree is using.
-
 =head1 CONNECTION INTERFACE METHODS FOR RAPID DEVELOPMENT
 
 These methods provide a simplified interface to many commonly performed

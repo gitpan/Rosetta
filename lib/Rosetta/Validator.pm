@@ -2,9 +2,9 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta::Validator;
-our $VERSION = '0.43';
+our $VERSION = '0.44';
 
-use Rosetta 0.43;
+use Rosetta 0.44;
 
 ######################################################################
 
@@ -22,7 +22,7 @@ Core Modules: I<none>
 
 Non-Core Modules: 
 
-	Rosetta 0.43
+	Rosetta 0.44
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -185,7 +185,7 @@ sub setup_env {
 		return $app_intf->build_child_environment( $engine_name );
 	};
 	if( my $exception = $@ ) {
-		$app_intf->destroy_interface_tree_and_srt_container(); # avoid memory leaks
+		$app_intf->destroy_interface_tree(); # avoid memory leaks
 		die $exception;
 	}
 	return $env_intf;
@@ -199,7 +199,7 @@ sub setup_conn {
 			$validator->{$PROP_SETUP_OPTS}, $rt_si_name );
 	};
 	if( my $exception = $@ ) {
-		$app_intf->destroy_interface_tree_and_srt_container(); # avoid memory leaks
+		$app_intf->destroy_interface_tree(); # avoid memory leaks
 		die $exception;
 	}
 	return $conn_intf;
@@ -231,7 +231,7 @@ sub test_load {
 		$validator->{$PROP_ENG_ENV_FEAT} = eval {
 			return $env_intf->features();
 		};
-		$env_intf->destroy_interface_tree_and_srt_container();
+		$env_intf->destroy_interface_tree();
 		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 
 		my $conn_intf = eval {
@@ -242,7 +242,7 @@ sub test_load {
 		$validator->{$PROP_ENG_CONN_FEAT} = eval {
 			return $conn_intf->features();
 		};
-		$conn_intf->destroy_interface_tree_and_srt_container();
+		$conn_intf->destroy_interface_tree();
 
 		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 	}
@@ -278,7 +278,7 @@ sub test_catalog_list {
 		}
 	}
 
-	$env_intf->destroy_interface_tree_and_srt_container();
+	$env_intf->destroy_interface_tree();
 }
 
 ######################################################################
@@ -316,7 +316,7 @@ sub test_conn_basic {
 		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 	}
 
-	$conn_intf->destroy_interface_tree_and_srt_container();
+	$conn_intf->destroy_interface_tree();
 }
 
 ######################################################################

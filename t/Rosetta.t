@@ -8,9 +8,9 @@ plan( 'tests' => 1 );
 ######################################################################
 # First ensure the modules to test will compile, are correct versions:
 
-use Rosetta 0.43;
+use Rosetta 0.44;
 use Rosetta::L::en 0.16;
-use Rosetta::Validator 0.43;
+use Rosetta::Validator 0.44;
 use Rosetta::Validator::L::en 0.10;
 
 ######################################################################
