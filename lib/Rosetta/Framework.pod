@@ -72,16 +72,17 @@ Rosetta API; see the Language.pod file in particular.
 
 This file is part of the Rosetta database portability library.
 
-Rosetta is Copyright (c) 1999-2005, Darren R. Duncan.  All rights reserved.
-Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
-visit "http://www.DarrenDuncan.net" for more information.
+Rosetta is Copyright (c) 2002-2005, Darren R. Duncan.  All rights reserved.
+Address comments, suggestions, and bug reports to perl@DarrenDuncan.net, or
+visit http://www.DarrenDuncan.net/ for more information.
 
 Rosetta is free software; you can redistribute it and/or modify it under the
-terms of the GNU General Public License (GPL) version 2 as published by the
-Free Software Foundation (http://www.fsf.org/).  You should have received a
-copy of the GPL as part of the Rosetta distribution, in the file named
-"LICENSE"; if not, write to the Free Software Foundation, Inc., 59 Temple
-Place, Suite 330, Boston, MA 02111-1307 USA.
+terms of the GNU General Public License (GPL) as published by the Free Software
+Foundation (http://www.fsf.org/); either version 2 of the License, or (at your
+option) any later version.  You should have received a copy of the GPL as part
+of the Rosetta distribution, in the file named "GPL"; if not, write to the
+Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+02111-1307 USA.
 
 Linking Rosetta statically or dynamically with other modules is making a
 combined work based on Rosetta.  Thus, the terms and conditions of the GPL
@@ -512,6 +513,7 @@ I<Note: more databases (and data access protocols) can be found listed at
 	Rosetta::Engine::PointBase (interface to PointBase db, if linking to Java is possible)
 	Rosetta::Engine::HSQLDB (interface to HSQLDB db, if linking to Java is possible)
 	Rosetta::Engine::FileMaker (interface to FileMaker Pro db)
+	Rosetta::Engine::Panorama (interface to Provue Panorama db)
 	Rosetta::Engine::FoxPro (interface to FoxPro db)
 	Rosetta::Engine::Access (interface to MS Access db)
 	Rosetta::Engine::Paradox (interface to Borland Paradox db)
@@ -685,9 +687,9 @@ all, without great demand.
 
 B<Rosetta::Engine::PostgreSQL> - This class implements an Engine for talking to
 PostgreSQL databases.  It is recommended for use only with PostgreSQL versions
-8.0.2 (stable) and greater.  Support for PostgreSQL versions 7.4.7 and 7.3.9 and
-7.2.7 (all 3 stable) is present but deprecated.  v7.1.x and earlier will not be
-supported at all, without great demand.
+8.0.3 (stable) and greater.  Support for PostgreSQL versions 7.4.8 and 7.3.10
+and 7.2.8 (all 3 stable) is present but deprecated.  v7.1.x and earlier will not
+be supported at all, without great demand.
 
 =item
 

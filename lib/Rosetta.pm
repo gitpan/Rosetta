@@ -2,10 +2,10 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta;
-our $VERSION = '0.44';
+our $VERSION = '0.45';
 
-use Locale::KeyedText 1.03;
-use SQL::Routine 0.59;
+use Locale::KeyedText 1.04;
+use SQL::Routine 0.62;
 
 ######################################################################
 
@@ -23,23 +23,24 @@ Core Modules: I<none>
 
 Non-Core Modules: 
 
-	Locale::KeyedText 1.03 (for error messages)
-	SQL::Routine 0.59
+	Locale::KeyedText 1.04 (for error messages)
+	SQL::Routine 0.62
 
 =head1 COPYRIGHT AND LICENSE
 
 This file is part of the Rosetta database portability library.
 
-Rosetta is Copyright (c) 1999-2005, Darren R. Duncan.  All rights reserved.
-Address comments, suggestions, and bug reports to B<perl@DarrenDuncan.net>, or
-visit "http://www.DarrenDuncan.net" for more information.
+Rosetta is Copyright (c) 2002-2005, Darren R. Duncan.  All rights reserved.
+Address comments, suggestions, and bug reports to perl@DarrenDuncan.net, or
+visit http://www.DarrenDuncan.net/ for more information.
 
 Rosetta is free software; you can redistribute it and/or modify it under the
-terms of the GNU General Public License (GPL) version 2 as published by the
-Free Software Foundation (http://www.fsf.org/).  You should have received a
-copy of the GPL as part of the Rosetta distribution, in the file named
-"LICENSE"; if not, write to the Free Software Foundation, Inc., 59 Temple
-Place, Suite 330, Boston, MA 02111-1307 USA.
+terms of the GNU General Public License (GPL) as published by the Free Software
+Foundation (http://www.fsf.org/); either version 2 of the License, or (at your
+option) any later version.  You should have received a copy of the GPL as part
+of the Rosetta distribution, in the file named "GPL"; if not, write to the
+Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+02111-1307 USA.
 
 Linking Rosetta statically or dynamically with other modules is making a
 combined work based on Rosetta.  Thus, the terms and conditions of the GPL
@@ -485,9 +486,6 @@ sub _validate_srt_node {
 		$interface->_throw_error_message( $error_key_pfx.'_BAD_NODE', { 'SRT' => $srt_node } );
 	}
 	my $given_container = $srt_node->get_container();
-	unless( $given_container ) {
-		$interface->_throw_error_message( $error_key_pfx.'_NODE_NOT_IN_CONT' );
-	}
 	$given_container->assert_deferrable_constraints(); # SRT throws own exceptions on problem.
 	if( $parent_intf ) {
 		my $expected_container = $parent_intf->{$IPROP_SRT_NODE}->get_container();

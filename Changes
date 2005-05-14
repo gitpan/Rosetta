@@ -1,3 +1,48 @@
+2005-05-13   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Rosetta Release 0.45.
+
+	* New code file versions are: Rosetta.pm and Validator.pm v0.45 and
+	Rosetta/L/en.pm 0.17 and Validator/L/en.pm 0.11.
+
+	* Updated external dependencies on Locale::KeyedText to v1.04 and on
+	SQL::Routine to v0.62.
+
+	* Updated every instance of the COPYRIGHT AND LICENSE documentation in this
+	distribution to correct the declared date range in which the core Rosetta
+	files were created.  The new dates are 2002 thru 2005, which is when I
+	actually committed documentation describing or code implementing what became
+	the Rosetta core.  The old dates were 1999 thru 2005, which goes back to the
+	time that I started conceiving a larger project which the aforementioned
+	module started out being related to; however, those earlier years did not
+	contain any work on what specifically became the aforementioned module, so
+	they are now excluded.
+
+	* Updated every instance of the COPYRIGHT AND LICENSE documentation in this
+	distribution so that you may now choose between licensing it under the GPL
+	version 2 or any later GPL version, rather than only under version 2.
+
+	* Renamed the "LICENSE" file to "GPL", and correspondingly updated all
+	references to it in this distribution, most of them being in COPYRIGHT AND
+	LICENSE statements.  This change was made to reduce user confusion in
+	situations where files from this distribution may be aggregated with other
+	files that have different licenses; the old name was too generic.
+
+	* Updated Routine.pm and Routine/L/en.pm in correspondence to the recent
+	SQL::Routine change where Nodes now always live in Containers.  Updated
+	private method _validate_srt_node() so it no longer asserts that the given
+	SRT_NODE is in a Container; we can now assume that is the case.  Removed 2
+	related user text messages, 'ROS_I_[NEW_INTF|PREPARE]_NODE_NOT_IN_CONT'.
+
+	* A few trivial Framework.pod updates.
+
+	* Renamed Rosetta.t to ROS_00_Compile.t and rewrote it to contain 8 tests; 4
+	of these use Test::More's use_ok() function to cleanly test that the 4 core
+	modules will load without errors; 4 of these test, with cmp_ok(), that the 4
+	core modules are of the correct versions.  Before this change, the original
+	test script would simply die without any ok/not ok if the core modules were
+	missing. The old test script simply printed 'ok 1' to show it was running.
+
 2005-04-22   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Rosetta Release 0.44.
@@ -193,6 +238,11 @@
 	database generic or data dictionary code in separate files, and separate
 	files for parts of the web interface.  The program used the same generic
 	CPAN modules as in the first prototype, DBI/MySQL and CGI::Portable.
+
+	* This is when I started writing self-contained code components that were
+	explicitly designed to enable external code that used them to work
+	seamlessly on multiple database products, and hence 2002 is the start of my
+	declared copyright date range for Rosetta.
 
 2001-11-24
 
