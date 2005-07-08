@@ -2,9 +2,10 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta::Validator;
-our $VERSION = '0.45';
+our $VERSION = '0.46';
 
-use Rosetta 0.45;
+use Rosetta 0.46;
+use Rosetta::Utility::EasyBake 0.01;
 
 ######################################################################
 
@@ -22,7 +23,8 @@ Core Modules: I<none>
 
 Non-Core Modules: 
 
-	Rosetta 0.45
+	Rosetta 0.46
+	Rosetta::Utility::EasyBake 0.01
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -36,9 +38,9 @@ Rosetta is free software; you can redistribute it and/or modify it under the
 terms of the GNU General Public License (GPL) as published by the Free Software
 Foundation (http://www.fsf.org/); either version 2 of the License, or (at your
 option) any later version.  You should have received a copy of the GPL as part
-of the Rosetta distribution, in the file named "GPL"; if not, write to the
-Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-02111-1307 USA.
+of the Rosetta distribution, in the file named "GPL"; if not, write to the Free
+Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301,
+USA.
 
 Linking Rosetta statically or dynamically with other modules is making a
 combined work based on Rosetta.  Thus, the terms and conditions of the GPL
@@ -70,6 +72,8 @@ suggesting improvements to the standard version.
 ######################################################################
 
 # Names of properties for objects of the Rosetta::Validator class are declared here:
+# This holds utility functions we use to make tests:
+my $PROP_EASYBAKE = 'easybake'; # ref to a Rosetta::Utility::EasyBake object
 # These are static configuration properties:
 my $PROP_TRACE_FH = 'trace_fh'; # ref to writeable Perl file handle
 my $PROP_SETUP_OPTS = 'setup_opts'; # hash(str,hash(str,str)) - 
@@ -111,7 +115,9 @@ sub main {
 	my ($class, $setup_options, $trace_fh) = @_;
 	my $validator = bless( {}, ref($class) || $class );
 
-	Rosetta->validate_connection_setup_options( $setup_options ); # dies on problem
+	my $easybake = $validator->{$PROP_EASYBAKE} = Rosetta::Utility::EasyBake->new();
+
+	$easybake->validate_connection_setup_options( $setup_options ); # dies on problem
 
 	$validator->{$PROP_TRACE_FH} = $trace_fh; # may be undef
 	$validator->{$PROP_SETUP_OPTS} = $setup_options;
@@ -130,7 +136,7 @@ sub new_result {
 	my $result = {
 		$TR_FEATURE_KEY => $feature_key,
 		$TR_FEATURE_STATUS => $TRS_SKIP,
-		$TR_FEATURE_DESC_MSG => Locale::KeyedText->new_message( 'ROSVAL_DESC_'.$feature_key ),
+		$TR_FEATURE_DESC_MSG => Locale::KeyedText->new_message( 'ROS_VAL_DESC_'.$feature_key ),
 	};
 	push( @{$validator->{$PROP_TEST_RESULTS}}, $result );
 	return $result;
@@ -157,9 +163,9 @@ sub misc_result {
 	my ($validator, $result, $exception) = @_;
 	if( $exception ) {
 		if( ref($exception) ) {
-			$validator->fail_result( $result, 'ROSVAL_FAIL_MISC_OBJ', undef, $exception );
+			$validator->fail_result( $result, 'ROS_VAL_FAIL_MISC_OBJ', undef, $exception );
 		} else {
-			$validator->fail_result( $result, 'ROSVAL_FAIL_MISC_STR', { 'VALUE' => $exception } );
+			$validator->fail_result( $result, 'ROS_VAL_FAIL_MISC_STR', { 'VALUE' => $exception } );
 		}
 	} else {
 		$validator->pass_result( $result );
@@ -170,7 +176,7 @@ sub misc_result {
 
 sub setup_app {
 	my ($validator) = @_;
-	my $app_intf = Rosetta->build_application();
+	my $app_intf = $validator->{$PROP_EASYBAKE}->build_application();
 	$app_intf->set_trace_fh( $validator->{$PROP_TRACE_FH} );
 	my $container = $app_intf->get_srt_container();
 	$container->auto_assert_deferrable_constraints( 1 );
@@ -181,28 +187,16 @@ sub setup_app {
 sub setup_env {
 	my ($validator) = @_;
 	my $app_intf = $validator->setup_app();
-	my $env_intf = eval {
-		my $engine_name = $validator->{$PROP_SETUP_OPTS}->{'data_link_product'}->{'product_code'};
-		return $app_intf->build_child_environment( $engine_name );
-	};
-	if( my $exception = $@ ) {
-		$app_intf->destroy_interface_tree(); # avoid memory leaks
-		die $exception;
-	}
+	my $engine_name = $validator->{$PROP_SETUP_OPTS}->{'data_link_product'}->{'product_code'};
+	my $env_intf = $validator->{$PROP_EASYBAKE}->build_child_environment( $app_intf, $engine_name );
 	return $env_intf;
 }
 
 sub setup_conn {
 	my ($validator, $rt_si_name) = @_;
 	my $app_intf = $validator->setup_app();
-	my $conn_intf = eval {
-		return $app_intf->build_child_connection( 
-			$validator->{$PROP_SETUP_OPTS}, $rt_si_name );
-	};
-	if( my $exception = $@ ) {
-		$app_intf->destroy_interface_tree(); # avoid memory leaks
-		die $exception;
-	}
+	my $conn_intf = $validator->{$PROP_EASYBAKE}->build_child_connection( $app_intf,
+		$validator->{$PROP_SETUP_OPTS}, $rt_si_name );
 	return $conn_intf;
 }
 
@@ -232,7 +226,6 @@ sub test_load {
 		$validator->{$PROP_ENG_ENV_FEAT} = eval {
 			return $env_intf->features();
 		};
-		$env_intf->destroy_interface_tree();
 		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 
 		my $conn_intf = eval {
@@ -243,7 +236,6 @@ sub test_load {
 		$validator->{$PROP_ENG_CONN_FEAT} = eval {
 			return $conn_intf->features();
 		};
-		$conn_intf->destroy_interface_tree();
 
 		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 	}
@@ -262,7 +254,7 @@ sub test_catalog_list {
 
 	SWITCH: {
 		my $payload = eval {
-			my $prep_intf = $env_intf->sroutine_catalog_list( 'catalog_list' );
+			my $prep_intf = $validator->{$PROP_EASYBAKE}->sroutine_catalog_list( $env_intf, 'catalog_list' );
 			my $lit_intf = $prep_intf->execute();
 			my $payload = $lit_intf->payload();
 			$container->assert_deferrable_constraints();
@@ -278,8 +270,6 @@ sub test_catalog_list {
 				"\n----------\n";
 		}
 	}
-
-	$env_intf->destroy_interface_tree();
 }
 
 ######################################################################
@@ -305,19 +295,17 @@ sub test_conn_basic {
 
 	SWITCH: {
 		eval {
-			my $prep_intf = $conn_intf->sroutine_catalog_open( 'open_db_conn' );
+			my $prep_intf = $validator->{$PROP_EASYBAKE}->sroutine_catalog_open( $conn_intf, 'open_db_conn' );
 			$prep_intf->execute();
 		};
 		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 
 		eval {
-			my $prep_intf = $conn_intf->sroutine_catalog_close( 'close_db_conn' );
+			my $prep_intf = $validator->{$PROP_EASYBAKE}->sroutine_catalog_close( $conn_intf, 'close_db_conn' );
 			$prep_intf->execute();
 		};
 		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 	}
-
-	$conn_intf->destroy_interface_tree();
 }
 
 ######################################################################
@@ -519,15 +507,16 @@ considered, and you can compare that to the actual results.
 
 This function comprises the core of the Rosetta::Validator module, and is what
 actually performs the tests on the Rosetta Engines.  This method will
-instantiate a new Rosetta Interface tree, and a SQL::Routine Container,
-populate the latter, invoke the former, saying to use the Engine and related
+instantiate a new Rosetta Interface tree, and a SQL::Routine Container, populate
+the latter, invoke the former, saying to use the Engine and related
 configuration settings in SETUP_OPTIONS, try all sorts of database actions, and
-record the results in the "test results" property, and then destroy the Rosetta
-and SQL::Routine objects.  The two function arguments, SETUP_OPTIONS (a hash
-ref), and TRACE_FH (an open file handle, optional), are input to these Rosetta
-functions for use and validation, respectively: build_connection(),
-set_trace_fh(); either may throw an exception which propagates out of main(). 
-This function returns a new array ref having the details of the test results.
+record the results in the "test results" property, and then let the Rosetta and
+SQL::Routine objects be auto-destructed.  The two function arguments,
+SETUP_OPTIONS (a hash ref), and TRACE_FH (an open file handle, optional), are
+input to Rosetta::Utility::EasyBake.build_connection() and
+Rosetta.set_trace_fh() respectively; either may throw an exception which
+propagates out of main(). This function returns a new array ref having the
+details of the test results.
 
 =head1 INTERPRETING THE TEST RESULTS
 
@@ -551,6 +540,8 @@ parts of it will be changed in the near future, perhaps in incompatible ways.
 
 =head1 SEE ALSO
 
-L<perl(1)>, L<Rosetta>, L<SQL::Routine>, L<Locale::KeyedText>, L<Rosetta::Engine::Generic>.
+L<perl(1)>, L<Rosetta::Validator::L::en>, L<Rosetta>, L<SQL::Routine>,
+L<Locale::KeyedText>, L<Rosetta::Utility::EasyBake>,
+L<Rosetta::Engine::Generic>.
 
 =cut

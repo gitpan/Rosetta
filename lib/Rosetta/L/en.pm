@@ -2,7 +2,7 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta::L::en;
-our $VERSION = '0.17';
+our $VERSION = '0.18';
 
 ######################################################################
 
@@ -34,9 +34,9 @@ Rosetta is free software; you can redistribute it and/or modify it under the
 terms of the GNU General Public License (GPL) as published by the Free Software
 Foundation (http://www.fsf.org/); either version 2 of the License, or (at your
 option) any later version.  You should have received a copy of the GPL as part
-of the Rosetta distribution, in the file named "GPL"; if not, write to the
-Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-02111-1307 USA.
+of the Rosetta distribution, in the file named "GPL"; if not, write to the Free
+Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301,
+USA.
 
 Linking Rosetta statically or dynamically with other modules is making a
 combined work based on Rosetta.  Thus, the terms and conditions of the GPL
@@ -66,180 +66,104 @@ suggesting improvements to the standard version.
 
 ######################################################################
 
-my $CI = 'Rosetta::Interface';
-my $CE = 'Rosetta::Engine';
-my $CD = 'Rosetta::Dispatcher';
 my $GEN = 'Rosetta Generic Engine Error';
 
 my %text_strings = (
-	'ROS_I_NEW_INTF_NO_TYPE' => 
-		$CI.'.new(): missing INTF_TYPE argument',
-	'ROS_I_NEW_INTF_BAD_TYPE' => 
-		$CI.'.new(): invalid INTF_TYPE argument; there is no Interface Type named "{TYPE}"',
-	'ROS_I_NEW_INTF_BAD_ERR' => 
-		$CI.'.new(): invalid ERR_MSG argument; an Error Message may only be a '.
-		'Locale::KeyedText::Message object; you tried to set it to "{ERR}"',
-	'ROS_I_NEW_INTF_NO_ERR' => 
-		$CI.'.new(): missing ERR_MSG argument; it is mandatory for "{TYPE}" Interfaces',
-	'ROS_I_NEW_INTF_YES_ENG' => 
-		$CI.'.new(): the ENGINE argument must be undefined for "{TYPE}" Interfaces',
-	'ROS_I_NEW_INTF_NO_ENG' => 
-		$CI.'.new(): missing ENGINE argument; it is mandatory for "{TYPE}" Interfaces',
-	'ROS_I_NEW_INTF_BAD_ENG' => 
-		$CI.'.new(): invalid ENGINE argument; an Engine may only be a '.
-		'Rosetta::Engine (subclass) object; you tried to set it to "{ENG}"',
-	'ROS_I_NEW_INTF_NO_RTN' => 
-		$CI.'.new(): missing ROUTINE argument; it is mandatory for "{TYPE}" Interfaces',
-	'ROS_I_NEW_INTF_BAD_RTN' => 
-		$CI.'.new(): invalid ROUTINE argument; a Routine may only be a '.
-		'Perl anonymous subroutine / "CODE" reference (or closure); you tried to set it to "{RTN}"',
-	'ROS_I_NEW_INTF_YES_RTN' => 
-		$CI.'.new(): the ROUTINE argument must be undefined for "{TYPE}" Interfaces',
+	'ROS_CLASS_METH_ARG_UNDEF' => 
+		'{CLASS}.{METH}(): undefined (or missing) {ARGNM} argument',
+	'ROS_CLASS_METH_ARG_NO_ARY' => 
+		'{CLASS}.{METH}(): invalid {ARGNM} argument; '.
+		'it is not a Array ref, but rather is "{ARGVL}"',
+	'ROS_CLASS_METH_ARG_NO_HASH' => 
+		'{CLASS}.{METH}(): invalid {ARGNM} argument; '.
+		'it is not a Hash ref, but rather is "{ARGVL}"',
+	'ROS_CLASS_METH_ARG_NO_SUB' => 
+		'{CLASS}.{METH}(): invalid {ARGNM} argument; '.
+		'it is not a Perl anonymous subroutine / "CODE" ref / closure, but rather is "{ARGVL}"',
+	'ROS_CLASS_METH_ARG_NO_OBJ' => 
+		'{CLASS}.{METH}(): invalid {ARGNM} argument; '.
+		'it is not an object, but rather is "{ARGVL}"',
+	'ROS_CLASS_METH_ARG_NO_NODE' => 
+		'{CLASS}.{METH}(): invalid {ARGNM} argument; '.
+		'it is not a SQL::Routine Node object, but rather is "{ARGVL}"',
 
-	'ROS_I_NEW_INTF_YES_PARENT' => 
-		$CI.'.new(): the PARENT_INTF argument must be undefined for "{TYPE}" Interfaces',
-	'ROS_I_NEW_INTF_NO_PARENT' => 
-		$CI.'.new(): missing PARENT_INTF argument; it is mandatory for "{TYPE}" Interfaces',
-	'ROS_I_NEW_INTF_BAD_PARENT' => 
-		$CI.'.new(): invalid PARENT_INTF argument; a Parent Interface may only be a '.
-		'Rosetta::Interface object; you tried to set it to "{PAR}"',
-	'ROS_I_NEW_INTF_P_INCOMP' =>
-		$CI.'.new(): invalid PARENT_INTF argument; a "{TYPE}" Interface may not have a '.
-		'"{PTYPE}" Interface as its parent',
-	'ROS_I_NEW_INTF_PP_INCOMP' =>
-		$CI.'.new(): invalid PARENT_INTF argument; a "{TYPE}" Interface may not have a '.
-		'"{PPTYPE}" Interface as its grand-parent (but its "{PTYPE}" parent type is okay)',
+	'ROS_CLASS_METH_ARG_WRONG_OBJ_TYPE' => 
+		'{CLASS}.{METH}(): invalid {ARGNM} argument; '.
+		'it is not a "{EXPOTYPE}" object, but rather is a "{ARGOTYPE}" object',
 
-	'ROS_I_NEW_INTF_YES_NODE' => 
-		$CI.'.new(): the SRT_NODE argument must be undefined for "{TYPE}" Interfaces; '.
-		'this Interface property would be set for you by using its parent Preparation',
-	'ROS_I_NEW_INTF_NO_NODE' => 
-		$CI.'.new(): missing SRT_NODE argument; it is mandatory for "{TYPE}" Interfaces',
-	'ROS_I_NEW_INTF_BAD_NODE' => 
-		$CI.'.new(): invalid SRT_NODE argument; it may only be a '.
-		'SQL::Routine::Node object; you tried to set it to "{SRT}"',
-	'ROS_I_NEW_INTF_NODE_NOT_SAME_CONT' =>
-		$CI.'.new(): invalid SRT_NODE argument; that Node is not in the same Container '.
-		'as the Node associated with PARENT_INTF, so it can not be used',
-	'ROS_I_NEW_INTF_NODE_TYPE_NOT_SUPP' =>
-		$CI.'.new(): the given SRT_NODE argument, having a Node Type of "{NTYPE}", '.
-		'can not be associated with a "{ITYPE}" Interface',
-	'ROS_I_NEW_INTF_NODE_TYPE_NOT_SUPP_UNDER_P' =>
-		$CI.'.new(): the given SRT_NODE argument, having a Node Type of "{NTYPE}", '.
-		'can not be associated with a "{ITYPE}" Interface, when that Interface has '.
-		'a "{PITYPE}" Interface as its direct parent',
+	'ROS_CLASS_METH_ARG_WRONG_NODE_TYPE' => 
+		'{CLASS}.{METH}(): invalid {ARGNM} argument; '.
+		'it is not a "{EXPNTYPE}" Node, but rather is a "{ARGNTYPE}" Node',
 
-	'ROS_I_DESTROY_HAS_CHILD' => 
-		$CI.'.destroy(): this Interface has child Interfaces of its '.
-		'own, so it can not be destroyed yet',
+	'ROS_CLASS_METH_ARG_NODE_NOT_SAME_CONT' =>
+		'{CLASS}.{METH}(): invalid {ARGNM} argument; '.
+		'the "{NTYPE}" Node with Id "{NID}" and Surrogate Id Chain "{SIDCH}" '.
+		'is not in the SQL::Routine Container used by this Rosetta Interface tree',
+
+	'ROS_CLASS_METH_ENG_MISC_EXCEPTION' =>
+		'{CLASS}.{METH}(): when trying to invoke the "{ENG_CLASS}" Rosetta Engine, '.
+		'an exception was thrown that is neither a Rosetta::Interface::Error '.
+		'nor a Locale::KeyedText::Message, but rather is "{ERR}"',
+
+	'ROS_CLASS_METH_ENG_RESULT_UNDEF' => 
+		'{CLASS}.{METH}(): undefined (or missing) return value '.
+		'from the Rosetta Engine method {ENG_CLASS}.{METH}()',
+	'ROS_CLASS_METH_ENG_RESULT_NO_OBJ' => 
+		'{CLASS}.{METH}(): invalid return value '.
+		'from the Rosetta Engine method {ENG_CLASS}.{METH}(); '.
+		'it is not an object, but rather is "{RESULTVL}"',
+
+	'ROS_CLASS_METH_ENG_RESULT_WRONG_OBJ_TYPE' => 
+		'{CLASS}.{METH}(): invalid return value '.
+		'from the Rosetta Engine method {ENG_CLASS}.{METH}(); '.
+		'it is not a "{EXPOTYPE}" object, but rather is a "{RESULTOTYPE}" object',
+
+	'ROS_CLASS_METH_ENG_RESULT_WRONG_ITREE' => 
+		'{CLASS}.{METH}(): invalid return value '.
+		'from the Rosetta Engine method {ENG_CLASS}.{METH}(); '.
+		'that Rosetta Interface does not share a common Rosetta Interface tree '.
+		'with the invocant Interface',
+
+	'ROS_I_NEW_ARGS_DIFF_ITREES' =>
+		'{CLASS}.new(): invalid PARENT_BYC[RE|XT]_INTF arguments; '.
+		'they do not share a common Rosetta Interface tree, so no '.
+		'new Interface can be made that has both of them as parents',
+
+	'ROS_IN_NEW_ENGINE_NO_LOAD' =>
+		'{CLASS}.new(): the Engine class "{ENG_CLASS}" failed to load: {ERR}',
+	'ROS_IN_NEW_ENGINE_NO_ENGINE' =>
+		'{CLASS}.new(): the class "{ENG_CLASS}" does not sub-class Rosetta::Engine so it is not a valid Engine class',
 
 	'ROS_I_FEATURES_BAD_ARG' =>
-		$CI.'.features(): invalid FEATURE_NAME argument; '.
-		'"{ARG}" does not match any known Rosetta Feature Name',
+		'{CLASS}.features(): invalid FEATURE_NAME argument; '.
+		'"{ARGVL}" does not match any known Rosetta Feature Name',
 	'ROS_I_FEATURES_BAD_RESULT_SCALAR' =>
-		$CI.'.features(): the "{CLASS}" Rosetta Engine that implements this "{ITYPE}" Interface '.
-		'did not return a valid boolean value, as expressed by "0" or "1", '.
-		'for the scalar query; it is instead: "{VALUE}"',
-	'ROS_I_FEATURES_BAD_RESULT_LIST' =>
-		$CI.'.features(): the "{CLASS}" Rosetta Engine that implements this "{ITYPE}" Interface '.
+		'{CLASS}.features(): the "{ENG_CLASS}" Rosetta Engine '.
+		'did not return a valid boolean value (or undef), as expressed by "0" or "1", '.
+		'for the scalar query on the Rosetta feature named "{FNAME}"; it is instead: "{VALUE}"',
+	'ROS_I_FEATURES_BAD_RESULT_LIST_UNDEF' =>
+		'{CLASS}.features(): the "{ENG_CLASS}" Rosetta Engine '.
+		'did not return a defined value for the list query, but rather: "{VALUE}"',
+	'ROS_I_FEATURES_BAD_RESULT_LIST_NO_HASH' =>
+		'{CLASS}.features(): the "{ENG_CLASS}" Rosetta Engine '.
 		'did not return a valid Hash ref for the list query, but rather: "{VALUE}"',
 	'ROS_I_FEATURES_BAD_RESULT_ITEM_NAME' =>
-		$CI.'.features(): the "{CLASS}" Rosetta Engine that implements this "{ITYPE}" Interface '.
-		'returned a list key that does not match any known Rosetta Feature Name: "{FNAME}"',
+		'{CLASS}.features(): the "{ENG_CLASS}" Rosetta Engine '.
+		'returned a list key that does not match any known Rosetta feature name: "{FNAME}"',
 	'ROS_I_FEATURES_BAD_RESULT_ITEM_NO_VAL' =>
-		$CI.'.features(): the "{CLASS}" Rosetta Engine that implements this "{ITYPE}" Interface '.
+		'{CLASS}.features(): the "{ENG_CLASS}" Rosetta Engine '.
 		'did not return a valid boolean value, as expressed by "0" or "1", '.
 		'for the "{FNAME}" feature name in this list query; it is instead undefined',
 	'ROS_I_FEATURES_BAD_RESULT_ITEM_BAD_VAL' =>
-		$CI.'.features(): the "{CLASS}" Rosetta Engine that implements this "{ITYPE}" Interface '.
+		'{CLASS}.features(): the "{ENG_CLASS}" Rosetta Engine '.
 		'did not return a valid boolean value, as expressed by "0" or "1", '.
 		'for the "{FNAME}" feature name in this list query; it is instead: "{VALUE}"',
 
-	'ROS_I_PREPARE_BAD_RESULT_NO_INTF' =>
-		$CI.'.prepare(): the "{CLASS}" Rosetta Engine that implements this "{ITYPE}" Interface '.
-		'did not return a Rosetta::Interface object, but rather: "{VALUE}"',
-	'ROS_I_PREPARE_BAD_RESULT_WRONG_ITREE' =>
-		$CI.'.prepare(): the "{CLASS}" Rosetta Engine that implements this "{ITYPE}" Interface '.
-		'returned a Rosetta::Interface object that is in a different Interface tree '.
-		'than the Interface upon which this method was invoked',
-	'ROS_I_PREPARE_BAD_RESULT_WRONG_ITYPE' =>
-		$CI.'.prepare(): the "{CLASS}" Rosetta Engine that implements this "{ITYPE}" Interface '.
-		'did not return the correct type of Rosetta::Interface object (Prep, Err); '.
-		'it instead returned a "{RET_ITYPE}" Interface',
-
-	'ROS_I_PREPARE_NO_NODE' => 
-		$CI.'.prepare(): missing ROUTINE_DEFN argument; it is mandatory for "{TYPE}" Interfaces',
-	'ROS_I_PREPARE_BAD_NODE' => 
-		$CI.'.prepare(): invalid ROUTINE_DEFN argument; it may only be a '.
-		'SQL::Routine::Node object; you tried to set it to "{SRT}"',
-	'ROS_I_PREPARE_NODE_NOT_SAME_CONT' =>
-		$CI.'.prepare(): invalid ROUTINE_DEFN argument; that Node is not in the same Container '.
-		'as the Node associated with PARENT_INTF, so it can not be used',
-	'ROS_I_PREPARE_NODE_TYPE_NOT_SUPP' =>
-		$CI.'.prepare(): the given ROUTINE_DEFN argument, having a Node Type of "{NTYPE}", '.
-		'can not be associated with a "{ITYPE}" Interface',
-	'ROS_I_PREPARE_NODE_TYPE_NOT_SUPP_UNDER_P' =>
-		$CI.'.prepare(): the given SRT_NODE argument, having a Node Type of "{NTYPE}", '.
-		'can not be associated with a "{ITYPE}" Interface, when that Interface has '.
-		'a "{PITYPE}" Interface as its direct parent',
-
-	'ROS_I_PREPARE_ENGINE_NO_LOAD' =>
-		$CI.'.prepare(): the Engine class "{CLASS}" failed to load: {ERR}',
-	'ROS_I_PREPARE_ENGINE_NO_ENGINE' =>
-		$CI.'.prepare(): the class "{CLASS}" does not sub-class Rosetta::Engine so it is not a valid Engine class',
-	'ROS_I_PREPARE_ENGINE_YES_DISPATCHER' =>
-		$CI.'.prepare(): the class "{CLASS}" sub-classes Rosetta::Dispatcher so it is not a valid Engine class',
-
-	'ROS_I_EXECUTE_BAD_ARG' =>
-		$CI.'.execute(): invalid ROUTINE_ARGS argument; it must be a hash ref if '.
-		'it is defined, but you tried to set it to "{ARG}"',
-	'ROS_I_EXECUTE_BAD_RESULT_NO_INTF' =>
-		$CI.'.execute(): the "{CLASS}" Rosetta Engine that implements this "{ITYPE}" Interface '.
-		'did not return a Rosetta::Interface object, but rather: "{VALUE}"',
-	'ROS_I_EXECUTE_BAD_RESULT_WRONG_ITREE' =>
-		$CI.'.execute(): the "{CLASS}" Rosetta Engine that implements this "{ITYPE}" Interface '.
-		'returned a Rosetta::Interface object that is in a different Interface tree '.
-		'than the Interface upon which this method was invoked',
-	'ROS_I_EXECUTE_BAD_RESULT_WRONG_ITYPE' =>
-		$CI.'.execute(): the "{CLASS}" Rosetta Engine that implements this "{ITYPE}" Interface '.
-		'did not return the correct type of Rosetta::Interface object '.
-		'(Err, Succ, Lit, Env, Conn, Curs); it instead returned a "{RET_ITYPE}" Interface',
-
-	'ROS_I_BUILD_CH_ENV_NO_ARG' =>
-		$CI.'.build_child_environment(): missing ENGINE_NAME argument',
-
-	'ROS_I_V_CONN_SETUP_OPTS_NO_ARG' =>
-		$CI.'.validate_connection_setup_options(): missing SETUP_OPTIONS argument',
-	'ROS_I_V_CONN_SETUP_OPTS_BAD_ARG' =>
-		$CI.'.validate_connection_setup_options(): invalid SETUP_OPTIONS argument; '.
-		'it must be a hash ref, but you tried to set it to "{ARG}"',
-	'ROS_I_V_CONN_SETUP_OPTS_BAD_ARG_NTYPE' => 
-		$CI.'.validate_connection_setup_options(): invalid SETUP_OPTIONS argument element; '.
-		'the settable Node types are "{ALLOWED}"; you gave "{GIVEN}"',
-	'ROS_I_V_CONN_SETUP_OPTS_NO_ARG_ELEM' =>
-		$CI.'.validate_connection_setup_options(): invalid SETUP_OPTIONS argument element; the value '.
-		'with the "{NTYPE}" Node type key is missing',
-	'ROS_I_V_CONN_SETUP_OPTS_BAD_ARG_ELEM' =>
-		$CI.'.validate_connection_setup_options(): invalid SETUP_OPTIONS argument element; the value '.
-		'with the "{NTYPE}" Node type key must be a hash ref, but you tried to set it to "{ARG}"',
-	'ROS_I_V_CONN_SETUP_OPTS_BAD_ARG_OPTNM' => 
-		$CI.'.validate_connection_setup_options(): invalid SETUP_OPTIONS argument element; '.
-		'the settable options for "{NTYPE}" Nodes are "{ALLOWED}"; you gave "{GIVEN}"',
-	'ROS_I_V_CONN_SETUP_OPTS_NO_ENG_NM' => 
-		$CI.'.validate_connection_setup_options(): missing SETUP_OPTIONS argument element; '.
-		'you must provide a "data_link_product"."product_code", which is a Rosetta Engine class name',
-
-	'ROS_I_METH_NOT_SUPP' =>
-		$CI.'.{METH}(): you may not invoke this method on Rosetta "{ITYPE}" Interfaces',
-	'ROS_I_METH_MISC_EXCEPTION' =>
-		$CI.'.{METH}(): the {CLASS} Rosetta Engine that implements this "{ITYPE}" Interface '.
-		'has thrown a non-Locale::KeyedText::Message exception: "{VALUE}"',
-
 	'ROS_E_METH_NOT_IMPL' =>
-		$CE.'.{METH}(): this method is not implemented by the "{CLASS}" Rosetta Engine class',
+		'Rosetta::Engine.{METH}(): this method is not implemented by the "{CLASS}" Rosetta Engine class',
 
 	'ROS_D_PREPARE_NO_ENGINE_DETERMINED' =>
-		$CD.'.prepare(): can"t determine what Rosetta Engine to dispatch this App invocation to',
+		'Rosetta::Dispatcher.prepare(): can\'t determine what Rosetta Engine to dispatch this App invocation to',
 
 	'ROS_G_PERL_COMPILE_FAIL' =>
 		$GEN.' 00001 - {CLASS} - concerning the SRT routine "{RNAME}"; '.
@@ -249,7 +173,8 @@ my %text_strings = (
 		'can"t directly invoke a "{RTYPE}" routine (only FUNCTION and PROCEDURE calls are allowed)',
 	'ROS_G_NEST_RTN_NO_INVOK' =>
 		$GEN.' 00003 - {CLASS} - concerning the SRT routine "{RNAME}"; '.
-		'can"t externally invoke a nested routine (a routine that is declared inside another routine)',
+		'can"t externally invoke a nested routine (a routine that is declared inside '.
+		'another routine) or a routine that lives in a schema',
 	'ROS_G_STD_RTN_NO_IMPL' =>
 		$GEN.' 00004 - {CLASS} - concerning the SRT routine "{RNAME}"; '.
 		'can"t invoke the standard routine "{SRNAME}"; it isn"t implemented',

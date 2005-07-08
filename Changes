@@ -1,3 +1,183 @@
+2005-07-07   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Rosetta Release 0.46.
+
+	* New code file versions are: Rosetta.pm and Validator.pm v0.46 and
+	Rosetta/L/en.pm 0.18 and Validator/L/en.pm 0.12 and EasyBake.pm 0.01 and 
+	EasyBake/L/en.pm 0.01 (the last 2 are new, and explained below).
+
+	* Updated external dependencies on Locale::KeyedText to v1.05 and on
+	SQL::Routine to v0.65.
+
+	* This release is a snapshot that shows a mid-way point of for large Rosetta 
+	upgrade; many changes were made, and many more will be in the next few days.
+
+	* Added new external dependency on Scalar::Util v1.11 (bundled with Perl
+	5.8.x); Rosetta now uses its 'weak refs' feature internally at strategic
+	places so that you no longer need to explicitly destroy Interface trees when
+	you are done with them.  The circular refs between parent and child Rosetta
+	Interfaces no longer prevent Perl's standard garbage collection from working
+	when expected, which is when all external refs to a child-most Interface go
+	away.  This change makes Rosetta much more DWIM and easier to use.  All 3
+	invocations of Scalar::Util::weaken are in the new private Interface method
+	_new__set_common_properties().  Parent links to children are made weak,
+	while child links to parents are strong, which ensures children are always
+	auto-destructed before their parents.  Removed the destroy() method from all
+	3 Rosetta.pm classes, and the Interface methods
+	[|_]destroy_interface_tree(), and the invocation of such in do().  Updated
+	Details.pod to remove references to those methods; updated Rosetta/L/en.pm
+	to remove the 'ROS_I_DESTROY_HAS_CHILD' user text message.  Updated
+	Validator.pm to remove all invocations of those methods.  Since
+	auto-destruction of individual Interfaces separate from their tree will
+	leave undefined weak-ref elements in their parents' child lists, added new
+	Interface magic method DESTROY() to purge those undefs.
+
+	* Updated all files in this distribution that display the physical address
+	of the Free Software Foundation, Inc. so it uses their current address of
+	"51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA" rather than their
+	previous address of "59 Temple Place, Suite 330, Boston, MA 02111-1307 USA";
+	this affects every COPYRIGHT AND LICENSE statement in the core files and the
+	'ReadMe' file, plus any 'GPL' or 'LGPL' license file.
+
+	* Updated the INSTALL file so that it is more generic, and all of my
+	distributions now use an identical copy of it.
+
+	* Updated the main heading in the ReadMe file to state the distribution's
+	name rather than a terse description of it.
+
+	* The 'Rosetta' core module has been split into itself and a new module
+	'Rosetta::Utility::EasyBake'; the latter is an optional extension to the
+	former.  EasyBake.pm contains 10 public functions from the old Rosetta.pm:
+	validate_connection_setup_options(), build_application[|_with_node_trees](),
+	build_[|child]_[environment|connection](),
+	sroutine_catalog_[list|open|close]().  It also contains the
+	%BC_SETUP_NODE_TYPES file-scope constant and the 2 private functions
+	_build[|_child]_node_auto_name().  Everything else that was in the old
+	Rosetta.pm is in the new one, sans other edits to that module.  The
+	corresponding portions of Details.pod were removed from there and added to
+	EasyBake.pm.  The corresponding parts of Rosetta/L/en.pm were removed from
+	there and became the new Rosetta::Utility::EasyBake::L::en module.  Any
+	moved functions that used to be Interface object methods now take those
+	objects as their first argument; all of the moved functions are now
+	stateless.  Updated Validator.pm to use the moved functions correctly.
+	Updated Rosetta_Engine_Generic.t, and the Validator/L/en.pm SYNOPSIS, to add
+	'Rosetta::Utility::EasyBake::L::' to the Translator Sets list.  Note that
+	EasyBake.pm should be considered deprecated, for quick-and-dirty programs or
+	experiments; large programs or other CPAN modules should write directly to
+	the Rosetta module and/or a different wrapper instead.
+
+	* Corresponding updates to Rosetta.pm, Rosetta/L/en.pm, and Details.pod:
+	split the 2 Interface properties 'parent interface', 'child interface' into
+	4 more specialized properties, 'parent-by-[creation|context] interface',
+	'child-by-[creation|context] interface'; likewise their 2 parent/child
+	accessor methods were split into 4.  Some interface types use both of these
+	new properties, and some use only one, and 'Application' still none.  The
+	PARENT_INTF argument of Interface.new() was similarly split into 2
+	arguments.  Also removed the get_sibling_interfaces() accessor method, which
+	isn't currently in use anywhere.
+
+	* Also split up the 1 'srt node' property and accessor into
+	5 more specialized ones: 'application instance node', 'data link product
+	node', 'catalog link node', 'external cursor node', 'routine node'; they are
+	specific to these 5 Interface types respectively: Application, Environment,
+	Connection, Cursor, Preparation.
+
+	* Removed the 1 'routine' Interface property, and get_routine() accessor
+	method; now, rather than storing a prepared anonymous Perl subroutine to
+	execute, the Interface method execute() will now pass through to an Engine's
+	execute() method instead; added execute() to the Engine class and Dispatcher
+	class; added new Dispatcher property 'prep routine' for that class to store
+	its Perl sub in; removed the ROUTINE argument from Interface.new().
+
+	* Removed the routine_source_code() methods from the Interface and Engine 
+	classes since they aren't currently in use; a replacement may come later.
+
+	* Reconfigured Interface.new() to invoke Engine.new() itself, and removed
+	its ENGINE argument.  Updated Dispatcher method _prepare__srtn_cat_list() to
+	first create a new Interface and then set it's new Engine's properties,
+	rather than creating the new Engine prior to the Interface.  The reordering 
+	of these related creations should greatly help make Rosetta easier to use.
+
+	* The Dispatcher class is no longer a sub-class of the Engine class, but
+	rather of just 'Rosetta', as 'Interface' and 'Engine' are.  Removed
+	Rosetta/L/en.pm message 'ROS_I_PREPARE_ENGINE_YES_DISPATCHER', since it is 
+	no longer possible for an 'Engine' sub-class to trigger this error.
+
+	* Rewrote part of Dispatcher.features() to fix a potential or actual bug
+	regarding how the Engines' features() results are amalgamated.
+
+	* Corresponding updates to Rosetta.pm, Rosetta/L/en.pm, and Details.pod:
+	Split up the Rosetta::Interface class into itself and 8 sub-classes whose
+	names are in the format Rosetta::Interface::*, where * is one of:
+	Application, Environment, Connection, Cursor, Literal, Success, Preparation,
+	Error.  There is no longer an Interface property named "interface type", as
+	its 8 possible types now have their own classes instead.  The 1 'Rosetta'
+	wrapper method new_application() became 8 Interface wrapper methods, named
+	new_*_interface().  The Rosetta::Interface.new() method is gone, and each of
+	other 8 sub-classes now have their own specialized new().  All 8 Interface
+	classes have the 4 parent/child properties plus the 'root interface' and
+	'engine' properties in common; they also have in common the 4 parent/child
+	accessor methods plus get_root_interface() and get_engine().  Now only the
+	Application class has these 3 properties, though accessors for them are on
+	all 8 classes: 'srt container', 'application instance node', 'trace
+	filehandle'.  Now only the Error class has the 'error message' property and
+	accessor.  The other 4 above-mentioned SRT properties and their accessor
+	methods are now only with their respective Interface classes.  Now only
+	these 3 classes have a features() method: Application, Environment,
+	Connection.  Now only those 3 classes plus Cursor have prepare() and do()
+	methods.  Now only the Preparation class has an execute() method.  Added 5
+	new (wrapper) methods to the Engine class, which Engines must implement, as
+	the Interface' new() will invoke them: new_*_engine() for environment,
+	connection, cursor, literal, preparation; the Engine class also no longer
+	has a plain new() method, though other Engines can if they want to.  Added 3
+	new (wrapper) methods to the Dispatcher class: new_*_engine() for
+	application, literal, preparation.  The old _prepare_lpn() private Interface
+	method, plus relevant parts of the old prepare() and execute() methods, has
+	been merged into the new Environment.new().  These private Interface methods
+	are now gone, as their functionality has been moved into the various new()
+	methods and/or new refactorings: _validate_properties_to_be(),
+	_validate_parent_intf(), _validate_srt_node().
+
+	* Refactored various Interface methods and brought out common functionality
+	into these 4 new 'Rosetta' private functions/methods, which complement
+	_throw_error_message(): _assert_arg_[obj|intf_obj|node]_type(); they can be
+	invoked on self by either Interface or Engine or Dispatcher objects.  More
+	Interface method refactoring brought out these 5 new Interface private
+	methods; they can only be invoked on self by Interface classes: 
+	_assert_engine_made_errors(), _new__assert_args_intfs_same_tree(), 
+	_new__set_common_properties(), _features(), _prepare().
+
+	* Added some new input and output validation code to the prepare(),
+	execute(), and payload() methods, but they are filled with TODO comments and
+	don't actually throw any exceptions yet; effectively they are no-ops.
+
+	* Added a paragraph to Rosetta.pm's DESCRIPTION to specify that Rosetta has
+	no intention of being an object-relational mapper but speaks just in
+	relational database terms.
+
+	* Rewrote half of Details.pod's STRUCTURE documentation, mainly the
+	explanation of now the various Interface types relate to each other, in
+	light of there now being 2 types of parent/child relationships.
+
+	* Replaced most of the user text messages in Rosetta/L/en.pm with a smaller
+	number of different and more generic ones.
+
+	* Rewrote the TODO file such as with concern LOB support that is as elegant
+	as current cursor support.
+
+	* Minor updates to Framework.pod.  Updated the BRIEF MODULE LIST: 1. added a
+	brief paragraph that gives an analogy of the Rosetta framework parts in
+	terms of the DBI framework; 2. removed SQL::Routine::API_C following a
+	rearrangement in the SQL-Routine distribution that merged it into
+	SQL::Routine::Details; 3. added modules Rosetta::Utility::EasyBake and
+	Rosetta::Utility::EasyBake::L::en to the Rosetta distro; 4.
+	SQL::Routine::SQLBuilder and ::SQLParser each gained an en.pm; 5.
+	Rosetta::Emulator::DBI is now in its own distribution and has an en.pm.
+
+	* Various other minor updates throughout the distribution.
+
+	* Note that Features.pod had zero changes besides in the copyright notice.
+
 2005-05-13   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Rosetta Release 0.45.

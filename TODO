@@ -1,16 +1,8 @@
-* Consider using Scalar::Util::weaken in Rosetta to alleviate the need for 
-an explicit destroy() by users of the module.
-
 * Add a /demos folder, starting with a trivial cmd-line genealogy app.
 
-* Perhaps split prepare() into compile() and prepare(); the first produces
-anything that can be done after a Connection is defined but while it is not
-open, such as *generating* Perl and SQL; the latter can only be done when the
-connection is open, such as DBI->prepare() stuff.  Consider changing things so 
-the current concept of a Preparation Interface goes away.
+* Add support to Literal Interfaces and/or another new Interface type to
+elegantly handle large scalar values (LOBs) so we don't try to hold them
+entirely in RAM at once.
 
-* The primary initial development of the Rosetta core (that which is in the
-'Rosetta' distribution) [was thought to be but in fact wasn't] done.  While
-further improvements are planned, they will be implemented over time as they are
-needed.  See the separately released "Rosetta-Engine-Generic" distribution for a
-clue as it is the initial main dependent of the Rosetta core.
+* Keep watch on the separately released "Rosetta-Engine-Generic" and
+"Rosetta-Emulator-DBI" and ensure we continue to meet their needs.

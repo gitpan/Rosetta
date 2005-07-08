@@ -80,9 +80,9 @@ Rosetta is free software; you can redistribute it and/or modify it under the
 terms of the GNU General Public License (GPL) as published by the Free Software
 Foundation (http://www.fsf.org/); either version 2 of the License, or (at your
 option) any later version.  You should have received a copy of the GPL as part
-of the Rosetta distribution, in the file named "GPL"; if not, write to the
-Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-02111-1307 USA.
+of the Rosetta distribution, in the file named "GPL"; if not, write to the Free
+Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301,
+USA.
 
 Linking Rosetta statically or dynamically with other modules is making a
 combined work based on Rosetta.  Thus, the terms and conditions of the GPL
@@ -409,7 +409,12 @@ transition, mainly in the 'Engine' arena.  See below for details.  Many of
 these modules don't exist yet, but are being planned to exist, as they are
 implemented over time.
 
-I<Any indented package names represent inner classes of what they are beneath.>
+Note:  As an analogy to the DBI framework, 'Rosetta' is akin to 'DBI',
+'SQL-Routine' is akin to 'SQL-Statement', 'Rosetta-Engine-*' is akin to 'DBD-*',
+and 'Rosetta-Emulator-*' is akin to 'Oraperl' etc; the Builder/Parser are
+optional utilities that can be used by Engine/Emulator/etc.
+
+I<Any indented package names represent subordinate classes of what they are beneath.>
 
 =head2 In distribution "Locale-KeyedText"
 
@@ -430,7 +435,6 @@ I<Any indented package names represent inner classes of what they are beneath.>
 	SQL::Routine::Language (What language or grammar SQL::Routine speaks)
 	SQL::Routine::EnumTypes (What enumerated types are part of SQL::Routine's language or grammar)
 	SQL::Routine::NodeTypes (What Node types are part of SQL::Routine's language or grammar)
-	SQL::Routine::API_C (Describe the API for a C version of SQL::Routine)
 
 =head2 In distribution "Rosetta"
 
@@ -452,13 +456,18 @@ I<Any indented package names represent inner classes of what they are beneath.>
 	Rosetta::Validator::L::fr (Localization of Rosetta::Validator for French)
 	Rosetta::Validator::L::* ... like German, Spanish, Dutch, Chinese, etc
 
+	Rosetta::Utility::EasyBake (Perform common tasks with less effort)
+	Rosetta::Utility::EasyBake::L::en (Localization of Rosetta::Utility::EasyBake for English)
+
 =head2 In distribution "SQL-Routine-SQLBuilder"
 
 	SQL::Routine::SQLBuilder (Generate ANSI/ISO SQL:2003 and other SQL variants)
+	SQL::Routine::SQLBuilder::L::en (Localization of SQL::Routine::SQLBuilder for English)
 
 =head2 In distribution "SQL-Routine-SQLParser"
 
 	SQL::Routine::SQLParser (Parse ANSI/ISO SQL:2003 and other SQL variants)
+	SQL::Routine::SQLParser::L::en (Localization of SQL::Routine::SQLParser for English)
 
 =head2 In distribution "Rosetta-Utilities" or a multiplicity of similarly named
 
@@ -495,7 +504,7 @@ I<Note: more databases (and data access protocols) can be found listed at
 	Rosetta::Engine::Unify (interface to Unify db)
 	Rosetta::Engine::Empress (interface to the Empress db)
 	Rosetta::Engine::PrimeBase (interface to PrimeBase db)
-	Rosetta::Engine::OpenBase (interface to OpenBase db 8.x)
+	Rosetta::Engine::OpenBase (interface to OpenBase db 9.x, 8.x)
 	Rosetta::Engine::FrontBase (interface to FrontBase db)
 	Rosetta::Engine::InterBase (binding to Borland InterBase embedded db)
 	Rosetta::Engine::Firebird (interface to Firebird db)
@@ -530,9 +539,13 @@ I<Some terms seen here are out of date.>
 	Rosetta::Proxy::Command (network-safe packed repr of ::Interface::Command obj)
 	Rosetta::Proxy::Result (network-safe packed repr of ::Interface::Result obj)
 
-=head2 In a multiplicity of "Rosetta-Emulator-*" distributions
+=head2 In distribution "Rosetta-Emulator-DBI"
 
 	Rosetta::Emulator::DBI (emulates DBI/DBD::*, but result is more portable)
+	Rosetta::Emulator::DBI::L::en (Localization of Rosetta::Emulator::DBI for English)
+
+=head2 In a multiplicity of "Rosetta-Emulator-*" distributions
+
 	Rosetta::Emulator::ODBC (emulates an ODBC module, result more portable)
 	Rosetta::Emulator::OCI (emulates an OCI module, result more portable)
 	Rosetta::Emulator::* ... like some of the other abstraction modules
@@ -672,14 +685,14 @@ at the time of each Engine update, so mention of version ranges being supported
 or not is not applicable.  That said, given that SQLite recently went through a
 major revision that involves a file format change, where the current version
 can't read files of the older version, this class will temporarily embed both
-main versions, v3.2.1 and v2.8.16 (both of which are declared stable); the 2.x
+main versions, v3.2.2 and v2.8.16 (both of which are declared stable); the 2.x
 support is deprecated.
 
 =item
 
 B<Rosetta::Engine::MySQL> - This class implements an Engine for talking to MySQL
-databases.  It is recommended for use only with MySQL versions 5.0.4 (beta) and
-greater.  Support for MySQL versions 4.1.11 and 4.0.24 and 3.23.58 (all 3
+databases.  It is recommended for use only with MySQL versions 5.0.7 (beta) and
+greater.  Support for MySQL versions 4.1.12 and 4.0.25 and 3.23.58 (all 3
 stable) is present but deprecated.  v3.22.x and earlier will not be supported at
 all, without great demand.
 
@@ -702,7 +715,9 @@ demand.
 =item
 
 B<Rosetta::Engine::OpenBase> - This class implements an Engine for talking to
-OpenBase 8.0.4 databases.  v7.x and earlier won't be supported without demand.
+OpenBase databases.  It is recommended for use only with OpenBase versions 8.0.4
+and greater, including v9.x.  v7.x and earlier will not be supported without
+great demand.
 
 =back
 

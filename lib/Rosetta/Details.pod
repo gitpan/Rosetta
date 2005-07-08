@@ -16,9 +16,9 @@ Rosetta is free software; you can redistribute it and/or modify it under the
 terms of the GNU General Public License (GPL) as published by the Free Software
 Foundation (http://www.fsf.org/); either version 2 of the License, or (at your
 option) any later version.  You should have received a copy of the GPL as part
-of the Rosetta distribution, in the file named "GPL"; if not, write to the
-Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-02111-1307 USA.
+of the Rosetta distribution, in the file named "GPL"; if not, write to the Free
+Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301,
+USA.
 
 Linking Rosetta statically or dynamically with other modules is making a
 combined work based on Rosetta.  Thus, the terms and conditions of the GPL
@@ -55,91 +55,132 @@ introduction in L<Rosetta> before this document.
 The Rosetta core module is structured like a simple virtual machine, which can
 be conceptually thought of as implementing an embedded SQL database;
 alternately, it is a command interpreter.  This module is implemented with 2
-main classes that work together, which are "Interface" and "Engine".  To use
-Rosetta, you first create a root Interface object (or several; one is normal)
-using Rosetta->new_application(), which provides a context in which you can
+groups of classes that work together, which are "Interface"
+(Rosetta::Interface::*) and "Engine" (Rosetta::Engine::*).  To use Rosetta, you
+first create a root Application Interface object (or several; one is normal),
+that is associated with a SQL::Routine "application_instance" Node, using
+Rosetta->new_application_interface(), which provides a context in which you can
 prepare and execute commands against a database or three.  One of your first
 commands is likely to open a connection to a database, during which you
 associate a separately available Engine plug-in of your choice with said
 connection.  This Engine plug-in does all the meat of implementing the Rosetta
-API that the Interface defines; the Engine class defined inside the Rosetta
-core module is a simple common super-class for all Engine plug-in modules.
+API that the Interface defines; the Engine class defined inside the Rosetta core
+module is a simple common super-class for all Engine plug-in modules.
 
 Note that each distinct Rosetta Engine class is represented by a distinct
-SQL::Routine "data_link_product" Node that you create; you put the name of
-the Rosetta Engine Class, such as "Rosetta::Engine::foo", in that Node's
+SQL::Routine "data_link_product" Node that you create; you put the name of the
+Rosetta Engine Class, such as "Rosetta::Engine::foo", in that Node's
 "product_code" attribute.  The SQL::Routine documentation refers to that
 attribute as being just for recognition by an external "mediation layer"; when
 you use Rosetta, then Rosetta *is* said "mediation layer".
 
 During the normal course of using Rosetta, you will end up talking to a whole
 bunch of Interface objects, which are all related to each other in a tree-like
-fashion.  Each time you prepare() or execute() a command against one, another
-is typically spawned which represents the results of your command, be it an
-error condition or a database connection handle or a transaction context handle
-or a select cursor handle or a miscellaneous returned data container.  Each
-Interface object has a "type" property which says what kind of thing it
-represents and how it behaves.  All Interface types have a
-"get_error_message()" method but only a cursor type, for example, has a
-"fetch_row()" method.  For simplicity, all Interface objects are explicitly
-defined to have all possible Interface methods (no "autoload" et al is used);
-however, an inappropriately called method will throw an exception saying so, so
-it is as if Perl had a normal run-time error due to calling a non-existent
-method.
+fashion.  Each time you prepare() or execute() a command against one, another is
+typically spawned which represents the results of your command, be it an error
+condition or a database connection handle or a transaction context handle or a
+select cursor handle or a miscellaneous returned data container.  Each class of
+Interface object represents something different and has a distinct set of
+properties and methods, though all Interface objects have some of both in
+common.  Each Interface object has a "type" property which says what kind of
+thing it represents and how it behaves.  All Interface types have a
+"get_srt_container()" method but only a literal type, for example, has a
+"payload()" method.
 
 Each Interface object may also have its own Engine object associated with it
 behind the scenes, with all the Engine objects in a mirroring tree structure;
-but that may not always be true.  One example is right when you start out, or
-if you try to open a database connection using a non-existent Engine module.
+but that may not always be true.  One example is right when you start out, or if
+you try to open a database connection using a non-existent Engine module.
 Specifically, it is Error Interfaces and Success Interfaces and Application
 Interfaces that never have their own associated Engine; every other type of
-Interface must have one.
+Interface must have one.  (Technically, an Application has a pseudo-Engine named
+Rosetta::Dispatcher behind it, but that is just for coordinating the use of
+other actual Engines, which have Environment or other Interface types for them.)
 
-This diagram shows all of the Interface types and how they are allowed to 
-relate to each other parent-child wise in an Interface tree:
+There are two types of parent-child relationships for Interface objects, which 
+are called [parent|child]-by-creation and [parent|child]-by-context.  Each 
+Interface type is involved in either both, one, or none of these relationships.
 
-	1	Error
-	2	Success
-	3	Application
-	4	  Preparation
-	5	    Literal
-	6	    Environment
-	7	      Preparation
-	8	        Literal
-	9	        Connection
-	10	          Preparation
-	11	            Literal
-	12	            Cursor
-	13	              Preparation
-	14	                Literal
+The by-context relationship is simpler to explain and involves just 4 Interface 
+types, in this hierarchy:
 
-The "Application" (3) at the top is created using "Rosetta->new()", and you
-normally have just one of those in your program.  A "Preparation" (4,7,10,13)
-is created when you invoke "prepare()" off of an Interface object of one of
-these types: "Application" (3), "Environment" (6), "Connection" (9), "Cursor"
-(12).  Every type of Interface except "Application" and "Preparation" is
-created by invoking "execute()" of an appropriate "Preparation" method.  The
-"prepare()" and "execute()" methods always create a new Interface having the
-result of the call, and this is usually a child of the one you invoked it from.
+	X1  Application
+	X2    Environment
+	X3      Connection
+	X4        Cursor
 
-An "Error" (1) Interface can be returned potentially by any method and it is
-self-contained; it has no parent Interfaces or children.  Note that any other
-kind of Interface can also store an error condition in addition to keeping its
-normal properties.
+In summary, each parent provides a context in which the child operates, and the
+child always has a state that is relative to the parent.  For example, a
+Connection is always implemented by a specific Engine, whose root is held in an
+Environment.  As another connection, a Cursor always operates within the context
+of an open database Connection.  And all Engines/Environments exist to serve
+your user application, represented by Application.
 
-A "Success" (2) Interface is returned by execute() when the method being
-executed is a PROCEDURE and it succeeds.  Since procedures by design don't
-return anything, but execute() must return something, this is what you get to
-indicate a successful procedure; any routine that should return something
-meaningful is a FUNCTION.  (An unsuccessful routine of any kind throws an
-Error.)  A Success Interface has no parent or child Interfaces.
+The by-creation relationship involves all Interface types, usually mediated by 
+the Preparation type, and most of which can have a child Error.
 
-For convenience, what sometimes happens is that the Rosetta Engine will create
-multiple Interface generations for you as appropriate when you say "prepare()".
-For example, if you give a "open this database" routine to an "Application" (3)
-Interface, you would be given back a great-grand-child "Preparation" (7)
-Interface.  Be aware of this if you ever request that an Interface you hold
-give you its parent.
+To start off, you invoke new_application_interface() on anything to get this:
+
+	N1   Application
+
+With this set, new_environment_interface() on the parents to get the children:
+
+	N2   Application
+	N3     Error
+	N4     Environment
+
+With this set, you invoke prepare() on the parents to get the children:
+
+	N5   Application
+	N6     Error
+	N7     Preparation
+	N8   Environment
+	N9     Error
+	N10    Preparation
+	N11  Connection
+	N12    Error
+	N13    Preparation
+	N14  Cursor
+	N15    Error
+	N16    Preparation
+
+With this set, you invoke execute() on the parents to get the children:
+
+	N17  Preparation
+	N18    Error
+	N19    Success
+	N20    Connection
+	N21    Cursor
+	N22    Literal
+
+In summary, each parent conceptually creates the child.  For example, when you
+invoke prepare() on a Connection, that creates a Preparation object, which is a
+"compiled" routine; when you call execute() on that, it performs the routine and
+returns the results, for example as a Literal.  As a more specific example, if
+the compiled routine represents a select-query, then the Connection represents
+the database it will be run against, and the Literal represents the fetched 
+row-set; in DBI terms, this Connection is a $dbh, and the Preparation a $sth.
+
+A Success Interface is returned implicitly when the routine being executed is a 
+PROCEDURE (which has no explicit return type).  An Error Interface is thrown as 
+an exception any time something fails.
+
+A few more notes about a conceptualization in progress; very rough draft:
+
+	stages of doingness:
+	1. define in a SQL::Routine model (can be done during app's init, prior to forking)
+	2. compile to a Perl closure (can be done during server app's init, prior to forking workers)
+		2.1 by definition, no external resources (eg, databases) are contacted
+		2.2 this may or may not (probably will be) done by an Engine
+		2.3 by definition, these can be reused by multiple equivalent db connections etc (no db-side prepare)
+		2.4 usually all generation of SQL strings happens here
+	3. execute said closure which actually opens db conn or execs statement or fetches data etc
+		3.1 *all* DBI invocations (if used) are done here
+		3.2 this does both the DBI prepare() and execute() the first time called; just the second subsequently
+			3.2.1 any preparation that the database does itself happens here, and is cached for appropriate time
+		3.3 the result of a DBI prepare() is another closure that's cached for use by DBI execute()
+			3.3.1 the compile-closure includes all the actual invocations of the cache for the prepare-closure
+	4. like Perl itself, the above steps can be recursive; step 2 or 3 may trigger a step 1 or 2
 
 =head1 FEATURE SUPPORT VALIDATION
 
@@ -203,139 +244,115 @@ your own modules, then that often means something like B<$self-E<gt>method()>.
 All class functions and methods will throw exceptions on error conditions; they
 will only return normally if there are no error conditions.  The thrown
 exceptions will be Locale::KeyedText::Message objects when the error is bad
-user/caller input, and they will be Rosetta::Interface objects with set Error
-Message properties when the error is a failed prepare() or execute().  You
-should never get a raw Perl exception that is generated within Rosetta or one
-of its Engines.
+user/caller input caught by an Interface class; they will be
+Rosetta::Interface::Error objects when an Engine has either caught bad user
+input, or the database has a problem, or the Engine fails in some other way
+during execution.  You should never get a raw Perl exception that is generated
+within Rosetta or one of its Engines.
 
 =head1 CONSTRUCTOR WRAPPER FUNCTIONS
 
-These functions are stateless and can be invoked off of either the module name,
-or any package name in this module, or any object created by this module; they
-are thin wrappers over other methods and exist strictly for convenience.
+These 8 functions are stateless and can be invoked off of either the module
+name, or any package name in this module, or any object created by this module;
+they are thin wrappers over other methods and exist strictly for convenience.
 
-=head2 new_application( SRT_NODE )
+All 8 have a similar format, "new_<lowercased-class-name>_interface( <arg-list>
+)", and each one can be invoked like this example:
 
-	my $app = Rosetta->new_application( $my_app_inst );
-	my $app2 = Rosetta::Interface->new_application( $my_app_inst );
-	my $app3 = $app->new_application( $my_app_inst );
+	my $app = Rosetta->new_application_interface( $my_app_inst_node );
+	my $app2 = Rosetta::Interface->new_application_interface( $my_app_inst_node );
+	my $app3 = $app->new_application_interface( $my_app_inst_node );
 
-This function wraps Rosetta::Interface->new( 'Application', undef, undef,
-undef, SRT_NODE ).  It can only create 'Application' Interfaces, and its sole
-SRT_NODE argument must be an 'application_instance' SQL::Routine::Node.
+=head2 new_application_interface( APP_INST_NODE )
 
-=head1 INTERFACE CONSTRUCTOR FUNCTIONS AND METHODS
+This function wraps Rosetta::Interface::Application->new( * ).
 
-This function/method is stateless and can be invoked off of either the Interface
-class name or an existing Interface object, with the same result.
+=head2 new_environment_interface( PARENT_INTF, LINK_PROD_NODE )
 
-=head2 new( INTF_TYPE[, ERR_MSG][, PARENT_INTF][, ENGINE][, SRT_NODE][, ROUTINE] )
+This function wraps Rosetta::Interface::Environment->new( * ).
 
-	my $app = Rosetta::Interface->new( 'Application', undef, undef, undef, $my_app_inst );
-	my $conn_prep = $app->new( 'Preparation', undef, $app, undef, $conn_srt_node, $conn_routine );
+=head2 new_connection_interface( PARENT_BYCRE_INTF, PARENT_BYCXT_INTF, CAT_LINK_NODE )
 
-This "getter" function/method will create and return a single
-Rosetta::Interface (or subclass) object whose Interface Type is given in the
-INTF_TYPE (enum) argument; all of the other properties will be set from the
-remaining arguments depending on what the Interface Type is.  All of an
-Interface's properties must be set on instantiation and can not be changed
-afterwards, except when said Interface is destroyed (the Throw Errors property
-is the lone exception).  The class works this way since each Interface object
-is typically the result of invoking a method off another Interface object; the
-new object contains the "result" of calling the method.  The ERR_MSG argument
-holds a Locale::KeyedText::Message object; you set this when the new Interface
-represents an error condition.  The PARENT_INTF argument holds another
-Interface object which is to be the parent of the new one; typically it is the
-Interface whose method was invoked to indirectly create the current one; every
-Interface must have a parent unless it is an 'Application', which must not have
-one.  The ENGINE argument is an Engine object that will implement the new
-Interface.  The SRT_NODE argument is a SQL::Routine::Node argument that
-provides a context or instruction for how the new Interface is created; eg, it
-contains the "command" which the new Interface mediates the result of.  The 
-ROUTINE argument is a Perl anonymous subroutine reference (or closure); this is 
-created by an Engine in its prepare() method, and executed by execute().  This 
-function will throw exceptions if any arguments are inappropriate in context.  
-Typically this function is only invoked directly by the Engine object behind 
-its parent-to-be Interface when said Interface is called with prepare/execute.  
-The Throw Errors property defaults from the parent Interface, or to false.
+This function wraps Rosetta::Interface::Connection->new( * ).
+
+=head2 new_cursor_interface( PARENT_BYCRE_INTF, PARENT_BYCXT_INTF, EXTERN_CURS_NODE )
+
+This function wraps Rosetta::Interface::Cursor->new( * ).
+
+=head2 new_literal_interface( PARENT_BYCRE_INTF )
+
+This function wraps Rosetta::Interface::Literal->new( * ).
+
+=head2 new_success_interface( PARENT_BYCRE_INTF )
+
+This function wraps Rosetta::Interface::Success->new( * ).
+
+=head2 new_preparation_interface( PARENT_BYCRE_INTF, ROUTINE_NODE )
+
+This function wraps Rosetta::Interface::Preparation->new( * ).
+
+=head2 new_error_interface( PARENT_BYCRE_INTF, ERROR_MSG )
+
+This function wraps Rosetta::Interface::Error->new( * ).
 
 =head1 INTERFACE OBJECT METHODS
 
-These methods are stateful and may only be invoked off of Interface objects.
-
-=head2 destroy()
-
-	$interface->destroy();
-
-This "setter" method will destroy the Interface object that it is invoked from,
-and it will also destroy the Engine associated with the Interface, if any. 
-This method will fail if the current Interface object has child Interfaces; you
-have to destroy each of them first.
-
-=head2 get_interface_type()
-
-	my $type = $interface->get_interface_type();
-
-This "getter" method returns the Interface Type scalar (enum) property of this
-Interface.
-
-=head2 get_error_message()
-
-	my $message = $interface->get_error_message();
-
-This "getter" method returns by reference the Error Message
-Locale::KeyedText::Message object property of this Interface, if it has one.
-
-=head2 get_parent_interface()
-
-	my $parent = $interface->get_parent_interface();
-
-This "getter" method returns by reference the parent Interface of this
-Interface, if it has one.
+These methods are stateful and may only be invoked off of Rosetta::Interface::*
+objects; they access properties defined by the Rosetta::Interface class, and 
+inherited by said other classes; each object in the Interface tree has its own.
 
 =head2 get_root_interface()
 
 	my $appl_intf = $interface->get_root_interface();
 
 This "getter" method returns by reference the root 'Application' Interface of
-the tree that this Interface is in, if possible.  If the current Interface is
-an 'Application', then this method returns a reference to itself.  If the
-current Interface is either an 'Error' or 'Success', then this method returns
-undef.  This is strictly a convenience method, similar to calling
-get_parent_interface() recursively, and it exists to help make code faster.
+the tree that this Interface is in, if possible.  If the current Interface is an
+'Application', then this method returns a reference to itself.  This is strictly
+a convenience method, similar to calling get_parent_by_creation_interface()
+recursively, and it exists to help make code faster.
 
-=head2 get_child_interfaces()
+=head2 get_parent_by_creation_interface()
 
-	my $children = $interface->get_child_interfaces();
+	my $parent = $interface->get_parent_by_creation_interface();
 
-This "getter" method returns a new array ref having references to all of this
-Interface's child Interfaces, or an empty array ref if there are no children.
+This "getter" method returns by reference the parent-by-creation Interface of
+this Interface, if it has one.
 
-=head2 get_sibling_interfaces([ SKIP_SELF ])
+=head2 get_child_by_creation_interfaces()
 
-	my $siblings_with_self = $interface->get_sibling_interfaces();
-	my $siblings_not_self = $interface->get_sibling_interfaces( 1 );
+	my $children = $interface->get_child_by_creation_interfaces();
 
 This "getter" method returns a new array ref having references to all of this
-Interface's sibling Interfaces.  This list includes by default the Interface
-upon which the method was called; however, if the optional boolean argument
-SKIP_SELF is true, then the list will exclude the called-on Interface.  If this
-Interface has no parent Interface, then the returned list will either consist
-of just itself, or be an empty list, depending on SKIP_SELF.
+Interface's child-by-creation Interfaces, or an empty array ref for none.
+
+=head2 get_parent_by_context_interface()
+
+	my $parent = $interface->get_parent_by_context_interface();
+
+This "getter" method returns by reference the parent-by-context Interface of this
+Interface, if it has one.
+
+=head2 get_child_by_context_interfaces()
+
+	my $children = $interface->get_child_by_context_interfaces();
+
+This "getter" method returns a new array ref having references to all of this
+Interface's child-by-context Interfaces, or an empty array ref for none.
 
 =head2 get_engine()
 
 	my $engine = $interface->get_engine();
 
 This "getter" method returns by reference the Engine that implements this
-Interface, if it has one.  I<This method may be removed later.>
+Interface, if it has one.
 
-=head2 get_srt_node()
+=head1 INDIRECT APPLICATION OBJECT METHODS
 
-	my $node = $interface->get_srt_node();
-
-This "getter" method returns by reference the SQL::Routine::Node object
-property of this Interface, if it has one.
+These methods are stateful and may only be invoked off of Rosetta::Interface::*
+objects; technically these methods are specific to Application objects, but for
+your convenience all Rosetta::Interface::* objects in a Rosetta Interface tree
+will act as proxies of the Application at the root of the tree; invoking these 
+methods on any tree object is the same as doing so on the root Application.
 
 =head2 get_srt_container()
 
@@ -344,12 +361,12 @@ property of this Interface, if it has one.
 This "getter" method returns by reference the SQL::Routine::Container object
 that is shared by this Interface tree, if there is one.
 
-=head2 get_routine()
+=head2 get_app_inst_node()
 
-	my $routine = $preparation->get_routine();
+	my $app_inst_node = $interface->get_app_inst_node();
 
-This "getter" method returns by reference the Perl anonymous routine property
-of this Interface, if it has one.  I<This method may be removed later.>
+This "getter" method returns by reference the 'application_instance'
+SQL::Routine::Node object property of this tree's root Application.
 
 =head2 get_trace_fh()
 
@@ -378,341 +395,347 @@ This "setter" method sets or replaces the trace file handle property of this
 Interface tree root to a new writeable Perl file handle, provided in NEW_FH, so
 any subsequent tracing output is sent there.
 
+=head1 APPLICATION CONSTRUCTOR FUNCTIONS
+
+This function is stateless and can be invoked off of either the Application
+class name or an existing Application object, with the same result.
+
+=head2 new( APP_INST_NODE )
+
+	my $app_intf = Rosetta::Interface::Application->new( $app_inst_node );
+
+This "getter" function will create and return a single Application (or subclass)
+object.  The APP_INST_NODE argument is a 'application_instance' SQL::Routine
+Node that this new Application is to represent.
+
+=head1 APPLICATION OBJECT METHODS
+
+These methods are stateful and may only be invoked off of Application objects.
+
 =head2 features([ FEATURE_NAME ])
 
-This "getter" method may only be invoked off of Interfaces having one of these
-types: "Application", "Environment", "Connection"; it will throw an exception
-if you invoke it on anything else.  When called with no arguments, it will
-return a Perl hash ref whose keys are the names of key feature groups that the
-corresponding Engine is declaring its support status for; values are always
-either '1' for 'yes' and '0' for 'no'. If a key is absent, then the Engine is
-saying that it doesn't know yet whether it will support the feature or not.  If
-the optional argument FEATURE_NAME is defined, then this method will treat that
-like a key in the previous mentioned hash and return just the associated value
-of 1, 0, or undefined (don't know).  When a particular Environment says 'yes'
-or 'no' for particular features, then grandchild Connections are guaranteed to
-say likewise; when an Environment says "don't know" for a feature, then the
-Connections can each change this to 'yes' or 'no' as it applies to them;
-however, if a Connection still says "don't know" then this can be read as 'no'
-if the Connection state is open; it still means "don't know" if the Connection
-state is closed; a closed state's "don't know" can be changed by its
-corresponding open state.  Note that invoking Application.features() will cause
-all available Engines to load, each of their Environments consulted, and the
-results combined to give the final result; for each possible feature, the
-combined output is 'yes' iff all input Engines are 'yes', 'no' iff all 'no',
+This method is similar to Environment.features(); see the documentation for that
+method to help understand the rest of this one.  Invoking Application.features()
+will cause all available Engines to load, each of their Environments consulted,
+and the results combined to give the final result; for each possible feature,
+the combined output is 'yes' iff all input Engines are 'yes', 'no' iff all 'no',
 and undefined/missing if any inputs differ or are undefined/missing; if there
 are no available Engines, the result is empty-list/undefined.
 
 =head2 prepare( ROUTINE_DEFN )
 
-This "getter"/"setter" method takes a SQL::Routine::Node object usually
-representing a "routine" in its ROUTINE_DEFN argument, then "compiles" it into
-a new "Preparation" Interface (returned) which is ready to execute the
-specified action.  The ROUTINE_DEFN is always a "routine" SRT Node, but with
-one exception when it is a "data_link_product" Node.  This method may only be
-invoked off of Interfaces having one of these types: "Application",
-"Environment", "Connection", "Cursor"; it will throw an exception if you invoke
-it on anything else.  Most of the time, this method just passes the buck to the
-Engine module that actually does its work, after doing some basic input
-checking, or it will instantiate an Engine object.  Any calls to Engine objects
-are wrapped in an eval block so that miscellaneous exceptions generated there
-don't kill the program.  Note that invoking Application.prepare() where the
-ROUTINE_DEFN is a "data_link_product" Node will create a "Preparation"
-Interface that would simply load an Engine, but doesn't make a Connection or
-otherwise ask the Engine to do anything.  Invoking Application.prepare() with a
-"routine" SRT Node will pass the buck to Rosetta::Dispatcher, which usually
-passes to a single normal Engine (loading it first if necessary); as an
-exception to this, if the routine invokes the 'CATALOG_LIST' built-in standard
-routine, then Dispatcher invokes a multitude of Engines (loading if needed) and
-combines their results.
-
-=head2 execute([ ROUTINE_ARGS ])
-
-This "getter"/"setter" method can only be invoked off of a "Preparation"
-Interface and will actually perform the action that the Interface is created
-for.  The optional hash ref argument ROUTINE_ARGS provides run-time arguments
-for the previously "compiled" routine, if it takes any.  Unlike prepare(),
-which usually calls an Engine module's prepare() to do the actual work,
-execute() will not call an Engine directly at all.  Rather, execute() simply
-executes the Perl anonymous subroutine property of the "Preparation" Interface.
-Said routine is created by an Engine's prepare() method and is usually a
-closure, containing within it all the context necessary for work as if the
-Engine was doing it.  Said routine returns new non-prep Interfaces.
+This method is similar to Environment.prepare(); see the documentation for that
+method to help understand the rest of this one.  Application.prepare() will
+mainly invoke Rosetta::Dispatcher.prepare(), which in turn usually passes to a
+single normal Engine (loading it first if necessary); as an exception to this,
+if the routine invokes the 'CATALOG_LIST' built-in standard routine, then
+Dispatcher invokes a multitude of Engines (loading if needed) and combines their
+results.
 
 =head2 do( ROUTINE_DEFN[, ROUTINE_ARGS] )
 
-This is a simple convenience method that wraps a single prepare/execute
-operation; it cuts in half the number of method calls you have to make, if you
-are only going to execute the same prepared routine once.  You can invoke do()
-in any situation that you can invoke a prepare( ROUTINE_DEFN ) with the same
-first argument; the Preparation object returned by the prepare() has execute([
-ROUTINE_ARGS ]) invoked on it; the Interface object returned by the execute()
-is what do() returns.  Any exceptions thrown by the wrapped methods will
-propagate unchanged to the code that invoked do().  If the execute() phase
-either throws an exception of any kind, usually an 'Error' Interface, or it
-returns a 'Success' Interface, the do() method will destroy() the Preparation
-object that it just made before returning or re-throwing the execute() result;
-if execute() returns any other kind of Interface, the Preparation will not get
-destroyed, as the caller will have a handle on it via the returned result.
+This wrapper simply returns prepare( ROUTINE_DEFN )->execute( ROUTINE_ARGS ).
+
+=head1 ENVIRONMENT CONSTRUCTOR FUNCTIONS
+
+This function is stateless and can be invoked off of either the Environment
+class name or an existing Environment object, with the same result.
+
+=head2 new( PARENT_INTF, LINK_PROD_NODE )
+
+	my $env_intf = Rosetta::Interface::Environment->new( $app_intf, $link_prod_node );
+
+This "getter" function will return a single Environment (or subclass) object
+that it either finds or creates.  The PARENT_INTF argument is an Application
+object that is meant to be both of the parent-by-creation and parent-by-context
+Interfaces of the new Environment.  The LINK_PROD_NODE argument is a
+'data_link_product' SQL::Routine Node that this new Environment is to represent.
+Any particular 'data_link_product' Node can only be associated with a single
+Environment under the same Application; this method will only create a new
+Environment if no existing one uses the Node; otherwise it returns the existing
+one.  If this method is creating a new Environment Interface, it will also
+discover and load the Rosetta Engine class specified in the link product's
+"product_code", and create the root object of that class, which is the new
+Environment object's implementor.
+
+=head1 ENVIRONMENT OBJECT METHODS
+
+These methods are stateful and may only be invoked off of Environment objects.
+
+=head2 get_link_prod_node()
+
+	my $link_prod_node = $env_intf->get_link_prod_node();
+
+This "getter" method returns by reference the 'data_link_product'
+SQL::Routine::Node object property of this Environment.
+
+=head2 features([ FEATURE_NAME ])
+
+This "getter" method will, when called with no arguments, return a Perl hash ref
+whose keys are the names of key feature groups that the corresponding Engine is
+declaring its support status for; values are always either '1' for 'yes' and '0'
+for 'no'. If a key is absent, then the Engine is saying that it doesn't know yet
+whether it will support the feature or not.  If the optional argument
+FEATURE_NAME is defined, then this method will treat that like a key in the
+previous mentioned hash and return just the associated value of 1, 0, or
+undefined (don't know).  See also the documentation for Connection.features() 
+and Application.features().
+
+=head2 prepare( ROUTINE_DEFN )
+
+This "getter"/"setter" method takes a "routine" SQL::Routine Node in its
+ROUTINE_DEFN argument, then "compiles" it into a new "Preparation" Interface
+(returned) which is ready to execute the specified action.  This method will
+mainly just invoke the same-name method on its Engine object, which actually
+does its work, after doing some basic input checking.  Any calls to Engine
+objects are wrapped in an eval block so that miscellaneous exceptions generated
+there don't kill the program.  Note that you may only prepare routines on an
+Environment if that routine expects to be invoked in a void context; if the
+routine expects a Connection/CONN or Cursor/CURSOR context, this method throws
+an exception.  The prepare() method will throw an Error exception if the Engine
+invocation fails, rather than return its normal output.  It is anticipated that,
+behind the scenes, the form of a "compiled" routine that a typical Engine's
+prepare() will make is a Perl anonymous subroutine reference (or closure), which
+its execute() simply invokes; however, the Engine can implement how it likes.
+
+=head2 do( ROUTINE_DEFN[, ROUTINE_ARGS] )
+
+This wrapper simply returns prepare( ROUTINE_DEFN )->execute( ROUTINE_ARGS ).
+
+=head1 CONNECTION CONSTRUCTOR FUNCTIONS
+
+This function is stateless and can be invoked off of either the Connection
+class name or an existing Connection object, with the same result.
+
+=head2 new( PARENT_BYCRE_INTF, PARENT_BYCXT_INTF, CAT_LINK_NODE )
+
+	my $conn_intf = Rosetta::Interface::Connection->new( $prep_intf, $env_intf, $cat_link_node );
+
+This "getter" function will create and return a single Connection (or subclass)
+object.  The PARENT_BYCRE_INTF and PARENT_BYCXT_INTF arguments are typically
+Preparation and Environment objects, respectively, that are meant to be the
+parent-by-creation and parent-by-context Interfaces, respectively, of the new
+Connection.  The LINK_PROD_NODE argument is a 'catalog_link' SQL::Routine Node
+that this new Connection is to represent.  This method is not typically invoked
+by a user application, but rather by the Engine of the parent-by-creation.
+
+=head1 CONNECTION OBJECT METHODS
+
+These methods are stateful and may only be invoked off of Connection objects.
+
+=head2 get_cat_link_node()
+
+	my $cat_link_node = $conn_intf->get_cat_link_node();
+
+This "getter" method returns by reference the 'catalog_link'
+SQL::Routine::Node object property of this Connection.
+
+=head2 features([ FEATURE_NAME ])
+
+This method is similar to Environment.features(); see the documentation for that
+method to help understand the rest of this one.  When a particular Environment
+says 'yes' or 'no' for particular features, then child-by-context Connections
+are guaranteed to say likewise; when an Environment says "don't know" for a
+feature, then the Connections can each change this to 'yes' or 'no' as it
+applies to them; however, if a Connection still says "don't know" then this can
+be read as 'no' if the Connection state is open; it still means "don't know" if
+the Connection state is closed; a closed state's "don't know" can be changed by
+its corresponding open state.
+
+=head2 prepare( ROUTINE_DEFN )
+
+This method is similar to Environment.prepare(); see the documentation for that
+method to help understand the rest of this one.  Note that a routine which
+expects to be invoked in a Connection context (because it has a
+'routine_context' child Node whose cont_type is 'CONN') can only be prepared
+using Connection.prepare() and not some other prepare().
+
+=head2 do( ROUTINE_DEFN[, ROUTINE_ARGS] )
+
+This wrapper simply returns prepare( ROUTINE_DEFN )->execute( ROUTINE_ARGS ).
+
+=head1 CURSOR CONSTRUCTOR FUNCTIONS
+
+This function is stateless and can be invoked off of either the Cursor
+class name or an existing Cursor object, with the same result.
+
+=head2 new( PARENT_BYCRE_INTF, PARENT_BYCXT_INTF, EXTERN_CURS_NODE )
+
+	my $curs_intf = Rosetta::Interface::Cursor->new( $prep_intf, $conn_intf, $ext_curs_node );
+
+This "getter" function will create and return a single Cursor (or subclass)
+object.  The PARENT_BYCRE_INTF and PARENT_BYCXT_INTF arguments are typically
+Preparation and Connection objects, respectively, that are meant to be the
+parent-by-creation and parent-by-context Interfaces, respectively, of the new
+Cursor.  The EXTERN_CURS_NODE argument is a 'external_cursor' SQL::Routine Node
+that this new Cursor is to represent.  This method is not typically invoked by a
+user application, but rather by the Engine of the parent-by-creation.
+
+=head1 CURSOR OBJECT METHODS
+
+These methods are stateful and may only be invoked off of Cursor objects.
+
+=head2 get_extern_curs_node()
+
+	my $extern_curs_node = $curs_intf->get_extern_curs_node();
+
+This "getter" method returns by reference the 'external_cursor'
+SQL::Routine::Node object property of this Cursor.
+
+=head2 prepare( ROUTINE_DEFN )
+
+This method is similar to Environment.prepare(); see the documentation for that
+method to help understand the rest of this one.  Note that a routine which
+expects to be invoked in a Cursor context (because it has a 'routine_context'
+child Node whose cont_type is 'CURSOR') can only be prepared using
+Cursor.prepare() and not some other prepare().
+
+=head2 do( ROUTINE_DEFN[, ROUTINE_ARGS] )
+
+This wrapper simply returns prepare( ROUTINE_DEFN )->execute( ROUTINE_ARGS ).
+
+=head1 LITERAL CONSTRUCTOR FUNCTIONS
+
+This function is stateless and can be invoked off of either the Literal
+class name or an existing Literal object, with the same result.
+
+=head2 new( PARENT_BYCRE_INTF )
+
+	my $lit_intf = Rosetta::Interface::Literal->new( $prep_intf );
+
+This "getter" function will create and return a single Literal (or subclass)
+object.  The PARENT_BYCRE_INTF argument is typically a Preparation object that
+is meant to be the parent-by-creation Interface of the new Literal.  This method
+is not typically invoked by a user application, but rather by the Engine of the
+parent-by-creation.
+
+=head1 LITERAL OBJECT METHODS
+
+These methods are stateful and may only be invoked off of Literal objects.
 
 =head2 payload()
 
-This "getter" method can only be invoked off of a "Literal" Interface.  It will
-return the actual payload that the "Literal" Interface represents.  This can
-either be an ordinary string or number or boolean, or a SRT Node ref, or an
-array ref or hash ref containing other literal values.
+This "getter" method will return the actual payload that the "Literal" Interface
+represents.  This can either be an ordinary string or number or boolean, or a
+SRT Node ref, or an array ref or hash ref containing other literal values.  This 
+method calls back to the Engine to produce the literal value rather than storing 
+that in itself; this way, the value could be fetched or produced right on demand 
+rather than earlier.  Therefore, it is also possible for this method to throw an 
+Error exception.
 
-=head2 routine_source_code( ROUTINE_NODE )
+=head1 SUCCESS CONSTRUCTOR FUNCTIONS
 
-This "getter" method can only be invoked off of a "Environment" Interface.  It
-will return, as a character string, the Perl source code of the user-defined
-routine that was successfully prepared out of the ROUTINE_NODE SRT Node by the
-Engine behind this Environment, either because the method was invoked directly
-by prepare(), or it was invoked by another method that was; this method returns
-the undefined value if the ROUTINE_NODE was never compiled by this Engine. 
-This method is only intended for use when debugging an Engine.
+This function is stateless and can be invoked off of either the Success
+class name or an existing Success object, with the same result.
+
+=head2 new( PARENT_BYCRE_INTF )
+
+	my $succ_intf = Rosetta::Interface::Success->new( $prep_intf );
+
+This "getter" function will create and return a single Success (or subclass)
+object.  The PARENT_BYCRE_INTF argument is typically a Preparation object that
+is meant to be the parent-by-creation Interface of the new Success. This method
+is not typically invoked by a user application, but rather by the Engine of the
+parent-by-creation.
+
+=head1 SUCCESS OBJECT METHODS
+
+Rosetta::Interface::Success objects have no methods.
+
+=head1 PREPARATION CONSTRUCTOR FUNCTIONS
+
+This function is stateless and can be invoked off of either the Preparation
+class name or an existing Preparation object, with the same result.
+
+=head2 new( PARENT_BYCRE_INTF, ROUTINE_NODE )
+
+	my $prep_intf = Rosetta::Interface::Preparation->new( $conn_intf, $routine_node );
+
+This "getter" function will create and return a single Preparation (or subclass)
+object.  The PARENT_BYCRE_INTF argument is an object whose type is one of
+[Application, Environment, Connection, Cursor], that is meant to be the
+parent-by-creation Interface of the new Preparation.  The ROUTINE_NODE argument
+is a 'routine' SQL::Routine Node that this new Preparation is to represent.
+This method is not typically invoked by a user application, but rather by the
+Engine of the parent-by-creation.
+
+=head1 PREPARATION OBJECT METHODS
+
+These methods are stateful and may only be invoked off of Preparation objects.
+
+=head2 get_routine_node()
+
+	my $routine_node = $prep_intf->get_routine_node();
+
+This "getter" method returns by reference the 'routine' SQL::Routine::Node
+object property of this Preparation.
+
+=head2 execute([ ROUTINE_ARGS ])
+
+This "getter"/"setter" method will actually perform the action that the
+Preparation is created for.  The optional hash ref argument ROUTINE_ARGS
+provides run-time arguments for the previously "compiled" routine, if it takes
+any.  This method will mainly just invoke the same-name method on its Engine
+object, which actually does its work, after doing some basic input checking. 
+Any calls to Engine objects are wrapped in an eval block so that miscellaneous
+exceptions generated there don't kill the program.  The "compiled" routine
+returns new non-prep Interfaces.  The execute() method will throw an Error
+exception if the prepared routine fails, rather than return its normal output. 
+The return object type of execute() corresponds to the 'routine' Node's declared
+return type, if it is a function; execute() returns a Success object if the
+routine is a procedure.
+
+=head1 ERROR CONSTRUCTOR FUNCTIONS
+
+This function is stateless and can be invoked off of either the Error
+class name or an existing Error object, with the same result.
+
+=head2 new( PARENT_BYCRE_INTF, ERROR_MSG )
+
+	my $err_intf = Rosetta::Interface::Error->new( $prep_intf, $message );
+
+This "getter" function will create and return a single Error (or subclass)
+object.  The PARENT_BYCRE_INTF argument may be any Interface type except Success
+or Error, that is meant to be the parent-by-creation Interface of the new Error.
+ The ERROR_MSG argument is a Locale::KeyedText::Message object that this Error
+object is to represent.  This method is not typically invoked by a user
+application, but rather by the Engine of the parent-by-creation.
+
+=head1 ERROR OBJECT METHODS
+
+These methods are stateful and may only be invoked off of Error objects.
+
+=head2 get_error_message()
+
+	my $message = $err_intf->get_error_message();
+
+This "getter" method returns by reference the Error Message
+Locale::KeyedText::Message object property of this Error Interface.
 
 =head1 ENGINE OBJECT FUNCTIONS AND METHODS
 
 Rosetta::Engine defines shims for all of the required Engine methods, each of
-which will throw an exception if the sub-classing Engine module doesn't
-override them.  These methods all have the same names and functions as
-Interface methods, which just turn around and call them.  Every Engine method
-takes as its first argument a reference to the Interface object that it is
-implementing (the Interface shim provides it); otherwise, each method's
-argument list is the same as its same-named Interface method.  These are the
-methods: destroy(), features(), prepare(), payload(), routine_source_code(). 
-Every Engine must also implement a new() method which will be called in the
-form [class-name-or-object-ref]->new() and must instantiate the Engine object;
-typically this is called by the parent Engine, which also makes the Interface
-for the new Engine.
+which will throw an exception if the sub-classing Engine module doesn't override
+them.  These methods all have the same names and functions as Interface methods,
+which just turn around and call them.  Every Engine method takes as its first
+argument a reference to the Interface object that it is implementing (the
+Interface shim provides it); otherwise, each method's argument list is the same
+as its same-named Interface method.  These are the methods: features(),
+prepare(), payload(), execute().  Every Engine must also implement the stateless
+new_[environment|connection|cursor|literal|preparation]_engine() functions, each
+taking zero arguments, that must instantiate a 'default' Engine object; these
+are always called indirectly by the corresponding new_*_interface() functions,
+which are in turn called typically by the parent-to-be Engine, or an Application
+Interface.  An Engine can only be configured to a non-default state by a
+different Engine method after new_*_interface()->get_engine() has returned it;
+the state of one Engine object could potentially be changed by any Engine object
+attached to its Rosetta Interface tree, such as any Engine.prepare() method.
 
 =head1 DISPATCHER OBJECT FUNCTIONS AND METHODS
 
-Rosetta::Dispatcher should never be either invoked or sub-classed by you, so
-its method list will remain undocumented and private.
-
-=head1 INTERFACE FUNCTIONS AND METHODS FOR RAPID DEVELOPMENT
-
-The following 9 "setter" functions and methods should assist more rapid
-development of code that uses Rosetta, at the cost of some flexibility.  They
-differ from the other Interface functions and methods in that they also create
-or alter the SQL::Routine model associated with a Rosetta Interface tree. 
-These methods are implemented as wrappers over other Rosetta and SQL::Routine
-methods, and allow you to accomplish with one method call what otherwise
-requires at least 4-40 function or method calls, meaning your code base is
-significantly smaller (unless you implement your own simplifying wrapper
-functions, which is recommended in some situations).
-
-Note that when a subroutine is referred to as a "function", it is stateless and
-can be invoked off of either a class name or class object; when a subroutine is
-called a "method", it can only be invoked off of Interface objects.
-
-=head2 build_application()
-
-	my $app_intf = Rosetta->build_application();
-
-This function is like new_application() in that it will create and return a new
-Application Interface object.  This function differs in that it will also
-create a new SQL::Routine model by itself and associate the new Interface with
-it, rather than requiring you to separately make the SRT model.  The created
-model is as close to empty as possible; it contains only 2 SRT Nodes, which are
-1 'application' and 1 related 'application_instance'; the latter becomes the
-SRT_NODE argument for new_application().  The "id" and "si_name" of each new
-Node is given a default generated value.  You can invoke get_srt_node() or
-get_srt_container() on the new Application Interface to access the SRT Nodes
-and model for further additions or changes.
-
-=head2 build_application_with_node_trees( SRT_NODE_DEFN_LIST[, AUTO_ASSERT[, AUTO_IDS[, MATCH_SURR_IDS]]] )
-
-	my $app_intf = Rosetta->build_application_with_node_trees( [...] );
-
-This function is like build_application() except that it lets you define the
-entire SRT Node hierarchy for the new model yourself; that definition is
-provided in the SRT_NODE_DEFN_LIST argument.  This function expects you to
-define the 'application' and 'application_instance' Nodes yourself, in
-SRT_NODE_DEFN_LIST, and it will link the new Application Interface to the first
-'application_instance' Node that it finds in the newly created SRT model.  This
-method invokes SQL::Routine->build_container( SRT_NODE_DEFN_LIST, AUTO_ASSERT,
-AUTO_IDS, MATCH_SURR_IDS ) to do most of the work.
-
-=head2 build_environment( ENGINE_NAME )
-
-	my $env_intf = Rosetta->build_environment( 'Rosetta::Engine::Generic' );
-
-This function is like build_application() except that it will also create a new
-'data_link_product' Node, using ENGINE_NAME as the 'product_code' attribute,
-and it will create a new associated Environment Interface object, that fronts a
-newly instantiated Engine object of the ENGINE_NAME class; the Environment
-Interface is returned.
-
-=head2 build_child_environment( ENGINE_NAME )
-
-	my $env_intf = $app_intf->build_child_environment( 'Rosetta::Engine::Generic' );
-
-This method may only be invoked off of an Application Interface.  This method
-is like build_environment( ENGINE_NAME ) except that it will reuse the
-Application Interface that it is invoked off of, and associated Nodes, rather
-than making new ones.  Moreover, if an Environment Interface with the same
-'product_code' already exists under the current Application Interface, then
-build_child_environment() will not create or change anything, but simply return
-the existing Environment Interface object instead of a new one.
-
-=head2 build_connection( SETUP_OPTIONS[, RT_SI_NAME[, RT_ID]] )
-
-	my $conn_intf_sqlite = Rosetta->build_connection( {
-		'data_storage_product' => {
-			'product_code' => 'SQLite',
-			'is_file_based' => 1,
-		},
-		'data_link_product' => {
-			'product_code' => 'Rosetta::Engine::Generic',
-		},
-		'catalog_instance' => {
-			'file_path' => 'test',
-		},
-	} );
-	my $conn_intf_mysql = Rosetta->build_connection( {
-		'data_storage_product' => {
-			'product_code' => 'MySQL',
-			'is_network_svc' => 1,
-		},
-		'data_link_product' => {
-			'product_code' => 'Rosetta::Engine::Generic',
-		},
-		'catalog_link_instance' => {
-			'local_dsn' => 'test',
-			'login_name' => 'jane',
-			'login_pass' => 'pwd',
-		},
-	}, 'declare_conn_to_mysql', 3 );
-
-This function will create and return a new Connection Interface object plus the
-prerequisite SQL::Routine model and Interface and Engine objects.  The
-SETUP_OPTIONS argument is a two-dimensional hash, where each outer hash element
-corresponds to a Node type and each inner hash element corresponds to an
-attribute name and value for that Node type.  There are 6 allowed Node types:
-data_storage_product, data_link_product, catalog_instance,
-catalog_link_instance, catalog_instance_opt, catalog_link_instance_opt; the
-first 4 have a specific set of actual scalar or enumerated attributes that may
-be set; with the latter 2, you can set any number of virtual attributes that
-you choose.  The "setup options" say what Rosetta Engine to test and how to
-configure it to work in your customized environment.  The actual attributes of
-the first 4 Node types should be recognized by all Engines and have the same
-meaning to them; you can set any or all of them (see the SQL::Routine
-documentation for the list) except for "id" and "si_name", which are given
-default generated values.  The build_connection() function requires that, at
-the very least, you provide a 'data_link_product'.'product_code' SETUP_OPTIONS
-value, since that specifies the class name of the Rosetta Engine that
-implements the Connection.  The virtual attributes of the last 2 Node types are
-specific to each Engine (see the Engine's documentation for a list), though an
-Engine may not define any at all.  This function will generate 1 Node each of
-the first 4 Node types, and zero or more each of the last 2 Node types, all of
-which are cross-associated, plus the same Nodes that build_application() does,
-plus 1 each of: 'catalog', catalog_link, 'routine', plus several child Nodes of
-the 'routine'.  The new 'routine' that this function creates is what declares
-the new Connection Interface, and becomes its SRT Node.  Since you are likely
-to declare many routines subsequently in the same SRT model (but unlikely to
-declare more of any of the other aforementioned Node types), this function lets
-you provide explicit "si_name" and "id" attributes for the new 'routine' Node
-only, in the optional arguments RT_SI_NAME and RT_ID respectively.
-
-=head2 build_child_connection( SETUP_OPTIONS[, RT_SI_NAME[, RT_ID]] )
-
-	my $conn_intf_postgres = $env_intf->build_child_connection( {
-		'data_storage_product' => {
-			'product_code' => 'PostgreSQL',
-			'is_network_svc' => 1,
-		},
-		'catalog_link_instance' => {
-			'local_dsn' => 'test',
-			'login_name' => 'jane',
-			'login_pass' => 'pwd',
-		},
-	} );
-
-This method may only be invoked off of an Application or Environment Interface.
-This method is like build_connection( SETUP_OPTIONS, RT_SI_NAME, RT_ID ) except
-that it will reuse the Application and/or Environment Interface that it is
-invoked off of, and associated Nodes, rather than making new ones.  If invoked
-off of an Environment Interface, then any 'data_link_product' info that might
-be provided in SETUP_OPTIONS is ignored.  If invoked off of an Application
-Interface, this method will try to reuse an existing child Environment
-Interface, that matches the given 'data_link_product'.'product_code', before
-making a new one, just as build_child_environment() does.  This method will not
-attempt to reuse any other types of Nodes, so if that's what you want, you
-can't use this method to do it.
-
-=head2 validate_connection_setup_options( SETUP_OPTIONS )
-
-This function is used internally by build_connection() and
-build_child_connection() to confirm that its SETUP_OPTIONS argument is valid,
-prior to it changing the state of anything.  This function is public so that
-external code can use it to perform advance validation on an identical
-configuration structure without side-effects.  Note that this function is not
-thorough; except for the 'data_link_product'.'product_code' (Rosetta Engine
-class name), it does not test that Node attribute entries in SETUP_OPTIONS have
-defined values, and even that single attribute isn't tested beyond that it is
-defined.  Testing for defined and mandatory option values is left to the
-SQL::Routine methods, which are only invoked by build_[child_]_connection().
-
-=head2 destroy_interface_tree()
-
-	my $container = $app_intf->destroy_interface_tree();
-
-This method can be invoked on any Rosetta Interface object and will recursively
-destroy an entire Rosetta Interface tree, starting with the child-most
-Interface objects and working down to the root Interface.  This method does not
-destroy the SQL::Routine model used by the Interfaces, and returns a reference
-to it upon completion, so that you have the option to re-use the model later,
-such as with a new Interface tree.  Note that it is pointless to invoke this on
-an 'Error' or 'Success' Interface object because those types do not live in
-Interface trees, and lack the circular refs to prevent them being
-auto-destroyed when references to them are gone.
-
-=head1 CONNECTION INTERFACE METHODS FOR RAPID DEVELOPMENT
-
-These methods provide a simplified interface to many commonly performed
-database activities, and should should assist more rapid development of code
-that uses Rosetta; they are all implemented as wrappers over other, more
-generic Rosetta and SQL::Routine methods.  All of these methods can only be 
-invoked off of a Connection Interface, because they only make sense within the 
-context of a database connection.  Each of these methods will generate a new 
-SRT 'routine' whose 'routine_context' is the 'CONN' that the invoked-on 
-Connection Interface represents.
-
-I<WARNING: These methods are early prototypes and will be replaced within 1-2
-subsequent Rosetta releases with other methods that behave differently.  The
-current versions will prepare() the new SRT routines and return the Preparation
-Interface to you to execute().  For each method, optional RT_SI_NAME and RT_ID
-arguments are provided; you can give explicit "si_name" and "id" attributes to
-the new 'routine' Node, or such values will be generated.>
-
-=head2 sroutine_catalog_list([ RT_SI_NAME[, RT_ID] ])
-
-This method will build and return a prepared wrapper function for the
-CATALOG_LIST built-in SRT standard routine, which when executed, will return a
-Literal Interface whose payload is an array ref having zero or more newly
-generated 'catalog_link' SRT Nodes, each of which represents an auto-detected
-database catalog instance.
-
-=head2 sroutine_catalog_open([ RT_SI_NAME[, RT_ID] ])
-
-This method will build and return a prepared wrapper procedure for the
-CATALOG_OPEN built-in SRT standard routine, which when executed, will change
-the invoked on Connection from a closed state to an opened state, and will
-return a Success Interface.  The prepared procedure will take 2 optional
-arguments at execute() time, which are 'login_name' and 'login_pass'; these
-values will be used if and only if a 'login_name' and 'login_pass' were not
-provided by the 'catalog_link' SRT Node that was used to make the invoked from
-Connection Interface.
-
-=head2 sroutine_catalog_close([ RT_SI_NAME[, RT_ID] ])
-
-This method will build and return a prepared wrapper procedure for the
-CATALOG_CLOSE built-in SRT standard routine, which when executed, will change
-the invoked on Connection from an opened state to a closed state, and will
-return a Success Interface.
+Rosetta::Dispatcher is used internally by Rosetta::Interface::Application and
+should never be either invoked or sub-classed by you, so its method list will
+remain undocumented and private.
 
 =head1 SEE ALSO
 
