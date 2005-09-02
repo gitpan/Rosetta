@@ -2,10 +2,9 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta::Validator;
-our $VERSION = '0.46';
+our $VERSION = '0.47';
 
-use Rosetta 0.46;
-use Rosetta::Utility::EasyBake 0.01;
+use Rosetta 0.47;
 
 ######################################################################
 
@@ -23,8 +22,7 @@ Core Modules: I<none>
 
 Non-Core Modules: 
 
-	Rosetta 0.46
-	Rosetta::Utility::EasyBake 0.01
+	Rosetta 0.47
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -72,8 +70,6 @@ suggesting improvements to the standard version.
 ######################################################################
 
 # Names of properties for objects of the Rosetta::Validator class are declared here:
-# This holds utility functions we use to make tests:
-my $PROP_EASYBAKE = 'easybake'; # ref to a Rosetta::Utility::EasyBake object
 # These are static configuration properties:
 my $PROP_TRACE_FH = 'trace_fh'; # ref to writeable Perl file handle
 my $PROP_SETUP_OPTS = 'setup_opts'; # hash(str,hash(str,str)) - 
@@ -103,6 +99,24 @@ my $TRS_FAIL = 'FAIL'; # the test was run and failed (Engine said it had feature
 # Other constant values go here:
 my $TOTAL_POSSIBLE_TESTS = 5; # how many elements should be in results array (S+P+F) 
 
+# Names of SRT Node types and attributes that may be given in SETUP_OPTIONS for main():
+my %BC_SETUP_NODE_TYPES = ();
+foreach my $_node_type (qw( 
+			data_storage_product data_link_product catalog_instance catalog_link_instance
+		)) {
+	my $attrs = $BC_SETUP_NODE_TYPES{$_node_type} = {}; # node type accepts only specific key names
+	foreach my $attr_name (keys %{SQL::Routine->valid_node_type_literal_attributes( $_node_type ) || {}}) {
+		$attr_name eq 'si_name' and next; # All 'si_name' attrs are set by us, not the user.
+		$attrs->{$attr_name} = 1;
+	}
+	foreach my $attr_name (keys %{SQL::Routine->valid_node_type_enumerated_attributes( $_node_type ) || {}}) {
+		$attrs->{$attr_name} = 1;
+	}
+	# All nref attrs are set by us, not the user.
+}
+$BC_SETUP_NODE_TYPES{'catalog_instance_opt'} = 1; # node type accepts any key name
+$BC_SETUP_NODE_TYPES{'catalog_link_instance_opt'} = 1; # node type accepts any key name
+
 ######################################################################
 
 sub total_possible_tests {
@@ -111,18 +125,51 @@ sub total_possible_tests {
 
 ######################################################################
 
+sub validate_connection_setup_options {
+	my ($validator, $setup_options) = @_;
+	defined( $setup_options ) or die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_NO_ARG' );
+	unless( ref($setup_options) eq 'HASH' ) {
+		die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG', { 'ARG' => $setup_options } );
+	}
+	while( my ($node_type, $rh_attrs) = each %{$setup_options} ) {
+		unless( $BC_SETUP_NODE_TYPES{$node_type} ) {
+			die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_NTYPE', 
+			{ 'GIVEN' => $node_type, 'ALLOWED' => "@{[keys %BC_SETUP_NODE_TYPES]}" } );
+		}
+		defined( $rh_attrs ) or die Locale::KeyedText->new_message( 
+			'ROS_VAL_V_CONN_SETUP_OPTS_NO_ARG_ELEM', { 'NTYPE' => $node_type } );
+		unless( ref($rh_attrs) eq 'HASH' ) {
+			die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_ELEM', 
+				{ 'NTYPE' => $node_type, 'ARG' => $rh_attrs } );
+		}
+		ref($BC_SETUP_NODE_TYPES{$node_type}) eq 'HASH' or next; # all opt names accepted
+		while( my ($option_name, $option_value) = each %{$rh_attrs} ) {
+			unless( $BC_SETUP_NODE_TYPES{$node_type}->{$option_name} ) {
+				die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_OPTNM', 
+					{ 'NTYPE' => $node_type, 'GIVEN' => $option_name, 
+					'ALLOWED' => "@{[keys %{$BC_SETUP_NODE_TYPES{$node_type}}]}" } );
+			}
+		}
+	}
+	unless( $setup_options->{'data_link_product'} and 
+			$setup_options->{'data_link_product'}->{'product_code'} ) {
+		die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_NO_ENG_NM' );
+	}
+}
+
+######################################################################
+
 sub main {
 	my ($class, $setup_options, $trace_fh) = @_;
 	my $validator = bless( {}, ref($class) || $class );
 
-	my $easybake = $validator->{$PROP_EASYBAKE} = Rosetta::Utility::EasyBake->new();
-
-	$easybake->validate_connection_setup_options( $setup_options ); # dies on problem
+	$validator->validate_connection_setup_options( $setup_options ); # dies on problem
 
 	$validator->{$PROP_TRACE_FH} = $trace_fh; # may be undef
 	$validator->{$PROP_SETUP_OPTS} = $setup_options;
 	$validator->{$PROP_TEST_RESULTS} = [];
 	$validator->{$PROP_ENG_ENV_FEAT} = {};
+	$validator->{$PROP_ENG_CONN_FEAT} = {};
 
 	$validator->main_dispatch(); # any errors generated here go in TEST_RESULTS, presumably
 
@@ -148,9 +195,9 @@ sub pass_result {
 }
 
 sub fail_result {
-	my ($validator, $result, $error_code, $args, $eng_message) = @_;
+	my ($validator, $result, $error_msg_key, $error_msg_args, $eng_message) = @_;
 	$result->{$TR_FEATURE_STATUS} = $TRS_FAIL;
-	$result->{$TR_VAL_ERROR_MSG} = Locale::KeyedText->new_message( $error_code, $args );
+	$result->{$TR_VAL_ERROR_MSG} = Locale::KeyedText->new_message( $error_msg_key, $error_msg_args );
 	if( $eng_message ) {
 		if( ref($eng_message) and UNIVERSAL::isa( $eng_message, 'Rosetta::Interface' ) ) {
 			$eng_message = $eng_message->get_error_message();
@@ -174,29 +221,98 @@ sub misc_result {
 
 ######################################################################
 
-sub setup_app {
-	my ($validator) = @_;
-	my $app_intf = $validator->{$PROP_EASYBAKE}->build_application();
-	$app_intf->set_trace_fh( $validator->{$PROP_TRACE_FH} );
-	my $container = $app_intf->get_srt_container();
-	$container->auto_assert_deferrable_constraints( 1 );
-	$container->auto_set_node_ids( 1 );
-	return $app_intf;
-}
-
 sub setup_env {
 	my ($validator) = @_;
-	my $app_intf = $validator->setup_app();
-	my $engine_name = $validator->{$PROP_SETUP_OPTS}->{'data_link_product'}->{'product_code'};
-	my $env_intf = $validator->{$PROP_EASYBAKE}->build_child_environment( $app_intf, $engine_name );
+	my $setup_options = $validator->{$PROP_SETUP_OPTS};
+
+	my $container = SQL::Routine->new_container();
+	$container->auto_assert_deferrable_constraints( 1 );
+	$container->auto_set_node_ids( 1 );
+	$container->may_match_surrogate_node_ids( 1 );
+
+	my $app_bp_node = $container->build_node( 'application', { 'si_name' => 'val_app_bp' } );
+	my $app_inst_node = $container->build_node( 'application_instance', 
+		{ 'si_name' => 'val_app_inst', 'blueprint' => $app_bp_node } );
+
+	my $dlp_node = $container->build_node( 'data_link_product', 
+		{ 'si_name' => 'val_dlp', 'product_code' => $setup_options->{'data_link_product'}->{'product_code'} } );
+
+	my $app_intf = Rosetta->new_application_interface( $app_inst_node );
+	$app_intf->set_trace_fh( $validator->{$PROP_TRACE_FH} );
+	my $env_intf = $app_intf->new_environment_interface( $app_intf, $dlp_node ); # dies if bad Engine
 	return $env_intf;
 }
 
 sub setup_conn {
 	my ($validator, $rt_si_name) = @_;
-	my $app_intf = $validator->setup_app();
-	my $conn_intf = $validator->{$PROP_EASYBAKE}->build_child_connection( $app_intf,
-		$validator->{$PROP_SETUP_OPTS}, $rt_si_name );
+	my $setup_options = $validator->{$PROP_SETUP_OPTS};
+
+	my $container = SQL::Routine->new_container();
+	$container->auto_assert_deferrable_constraints( 1 );
+	$container->auto_set_node_ids( 1 );
+	$container->may_match_surrogate_node_ids( 1 );
+
+	my $app_bp_node = $container->build_node( 'application', { 'si_name' => 'val_app_bp' } );
+	my $app_inst_node = $container->build_node( 'application_instance', 
+		{ 'si_name' => 'val_app_inst', 'blueprint' => $app_bp_node } );
+
+	$container->build_node( 'data_storage_product', 
+		{ 'si_name' => 'val_dsp', %{$setup_options->{'data_storage_product'} || {}} } );
+	my $dlp_node = $container->build_node( 'data_link_product', 
+		{ 'si_name' => 'val_dlp', 'product_code' => $setup_options->{'data_link_product'}->{'product_code'} } );
+
+	$container->build_node( 'catalog', { 'si_name' => 'val_cat_bp' } );
+	my $cat_inst_node = $container->build_child_node_tree( 'catalog_instance', { 'si_name' => 'val_cat_inst', 
+		'product' => 'val_dsp', 'blueprint' => 'val_cat_bp', %{$setup_options->{'catalog_instance'} || {}} } );
+	while( my ($opt_key, $opt_value) = each %{$setup_options->{'catalog_instance_opt'} || {}} ) {
+		$cat_inst_node->build_child_node( 'catalog_instance_opt', 
+			{ 'si_key' => $opt_key, 'value' => $opt_value } );
+	}
+
+	$app_bp_node->build_child_node( 'catalog_link', { 'si_name' => 'val_cat_link_bp', 'target' => 'val_cat_bp' } );
+	my $cat_link_inst_node = $app_inst_node->build_child_node( 'catalog_link_instance', 
+		{ 'product' => 'val_dlp', 'blueprint' => 'val_cat_link_bp', 'target' => $cat_inst_node, 
+		%{$setup_options->{'catalog_link_instance'} || {}} } );
+	while( my ($opt_key, $opt_value) = each %{$setup_options->{'catalog_link_instance_opt'} || {}} ) {
+		$cat_link_inst_node->build_child_node( 'catalog_link_instance_opt', 
+			{ 'si_key' => $opt_key, 'value' => $opt_value } );
+	}
+
+	my $routine_node = $app_bp_node->build_child_node_tree( 'routine', { 'si_name' => 'setup_conn', 
+			'routine_type' => 'FUNCTION', 'return_cont_type' => 'CONN', 'return_conn_link' => 'val_cat_link_bp', }, [
+		[ 'routine_var', { 'si_name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => 'val_cat_link_bp', }, ],
+		[ 'routine_stmt', { 'call_sroutine' => 'RETURN', }, [
+			[ 'routine_expr', { 'call_sroutine_arg' => 'RETURN_VALUE', 
+				'cont_type' => 'CONN', 'valf_p_routine_item' => 'conn_cx', }, ],
+		], ],
+	] );
+
+	$container->build_child_node( 'scalar_data_type', { 'si_name' => 'login_auth', 
+		'base_type' => 'STR_CHAR', 'max_chars' => 20, 'char_enc' => 'UTF8', } );
+	$app_bp_node->build_child_node_tree( 'routine', { 'si_name' => 'sroutine_catalog_open', 
+			'routine_type' => 'PROCEDURE', }, [
+		[ 'routine_context', { 'si_name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => 'val_cat_link_bp', }, ],
+		[ 'routine_arg', { 'si_name' => 'login_name', 'cont_type' => 'SCALAR', 'scalar_data_type' => 'login_auth' }, ],
+		[ 'routine_arg', { 'si_name' => 'login_pass', 'cont_type' => 'SCALAR', 'scalar_data_type' => 'login_auth' }, ],
+		[ 'routine_stmt', { 'call_sroutine' => 'CATALOG_OPEN', }, [
+			[ 'routine_expr', { 'call_sroutine_cxt' => 'CONN_CX', 'cont_type' => 'CONN', 'valf_p_routine_item' => 'conn_cx', }, ],
+			[ 'routine_expr', { 'call_sroutine_arg' => 'LOGIN_NAME', 'cont_type' => 'SCALAR', 'valf_p_routine_item' => 'login_name', }, ],
+			[ 'routine_expr', { 'call_sroutine_arg' => 'LOGIN_PASS', 'cont_type' => 'SCALAR', 'valf_p_routine_item' => 'login_pass', }, ],
+		], ],
+	] );
+
+	$app_bp_node->build_child_node_tree( 'routine', { 'si_name' => 'sroutine_catalog_close', 
+			'routine_type' => 'PROCEDURE', }, [
+		[ 'routine_context', { 'si_name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => 'val_cat_link_bp', }, ],
+		[ 'routine_stmt', { 'call_sroutine' => 'CATALOG_CLOSE', }, [
+			[ 'routine_expr', { 'call_sroutine_cxt' => 'CONN_CX', 'cont_type' => 'CONN', 'valf_p_routine_item' => 'conn_cx', }, ],
+		], ],
+	] );
+
+	my $app_intf = Rosetta->new_application_interface( $app_inst_node );
+	$app_intf->set_trace_fh( $validator->{$PROP_TRACE_FH} );
+	my $env_intf = $app_intf->new_environment_interface( $app_intf, $dlp_node ); # dies if bad Engine
+	my $conn_intf = $env_intf->do( $routine_node );
 	return $conn_intf;
 }
 
@@ -254,8 +370,16 @@ sub test_catalog_list {
 
 	SWITCH: {
 		my $payload = eval {
-			my $prep_intf = $validator->{$PROP_EASYBAKE}->sroutine_catalog_list( $env_intf, 'catalog_list' );
-			my $lit_intf = $prep_intf->execute();
+			my $app_inst_node = $env_intf->get_root_interface()->get_app_inst_node();
+			my $app_bp_node = $app_inst_node->get_attribute( 'blueprint' );
+			my $routine_node = $app_bp_node->build_child_node_tree( 'routine', { 'si_name' => 'sroutine_catalog_list', 
+					'routine_type' => 'FUNCTION', 'return_cont_type' => 'SRT_NODE_LIST', }, [
+				[ 'routine_stmt', { 'call_sroutine' => 'RETURN', }, [
+					[ 'routine_expr', { 'call_sroutine_arg' => 'RETURN_VALUE', 
+						'cont_type' => 'SRT_NODE_LIST', 'valf_call_sroutine' => 'CATALOG_LIST', }, ],
+				], ],
+			] );
+			my $lit_intf = $env_intf->do( $routine_node );
 			my $payload = $lit_intf->payload();
 			$container->assert_deferrable_constraints();
 			return $payload;
@@ -292,17 +416,18 @@ sub test_conn_basic {
 	$validator->{$PROP_ENG_ENV_FEAT}->{'CONN_BASIC'} or return;
 
 	my $conn_intf = $validator->setup_conn( 'declare_db_conn' );
+	my $container = $conn_intf->get_srt_container();
 
 	SWITCH: {
 		eval {
-			my $prep_intf = $validator->{$PROP_EASYBAKE}->sroutine_catalog_open( $conn_intf, 'open_db_conn' );
-			$prep_intf->execute();
+			$conn_intf->do( $container->find_child_node_by_surrogate_id( 
+				[undef,'root','blueprints','val_app_bp','sroutine_catalog_open'] ) );
 		};
 		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 
 		eval {
-			my $prep_intf = $validator->{$PROP_EASYBAKE}->sroutine_catalog_close( $conn_intf, 'close_db_conn' );
-			$prep_intf->execute();
+			$conn_intf->do( $container->find_child_node_by_surrogate_id( 
+				[undef,'root','blueprints','val_app_bp','sroutine_catalog_close'] ) );
 		};
 		$validator->misc_result( $result, $@ ); $@ and last SWITCH;
 	}
@@ -351,6 +476,23 @@ This is the content of a t_setup.pl, for a MySQL database:
 	my $setup_options = {
 		'data_storage_product' => {
 			'product_code' => 'MySQL',
+			'is_network_svc' => 1,
+		},
+		'data_link_product' => {
+			'product_code' => 'Rosetta::Engine::Generic',
+		},
+		'catalog_link_instance' => {
+			'local_dsn' => 'test',
+			'login_name' => 'jane',
+			'login_pass' => 'pwd',
+		},
+	};
+
+This is the content of a t_setup.pl, for a PostgreSQL database:
+
+	my $setup_options = {
+		'data_storage_product' => {
+			'product_code' => 'PostgreSQL',
 			'is_network_svc' => 1,
 		},
 		'data_link_product' => {
@@ -429,7 +571,7 @@ This is a generalized version of Rosetta_Engine_Generic.t:
 			die $err_str."result is a hash ref that contains no elements\n";
 		}
 		eval {
-			Rosetta->validate_connection_setup_options( $setup_options ); # dies on problem
+			Rosetta::Validator->validate_connection_setup_options( $setup_options ); # dies on problem
 		};
 		if( my $exception = $@ ) {
 			die $err_str."result is a hash ref having invalid elements; ".
@@ -503,6 +645,18 @@ number of skips + passes + fails.  You can use this number at the start of your
 test script when declaring the 1..N total number of tests that will be
 considered, and you can compare that to the actual results.
 
+=head2 validate_connection_setup_options( SETUP_OPTIONS )
+
+This function is used internally by main() to confirm that its SETUP_OPTIONS
+argument is valid, prior to it running any tests; it will throw an exception if
+it can find anything wrong.  This function is public so that external code can
+use it to perform advance validation on an identical configuration structure
+without side-effects.  Note that this function is not thorough; except for the
+'data_link_product'.'product_code' (Rosetta Engine class name), it does not test
+that Node attribute entries in SETUP_OPTIONS have defined values, and even that
+single attribute isn't tested beyond that it is defined.  Testing for defined
+and mandatory option values is left to the SQL::Routine methods.
+
 =head2 main( SETUP_OPTIONS[, TRACE_FH] )
 
 This function comprises the core of the Rosetta::Validator module, and is what
@@ -510,13 +664,29 @@ actually performs the tests on the Rosetta Engines.  This method will
 instantiate a new Rosetta Interface tree, and a SQL::Routine Container, populate
 the latter, invoke the former, saying to use the Engine and related
 configuration settings in SETUP_OPTIONS, try all sorts of database actions, and
-record the results in the "test results" property, and then let the Rosetta and
-SQL::Routine objects be auto-destructed.  The two function arguments,
-SETUP_OPTIONS (a hash ref), and TRACE_FH (an open file handle, optional), are
-input to Rosetta::Utility::EasyBake.build_connection() and
-Rosetta.set_trace_fh() respectively; either may throw an exception which
-propagates out of main(). This function returns a new array ref having the
-details of the test results.
+record the results as "test results", and then let the Rosetta and SQL::Routine
+objects be auto-destructed.  This function returns a new array ref having the
+details of the test results.  The SETUP_OPTIONS argument is a two-dimensional
+hash, where each outer hash element corresponds to a Node type and each inner
+hash element corresponds to an attribute name and value for that Node type. 
+There are 6 allowed Node types: data_storage_product, data_link_product,
+catalog_instance, catalog_link_instance, catalog_instance_opt,
+catalog_link_instance_opt; the first 4 have a specific set of actual scalar or
+enumerated attributes that may be set; with the latter 2, you can set any number
+of virtual attributes that you choose.  The "setup options" say what Rosetta
+Engine to test and how to configure it to work in your customized environment. 
+The actual attributes of the first 4 Node types should be recognized by all
+Engines and have the same meaning to them; you can set any or all of them (see
+the SQL::Routine documentation for the list) except for "id" and "si_name",
+which are given default generated values.  The build_connection() function
+requires that, at the very least, you provide a
+'data_link_product'.'product_code' SETUP_OPTIONS value, since that specifies the
+class name of the Rosetta Engine that implements the Connection.  The virtual
+attributes of the last 2 Node types are specific to each Engine (see the
+Engine's documentation for a list), though an Engine may not define any at all. 
+The optional TRACE_FH argument is an open file handle to be given to
+Rosetta.set_trace_fh().  This function should return all errors in "test
+results" that aren't caught by validate_connection_setup_options().
 
 =head1 INTERPRETING THE TEST RESULTS
 
@@ -541,7 +711,6 @@ parts of it will be changed in the near future, perhaps in incompatible ways.
 =head1 SEE ALSO
 
 L<perl(1)>, L<Rosetta::Validator::L::en>, L<Rosetta>, L<SQL::Routine>,
-L<Locale::KeyedText>, L<Rosetta::Utility::EasyBake>,
-L<Rosetta::Engine::Generic>.
+L<Locale::KeyedText>, L<Rosetta::Engine::Generic>.
 
 =cut

@@ -2,7 +2,7 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta::Validator::L::en;
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 ######################################################################
 
@@ -70,6 +70,27 @@ my $CV = 'Rosetta::Validator';
 my $FAIL = 'Rosetta::Validator Test Failure';
 
 my %text_strings = (
+	'ROS_VAL_V_CONN_SETUP_OPTS_NO_ARG' =>
+		$CV.'.validate_connection_setup_options(): missing SETUP_OPTIONS argument',
+	'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG' =>
+		$CV.'.validate_connection_setup_options(): invalid SETUP_OPTIONS argument; '.
+		'it must be a hash ref, but you tried to set it to "{ARG}"',
+	'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_NTYPE' => 
+		$CV.'.validate_connection_setup_options(): invalid SETUP_OPTIONS argument element; '.
+		'the settable Node types are "{ALLOWED}"; you gave "{GIVEN}"',
+	'ROS_VAL_V_CONN_SETUP_OPTS_NO_ARG_ELEM' =>
+		$CV.'.validate_connection_setup_options(): invalid SETUP_OPTIONS argument element; the value '.
+		'with the "{NTYPE}" Node type key is missing',
+	'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_ELEM' =>
+		$CV.'.validate_connection_setup_options(): invalid SETUP_OPTIONS argument element; the value '.
+		'with the "{NTYPE}" Node type key must be a hash ref, but you tried to set it to "{ARG}"',
+	'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_OPTNM' => 
+		$CV.'.validate_connection_setup_options(): invalid SETUP_OPTIONS argument element; '.
+		'the settable options for "{NTYPE}" Nodes are "{ALLOWED}"; you gave "{GIVEN}"',
+	'ROS_VAL_V_CONN_SETUP_OPTS_NO_ENG_NM' => 
+		$CV.'.validate_connection_setup_options(): missing SETUP_OPTIONS argument element; '.
+		'you must provide a "data_link_product"."product_code", which is a Rosetta Engine class name',
+
 	'ROS_VAL_DESC_LOAD' => 
 		'compiles and declares the Engine class',
 
@@ -110,8 +131,8 @@ __END__
 
 	# do work ...
 
-	my $translator = Locale::KeyedText->new_translator( ['Rosetta::Validator::L::', 
-		'Rosetta::Utility::EasyBake::L::', 'Rosetta::L::', 'SQL::Routine::L::'], ['en'] );
+	my $translator = Locale::KeyedText->new_translator( 
+		['Rosetta::Validator::L::', 'Rosetta::L::', 'SQL::Routine::L::'], ['en'] );
 
 	# do work ...
 

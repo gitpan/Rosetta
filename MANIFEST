@@ -6,8 +6,6 @@ lib/Rosetta/Details.pod
 lib/Rosetta/Features.pod
 lib/Rosetta/Framework.pod
 lib/Rosetta/L/en.pm
-lib/Rosetta/Utility/EasyBake.pm
-lib/Rosetta/Utility/EasyBake/L/en.pm
 lib/Rosetta/Validator.pm
 lib/Rosetta/Validator/L/en.pm
 Makefile.PL

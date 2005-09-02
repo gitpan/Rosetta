@@ -1,4 +1,25 @@
+TODO
+
+* Update all code files to have version numbers of format N.N.N rather than
+N.NN, and the new ones will be v-strings; at the same time, add dependency on
+something like only.pm, which knows how to enforce dependencies involving
+v-strings.
+
+* Update the white space of this distribution to follow some best practices. 
+This includes indenting with spaces instead of tabs, and having code lines not
+be longer than 80 or 78 characters.  Run through perltidy for the first time as
+well (though I was very consistent before), which may alter a few other things
+towards best practices.
+
+* Convert all class objects to be of the inside-out variety rather than
+hash-based, so to gain rigorous protection against external code directly
+accessing our object attributes, and to avoid related maintenance problems.
+
+* Do some serious refactoring / design changing of Rosetta.pm.
+
 * Add a /demos folder, starting with a trivial cmd-line genealogy app.
+
+* Once the above are done, announce Rosetta/SQL::Routine Developer Release #3.
 
 * Add support to Literal Interfaces and/or another new Interface type to
 elegantly handle large scalar values (LOBs) so we don't try to hold them

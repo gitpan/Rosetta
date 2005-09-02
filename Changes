@@ -1,3 +1,74 @@
+                              Rosetta
+----------------------------------------------------------------------
+
+2005-09-01   Darren Duncan <perl@DarrenDuncan.net>
+
+	* Rosetta Release 0.47.
+
+	* New code file versions are: Rosetta.pm and Validator.pm v0.47 and
+	Validator/L/en.pm 0.13.
+
+	* Updated external dependencies on SQL::Routine to v0.69.
+
+	* Added a new main title to this Changes file that matches the ReadMe file.
+
+	* Rewrote the documentation section KEEPING UP TO DATE in the ReadMe file.
+
+	* Corrected an oversight from release 0.46; updated the BRIEF MODULE LIST in
+	Framework.pod to include the listing of the 8 Rosetta::Interface::* classes
+	that Rosetta.pm gained in that release.
+
+	* Updated Rosetta.pm to retain compatability with a change made in
+	SQL::Routine v0.66; one can no longer straight compare two SRT Node or
+	Container objects to determine their equivalence, since they are now
+	interfaces over a shared storage object.  Updated these 3 Rosetta.pm methods
+	to use the new SQL::Routine method get_self_id() instead of the straight
+	comparisons: _assert_arg_node_type(), Environment.new(),
+	_prepare__call_engine().
+
+	* Updated the Rosetta.pm DESCRIPTION to add a sentence on what services the 
+	Rosetta core provides to Engines (mainly input and output validation).
+
+	* Several other, minor Framework.pod updates, including the addition of the
+	Apache Derby db to the brief Engine module list.
+
+	* This release mainly saw the removal of the previously deprecated
+	'Rosetta::Utility::EasyBake' module; a greatly simplified version of its
+	functionality was merged into Validator.pm, which was previously its sole
+	dependent.  Removed the Validator.pm 'easybake' class property.  Removed the
+	setup_app() private method and merge its functionality into the setup_env()
+	and setup_conn() private methods.  Validator.pm gained mostly pristine
+	copies of the %BC_SETUP_NODE_TYPES constant data dictionary plus the
+	validate_connection_setup_options() public method, and the old
+	_throw_error_message() was merged into the latter.  The old
+	build_application() and build_child_environment() were both merged into each
+	of setup_env() and setup_conn().  The old build_child_connection() was
+	merged into setup_conn().  The old sroutine_catalog_list() was merged into
+	test_catalog_list().  The old sroutine_catalog_open() and
+	sroutine_catalog_close() were merged mostly into setup_conn() with a bit
+	merged into test_conn_basic().  The old _build[|_child]_node_auto_name() are
+	no longer used; Validator now hard-codes all generated Node Surrogate Ids,
+	and all Node Ids are set to auto-generate in setup_env() and setup_conn().
+	These old EasyBake.pm methods were simply deleted without adaption: new(),
+	build_application_with_node_trees(), build_environment(),
+	build_connection(), _assert_arg[|_intf]_obj_type().  Regarding POD
+	documentation, the validate_connection_setup_options() public method came
+	over almost pristine, build_connection()'s explanation of SETUP_OPTIONS was
+	merged into main(), and build_child_connection()'s code example was added to
+	the SYNOPSIS.  The previously deprecated Rosetta::Utility::EasyBake::L::en
+	module was also removed, and its 7 user text messages were moved, mostly
+	pristine, into Validator/L/en.pm.  The combined size of the 4 pre-merged
+	files was 63K, and the 2 post-merged files are is 36K, giving us a 43% file
+	size reduction while retaining all the old functionality.  Also updated
+	Framework.pod and ROS_00_Compile.t (4 numbered tests) to remove mention of
+	the EasyBake modules.  Removed the Rosetta.pm DESCRIPTION paragraph that
+	said the module has a multi-layered API.
+
+	* Updated Rosetta.pm and Validator.pm to retain compatability with changes
+	made in SQL::Routine v0.69; replaced all invocations of the Node methods
+	[get|clear|set]_[literal|enumerated|node_ref]_attribute[|s]() with
+	invocations of [get|clear_set]_attribute[|s]().
+
 2005-07-07   Darren Duncan <perl@DarrenDuncan.net>
 
 	* Rosetta Release 0.46.

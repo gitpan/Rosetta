@@ -10,7 +10,7 @@ WriteMakefile(
 		'Scalar::Util' => '1.11', # for weak refs
 		'Test::More' => '0.47', # but only for the test suite
 		'Locale::KeyedText' => '1.05',
-		'SQL::Routine' => '0.65',
+		'SQL::Routine' => '0.69',
 	},
 );
 

@@ -1,13 +1,13 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Rosetta
-version:      0.46
+version:      0.47
 version_from: lib/Rosetta.pm
 installdirs:  site
 requires:
     Locale::KeyedText:             1.05
     Scalar::Util:                  1.11
-    SQL::Routine:                  0.65
+    SQL::Routine:                  0.69
     Test::More:                    0.47
 
 distribution_type: module

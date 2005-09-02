@@ -2,11 +2,11 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta;
-our $VERSION = '0.46';
+our $VERSION = '0.47';
 
 use Scalar::Util 1.11;
 use Locale::KeyedText 1.05;
-use SQL::Routine 0.65;
+use SQL::Routine 0.69;
 
 ######################################################################
 
@@ -27,7 +27,7 @@ Core Modules:
 Non-Core Modules: 
 
 	Locale::KeyedText 1.05 (for error messages)
-	SQL::Routine 0.65
+	SQL::Routine 0.69
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -282,7 +282,7 @@ sub _assert_arg_node_type {
 	if( $parent_intf or ref($self) and UNIVERSAL::isa( $self, 'Rosetta::Interface' ) and 
 			!UNIVERSAL::isa( $self, 'Rosetta::Interface::Application' ) ) {
 		my $expected_container = ($parent_intf || $self)->{$IPROP_ROOT_INTF}->{$IAPROP_SRT_CONT};
-		unless( $arg_value->get_container() eq $expected_container ) {
+		unless( $arg_value->get_container()->get_self_id() eq $expected_container->get_self_id() ) {
 			$self->_throw_error_message( 'ROS_CLASS_METH_ARG_NODE_NOT_SAME_CONT', 
 				{ 'METH' => $meth_name, 'ARGNM' => $arg_name, 'NTYPE' => $arg_value->get_node_type(), 
 				'NID' => $arg_value->get_node_id(), 'SIDCH' => $arg_value->get_surrogate_id_chain() } );
@@ -506,7 +506,7 @@ sub _prepare {
 		# TODO
 #		$engine->_throw_error_message( 'ROS_G_NEST_RTN_NO_INVOK', { 'RNAME' => $routine_node } );
 	}
-	my $routine_type = $routine_defn->get_enumerated_attribute( 'routine_type' );
+	my $routine_type = $routine_defn->get_attribute( 'routine_type' );
 	unless( $routine_type eq 'FUNCTION' or $routine_type eq 'PROCEDURE' ) {
 		# You can not directly invoke a trigger or other non-func/proc.
 		# (These would only exist in app-space if attached to a temporary / app-space table.)
@@ -516,7 +516,7 @@ sub _prepare {
 	}
 
 	if( my $routine_cxt_node = $routine_defn->get_child_nodes( 'routine_context' )->[0] ) {
-		my $cont_type = $routine_cxt_node->get_enumerated_attribute( 'cont_type' );
+		my $cont_type = $routine_cxt_node->get_attribute( 'cont_type' );
 		if( $cont_type eq 'CONN' ) {
 			# The routine expects to be invoked in a Connection context.
 			unless( ref($interface) and UNIVERSAL::isa( $interface, 'Rosetta::Interface::Connection' ) ) {
@@ -694,14 +694,14 @@ sub new {
 		'LINK_PROD_NODE', ['data_link_product'], $link_prod_node, $parent_intf );
 
 	foreach my $ch_env_intf (@{$parent_intf->{$IPROP_CHILD_BYCXT_INTFS}}) {
-		if( $ch_env_intf->{$INPROP_LINK_PROD_NODE} eq $link_prod_node ) {
+		if( $ch_env_intf->{$INPROP_LINK_PROD_NODE}->get_self_id() eq $link_prod_node->get_self_id() ) {
 			# Found an existing Environment Intf having the given data_link_product.
 			return $ch_env_intf;
 		}
 	}
 	# If we get here, there is no existing Environment Intf having the given data_link_product.
 
-	my $engine_name = $link_prod_node->get_literal_attribute( 'product_code' );
+	my $engine_name = $link_prod_node->get_attribute( 'product_code' );
 
 	# This Application Interface has no child Environment Preparation Interface of the 
 	# requested kind; however, the package implementing that Engine may already be loaded.
@@ -903,7 +903,7 @@ sub payload {
 	$lit_intf->_assert_engine_made_errors( 'payload', $lit_eng, $@, $result );
 
 	my $routine_node = $p_prep_intf->{$IPPROP_RTN_NODE};
-	my $ret_cont_type = $routine_node->get_enumerated_attribute( 'return_cont_type' );
+	my $ret_cont_type = $routine_node->get_attribute( 'return_cont_type' );
 	if( $ret_cont_type eq 'SCALAR' ) {
 		# TODO
 	} elsif( $ret_cont_type eq 'ROW' ) {
@@ -996,9 +996,9 @@ sub execute {
 		# TODO
 	}
 	foreach my $routine_arg_node (@{$routine_arg_nodes}) {
-		my $arg_name = $routine_arg_node->get_literal_attribute( 'si_name' );
+		my $arg_name = $routine_arg_node->get_attribute( 'si_name' );
 		my $arg_value = $routine_args->{$arg_name};
-		my $cont_type = $routine_arg_node->get_enumerated_attribute( 'cont_type' );
+		my $cont_type = $routine_arg_node->get_attribute( 'cont_type' );
 		if( $cont_type eq 'ERROR' ) {
 			# The routine arg expects to be handed an Error object.
 			unless( ref($arg_value) and UNIVERSAL::isa( $arg_value, 'Rosetta::Interface::Error' ) ) {
@@ -1045,7 +1045,7 @@ sub execute {
 		$prep_intf->_throw_error_message( 'ROS_CLASS_METH_ENG_RESULT_NO_OBJ', 
 			{ 'METH' => 'execute', 'ENG_CLASS' => ref($prep_eng), 'RESULTVL' => $result } );
 	}
-	my $routine_type = $routine_node->get_enumerated_attribute( 'routine_type' );
+	my $routine_type = $routine_node->get_attribute( 'routine_type' );
 	if( $routine_type eq 'PROCEDURE' ) {
 		# All procedures conceptually return nothing, actually return SUCCESS when ok.
 		unless( UNIVERSAL::isa( $result, 'Rosetta::Interface::Success' ) ) {
@@ -1054,7 +1054,7 @@ sub execute {
 				'EXPOTYPE' => 'Rosetta::Interface::Success', 'RESULTOTYPE' => ref($result) } );
 		}
 	} else { # $routine_type eq 'FUNCTION' ... prepare() made sure of that
-		my $ret_cont_type = $routine_node->get_enumerated_attribute( 'return_cont_type' );
+		my $ret_cont_type = $routine_node->get_attribute( 'return_cont_type' );
 		if( $ret_cont_type eq 'CONN' ) {
 			# The routine is expected to return a Connection Interface.
 			unless( UNIVERSAL::isa( $result, 'Rosetta::Interface::Connection' ) ) {
@@ -1253,25 +1253,25 @@ sub prepare {
 	my $prep_intf = undef;
 	SEARCH: {
 		foreach my $routine_context_node (@{$routine_node->get_child_nodes( 'routine_context' )}) {
-			if( my $cat_link_bp_node = $routine_context_node->get_node_ref_attribute( 'conn_link' ) ) {
+			if( my $cat_link_bp_node = $routine_context_node->get_attribute( 'conn_link' ) ) {
 				$prep_intf = $app_disp->_prepare__call_engine( $app_intf, $routine_node, $cat_link_bp_node );
 				last SEARCH;
 			}
 		}
 		foreach my $routine_arg_node (@{$routine_node->get_child_nodes( 'routine_arg' )}) {
-			if( my $cat_link_bp_node = $routine_arg_node->get_node_ref_attribute( 'conn_link' ) ) {
+			if( my $cat_link_bp_node = $routine_arg_node->get_attribute( 'conn_link' ) ) {
 				$prep_intf = $app_disp->_prepare__call_engine( $app_intf, $routine_node, $cat_link_bp_node );
 				last SEARCH;
 			}
 		}
 		foreach my $routine_var_node (@{$routine_node->get_child_nodes( 'routine_var' )}) {
-			if( my $cat_link_bp_node = $routine_var_node->get_node_ref_attribute( 'conn_link' ) ) {
+			if( my $cat_link_bp_node = $routine_var_node->get_attribute( 'conn_link' ) ) {
 				$prep_intf = $app_disp->_prepare__call_engine( $app_intf, $routine_node, $cat_link_bp_node );
 				last SEARCH;
 			}
 		}
 		foreach my $routine_stmt_node (@{$routine_node->get_child_nodes( 'routine_stmt' )}) {
-			if( my $sroutine_name = $routine_stmt_node->get_enumerated_attribute( 'call_sroutine' ) ) {
+			if( my $sroutine_name = $routine_stmt_node->get_attribute( 'call_sroutine' ) ) {
 				if( $sroutine_name eq 'CATALOG_LIST' ) {
 					$prep_intf = $app_disp->_prepare__srtn_cat_list( $app_intf, $routine_node );
 					last SEARCH;
@@ -1289,7 +1289,7 @@ sub _prepare__recurse {
 	my ($app_disp, $app_intf, $routine_node, $routine_stmt_or_expr_node) = @_;
 	my $prep_intf = undef;
 	foreach my $routine_expr_node (@{$routine_stmt_or_expr_node->get_child_nodes()}) {
-		if( my $sroutine_name = $routine_expr_node->get_enumerated_attribute( 'valf_call_sroutine' ) ) {
+		if( my $sroutine_name = $routine_expr_node->get_attribute( 'valf_call_sroutine' ) ) {
 			if( $sroutine_name eq 'CATALOG_LIST' ) {
 				$prep_intf = $app_disp->_prepare__srtn_cat_list( $app_intf, $routine_node );
 				last;
@@ -1347,12 +1347,12 @@ sub _prepare__call_engine {
 	my $app_inst_node = $app_intf->get_app_inst_node();
 	my $cat_link_inst_node = undef;
 	foreach my $link (@{$app_inst_node->get_child_nodes( 'catalog_link_instance' )}) {
-		if( $link->get_node_ref_attribute( 'blueprint' ) eq $cat_link_bp_node ) {
+		if( $link->get_attribute( 'blueprint' )->get_self_id() eq $cat_link_bp_node->get_self_id() ) {
 			$cat_link_inst_node = $link;
 			last;
 		}
 	}
-	my $link_prod_node = $cat_link_inst_node->get_node_ref_attribute( 'product' );
+	my $link_prod_node = $cat_link_inst_node->get_attribute( 'product' );
 
 	# Now make sure that the Engine we need is loaded.
 	my $env_intf = $app_intf->new_environment_interface( $app_intf, $link_prod_node );
@@ -1408,9 +1408,6 @@ quantities of vendor-specific code.  It also comes with a comprehensive
 validation suite that proves it is providing identical behaviour no matter what
 the underlying database vendor is.
 
-This module has a multi-layered API that lets you choose between writing fairly
-verbose code that performs faster, or fairly terse code that performs slower.
-
 The RNI is structured in a loosely similar fashion to the DBI module's API, and
 it should be possible to adapt applications written to use the DBI or one of
 its many wrapper modules without too much trouble, if not directly then by way
@@ -1430,9 +1427,12 @@ similarity is that the preparation and execution (with place-holder
 substitution) of database instructions are distinct activities, and you can
 reuse a prepared instruction for multiple executions to get performance gains.
 
-The Rosetta module does not talk to or implement any databases by itself; it 
-is up to separately distributed Engine modules to do this.  You can see a 
-reference implementation of one in the Rosetta::Engine::Generic module.
+The Rosetta module does not talk to or implement any databases by itself; it is
+up to separately distributed Engine modules to do this.  You can see a reference
+implementation of one in the Rosetta::Engine::Generic module.  Rosetta itself
+mainly provides a skeleton to which Engines attach, and does basic input and
+output validation so that Engines and applications respectively don't have to;
+otherwise, an Engine has complete freedom to fulfill requests how it wishes.
 
 The main difference between Rosetta and the DBI is that Rosetta takes its input
 primarily as SQL::Routine (SRT) objects, where DBI takes SQL strings.  See the
@@ -1693,11 +1693,11 @@ releases, once I start using it in a production environment myself.
 
 L<perl(1)>, L<Rosetta::L::en>, L<Rosetta::Details>, L<Rosetta::Features>,
 L<Rosetta::Framework>, L<Locale::KeyedText>, L<SQL::Routine>,
-L<Rosetta::Validator>, L<Rosetta::Utility::EasyBake>,
-L<Rosetta::Engine::Generic>, L<Rosetta::Emulator::DBI>, L<DBI>, L<Alzabo>,
-L<SPOPS>, L<Class::DBI>, L<Tangram>, L<HDB>, L<Genezzo>, L<DBIx::RecordSet>,
-L<DBIx::SearchBuilder>, L<SQL::Schema>, L<DBIx::Abstract>, L<DBIx::AnyDBD>,
-L<DBIx::Browse>, L<DBIx::SQLEngine>, L<MKDoc::SQL>, L<Data::Transactional>,
-L<DBIx::ModelUpdate>, L<DBIx::ProcedureCall>, and various other modules.
+L<Rosetta::Validator>, L<Rosetta::Engine::Generic>, L<Rosetta::Emulator::DBI>,
+L<DBI>, L<Alzabo>, L<SPOPS>, L<Class::DBI>, L<Tangram>, L<HDB>, L<Genezzo>,
+L<DBIx::RecordSet>, L<DBIx::SearchBuilder>, L<SQL::Schema>, L<DBIx::Abstract>,
+L<DBIx::AnyDBD>, L<DBIx::Browse>, L<DBIx::SQLEngine>, L<MKDoc::SQL>,
+L<Data::Transactional>, L<DBIx::ModelUpdate>, L<DBIx::ProcedureCall>, and
+various other modules.
 
 =cut
