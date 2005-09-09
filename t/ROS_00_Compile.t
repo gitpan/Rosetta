@@ -1,20 +1,21 @@
 #!perl
 use 5.008001; use utf8; use strict; use warnings;
 
-use Test::More 0.47;
+use Test::More;
+use version;
 
 plan( 'tests' => 8 );
 
 use_ok( 'Rosetta' );
-cmp_ok( $Rosetta::VERSION, '==', 0.47, "Rosetta is the correct version" );
+is( $Rosetta::VERSION, qv('0.48.0'), "Rosetta is the correct version" );
 
 use_ok( 'Rosetta::L::en' );
-cmp_ok( $Rosetta::L::en::VERSION, '==', 0.18, "Rosetta::L::en is the correct version" );
+is( $Rosetta::L::en::VERSION, qv('0.19.0'), "Rosetta::L::en is the correct version" );
 
 use_ok( 'Rosetta::Validator' );
-cmp_ok( $Rosetta::Validator::VERSION, '==', 0.47, "Rosetta::Validator is the correct version" );
+is( $Rosetta::Validator::VERSION, qv('0.48.0'), "Rosetta::Validator is the correct version" );
 
 use_ok( 'Rosetta::Validator::L::en' );
-cmp_ok( $Rosetta::Validator::L::en::VERSION, '==', 0.13, "Rosetta::Validator::L::en is the correct version" );
+is( $Rosetta::Validator::L::en::VERSION, qv('0.14.0'), "Rosetta::Validator::L::en is the correct version" );
 
 1;

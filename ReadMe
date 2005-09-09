@@ -9,8 +9,8 @@ CONTENTS
 * Keeping Up To Date
 * Dependencies
 * Support
-* Credits
-* Copyright And License
+* License And Copyright
+* Acknowledgements
 
 PREFACE
 
@@ -50,19 +50,21 @@ server, at "http://www.DarrenDuncan.net/d/perl/archives/".
 
 DEPENDENCIES
 
-Perl Version: 5.008001
+This distribution requires any version of Perl 5.x.y that is at least 5.8.1.
 
-Core Modules:
+It also requires the Perl modules 'version' and 'only', which would
+conceptually be built-in to Perl, but aren't, so they are on CPAN instead.
 
-	Scalar::Util 1.11 (for weak refs)
-	Test::More 0.47 (but only for the test suite)
+It also requires the Perl module Scalar::Util, 
+which would conceptually be built-in to Perl, but is bundled with it instead.
 
-Non-Core Modules: 
+It also requires these modules that are on CPAN:
 
-	Locale::KeyedText 1.05 (for error messages)
-	SQL::Routine 0.69
+    Locale::KeyedText 1.6.0 (for error messages)
+    SQL::Routine 0.70.0
 
-This module doesn't require anything else.
+This distribution also requires Test::More for its test suite, and that module
+is bundled with Perl.
 
 SUPPORT
 
@@ -71,11 +73,7 @@ or otherwise.  Feel free to ask me if you can't figure things out on your own, o
 another person whom you know has used this.  I may start a mailing list for 
 support issues later, so that users of my modules can help each other with them.
 
-CREDITS
-
-None besides myself so far.
-
-COPYRIGHT AND LICENSE
+LICENCE AND COPYRIGHT
 
 This file is part of the Rosetta database portability library.
 
@@ -114,6 +112,10 @@ While it is by no means required, the copyright holders of Rosetta would
 appreciate being informed any time you create a modified version of Rosetta
 that you are willing to distribute, because that is a practical way of
 suggesting improvements to the standard version.
+
+ACKNOWLEDGEMENTS
+
+None besides myself so far.
 
 FIN
 

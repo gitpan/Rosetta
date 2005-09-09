@@ -4,46 +4,6 @@
 
 Rosetta::Details - Main structural and API documentation for Rosetta
 
-=head1 COPYRIGHT AND LICENSE
-
-This file is part of the Rosetta database portability library.
-
-Rosetta is Copyright (c) 2002-2005, Darren R. Duncan.  All rights reserved.
-Address comments, suggestions, and bug reports to perl@DarrenDuncan.net, or
-visit http://www.DarrenDuncan.net/ for more information.
-
-Rosetta is free software; you can redistribute it and/or modify it under the
-terms of the GNU General Public License (GPL) as published by the Free Software
-Foundation (http://www.fsf.org/); either version 2 of the License, or (at your
-option) any later version.  You should have received a copy of the GPL as part
-of the Rosetta distribution, in the file named "GPL"; if not, write to the Free
-Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301,
-USA.
-
-Linking Rosetta statically or dynamically with other modules is making a
-combined work based on Rosetta.  Thus, the terms and conditions of the GPL
-cover the whole combination.  As a special exception, the copyright holders of
-Rosetta give you permission to link Rosetta with independent modules,
-regardless of the license terms of these independent modules, and to copy and
-distribute the resulting combined work under terms of your choice, provided
-that every copy of the combined work is accompanied by a complete copy of the
-source code of Rosetta (the version of Rosetta used to produce the combined
-work), being distributed under the terms of the GPL plus this exception.  An
-independent module is a module which is not derived from or based on Rosetta,
-and which is fully useable when not linked to Rosetta in any form.
-
-Any versions of Rosetta that you modify and distribute must carry prominent
-notices stating that you changed the files and the date of any changes, in
-addition to preserving this original copyright notice and other credits.
-Rosetta is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE.
-
-While it is by no means required, the copyright holders of Rosetta would
-appreciate being informed any time you create a modified version of Rosetta
-that you are willing to distribute, because that is a practical way of
-suggesting improvements to the standard version.
-
 =head1 DESCRIPTION
 
 This POD file contains most of the core detail documentation for Rosetta, such
@@ -104,10 +64,10 @@ Interface type is involved in either both, one, or none of these relationships.
 The by-context relationship is simpler to explain and involves just 4 Interface 
 types, in this hierarchy:
 
-	X1  Application
-	X2    Environment
-	X3      Connection
-	X4        Cursor
+    X1  Application
+    X2    Environment
+    X3      Connection
+    X4        Cursor
 
 In summary, each parent provides a context in which the child operates, and the
 child always has a state that is relative to the parent.  For example, a
@@ -121,37 +81,37 @@ the Preparation type, and most of which can have a child Error.
 
 To start off, you invoke new_application_interface() on anything to get this:
 
-	N1   Application
+    N1   Application
 
 With this set, new_environment_interface() on the parents to get the children:
 
-	N2   Application
-	N3     Error
-	N4     Environment
+    N2   Application
+    N3     Error
+    N4     Environment
 
 With this set, you invoke prepare() on the parents to get the children:
 
-	N5   Application
-	N6     Error
-	N7     Preparation
-	N8   Environment
-	N9     Error
-	N10    Preparation
-	N11  Connection
-	N12    Error
-	N13    Preparation
-	N14  Cursor
-	N15    Error
-	N16    Preparation
+    N5   Application
+    N6     Error
+    N7     Preparation
+    N8   Environment
+    N9     Error
+    N10    Preparation
+    N11  Connection
+    N12    Error
+    N13    Preparation
+    N14  Cursor
+    N15    Error
+    N16    Preparation
 
 With this set, you invoke execute() on the parents to get the children:
 
-	N17  Preparation
-	N18    Error
-	N19    Success
-	N20    Connection
-	N21    Cursor
-	N22    Literal
+    N17  Preparation
+    N18    Error
+    N19    Success
+    N20    Connection
+    N21    Cursor
+    N22    Literal
 
 In summary, each parent conceptually creates the child.  For example, when you
 invoke prepare() on a Connection, that creates a Preparation object, which is a
@@ -167,20 +127,29 @@ an exception any time something fails.
 
 A few more notes about a conceptualization in progress; very rough draft:
 
-	stages of doingness:
-	1. define in a SQL::Routine model (can be done during app's init, prior to forking)
-	2. compile to a Perl closure (can be done during server app's init, prior to forking workers)
-		2.1 by definition, no external resources (eg, databases) are contacted
-		2.2 this may or may not (probably will be) done by an Engine
-		2.3 by definition, these can be reused by multiple equivalent db connections etc (no db-side prepare)
-		2.4 usually all generation of SQL strings happens here
-	3. execute said closure which actually opens db conn or execs statement or fetches data etc
-		3.1 *all* DBI invocations (if used) are done here
-		3.2 this does both the DBI prepare() and execute() the first time called; just the second subsequently
-			3.2.1 any preparation that the database does itself happens here, and is cached for appropriate time
-		3.3 the result of a DBI prepare() is another closure that's cached for use by DBI execute()
-			3.3.1 the compile-closure includes all the actual invocations of the cache for the prepare-closure
-	4. like Perl itself, the above steps can be recursive; step 2 or 3 may trigger a step 1 or 2
+    stages of doingness:
+    1. define in a SQL::Routine model (can be done during app's init, prior to forking)
+    2. compile to a Perl closure (can be done during server app's init, prior to forking workers)
+        2.1 by definition, no external resources (eg, databases) are contacted
+        2.2 this may or may not (probably will be) done by an Engine
+        2.3 by definition, these can be reused by multiple equivalent db connections etc (no db-side prepare)
+        2.4 usually all generation of SQL strings happens here
+    3. execute said closure which actually opens db conn or execs statement or fetches data etc
+        3.1 *all* DBI invocations (if used) are done here
+        3.2 this does both the DBI prepare() and execute() the first time called; just the second subsequently
+            3.2.1 any preparation that the database does itself happens here, and is cached for appropriate time
+        3.3 the result of a DBI prepare() is another closure that's cached for use by DBI execute()
+            3.3.1 the compile-closure includes all the actual invocations of the cache for the prepare-closure
+    4. like Perl itself, the above steps can be recursive; step 2 or 3 may trigger a step 1 or 2
+
+All class functions and methods will throw exceptions on error conditions; they
+will only return normally if there are no error conditions.  The thrown
+exceptions will be Locale::KeyedText::Message objects when the error is bad
+user/caller input caught by an Interface class; they will be
+Rosetta::Interface::Error objects when an Engine has either caught bad user
+input, or the database has a problem, or the Engine fails in some other way
+during execution.  You should never get a raw Perl exception that is generated
+within Rosetta or one of its Engines.
 
 =head1 FEATURE SUPPORT VALIDATION
 
@@ -234,22 +203,6 @@ See the Rosetta::Features documentation file for a complete list of what RNI
 features a Rosetta Engine can possibly implement, and that Rosetta::Validator
 can test for.
 
-=head1 SYNTAX
-
-This class does not export any functions or methods, so you need to call them
-using object notation.  This means using B<Class-E<gt>function()> for functions
-and B<$object-E<gt>method()> for methods.  If you are inheriting this class for
-your own modules, then that often means something like B<$self-E<gt>method()>. 
-
-All class functions and methods will throw exceptions on error conditions; they
-will only return normally if there are no error conditions.  The thrown
-exceptions will be Locale::KeyedText::Message objects when the error is bad
-user/caller input caught by an Interface class; they will be
-Rosetta::Interface::Error objects when an Engine has either caught bad user
-input, or the database has a problem, or the Engine fails in some other way
-during execution.  You should never get a raw Perl exception that is generated
-within Rosetta or one of its Engines.
-
 =head1 CONSTRUCTOR WRAPPER FUNCTIONS
 
 These 8 functions are stateless and can be invoked off of either the module
@@ -259,9 +212,9 @@ they are thin wrappers over other methods and exist strictly for convenience.
 All 8 have a similar format, "new_<lowercased-class-name>_interface( <arg-list>
 )", and each one can be invoked like this example:
 
-	my $app = Rosetta->new_application_interface( $my_app_inst_node );
-	my $app2 = Rosetta::Interface->new_application_interface( $my_app_inst_node );
-	my $app3 = $app->new_application_interface( $my_app_inst_node );
+    my $app = Rosetta->new_application_interface( $my_app_inst_node );
+    my $app2 = Rosetta::Interface->new_application_interface( $my_app_inst_node );
+    my $app3 = $app->new_application_interface( $my_app_inst_node );
 
 =head2 new_application_interface( APP_INST_NODE )
 
@@ -303,7 +256,7 @@ inherited by said other classes; each object in the Interface tree has its own.
 
 =head2 get_root_interface()
 
-	my $appl_intf = $interface->get_root_interface();
+    my $appl_intf = $interface->get_root_interface();
 
 This "getter" method returns by reference the root 'Application' Interface of
 the tree that this Interface is in, if possible.  If the current Interface is an
@@ -313,35 +266,35 @@ recursively, and it exists to help make code faster.
 
 =head2 get_parent_by_creation_interface()
 
-	my $parent = $interface->get_parent_by_creation_interface();
+    my $parent = $interface->get_parent_by_creation_interface();
 
 This "getter" method returns by reference the parent-by-creation Interface of
 this Interface, if it has one.
 
 =head2 get_child_by_creation_interfaces()
 
-	my $children = $interface->get_child_by_creation_interfaces();
+    my $children = $interface->get_child_by_creation_interfaces();
 
 This "getter" method returns a new array ref having references to all of this
 Interface's child-by-creation Interfaces, or an empty array ref for none.
 
 =head2 get_parent_by_context_interface()
 
-	my $parent = $interface->get_parent_by_context_interface();
+    my $parent = $interface->get_parent_by_context_interface();
 
 This "getter" method returns by reference the parent-by-context Interface of this
 Interface, if it has one.
 
 =head2 get_child_by_context_interfaces()
 
-	my $children = $interface->get_child_by_context_interfaces();
+    my $children = $interface->get_child_by_context_interfaces();
 
 This "getter" method returns a new array ref having references to all of this
 Interface's child-by-context Interfaces, or an empty array ref for none.
 
 =head2 get_engine()
 
-	my $engine = $interface->get_engine();
+    my $engine = $interface->get_engine();
 
 This "getter" method returns by reference the Engine that implements this
 Interface, if it has one.
@@ -356,21 +309,21 @@ methods on any tree object is the same as doing so on the root Application.
 
 =head2 get_srt_container()
 
-	my $container = $interface->get_srt_container();
+    my $container = $interface->get_srt_container();
 
 This "getter" method returns by reference the SQL::Routine::Container object
 that is shared by this Interface tree, if there is one.
 
 =head2 get_app_inst_node()
 
-	my $app_inst_node = $interface->get_app_inst_node();
+    my $app_inst_node = $interface->get_app_inst_node();
 
 This "getter" method returns by reference the 'application_instance'
 SQL::Routine::Node object property of this tree's root Application.
 
 =head2 get_trace_fh()
 
-	my $fh = $interface->get_trace_fh();
+    my $fh = $interface->get_trace_fh();
 
 This "getter" method returns by reference the writeable Perl trace file handle
 property of root 'Application' Interface of the tree that this Interface is in,
@@ -382,14 +335,14 @@ external code must do that.
 
 =head2 clear_trace_fh()
 
-	$interface->clear_trace_fh();
+    $interface->clear_trace_fh();
 
 This "setter" method clears the trace file handle property of this Interface
 tree root, if it was set, thereby turning off any tracing output.
 
 =head2 set_trace_fh( NEW_FH )
 
-	$interface->set_trace_fh( \*STDOUT );
+    $interface->set_trace_fh( \*STDOUT );
 
 This "setter" method sets or replaces the trace file handle property of this
 Interface tree root to a new writeable Perl file handle, provided in NEW_FH, so
@@ -402,7 +355,7 @@ class name or an existing Application object, with the same result.
 
 =head2 new( APP_INST_NODE )
 
-	my $app_intf = Rosetta::Interface::Application->new( $app_inst_node );
+    my $app_intf = Rosetta::Interface::Application->new( $app_inst_node );
 
 This "getter" function will create and return a single Application (or subclass)
 object.  The APP_INST_NODE argument is a 'application_instance' SQL::Routine
@@ -443,7 +396,7 @@ class name or an existing Environment object, with the same result.
 
 =head2 new( PARENT_INTF, LINK_PROD_NODE )
 
-	my $env_intf = Rosetta::Interface::Environment->new( $app_intf, $link_prod_node );
+    my $env_intf = Rosetta::Interface::Environment->new( $app_intf, $link_prod_node );
 
 This "getter" function will return a single Environment (or subclass) object
 that it either finds or creates.  The PARENT_INTF argument is an Application
@@ -464,7 +417,7 @@ These methods are stateful and may only be invoked off of Environment objects.
 
 =head2 get_link_prod_node()
 
-	my $link_prod_node = $env_intf->get_link_prod_node();
+    my $link_prod_node = $env_intf->get_link_prod_node();
 
 This "getter" method returns by reference the 'data_link_product'
 SQL::Routine::Node object property of this Environment.
@@ -509,7 +462,7 @@ class name or an existing Connection object, with the same result.
 
 =head2 new( PARENT_BYCRE_INTF, PARENT_BYCXT_INTF, CAT_LINK_NODE )
 
-	my $conn_intf = Rosetta::Interface::Connection->new( $prep_intf, $env_intf, $cat_link_node );
+    my $conn_intf = Rosetta::Interface::Connection->new( $prep_intf, $env_intf, $cat_link_node );
 
 This "getter" function will create and return a single Connection (or subclass)
 object.  The PARENT_BYCRE_INTF and PARENT_BYCXT_INTF arguments are typically
@@ -525,7 +478,7 @@ These methods are stateful and may only be invoked off of Connection objects.
 
 =head2 get_cat_link_node()
 
-	my $cat_link_node = $conn_intf->get_cat_link_node();
+    my $cat_link_node = $conn_intf->get_cat_link_node();
 
 This "getter" method returns by reference the 'catalog_link'
 SQL::Routine::Node object property of this Connection.
@@ -561,7 +514,7 @@ class name or an existing Cursor object, with the same result.
 
 =head2 new( PARENT_BYCRE_INTF, PARENT_BYCXT_INTF, EXTERN_CURS_NODE )
 
-	my $curs_intf = Rosetta::Interface::Cursor->new( $prep_intf, $conn_intf, $ext_curs_node );
+    my $curs_intf = Rosetta::Interface::Cursor->new( $prep_intf, $conn_intf, $ext_curs_node );
 
 This "getter" function will create and return a single Cursor (or subclass)
 object.  The PARENT_BYCRE_INTF and PARENT_BYCXT_INTF arguments are typically
@@ -577,7 +530,7 @@ These methods are stateful and may only be invoked off of Cursor objects.
 
 =head2 get_extern_curs_node()
 
-	my $extern_curs_node = $curs_intf->get_extern_curs_node();
+    my $extern_curs_node = $curs_intf->get_extern_curs_node();
 
 This "getter" method returns by reference the 'external_cursor'
 SQL::Routine::Node object property of this Cursor.
@@ -601,7 +554,7 @@ class name or an existing Literal object, with the same result.
 
 =head2 new( PARENT_BYCRE_INTF )
 
-	my $lit_intf = Rosetta::Interface::Literal->new( $prep_intf );
+    my $lit_intf = Rosetta::Interface::Literal->new( $prep_intf );
 
 This "getter" function will create and return a single Literal (or subclass)
 object.  The PARENT_BYCRE_INTF argument is typically a Preparation object that
@@ -630,7 +583,7 @@ class name or an existing Success object, with the same result.
 
 =head2 new( PARENT_BYCRE_INTF )
 
-	my $succ_intf = Rosetta::Interface::Success->new( $prep_intf );
+    my $succ_intf = Rosetta::Interface::Success->new( $prep_intf );
 
 This "getter" function will create and return a single Success (or subclass)
 object.  The PARENT_BYCRE_INTF argument is typically a Preparation object that
@@ -649,7 +602,7 @@ class name or an existing Preparation object, with the same result.
 
 =head2 new( PARENT_BYCRE_INTF, ROUTINE_NODE )
 
-	my $prep_intf = Rosetta::Interface::Preparation->new( $conn_intf, $routine_node );
+    my $prep_intf = Rosetta::Interface::Preparation->new( $conn_intf, $routine_node );
 
 This "getter" function will create and return a single Preparation (or subclass)
 object.  The PARENT_BYCRE_INTF argument is an object whose type is one of
@@ -665,7 +618,7 @@ These methods are stateful and may only be invoked off of Preparation objects.
 
 =head2 get_routine_node()
 
-	my $routine_node = $prep_intf->get_routine_node();
+    my $routine_node = $prep_intf->get_routine_node();
 
 This "getter" method returns by reference the 'routine' SQL::Routine::Node
 object property of this Preparation.
@@ -692,7 +645,7 @@ class name or an existing Error object, with the same result.
 
 =head2 new( PARENT_BYCRE_INTF, ERROR_MSG )
 
-	my $err_intf = Rosetta::Interface::Error->new( $prep_intf, $message );
+    my $err_intf = Rosetta::Interface::Error->new( $prep_intf, $message );
 
 This "getter" function will create and return a single Error (or subclass)
 object.  The PARENT_BYCRE_INTF argument may be any Interface type except Success
@@ -707,7 +660,7 @@ These methods are stateful and may only be invoked off of Error objects.
 
 =head2 get_error_message()
 
-	my $message = $err_intf->get_error_message();
+    my $message = $err_intf->get_error_message();
 
 This "getter" method returns by reference the Error Message
 Locale::KeyedText::Message object property of this Error Interface.
@@ -740,5 +693,49 @@ remain undocumented and private.
 =head1 SEE ALSO
 
 L<Rosetta> and the various other modules mentioned in its SEE ALSO.
+
+=head1 AUTHOR
+
+Darren R. Duncan (C<perl@DarrenDuncan.net>)
+
+=head1 LICENCE AND COPYRIGHT
+
+This file is part of the Rosetta database portability library.
+
+Rosetta is Copyright (c) 2002-2005, Darren R. Duncan.  All rights reserved.
+Address comments, suggestions, and bug reports to C<perl@DarrenDuncan.net>, or
+visit L<http://www.DarrenDuncan.net/> for more information.
+
+Rosetta is free software; you can redistribute it and/or modify it under the
+terms of the GNU General Public License (GPL) as published by the Free Software
+Foundation (L<http://www.fsf.org/>); either version 2 of the License, or (at your
+option) any later version.  You should have received a copy of the GPL as part
+of the Rosetta distribution, in the file named "GPL"; if not, write to the Free
+Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301,
+USA.
+
+Linking Rosetta statically or dynamically with other modules is making a
+combined work based on Rosetta.  Thus, the terms and conditions of the GPL
+cover the whole combination.  As a special exception, the copyright holders of
+Rosetta give you permission to link Rosetta with independent modules,
+regardless of the license terms of these independent modules, and to copy and
+distribute the resulting combined work under terms of your choice, provided
+that every copy of the combined work is accompanied by a complete copy of the
+source code of Rosetta (the version of Rosetta used to produce the combined
+work), being distributed under the terms of the GPL plus this exception.  An
+independent module is a module which is not derived from or based on Rosetta,
+and which is fully useable when not linked to Rosetta in any form.
+
+Any versions of Rosetta that you modify and distribute must carry prominent
+notices stating that you changed the files and the date of any changes, in
+addition to preserving this original copyright notice and other credits.
+Rosetta is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
+
+While it is by no means required, the copyright holders of Rosetta would
+appreciate being informed any time you create a modified version of Rosetta
+that you are willing to distribute, because that is a practical way of
+suggesting improvements to the standard version.
 
 =cut
