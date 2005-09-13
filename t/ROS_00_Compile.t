@@ -7,15 +7,15 @@ use version;
 plan( 'tests' => 8 );
 
 use_ok( 'Rosetta' );
-is( $Rosetta::VERSION, qv('0.48.0'), "Rosetta is the correct version" );
+is( $Rosetta::VERSION, qv('0.48.1'), "Rosetta is the correct version" );
 
 use_ok( 'Rosetta::L::en' );
-is( $Rosetta::L::en::VERSION, qv('0.19.0'), "Rosetta::L::en is the correct version" );
+is( $Rosetta::L::en::VERSION, qv('0.19.1'), "Rosetta::L::en is the correct version" );
 
 use_ok( 'Rosetta::Validator' );
-is( $Rosetta::Validator::VERSION, qv('0.48.0'), "Rosetta::Validator is the correct version" );
+is( $Rosetta::Validator::VERSION, qv('0.48.1'), "Rosetta::Validator is the correct version" );
 
 use_ok( 'Rosetta::Validator::L::en' );
-is( $Rosetta::Validator::L::en::VERSION, qv('0.14.0'), "Rosetta::Validator::L::en is the correct version" );
+is( $Rosetta::Validator::L::en::VERSION, qv('0.14.1'), "Rosetta::Validator::L::en is the correct version" );
 
 1;

@@ -1,420 +1,94 @@
                               Rosetta
 ----------------------------------------------------------------------
 
+2005-09-12   Darren Duncan <perl@DarrenDuncan.net>
+
+    * Rosetta Release 0.48.1 (SVN r808).
+
+    * New code file versions are: Rosetta.pm and Validator.pm 0.48.1 and
+    Rosetta/L/en.pm 0.19.1 and Validator/L/en.pm 0.14.1.
+
+    * Updated the BRIEF MODULE LIST of Framework.pod to reflect that
+    SQL::Routine, Rosetta::Engine::Generic gained a few inner classes
+    recently.
+
+    * Updated all POD-containing files to re-wrap any non-indented POD
+    paragraphs to a 75 character width, which is 5 less than the 80
+    character width they were wrapped to before.  This change should make
+    it easier to copy and paste a diff or patch of this documentation into
+    an email message, where it is quoted at least once, without any line
+    wrapping occurring.  Likewise, these standard documentation files were
+    re-wrapped to 75 characters: ReadMe, INSTALL, LGPL|GPL, Changes, TODO.
+
+    * Revised this Changes file to replace all detail entries for releases
+    0.44 thru 0.48.0 with a significant release list for the same period;
+    also added references to when all 'Rosetta developer release' (#s 1-3)
+    were.
+
 2005-09-08   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.48.0.
+    * Rosetta Release 0.48.0 (SVN r787), containing Rosetta 0.48.0 and
+    Rosetta::Validator 0.48.0, was released on CPAN.  This is the first
+    release of this distribution and its modules for which they had 3-part
+    version numbers, rather than floating point version numbers.
 
-    * New code file versions are: Rosetta.pm and Validator.pm v0.48.0 and
-    Rosetta/L/en.pm v0.19.0 and Validator/L/en.pm v0.14.0.
-
-    * Updated external dependencies on Locale::KeyedText to v1.6.0 and on
-    SQL::Routine to v0.70.0.
-
-    * From now on, if the minimum Perl version that this distribution depends on
-    (currently 5.008001) comes bundled with a satisfactory version of a module
-    that we have a dependency on, then we will no longer specify any version
-    number when referring to said module.  An example of such is Test::More.
-
-    * Updated the DESCRIPTION paragraph of KeyedText.pm that refers to how easy
-    to install the module is; it now says the module has few external
-    dependencies, rather than specifying two.
-
-    * Converted every distribution file to use indentations composed of space 
-    characters (4 spaces per indentation level) rather than tab characters.
-
-    * In Details.pod, moved the second SYNTAX paragraph to the end of STRUCTURE.
-
-    * Updated all files containing POD (*.pm, *.pod) to re-order some POD
-    sections.  Now all of the POD is after all of the code, rather than that
-    being mostly true but for a bit of POD before most of the code.  The 'NAME'
-    POD has been moved to just above the 'SYNOPSIS'. The 'DEPENDENCIES' has been
-    moved to just above the 'SEE ALSO'.  Any 'BUGS' and 'CAVEATS' have been
-    moved to just below the 'SEE ALSO'.  The 'COPYRIGHT AND LICENSE' has been
-    moved to the very end of the file, except that any 'CREDITS' have been moved
-    below that.  Also updated the ReadMe file to move the 'CREDITS' below the
-    'COPYRIGHT AND LICENSE'.  There were zero changes to the content of any POD 
-    sections, and no new POD sections were added or existing ones removed,
-    except for those explicitly listed below.
-
-    * Updated all files containing POD:  Deleted the 'SYNTAX' section, whose
-    value was dubious, from any files that had one.  Renamed 'COPYRIGHT AND
-    LICENSE' to 'LICENCE AND COPYRIGHT', and added a new 'AUTHOR' section just
-    above it.  Renamed 'CREDITS' to 'ACKNOWLEDGEMENTS' in any files that had
-    one.  COPYRIGHT and CREDITS were likewise renamed in the ReadMe file.
-
-    * Updated the POD in all *.pm files:  Added a new 'VERSION' section, which
-    appears just below the 'NAME'.  Added a new 'INCOMPATIBILITIES' section,
-    which appears just below 'DEPENDENCIES'.  Renamed and/or merged any 'BUGS'
-    and 'CAVEATS' sections into a single 'BUGS AND LIMITATIONS' section, and
-    added that section to any files lacking its predecessors.  Rewrote the
-    'DEPENDENCIES' into a new paragraph-resembling format that specifies where
-    each dependency is, such as bundled with perl, or bundled with the current
-    distribution, or available on CPAN; also rewrote the ReadMe file version.
-
-    * Updated all *.pm files to add a new external dependency on the 'version'
-    module, which has core-like functionality but isn't yet bundled with Perl;
-    all 'our $VERSION' declarations were changed to qv-wrapped three-part format
-    from floating point format; likewise, updated the *_00_Compile.t file to use
-    'version', and also changed the tests for expected module versions to be
-    performed by is() rather than cmp_ok().
-
-    * Updated Rosetta.pm and Validator.pm to add a new external dependency on the 'only' 
-    module, which has core-like functionality but isn't yet bundled with Perl;
-    all "use Foo N.NN" statements were changed to three-part format and now look 
-    like "use only 'Foo' => 'N.N.N-'".
+    * These were the current versions cited by the public announcement for
+    Rosetta/SQL-Routine developer release #3.
 
 2005-09-01   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.47.
-
-    * New code file versions are: Rosetta.pm and Validator.pm v0.47 and
-    Validator/L/en.pm 0.13.
-
-    * Updated external dependencies on SQL::Routine to v0.69.
-
-    * Added a new main title to this Changes file that matches the ReadMe file.
-
-    * Rewrote the documentation section KEEPING UP TO DATE in the ReadMe file.
-
-    * Corrected an oversight from release 0.46; updated the BRIEF MODULE LIST in
-    Framework.pod to include the listing of the 8 Rosetta::Interface::* classes
-    that Rosetta.pm gained in that release.
-
-    * Updated Rosetta.pm to retain compatability with a change made in
-    SQL::Routine v0.66; one can no longer straight compare two SRT Node or
-    Container objects to determine their equivalence, since they are now
-    interfaces over a shared storage object.  Updated these 3 Rosetta.pm methods
-    to use the new SQL::Routine method get_self_id() instead of the straight
-    comparisons: _assert_arg_node_type(), Environment.new(),
-    _prepare__call_engine().
-
-    * Updated the Rosetta.pm DESCRIPTION to add a sentence on what services the 
-    Rosetta core provides to Engines (mainly input and output validation).
-
-    * Several other, minor Framework.pod updates, including the addition of the
-    Apache Derby db to the brief Engine module list.
-
-    * This release mainly saw the removal of the previously deprecated
-    'Rosetta::Utility::EasyBake' module; a greatly simplified version of its
-    functionality was merged into Validator.pm, which was previously its sole
-    dependent.  Removed the Validator.pm 'easybake' class property.  Removed the
-    setup_app() private method and merge its functionality into the setup_env()
-    and setup_conn() private methods.  Validator.pm gained mostly pristine
-    copies of the %BC_SETUP_NODE_TYPES constant data dictionary plus the
-    validate_connection_setup_options() public method, and the old
-    _throw_error_message() was merged into the latter.  The old
-    build_application() and build_child_environment() were both merged into each
-    of setup_env() and setup_conn().  The old build_child_connection() was
-    merged into setup_conn().  The old sroutine_catalog_list() was merged into
-    test_catalog_list().  The old sroutine_catalog_open() and
-    sroutine_catalog_close() were merged mostly into setup_conn() with a bit
-    merged into test_conn_basic().  The old _build[|_child]_node_auto_name() are
-    no longer used; Validator now hard-codes all generated Node Surrogate Ids,
-    and all Node Ids are set to auto-generate in setup_env() and setup_conn().
-    These old EasyBake.pm methods were simply deleted without adaption: new(),
-    build_application_with_node_trees(), build_environment(),
-    build_connection(), _assert_arg[|_intf]_obj_type().  Regarding POD
-    documentation, the validate_connection_setup_options() public method came
-    over almost pristine, build_connection()'s explanation of SETUP_OPTIONS was
-    merged into main(), and build_child_connection()'s code example was added to
-    the SYNOPSIS.  The previously deprecated Rosetta::Utility::EasyBake::L::en
-    module was also removed, and its 7 user text messages were moved, mostly
-    pristine, into Validator/L/en.pm.  The combined size of the 4 pre-merged
-    files was 63K, and the 2 post-merged files are is 36K, giving us a 43% file
-    size reduction while retaining all the old functionality.  Also updated
-    Framework.pod and ROS_00_Compile.t (4 numbered tests) to remove mention of
-    the EasyBake modules.  Removed the Rosetta.pm DESCRIPTION paragraph that
-    said the module has a multi-layered API.
-
-    * Updated Rosetta.pm and Validator.pm to retain compatability with changes
-    made in SQL::Routine v0.69; replaced all invocations of the Node methods
-    [get|clear|set]_[literal|enumerated|node_ref]_attribute[|s]() with
-    invocations of [get|clear_set]_attribute[|s]().
+    * Rosetta Release 0.47, containing Rosetta 0.47 and Rosetta::Validator
+    0.47, was released on CPAN.  This is the first release of
+    Rosetta::Validator following its merger with
+    Rosetta::Utility::EasyBake.  This is the last release of this
+    distribution and its modules for which they had floating point version
+    numbers, rather than 3-part version numbers.
 
 2005-07-07   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.46.
-
-    * New code file versions are: Rosetta.pm and Validator.pm v0.46 and
-    Rosetta/L/en.pm 0.18 and Validator/L/en.pm 0.12 and EasyBake.pm 0.01 and 
-    EasyBake/L/en.pm 0.01 (the last 2 are new, and explained below).
-
-    * Updated external dependencies on Locale::KeyedText to v1.05 and on
-    SQL::Routine to v0.65.
-
-    * This release is a snapshot that shows a mid-way point of for large Rosetta 
-    upgrade; many changes were made, and many more will be in the next few days.
-
-    * Added new external dependency on Scalar::Util v1.11 (bundled with Perl
-    5.8.x); Rosetta now uses its 'weak refs' feature internally at strategic
-    places so that you no longer need to explicitly destroy Interface trees when
-    you are done with them.  The circular refs between parent and child Rosetta
-    Interfaces no longer prevent Perl's standard garbage collection from working
-    when expected, which is when all external refs to a child-most Interface go
-    away.  This change makes Rosetta much more DWIM and easier to use.  All 3
-    invocations of Scalar::Util::weaken are in the new private Interface method
-    _new__set_common_properties().  Parent links to children are made weak,
-    while child links to parents are strong, which ensures children are always
-    auto-destructed before their parents.  Removed the destroy() method from all
-    3 Rosetta.pm classes, and the Interface methods
-    [|_]destroy_interface_tree(), and the invocation of such in do().  Updated
-    Details.pod to remove references to those methods; updated Rosetta/L/en.pm
-    to remove the 'ROS_I_DESTROY_HAS_CHILD' user text message.  Updated
-    Validator.pm to remove all invocations of those methods.  Since
-    auto-destruction of individual Interfaces separate from their tree will
-    leave undefined weak-ref elements in their parents' child lists, added new
-    Interface magic method DESTROY() to purge those undefs.
-
-    * Updated all files in this distribution that display the physical address
-    of the Free Software Foundation, Inc. so it uses their current address of
-    "51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA" rather than their
-    previous address of "59 Temple Place, Suite 330, Boston, MA 02111-1307 USA";
-    this affects every COPYRIGHT AND LICENSE statement in the core files and the
-    'ReadMe' file, plus any 'GPL' or 'LGPL' license file.
-
-    * Updated the INSTALL file so that it is more generic, and all of my
-    distributions now use an identical copy of it.
-
-    * Updated the main heading in the ReadMe file to state the distribution's
-    name rather than a terse description of it.
-
-    * The 'Rosetta' core module has been split into itself and a new module
-    'Rosetta::Utility::EasyBake'; the latter is an optional extension to the
-    former.  EasyBake.pm contains 10 public functions from the old Rosetta.pm:
-    validate_connection_setup_options(), build_application[|_with_node_trees](),
-    build_[|child]_[environment|connection](),
-    sroutine_catalog_[list|open|close]().  It also contains the
-    %BC_SETUP_NODE_TYPES file-scope constant and the 2 private functions
-    _build[|_child]_node_auto_name().  Everything else that was in the old
-    Rosetta.pm is in the new one, sans other edits to that module.  The
-    corresponding portions of Details.pod were removed from there and added to
-    EasyBake.pm.  The corresponding parts of Rosetta/L/en.pm were removed from
-    there and became the new Rosetta::Utility::EasyBake::L::en module.  Any
-    moved functions that used to be Interface object methods now take those
-    objects as their first argument; all of the moved functions are now
-    stateless.  Updated Validator.pm to use the moved functions correctly.
-    Updated Rosetta_Engine_Generic.t, and the Validator/L/en.pm SYNOPSIS, to add
-    'Rosetta::Utility::EasyBake::L::' to the Translator Sets list.  Note that
-    EasyBake.pm should be considered deprecated, for quick-and-dirty programs or
-    experiments; large programs or other CPAN modules should write directly to
-    the Rosetta module and/or a different wrapper instead.
-
-    * Corresponding updates to Rosetta.pm, Rosetta/L/en.pm, and Details.pod:
-    split the 2 Interface properties 'parent interface', 'child interface' into
-    4 more specialized properties, 'parent-by-[creation|context] interface',
-    'child-by-[creation|context] interface'; likewise their 2 parent/child
-    accessor methods were split into 4.  Some interface types use both of these
-    new properties, and some use only one, and 'Application' still none.  The
-    PARENT_INTF argument of Interface.new() was similarly split into 2
-    arguments.  Also removed the get_sibling_interfaces() accessor method, which
-    isn't currently in use anywhere.
-
-    * Also split up the 1 'srt node' property and accessor into
-    5 more specialized ones: 'application instance node', 'data link product
-    node', 'catalog link node', 'external cursor node', 'routine node'; they are
-    specific to these 5 Interface types respectively: Application, Environment,
-    Connection, Cursor, Preparation.
-
-    * Removed the 1 'routine' Interface property, and get_routine() accessor
-    method; now, rather than storing a prepared anonymous Perl subroutine to
-    execute, the Interface method execute() will now pass through to an Engine's
-    execute() method instead; added execute() to the Engine class and Dispatcher
-    class; added new Dispatcher property 'prep routine' for that class to store
-    its Perl sub in; removed the ROUTINE argument from Interface.new().
-
-    * Removed the routine_source_code() methods from the Interface and Engine 
-    classes since they aren't currently in use; a replacement may come later.
-
-    * Reconfigured Interface.new() to invoke Engine.new() itself, and removed
-    its ENGINE argument.  Updated Dispatcher method _prepare__srtn_cat_list() to
-    first create a new Interface and then set it's new Engine's properties,
-    rather than creating the new Engine prior to the Interface.  The reordering 
-    of these related creations should greatly help make Rosetta easier to use.
-
-    * The Dispatcher class is no longer a sub-class of the Engine class, but
-    rather of just 'Rosetta', as 'Interface' and 'Engine' are.  Removed
-    Rosetta/L/en.pm message 'ROS_I_PREPARE_ENGINE_YES_DISPATCHER', since it is 
-    no longer possible for an 'Engine' sub-class to trigger this error.
-
-    * Rewrote part of Dispatcher.features() to fix a potential or actual bug
-    regarding how the Engines' features() results are amalgamated.
-
-    * Corresponding updates to Rosetta.pm, Rosetta/L/en.pm, and Details.pod:
-    Split up the Rosetta::Interface class into itself and 8 sub-classes whose
-    names are in the format Rosetta::Interface::*, where * is one of:
-    Application, Environment, Connection, Cursor, Literal, Success, Preparation,
-    Error.  There is no longer an Interface property named "interface type", as
-    its 8 possible types now have their own classes instead.  The 1 'Rosetta'
-    wrapper method new_application() became 8 Interface wrapper methods, named
-    new_*_interface().  The Rosetta::Interface.new() method is gone, and each of
-    other 8 sub-classes now have their own specialized new().  All 8 Interface
-    classes have the 4 parent/child properties plus the 'root interface' and
-    'engine' properties in common; they also have in common the 4 parent/child
-    accessor methods plus get_root_interface() and get_engine().  Now only the
-    Application class has these 3 properties, though accessors for them are on
-    all 8 classes: 'srt container', 'application instance node', 'trace
-    filehandle'.  Now only the Error class has the 'error message' property and
-    accessor.  The other 4 above-mentioned SRT properties and their accessor
-    methods are now only with their respective Interface classes.  Now only
-    these 3 classes have a features() method: Application, Environment,
-    Connection.  Now only those 3 classes plus Cursor have prepare() and do()
-    methods.  Now only the Preparation class has an execute() method.  Added 5
-    new (wrapper) methods to the Engine class, which Engines must implement, as
-    the Interface' new() will invoke them: new_*_engine() for environment,
-    connection, cursor, literal, preparation; the Engine class also no longer
-    has a plain new() method, though other Engines can if they want to.  Added 3
-    new (wrapper) methods to the Dispatcher class: new_*_engine() for
-    application, literal, preparation.  The old _prepare_lpn() private Interface
-    method, plus relevant parts of the old prepare() and execute() methods, has
-    been merged into the new Environment.new().  These private Interface methods
-    are now gone, as their functionality has been moved into the various new()
-    methods and/or new refactorings: _validate_properties_to_be(),
-    _validate_parent_intf(), _validate_srt_node().
-
-    * Refactored various Interface methods and brought out common functionality
-    into these 4 new 'Rosetta' private functions/methods, which complement
-    _throw_error_message(): _assert_arg_[obj|intf_obj|node]_type(); they can be
-    invoked on self by either Interface or Engine or Dispatcher objects.  More
-    Interface method refactoring brought out these 5 new Interface private
-    methods; they can only be invoked on self by Interface classes: 
-    _assert_engine_made_errors(), _new__assert_args_intfs_same_tree(), 
-    _new__set_common_properties(), _features(), _prepare().
-
-    * Added some new input and output validation code to the prepare(),
-    execute(), and payload() methods, but they are filled with TODO comments and
-    don't actually throw any exceptions yet; effectively they are no-ops.
-
-    * Added a paragraph to Rosetta.pm's DESCRIPTION to specify that Rosetta has
-    no intention of being an object-relational mapper but speaks just in
-    relational database terms.
-
-    * Rewrote half of Details.pod's STRUCTURE documentation, mainly the
-    explanation of now the various Interface types relate to each other, in
-    light of there now being 2 types of parent/child relationships.
-
-    * Replaced most of the user text messages in Rosetta/L/en.pm with a smaller
-    number of different and more generic ones.
-
-    * Rewrote the TODO file such as with concern LOB support that is as elegant
-    as current cursor support.
-
-    * Minor updates to Framework.pod.  Updated the BRIEF MODULE LIST: 1. added a
-    brief paragraph that gives an analogy of the Rosetta framework parts in
-    terms of the DBI framework; 2. removed SQL::Routine::API_C following a
-    rearrangement in the SQL-Routine distribution that merged it into
-    SQL::Routine::Details; 3. added modules Rosetta::Utility::EasyBake and
-    Rosetta::Utility::EasyBake::L::en to the Rosetta distro; 4.
-    SQL::Routine::SQLBuilder and ::SQLParser each gained an en.pm; 5.
-    Rosetta::Emulator::DBI is now in its own distribution and has an en.pm.
-
-    * Various other minor updates throughout the distribution.
-
-    * Note that Features.pod had zero changes besides in the copyright notice.
+    * Rosetta Release 0.46, containing Rosetta 0.46 and Rosetta::Validator
+    0.46 and Rosetta::Utility::EasyBake 0.01, was released on CPAN.  This
+    is the first release of any distribution to contain
+    Rosetta::Utility::EasyBake, which was split off from Rosetta; this is
+    the first release of Rosetta following that split.  This is the last
+    release of Rosetta::Utility::EasyBake prior to its merger into
+    Rosetta::Validator.
 
 2005-05-13   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.45.
-
-    * New code file versions are: Rosetta.pm and Validator.pm v0.45 and
-    Rosetta/L/en.pm 0.17 and Validator/L/en.pm 0.11.
-
-    * Updated external dependencies on Locale::KeyedText to v1.04 and on
-    SQL::Routine to v0.62.
-
-    * Updated every instance of the COPYRIGHT AND LICENSE documentation in this
-    distribution to correct the declared date range in which the core Rosetta
-    files were created.  The new dates are 2002 thru 2005, which is when I
-    actually committed documentation describing or code implementing what became
-    the Rosetta core.  The old dates were 1999 thru 2005, which goes back to the
-    time that I started conceiving a larger project which the aforementioned
-    module started out being related to; however, those earlier years did not
-    contain any work on what specifically became the aforementioned module, so
-    they are now excluded.
-
-    * Updated every instance of the COPYRIGHT AND LICENSE documentation in this
-    distribution so that you may now choose between licensing it under the GPL
-    version 2 or any later GPL version, rather than only under version 2.
-
-    * Renamed the "LICENSE" file to "GPL", and correspondingly updated all
-    references to it in this distribution, most of them being in COPYRIGHT AND
-    LICENSE statements.  This change was made to reduce user confusion in
-    situations where files from this distribution may be aggregated with other
-    files that have different licenses; the old name was too generic.
-
-    * Updated Routine.pm and Routine/L/en.pm in correspondence to the recent
-    SQL::Routine change where Nodes now always live in Containers.  Updated
-    private method _validate_srt_node() so it no longer asserts that the given
-    SRT_NODE is in a Container; we can now assume that is the case.  Removed 2
-    related user text messages, 'ROS_I_[NEW_INTF|PREPARE]_NODE_NOT_IN_CONT'.
-
-    * A few trivial Framework.pod updates.
-
-    * Renamed Rosetta.t to ROS_00_Compile.t and rewrote it to contain 8 tests; 4
-    of these use Test::More's use_ok() function to cleanly test that the 4 core
-    modules will load without errors; 4 of these test, with cmp_ok(), that the 4
-    core modules are of the correct versions.  Before this change, the original
-    test script would simply die without any ok/not ok if the core modules were
-    missing. The old test script simply printed 'ok 1' to show it was running.
-
-2005-04-22   Darren Duncan <perl@DarrenDuncan.net>
-
-    * Rosetta Release 0.44.
-
-    * New code file versions are: Rosetta.pm and Validator.pm v0.44.
-
-    * Updated external dependencies on SQL::Routine to v0.59.
-
-    * This release is entirely about maintaining compatability with
-    SQL::Routine, whose Container objects now auto-destruct when all external
-    refs to them go away, and holding an external ref to a Container's Node is
-    no longer sufficient to prevent the auto-destruction; Containers no longer 
-    have any manual destroy() methods.
-
-    * Updated Rosetta.pm:  Added 1 new Interface property, 'srt_cont', which is
-    defined to store a direct ref to the SRT Container object that 'srt_node'
-    lives in.  This is necessary when external code expects an Interface tree to
-    maintain the sole reference to the SRT Container it is using.  The 2
-    Interface methods new() and get_srt_container() were updated accordingly.
-
-    * Updated Rosetta.pm and Details.pod and Validator.pm:  Removed the
-    Interface.destroy_interface_tree_and_srt_container() method declaration; any
-    invocations of it now call destroy_interface_tree(), having the same effect.
-
-    * A few trivial Framework.pod updates.
-
-    * Renamed this file to 'Changes' from 'ChangeLog'; the new name is more
-    descriptive to its free-form structure, and more consistent with CPAN (which
-    uses both names but 'Changes' seems to be more common these days).  Also
-    truncated this Changes file to remove all detail entries for releases v0.28
-    thru v0.43; in their place was added a change summary for releases v0.01
-    thru v0.43 that mainly just said what the names and versions of all the
-    predecessor distributions and modules are.
+    * Rosetta Release 0.45, containing Rosetta 0.45 and Rosetta::Validator
+    0.45, was released on CPAN.  This is the last release of Rosetta prior
+    to its split into itself and Rosetta::Utility::EasyBake.
 
 2005-04-03   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.43, containing Rosetta 0.43 and Rosetta::Validator 0.43,
-    was released on CPAN.
+    * Rosetta Release 0.43, containing Rosetta 0.43 and Rosetta::Validator
+    0.43, was released on CPAN.
+
+    * These were the current versions cited by the public announcement for
+    SQL-Routine/Rosetta developer release #2.
 
 2004-10-26   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.37, containing Rosetta 0.37 and Rosetta::Validator 0.37,
-    was released on CPAN.  This is the first release for this distribution where
-    Rosetta and Rosetta::Validator explicitly have matching version numbers.
+    * Rosetta Release 0.37, containing Rosetta 0.37 and Rosetta::Validator
+    0.37, was released on CPAN.  This is the first release for this
+    distribution where Rosetta and Rosetta::Validator explicitly have
+    matching version numbers.
 
 2004-10-04   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.36, containing Rosetta 0.36 and Rosetta::Validator 0.06,
-    was released on CPAN.  This is the last release for this distribution where
-    Rosetta and Rosetta::Validator do not explicitly have matching version
-    numbers.
+    * Rosetta Release 0.36, containing Rosetta 0.36 and Rosetta::Validator
+    0.06, was released on CPAN.  This is the last release for this
+    distribution where Rosetta and Rosetta::Validator do not explicitly
+    have matching version numbers.
 
 2004-08-16   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.33, containing Rosetta 0.33 and Rosetta::Validator 0.03,
-    was released on CPAN.  This is the first release for this distribution and
-    Rosetta module where they both explicitly have matching version numbers,
-    aside from the explicitly matched releases 0.01 thru 0.061.
+    * Rosetta Release 0.33, containing Rosetta 0.33 and Rosetta::Validator
+    0.03, was released on CPAN.  This is the first release for this
+    distribution and Rosetta module where they both explicitly have
+    matching version numbers, aside from the explicitly matched releases
+    0.01 thru 0.061.
 
 2004-08-12   Darren Duncan <perl@DarrenDuncan.net>
 
@@ -438,10 +112,13 @@
 
 2004-08-06   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.32, containing Rosetta 0.16 and Rosetta::Validator 0.02,
-    was released on CPAN.  This is the last release for this distribution and
-    Rosetta module where they both do not explicitly have matching version
-    numbers.
+    * Rosetta Release 0.32, containing Rosetta 0.16 and Rosetta::Validator
+    0.02, was released on CPAN.  This is the last release for this
+    distribution and Rosetta module where they both do not explicitly have
+    matching version numbers.
+
+    * These were the current versions cited by the public announcement for
+    Rosetta/SQL-SyntaxModel developer release #1.
 
 2004-07-07   Darren Duncan <perl@DarrenDuncan.net>
 
@@ -455,9 +132,9 @@
 
 2004-07-05   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.31, containing Rosetta 0.15 and Rosetta::Validator 0.01,
-    was released on CPAN.  This is the first release of any distribution to
-    contain Rosetta::Validator.
+    * Rosetta Release 0.31, containing Rosetta 0.15 and Rosetta::Validator
+    0.01, was released on CPAN.  This is the first release of any
+    distribution to contain Rosetta::Validator.
 
 2003-04-27   Darren Duncan <perl@DarrenDuncan.net>
 
@@ -481,25 +158,26 @@
 
 2003-04-15   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.07, containing Rosetta 0.062, was released on CPAN. 
-    This is the first release for this distribution and Rosetta module where
-    they both do not explicitly have matching version numbers.
+    * Rosetta Release 0.07, containing Rosetta 0.062, was released on CPAN.
+    This is the first release for this distribution and Rosetta module
+    where they both do not explicitly have matching version numbers.
 
 2003-03-09   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.061, containing Rosetta 0.061, was released on CPAN.
-    This is the last release for this distribution and Rosetta module where they
-    both explicitly have matching version numbers, aside from the explicitly
-    matched releases 0.33 and later.
+    * Rosetta Release 0.061, containing Rosetta 0.061, was released on
+    CPAN. This is the last release for this distribution and Rosetta module
+    where they both explicitly have matching version numbers, aside from
+    the explicitly matched releases 0.33 and later.
 
 2003-01-27   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.02, containing Rosetta 0.02, was released on CPAN; this
-    is the first release of the Rosetta distribution, which was renamed from
-    DBIx-Portable.  This is the first release of any distribution to contain
-    Rosetta, which at this time contains no executable code but for declaring a
-    name and version.  Early versions of the design documentation that became
-    the Rosetta distribution were included.
+    * Rosetta Release 0.02, containing Rosetta 0.02, was released on CPAN;
+    this is the first release of the Rosetta distribution, which was
+    renamed from DBIx-Portable.  This is the first release of any
+    distribution to contain Rosetta, which at this time contains no
+    executable code but for declaring a name and version.  Early versions
+    of the design documentation that became the Rosetta distribution were
+    included.
 
 2003-01-21   Darren Duncan <perl@DarrenDuncan.net>
 
@@ -519,44 +197,46 @@
 
 2003-01-05   Darren Duncan <perl@DarrenDuncan.net>
 
-    * DBIx-Portable Release 0.01, containing DBIx::Portable 0.01, was released
-    on CPAN; this is the only release of the DBIx-Portable distribution, which
-    was subsequently renamed to Rosetta.  This is the only release of any
-    distribution to contain DBIx::Portable, which at this time contains no
-    executable code but for declaring a name and version.  This is the first
-    release of any distribution to contain design documentation that became the
-    Rosetta distribution.
+    * DBIx-Portable Release 0.01, containing DBIx::Portable 0.01, was
+    released on CPAN; this is the only release of the DBIx-Portable
+    distribution, which was subsequently renamed to Rosetta.  This is the
+    only release of any distribution to contain DBIx::Portable, which at
+    this time contains no executable code but for declaring a name and
+    version.  This is the first release of any distribution to contain
+    design documentation that became the Rosetta distribution.
 
 2002-11-12   Darren Duncan <perl@DarrenDuncan.net>
 
     * Began development on the modules which became the Rosetta
-    distribution as their own entity that is separate from my application, for
-    open-source distribution on CPAN.  The modules were to comprise an
+    distribution as their own entity that is separate from my application,
+    for open-source distribution on CPAN.  The modules were to comprise an
     RDBMS-generic DB framework for any application to use.
 
     * Modules based on a template created by h2xs 1.18.
 
 2002-07-28
 
-    * Posted the first significant update to the second prototype, which added
-    an index or cache for data that was expensive to calculate for each page
-    request, and involved rewriting about a fourth of the perl code.
+    * Posted the first significant update to the second prototype, which
+    added an index or cache for data that was expensive to calculate for
+    each page request, and involved rewriting about a fourth of the perl
+    code.
 
 2002-06-07
 
     * Posted to my website the second public prototype demo of the new
-    self-proprietary database driven application, whose database schema, user
-    interface, feature set, and Perl application code was almost completely
-    rewritten. The new version explicitly had separate modules for database
-    communication and the web interface logic, with MySQL-specific code and
-    database generic or data dictionary code in separate files, and separate
-    files for parts of the web interface.  The program used the same generic
-    CPAN modules as in the first prototype, DBI/MySQL and CGI::Portable.
+    self-proprietary database driven application, whose database schema,
+    user interface, feature set, and Perl application code was almost
+    completely rewritten. The new version explicitly had separate modules
+    for database communication and the web interface logic, with
+    MySQL-specific code and database generic or data dictionary code in
+    separate files, and separate files for parts of the web interface.  The
+    program used the same generic CPAN modules as in the first prototype,
+    DBI/MySQL and CGI::Portable.
 
-    * This is when I started writing self-contained code components that were
-    explicitly designed to enable external code that used them to work
-    seamlessly on multiple database products, and hence 2002 is the start of my
-    declared copyright date range for Rosetta.
+    * This is when I started writing self-contained code components that
+    were explicitly designed to enable external code that used them to work
+    seamlessly on multiple database products, and hence 2002 is the start
+    of my declared copyright date range for Rosetta.
 
 2001-11-24
 
@@ -565,15 +245,16 @@
 2001-07-12
 
     * Posted to my website the first public prototype demo of a new
-    self-proprietary database driven application, which is like a cross between
-    a multimedia metadata catalogue and a repository for historical or
-    genealogical data.  This application contained the first prototypes of code
-    that ended up in these modules.  All of this application's code, for
-    database communication and web interface logic, was situated in a single
-    module, with the rest of the program being more generic CPAN modules like
-    DBI (and DBD for MySQL) and CGI::Portable.
+    self-proprietary database driven application, which is like a cross
+    between a multimedia metadata catalogue and a repository for historical
+    or genealogical data.  This application contained the first prototypes
+    of code that ended up in these modules.  All of this application's
+    code, for database communication and web interface logic, was situated
+    in a single module, with the rest of the program being more generic
+    CPAN modules like DBI (and DBD for MySQL) and CGI::Portable.
 
 2000-05-17
 
-    * Requested MySQL database privileges on my web host so I have something to
-    start developing, testing and deploying database driven applications on.
+    * Requested MySQL database privileges on my web host so I have
+    something to start developing, testing and deploying database driven
+    applications on.

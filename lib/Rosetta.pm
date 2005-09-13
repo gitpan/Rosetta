@@ -2,7 +2,7 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta;
-use version; our $VERSION = qv('0.48.0');
+use version; our $VERSION = qv('0.48.1');
 
 use Scalar::Util;
 use only 'Locale::KeyedText' => '1.6.0-';
@@ -1326,7 +1326,7 @@ Rosetta - Rigorous database portability
 
 =head1 VERSION
 
-This document describes Rosetta version 0.48.0.
+This document describes Rosetta version 0.48.1.
 
 =head1 SYNOPSIS
 
@@ -1335,190 +1335,205 @@ I<The previous SYNOPSIS was removed; a new one will be written later.>
 =head1 DESCRIPTION
 
 The Rosetta Perl 5 module defines a complete and rigorous API for database
-access that provides hassle-free portability between many dozens of database
-products for database-using applications of any size and complexity, that
-leverage all sorts of advanced database product features.  The Rosetta Native
-Interface (RNI) allows you to create specifications for any type of database
-task or activity (eg: queries, DML, DDL, connection management) that look like
-ordinary routines (procedures or functions) to your programs, and execute them
-as such; all routine arguments are named.
+access that provides hassle-free portability between many dozens of
+database products for database-using applications of any size and
+complexity, that leverage all sorts of advanced database product features. 
+The Rosetta Native Interface (RNI) allows you to create specifications for
+any type of database task or activity (eg: queries, DML, DDL, connection
+management) that look like ordinary routines (procedures or functions) to
+your programs, and execute them as such; all routine arguments are named.
 
-Rosetta is trivially easy to install, since it is written in pure Perl and it
-has few external dependencies.
+Rosetta is trivially easy to install, since it is written in pure Perl and
+it has few external dependencies.
 
 One of the main goals of Rosetta is similar to that of the Java platform,
-namely "write once, run anywhere".  Code written against the RNI will run in an
-identical fashion with zero changes regardless of what underlying database
-product is in use.  Rosetta is intended to help free users and developers from
-database vendor lock-in, such as that caused by the investment in large
-quantities of vendor-specific code.  It also comes with a comprehensive
-validation suite that proves it is providing identical behaviour no matter what
-the underlying database vendor is.
+namely "write once, run anywhere".  Code written against the RNI will run
+in an identical fashion with zero changes regardless of what underlying
+database product is in use.  Rosetta is intended to help free users and
+developers from database vendor lock-in, such as that caused by the
+investment in large quantities of vendor-specific code.  It also comes with
+a comprehensive validation suite that proves it is providing identical
+behaviour no matter what the underlying database vendor is.
 
-The RNI is structured in a loosely similar fashion to the DBI module's API, and
-it should be possible to adapt applications written to use the DBI or one of
-its many wrapper modules without too much trouble, if not directly then by way
-of an emulation layer.  One aspect of this similarity is the hierarchy of
-interface objects; you start with a root, which spawns objects that represent
-database connections, each of which spawns objects representing queries or
-statements run against a database through said connections.  Another
-similarity, which is more specific to DBI itself, is that the API definition is
-uncoupled from any particular implementation, such that many specialized
-implementations can exist and be distributed separately.  Also, a multiplicity
-of implementations can be used in parallel by the same application through a
-common interface.  Where DBI gives the name 'driver' to each implementation,
-Rosetta gives the name 'Engine', which may be more descriptive as they sit
-"beneath" the interface; in some cases, an Engine can even be fully
-self-contained, rather than mediating with an external database.  Another
-similarity is that the preparation and execution (with place-holder
-substitution) of database instructions are distinct activities, and you can
-reuse a prepared instruction for multiple executions to get performance gains.
+The RNI is structured in a loosely similar fashion to the DBI module's API,
+and it should be possible to adapt applications written to use the DBI or
+one of its many wrapper modules without too much trouble, if not directly
+then by way of an emulation layer.  One aspect of this similarity is the
+hierarchy of interface objects; you start with a root, which spawns objects
+that represent database connections, each of which spawns objects
+representing queries or statements run against a database through said
+connections.  Another similarity, which is more specific to DBI itself, is
+that the API definition is uncoupled from any particular implementation,
+such that many specialized implementations can exist and be distributed
+separately.  Also, a multiplicity of implementations can be used in
+parallel by the same application through a common interface.  Where DBI
+gives the name 'driver' to each implementation, Rosetta gives the name
+'Engine', which may be more descriptive as they sit "beneath" the
+interface; in some cases, an Engine can even be fully self-contained,
+rather than mediating with an external database.  Another similarity is
+that the preparation and execution (with place-holder substitution) of
+database instructions are distinct activities, and you can reuse a prepared
+instruction for multiple executions to get performance gains.
 
-The Rosetta module does not talk to or implement any databases by itself; it is
-up to separately distributed Engine modules to do this.  You can see a reference
-implementation of one in the Rosetta::Engine::Generic module.  Rosetta itself
-mainly provides a skeleton to which Engines attach, and does basic input and
-output validation so that Engines and applications respectively don't have to;
-otherwise, an Engine has complete freedom to fulfill requests how it wishes.
+The Rosetta module does not talk to or implement any databases by itself;
+it is up to separately distributed Engine modules to do this.  You can see
+a reference implementation of one in the Rosetta::Engine::Generic module. 
+Rosetta itself mainly provides a skeleton to which Engines attach, and does
+basic input and output validation so that Engines and applications
+respectively don't have to; otherwise, an Engine has complete freedom to
+fulfill requests how it wishes.
 
-The main difference between Rosetta and the DBI is that Rosetta takes its input
-primarily as SQL::Routine (SRT) objects, where DBI takes SQL strings.  See the
-documentation for SQL::Routine (distributed separately) for details on how to
-define those objects.  Also, when Rosetta dumps a scanned database schema, it
-does so as SRT objects, while DBI dumps as either SQL strings or simple Perl
-arrays, depending on the schema object type.  Each 'routine' that Rosetta takes
-as input is equivalent to one or more SQL statements, where later statements
-can use the results of earlier ones as their input.  The named argument list of
-a 'routine' is analogous to the bind var list of DBI; each one defines what
-values can be given to the statements at "execute" time.
+The main difference between Rosetta and the DBI is that Rosetta takes its
+input primarily as SQL::Routine (SRT) objects, where DBI takes SQL strings.
+ See the documentation for SQL::Routine (distributed separately) for
+details on how to define those objects.  Also, when Rosetta dumps a scanned
+database schema, it does so as SRT objects, while DBI dumps as either SQL
+strings or simple Perl arrays, depending on the schema object type.  Each
+'routine' that Rosetta takes as input is equivalent to one or more SQL
+statements, where later statements can use the results of earlier ones as
+their input.  The named argument list of a 'routine' is analogous to the
+bind var list of DBI; each one defines what values can be given to the
+statements at "execute" time.
 
-Unlike SQL strings, SRT objects have very little redundancy, and the parts are
-linked by references rather than by name; the spelling of each SQL identifier
-(such as a table or column name) is stored exactly once; if you change the
-single copy, then all code that refers to the entity updates at once.  SRT
-objects can also store meta-data that SQL strings can't accomodate, and you
-define database actions with the objects in exactly the same way regardless of
-the database product in use; you do not write slightly different versions for
-each as you do with SQL strings.  Developers don't have to restrict their
-conceptual processes into the limits or dialect of a single product, or spend
-time worrying about how to express the same idea against different products.
+Unlike SQL strings, SRT objects have very little redundancy, and the parts
+are linked by references rather than by name; the spelling of each SQL
+identifier (such as a table or column name) is stored exactly once; if you
+change the single copy, then all code that refers to the entity updates at
+once.  SRT objects can also store meta-data that SQL strings can't
+accomodate, and you define database actions with the objects in exactly the
+same way regardless of the database product in use; you do not write
+slightly different versions for each as you do with SQL strings. 
+Developers don't have to restrict their conceptual processes into the
+limits or dialect of a single product, or spend time worrying about how to
+express the same idea against different products.
 
-Rosetta is especially suited for data-driven applications, since the composite
-scalar values in their data dictionaries can often be copied directly to RNI
-structures, saving applications the tedious work of generating SQL themselves.
+Rosetta is especially suited for data-driven applications, since the
+composite scalar values in their data dictionaries can often be copied
+directly to RNI structures, saving applications the tedious work of
+generating SQL themselves.
 
 Rosetta is conceptually a DBI wrapper, whose strongest addition is SQL
-generation, but it also works without the DBI, and with non-SQL databases; it
-is up to each Engine to use or not use DBI, though most will use it because the
-DBI is a high quality and mature platform to build upon.
+generation, but it also works without the DBI, and with non-SQL databases;
+it is up to each Engine to use or not use DBI, though most will use it
+because the DBI is a high quality and mature platform to build upon.
 
 The choice between using DBI and using Rosetta seems to be analogous to the
-choice between the C and Java programming languages, respectively, where each
-database product is analogous to a hardware CPU architecture or wider hardware
-platform.  The DBI is great for people who like working as close to the metal
-as possible, with direct access to each database product's native way of doing
-things, those who *want* to talk to their database in its native SQL dialect,
-and those who want the absolute highest performance.  Rosetta is more high
-level, for those who want the write-once run-anywhere experience, less of a
-burden on their creativity, more development time saving features, and are
-willing to sacrifice a modicum of performance for the privilege.
+choice between the C and Java programming languages, respectively, where
+each database product is analogous to a hardware CPU architecture or wider
+hardware platform.  The DBI is great for people who like working as close
+to the metal as possible, with direct access to each database product's
+native way of doing things, those who *want* to talk to their database in
+its native SQL dialect, and those who want the absolute highest
+performance.  Rosetta is more high level, for those who want the write-once
+run-anywhere experience, less of a burden on their creativity, more
+development time saving features, and are willing to sacrifice a modicum of
+performance for the privilege.
 
 There exist on CPAN many dozens of other modules or frameworks whose modus
-operandi is to wrap the DBI or be used together with it for various reasons,
-such as to provide automated object persistence functionality, or a
-cross-database portability solution, or to provide part of a wider scoped
-application tool kit, or to generate SQL, or to clone databases, or generate
-reports, or provide a web interface, or to provide a "simpler" or "easier to
-use" interface.  So, outside the DBI question, a choice exists between using
-Rosetta and one of these other CPAN modules.  Going into detail on that matter
-is outside the scope of this documentation, but a few salient points are
-offered.
+operandi is to wrap the DBI or be used together with it for various
+reasons, such as to provide automated object persistence functionality, or
+a cross-database portability solution, or to provide part of a wider scoped
+application tool kit, or to generate SQL, or to clone databases, or
+generate reports, or provide a web interface, or to provide a "simpler" or
+"easier to use" interface.  So, outside the DBI question, a choice exists
+between using Rosetta and one of these other CPAN modules.  Going into
+detail on that matter is outside the scope of this documentation, but a few
+salient points are offered.
 
-For one thing, Rosetta allows you to do a lot more than the alternatives in an
-elegant fashion; with other modules, you would often have to inject fragments of
-raw SQL into their objects (such as "select" query conditionals) to accomplish
-what you want; with Rosetta, you should never need to do any SQL injection.  For
-another point, Rosetta has a strong emphasis on portability between many
-database products; only a handful of other modules support more than 2-3
-database products, and many only claim to support one (usually MySQL).  Also,
-more than half of the other modules look like they had only 5-20 hours of effort
-at most put into them, while Rosetta and its related modules have likely had
-over 1000 hours of full time effort put into them.  For another point, there is
-a frequent lack of support for commonly desired database features in other
-modules, such as multiple column keys.  Also, most modules have a common
-structural deficiency such that they are designed to support a very specific set
-of database concepts, and adding more is a lot of work; by contrast, Rosetta is
-internally designed in a heavily data-driven fashion, allowing the addition or
-alternation of many features with little cost in effort or complexity.
+For one thing, Rosetta allows you to do a lot more than the alternatives in
+an elegant fashion; with other modules, you would often have to inject
+fragments of raw SQL into their objects (such as "select" query
+conditionals) to accomplish what you want; with Rosetta, you should never
+need to do any SQL injection.  For another point, Rosetta has a strong
+emphasis on portability between many database products; only a handful of
+other modules support more than 2-3 database products, and many only claim
+to support one (usually MySQL).  Also, more than half of the other modules
+look like they had only 5-20 hours of effort at most put into them, while
+Rosetta and its related modules have likely had over 1000 hours of full
+time effort put into them.  For another point, there is a frequent lack of
+support for commonly desired database features in other modules, such as
+multiple column keys.  Also, most modules have a common structural
+deficiency such that they are designed to support a very specific set of
+database concepts, and adding more is a lot of work; by contrast, Rosetta
+is internally designed in a heavily data-driven fashion, allowing the
+addition or alternation of many features with little cost in effort or
+complexity.
 
-It should be noted that Rosetta itself has no aim to be an "object-relational
-mapper", since this isn't related to its primary function of making all database
-products look the same; its API is still defined solidly in relational database
-specific terms such as schemas, tables, columns, keys, joins, queries, views,
-DML, DDL, connections, cursors, triggers, etc.  If you need an actual "object
-oriented persistence" solution, which makes your own custom application objects
-transparently persistent, or a persistence layer whose API is defined in terms
-like objects and attributes, then you will need an alternative to the Rosetta
-core to give that to you, such as modules like Class::DBI, Tangram, and Alzabo,
-or a custom solution (these can, of course, be layered on top of Rosetta).
+It should be noted that Rosetta itself has no aim to be an
+"object-relational mapper", since this isn't related to its primary
+function of making all database products look the same; its API is still
+defined solidly in relational database specific terms such as schemas,
+tables, columns, keys, joins, queries, views, DML, DDL, connections,
+cursors, triggers, etc.  If you need an actual "object oriented
+persistence" solution, which makes your own custom application objects
+transparently persistent, or a persistence layer whose API is defined in
+terms like objects and attributes, then you will need an alternative to the
+Rosetta core to give that to you, such as modules like Class::DBI, Tangram,
+and Alzabo, or a custom solution (these can, of course, be layered on top
+of Rosetta).
 
 Perhaps a number of other CPAN modules' authors will see value in adding
-back-end support for Rosetta and/or SQL::Routine to their offerings, either as
-a supplement to their DBI-using native database SQL back-ends, or as a single
-replacement for the lot of them.  Particularly in the latter case, the authors
-will be more freed up to focus on their added value, such as object persistence
-or web interfaces, rather than worrying about portability issues.  As quid quo
-pro, perhaps some of the other CPAN modules (or parts of them) can be used by a
-Rosetta Engine to help it do its work.
+back-end support for Rosetta and/or SQL::Routine to their offerings, either
+as a supplement to their DBI-using native database SQL back-ends, or as a
+single replacement for the lot of them.  Particularly in the latter case,
+the authors will be more freed up to focus on their added value, such as
+object persistence or web interfaces, rather than worrying about
+portability issues.  As quid quo pro, perhaps some of the other CPAN
+modules (or parts of them) can be used by a Rosetta Engine to help it do
+its work.
 
-I<To cut down on the size of the SQL::Routine module itself, most of the POD
-documentation is in these other files: L<Rosetta::Details>,
+I<To cut down on the size of the SQL::Routine module itself, most of the
+POD documentation is in these other files: L<Rosetta::Details>,
 L<Rosetta::Features>, L<Rosetta::Framework>.>
 
 =head1 CLASSES IN THIS MODULE
 
-This module is implemented by several object-oriented Perl 5 packages, each of
-which is referred to as a class.  They are: B<Rosetta> (the module's name-sake),
-B<Rosetta::Interface> (aka B<Interface>), B<Rosetta::Interface::Application>
-(aka B<Application>), B<Rosetta::Interface::Environment> (aka B<Environment>),
+This module is implemented by several object-oriented Perl 5 packages, each
+of which is referred to as a class.  They are: B<Rosetta> (the module's
+name-sake), B<Rosetta::Interface> (aka B<Interface>),
+B<Rosetta::Interface::Application> (aka B<Application>),
+B<Rosetta::Interface::Environment> (aka B<Environment>),
 B<Rosetta::Interface::Connection> (aka B<Connection>),
-B<Rosetta::Interface::Cursor> (aka B<Cursor>), B<Rosetta::Interface::Literal>
-(aka B<Literal>), B<Rosetta::Interface::Success> (aka B<Success>),
+B<Rosetta::Interface::Cursor> (aka B<Cursor>),
+B<Rosetta::Interface::Literal> (aka B<Literal>),
+B<Rosetta::Interface::Success> (aka B<Success>),
 B<Rosetta::Interface::Preparation> (aka B<Preparation>),
-B<Rosetta::Interface::Error> (aka B<Error>), B<Rosetta::Engine> (aka B<Engine>),
-and B<Rosetta::Dispatcher> (aka B<Dispatcher>).
+B<Rosetta::Interface::Error> (aka B<Error>), B<Rosetta::Engine> (aka
+B<Engine>), and B<Rosetta::Dispatcher> (aka B<Dispatcher>).
 
 I<While all 12 of the above classes are implemented in one module for
-convenience, you should consider all 12 names as being "in use"; do not create
-any modules or packages yourself that have the same names.>
+convenience, you should consider all 12 names as being "in use"; do not
+create any modules or packages yourself that have the same names.>
 
 The Interface classes do most of the work and are what you mainly use.  The
-name-sake class mainly exists to guide CPAN in indexing the whole module, but it
-also provides a set of stateless utility methods and constants that the other
-classes inherit, and it provides wrapper functions over the Interface classes
-for your convenience; you never instantiate an object of 'Rosetta' itself.
+name-sake class mainly exists to guide CPAN in indexing the whole module,
+but it also provides a set of stateless utility methods and constants that
+the other classes inherit, and it provides wrapper functions over the
+Interface classes for your convenience; you never instantiate an object of
+'Rosetta' itself.
 
 The Engine class is only invoked indirectly, via the Interface classes;
 moreover, you need to choose an external class which subclasses Engine (and
 implements all of its methods) to use via the Interface class.
 
 The Dispatcher class is used internally by the Application class (as its
-"Engine") to implement an ease-of-use feature of Rosetta where multiple Rosetta
-Engines can be used as one.  An example of this is that you can invoke a
-CATALOG_LIST built-in routine without specifying an Engine to run it against;
-Dispatcher will run that command against each individual Engine behind the
-scenes and combine their results; you then see a single list of databases that
-Rosetta can access without regard for which Engine mediates access.  As a second
-example, you can invoke a CATALOG_OPEN built-in off of the root Application
-Interface rather than having to do it against the correct Environment Interface;
-Dispatcher will detect which Environment is required (based on info in your
-SQL::Routine) and load/dispatch to the appropriate Engine that mediates the
-database connection.
+"Engine") to implement an ease-of-use feature of Rosetta where multiple
+Rosetta Engines can be used as one.  An example of this is that you can
+invoke a CATALOG_LIST built-in routine without specifying an Engine to run
+it against; Dispatcher will run that command against each individual Engine
+behind the scenes and combine their results; you then see a single list of
+databases that Rosetta can access without regard for which Engine mediates
+access.  As a second example, you can invoke a CATALOG_OPEN built-in off of
+the root Application Interface rather than having to do it against the
+correct Environment Interface; Dispatcher will detect which Environment is
+required (based on info in your SQL::Routine) and load/dispatch to the
+appropriate Engine that mediates the database connection.
 
 =head1 BRIEF FUNCTION AND METHOD LIST
 
-Here is a compact list of this module's functions and methods along with their 
-arguments.  For full details on each one, please see L<Rosetta::Details>.
+Here is a compact list of this module's functions and methods along with
+their arguments.  For full details on each one, please see
+L<Rosetta::Details>.
 
 CONSTRUCTOR WRAPPER FUNCTIONS:
 
@@ -1632,8 +1647,8 @@ This module requires any version of Perl 5.x.y that is at least 5.8.1.
 It also requires the Perl modules L<version> and L<only>, which would
 conceptually be built-in to Perl, but aren't, so they are on CPAN instead.
 
-It also requires the Perl module L<Scalar::Util>, 
-which would conceptually be built-in to Perl, but is bundled with it instead.
+It also requires the Perl module L<Scalar::Util>, which would conceptually
+be built-in to Perl, but is bundled with it instead.
 
 It also requires these modules that are on CPAN:
 
@@ -1648,23 +1663,24 @@ None reported.
 
 L<perl(1)>, L<Rosetta::L::en>, L<Rosetta::Details>, L<Rosetta::Features>,
 L<Rosetta::Framework>, L<Locale::KeyedText>, L<SQL::Routine>,
-L<Rosetta::Validator>, L<Rosetta::Engine::Generic>, L<Rosetta::Emulator::DBI>,
-L<DBI>, L<Alzabo>, L<SPOPS>, L<Class::DBI>, L<Tangram>, L<HDB>, L<Genezzo>,
-L<DBIx::RecordSet>, L<DBIx::SearchBuilder>, L<SQL::Schema>, L<DBIx::Abstract>,
-L<DBIx::AnyDBD>, L<DBIx::Browse>, L<DBIx::SQLEngine>, L<MKDoc::SQL>,
-L<Data::Transactional>, L<DBIx::ModelUpdate>, L<DBIx::ProcedureCall>, and
-various other modules.
+L<Rosetta::Validator>, L<Rosetta::Engine::Generic>,
+L<Rosetta::Emulator::DBI>, L<DBI>, L<Alzabo>, L<SPOPS>, L<Class::DBI>,
+L<Tangram>, L<HDB>, L<Genezzo>, L<DBIx::RecordSet>, L<DBIx::SearchBuilder>,
+L<SQL::Schema>, L<DBIx::Abstract>, L<DBIx::AnyDBD>, L<DBIx::Browse>,
+L<DBIx::SQLEngine>, L<MKDoc::SQL>, L<Data::Transactional>,
+L<DBIx::ModelUpdate>, L<DBIx::ProcedureCall>, and various other modules.
 
 =head1 BUGS AND LIMITATIONS
 
 This module is currently in pre-alpha development status, meaning that some
-parts of it will be changed in the near future, perhaps in incompatible ways;
-however, I believe that any further incompatible changes will be small.  The
-current state is analogous to 'developer releases' of operating systems; it is
-reasonable to being writing code that uses this module now, but you should be
-prepared to maintain it later in keeping with API changes.  All of this said, I
-plan to move this module into alpha development status within the next few
-releases, once I start using it in a production environment myself.
+parts of it will be changed in the near future, perhaps in incompatible
+ways; however, I believe that any further incompatible changes will be
+small.  The current state is analogous to 'developer releases' of operating
+systems; it is reasonable to being writing code that uses this module now,
+but you should be prepared to maintain it later in keeping with API
+changes.  All of this said, I plan to move this module into alpha
+development status within the next few releases, once I start using it in a
+production environment myself.
 
 =head1 AUTHOR
 
@@ -1675,35 +1691,36 @@ Darren R. Duncan (C<perl@DarrenDuncan.net>)
 This file is part of the Rosetta database portability library.
 
 Rosetta is Copyright (c) 2002-2005, Darren R. Duncan.  All rights reserved.
-Address comments, suggestions, and bug reports to C<perl@DarrenDuncan.net>, or
-visit L<http://www.DarrenDuncan.net/> for more information.
+Address comments, suggestions, and bug reports to C<perl@DarrenDuncan.net>,
+or visit L<http://www.DarrenDuncan.net/> for more information.
 
-Rosetta is free software; you can redistribute it and/or modify it under the
-terms of the GNU General Public License (GPL) as published by the Free Software
-Foundation (L<http://www.fsf.org/>); either version 2 of the License, or (at your
-option) any later version.  You should have received a copy of the GPL as part
-of the Rosetta distribution, in the file named "GPL"; if not, write to the Free
-Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301,
-USA.
+Rosetta is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License (GPL) as published by the Free
+Software Foundation (L<http://www.fsf.org/>); either version 2 of the
+License, or (at your option) any later version.  You should have received a
+copy of the GPL as part of the Rosetta distribution, in the file named
+"GPL"; if not, write to the Free Software Foundation, Inc., 51 Franklin St,
+Fifth Floor, Boston, MA  02110-1301, USA.
 
 Linking Rosetta statically or dynamically with other modules is making a
 combined work based on Rosetta.  Thus, the terms and conditions of the GPL
-cover the whole combination.  As a special exception, the copyright holders of
-Rosetta give you permission to link Rosetta with independent modules,
-regardless of the license terms of these independent modules, and to copy and
-distribute the resulting combined work under terms of your choice, provided
-that every copy of the combined work is accompanied by a complete copy of the
-source code of Rosetta (the version of Rosetta used to produce the combined
-work), being distributed under the terms of the GPL plus this exception.  An
-independent module is a module which is not derived from or based on Rosetta,
-and which is fully useable when not linked to Rosetta in any form.
+cover the whole combination.  As a special exception, the copyright holders
+of Rosetta give you permission to link Rosetta with independent modules,
+regardless of the license terms of these independent modules, and to copy
+and distribute the resulting combined work under terms of your choice,
+provided that every copy of the combined work is accompanied by a complete
+copy of the source code of Rosetta (the version of Rosetta used to produce
+the combined work), being distributed under the terms of the GPL plus this
+exception.  An independent module is a module which is not derived from or
+based on Rosetta, and which is fully useable when not linked to Rosetta in
+any form.
 
 Any versions of Rosetta that you modify and distribute must carry prominent
 notices stating that you changed the files and the date of any changes, in
 addition to preserving this original copyright notice and other credits.
 Rosetta is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE.
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.
 
 While it is by no means required, the copyright holders of Rosetta would
 appreciate being informed any time you create a modified version of Rosetta

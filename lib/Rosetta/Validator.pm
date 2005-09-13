@@ -2,7 +2,7 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta::Validator;
-use version; our $VERSION = qv('0.48.0');
+use version; our $VERSION = qv('0.48.1');
 
 use only 'Rosetta' => '0.48.0-';
 
@@ -398,13 +398,14 @@ Rosetta::Validator - A common comprehensive test suite to run against all Engine
 
 =head1 VERSION
 
-This document describes Rosetta::Validator version 0.48.0.
+This document describes Rosetta::Validator version 0.48.1.
 
 =head1 SYNOPSIS
 
-This example demonstrates how Rosetta::Validator could be used in the standard
-test suite for an Engine module; in fact, this example is a simplified version
-of the actual t/*.t file for the Rosetta::Engine::Generic module.
+This example demonstrates how Rosetta::Validator could be used in the
+standard test suite for an Engine module; in fact, this example is a
+simplified version of the actual t/*.t file for the
+Rosetta::Engine::Generic module.
 
 This is the content of a t_setup.pl, for a SQLite database:
 
@@ -546,20 +547,20 @@ This is a generalized version of Rosetta_Engine_Generic.t:
 
 =head1 DESCRIPTION
 
-The Rosetta::Validator Perl 5 module is a common comprehensive test suite to
-run against all Rosetta Engines.  You run it against a Rosetta Engine module to
-ensure that the Engine and/or the database behind it implements the parts of
-the Rosetta API that your application needs, and that the API is implemented
-correctly.  Rosetta::Validator is intended to guarantee a measure of quality
-assurance (QA) for Rosetta, so your application can use the database access
-framework with confidence of safety.
+The Rosetta::Validator Perl 5 module is a common comprehensive test suite
+to run against all Rosetta Engines.  You run it against a Rosetta Engine
+module to ensure that the Engine and/or the database behind it implements
+the parts of the Rosetta API that your application needs, and that the API
+is implemented correctly.  Rosetta::Validator is intended to guarantee a
+measure of quality assurance (QA) for Rosetta, so your application can use
+the database access framework with confidence of safety.
 
 Alternately, if you are writing a Rosetta Engine module yourself,
-Rosetta::Validator saves you the work of having to write your own test suite
-for it.  You can also be assured that if your module passes
-Rosetta::Validator's approval, then your module can be easily swapped in for
-other Engine modules by your users, and that any changes you make between
-releases haven't broken something important.
+Rosetta::Validator saves you the work of having to write your own test
+suite for it.  You can also be assured that if your module passes
+Rosetta::Validator's approval, then your module can be easily swapped in
+for other Engine modules by your users, and that any changes you make
+between releases haven't broken something important.
 
 Rosetta::Validator would be used similarly to how Sun has an official
 validation suite for Java Virtual Machines to make sure they implement the
@@ -568,83 +569,87 @@ official Java specification.
 For reference and context, please see the FEATURE SUPPORT VALIDATION
 documentation section in the core "Rosetta" module.
 
-Note that, as is the nature of test suites, Rosetta::Validator will be getting
-regular updates and additions, so that it anticipates all of the different ways
-that people want to use their databases.  This task is unlikely to ever be
-finished, given the seemingly infinite size of the task.  You are welcome and
-encouraged to submit more tests to be included in this suite at any time, as
-holes in coverage are discovered.
+Note that, as is the nature of test suites, Rosetta::Validator will be
+getting regular updates and additions, so that it anticipates all of the
+different ways that people want to use their databases.  This task is
+unlikely to ever be finished, given the seemingly infinite size of the
+task.  You are welcome and encouraged to submit more tests to be included
+in this suite at any time, as holes in coverage are discovered.
 
 =head1 PUBLIC FUNCTIONS
 
-You invoke all of these functions off of the class name.  No Rosetta::Validator 
-objects are ever returned, so you can not invoke methods off of them.
+You invoke all of these functions off of the class name.  No
+Rosetta::Validator objects are ever returned, so you can not invoke methods
+off of them.
 
 =head2 total_possible_tests()
 
-This method returns an integer that says how many elements are supposed to be
-in the "test results" array returned by main(); it should be equal to the
-number of skips + passes + fails.  You can use this number at the start of your
-test script when declaring the 1..N total number of tests that will be
-considered, and you can compare that to the actual results.
+This method returns an integer that says how many elements are supposed to
+be in the "test results" array returned by main(); it should be equal to
+the number of skips + passes + fails.  You can use this number at the start
+of your test script when declaring the 1..N total number of tests that will
+be considered, and you can compare that to the actual results.
 
 =head2 validate_connection_setup_options( SETUP_OPTIONS )
 
-This function is used internally by main() to confirm that its SETUP_OPTIONS
-argument is valid, prior to it running any tests; it will throw an exception if
-it can find anything wrong.  This function is public so that external code can
-use it to perform advance validation on an identical configuration structure
-without side-effects.  Note that this function is not thorough; except for the
-'data_link_product'.'product_code' (Rosetta Engine class name), it does not test
-that Node attribute entries in SETUP_OPTIONS have defined values, and even that
-single attribute isn't tested beyond that it is defined.  Testing for defined
-and mandatory option values is left to the SQL::Routine methods.
+This function is used internally by main() to confirm that its
+SETUP_OPTIONS argument is valid, prior to it running any tests; it will
+throw an exception if it can find anything wrong.  This function is public
+so that external code can use it to perform advance validation on an
+identical configuration structure without side-effects.  Note that this
+function is not thorough; except for the 'data_link_product'.'product_code'
+(Rosetta Engine class name), it does not test that Node attribute entries
+in SETUP_OPTIONS have defined values, and even that single attribute isn't
+tested beyond that it is defined.  Testing for defined and mandatory option
+values is left to the SQL::Routine methods.
 
 =head2 main( SETUP_OPTIONS[, TRACE_FH] )
 
-This function comprises the core of the Rosetta::Validator module, and is what
-actually performs the tests on the Rosetta Engines.  This method will
-instantiate a new Rosetta Interface tree, and a SQL::Routine Container, populate
-the latter, invoke the former, saying to use the Engine and related
-configuration settings in SETUP_OPTIONS, try all sorts of database actions, and
-record the results as "test results", and then let the Rosetta and SQL::Routine
-objects be auto-destructed.  This function returns a new array ref having the
-details of the test results.  The SETUP_OPTIONS argument is a two-dimensional
-hash, where each outer hash element corresponds to a Node type and each inner
-hash element corresponds to an attribute name and value for that Node type. 
-There are 6 allowed Node types: data_storage_product, data_link_product,
-catalog_instance, catalog_link_instance, catalog_instance_opt,
-catalog_link_instance_opt; the first 4 have a specific set of actual scalar or
-enumerated attributes that may be set; with the latter 2, you can set any number
-of virtual attributes that you choose.  The "setup options" say what Rosetta
-Engine to test and how to configure it to work in your customized environment. 
-The actual attributes of the first 4 Node types should be recognized by all
-Engines and have the same meaning to them; you can set any or all of them (see
-the SQL::Routine documentation for the list) except for "id" and "si_name",
+This function comprises the core of the Rosetta::Validator module, and is
+what actually performs the tests on the Rosetta Engines.  This method will
+instantiate a new Rosetta Interface tree, and a SQL::Routine Container,
+populate the latter, invoke the former, saying to use the Engine and
+related configuration settings in SETUP_OPTIONS, try all sorts of database
+actions, and record the results as "test results", and then let the Rosetta
+and SQL::Routine objects be auto-destructed.  This function returns a new
+array ref having the details of the test results.  The SETUP_OPTIONS
+argument is a two-dimensional hash, where each outer hash element
+corresponds to a Node type and each inner hash element corresponds to an
+attribute name and value for that Node type. There are 6 allowed Node
+types: data_storage_product, data_link_product, catalog_instance,
+catalog_link_instance, catalog_instance_opt, catalog_link_instance_opt; the
+first 4 have a specific set of actual scalar or enumerated attributes that
+may be set; with the latter 2, you can set any number of virtual attributes
+that you choose.  The "setup options" say what Rosetta Engine to test and
+how to configure it to work in your customized environment. The actual
+attributes of the first 4 Node types should be recognized by all Engines
+and have the same meaning to them; you can set any or all of them (see the
+SQL::Routine documentation for the list) except for "id" and "si_name",
 which are given default generated values.  The build_connection() function
 requires that, at the very least, you provide a
-'data_link_product'.'product_code' SETUP_OPTIONS value, since that specifies the
-class name of the Rosetta Engine that implements the Connection.  The virtual
-attributes of the last 2 Node types are specific to each Engine (see the
-Engine's documentation for a list), though an Engine may not define any at all. 
-The optional TRACE_FH argument is an open file handle to be given to
-Rosetta.set_trace_fh().  This function should return all errors in "test
-results" that aren't caught by validate_connection_setup_options().
+'data_link_product'.'product_code' SETUP_OPTIONS value, since that
+specifies the class name of the Rosetta Engine that implements the
+Connection.  The virtual attributes of the last 2 Node types are specific
+to each Engine (see the Engine's documentation for a list), though an
+Engine may not define any at all. The optional TRACE_FH argument is an open
+file handle to be given to Rosetta.set_trace_fh().  This function should
+return all errors in "test results" that aren't caught by
+validate_connection_setup_options().
 
 =head1 INTERPRETING THE TEST RESULTS
 
 Each element of the test results array that main() returns is a hash ref
-containing these 5 elements:  1. 'FEATURE_KEY'.  2. 'FEATURE_STATUS'; one of
-'SKIP' (test was not run at all), 'PASS' (test was run and passed), 'FAIL'
-(test was run and failed); for the first one, the Engine said it did not have
-support for the feature, and for the last two, it said that it did.  3.
-'FEATURE_DESC_MSG'; a Locale::KeyedText::Message (LKT) object that is the
-Validator module's description of what DBMS/Engine feature is being tested.  4.
-'VAL_ERROR_MSG'; a LKT object that is set when 'FEATURE_STATUS' is 'FAIL'; this
-is the Validator module's own Error Message, if a test failed; this is made for
-a failure regardless of whether the Engine threw its own exception.  5.
-'ENG_ERROR_MSG'; a LKT object that is the Error Message that the Rosetta
-Interface or Engine threw, if any.
+containing these 5 elements:  1. 'FEATURE_KEY'.  2. 'FEATURE_STATUS'; one
+of 'SKIP' (test was not run at all), 'PASS' (test was run and passed),
+'FAIL' (test was run and failed); for the first one, the Engine said it did
+not have support for the feature, and for the last two, it said that it
+did.  3. 'FEATURE_DESC_MSG'; a Locale::KeyedText::Message (LKT) object that
+is the Validator module's description of what DBMS/Engine feature is being
+tested.  4. 'VAL_ERROR_MSG'; a LKT object that is set when 'FEATURE_STATUS'
+is 'FAIL'; this is the Validator module's own Error Message, if a test
+failed; this is made for a failure regardless of whether the Engine threw
+its own exception.  5. 'ENG_ERROR_MSG'; a LKT object that is the Error
+Message that the Rosetta Interface or Engine threw, if any.
 
 =head1 DEPENDENCIES
 
@@ -669,7 +674,8 @@ L<Locale::KeyedText>, L<Rosetta::Engine::Generic>.
 =head1 BUGS AND LIMITATIONS
 
 This module is currently in pre-alpha development status, meaning that some
-parts of it will be changed in the near future, perhaps in incompatible ways.
+parts of it will be changed in the near future, perhaps in incompatible
+ways.
 
 =head1 AUTHOR
 
@@ -680,35 +686,36 @@ Darren R. Duncan (C<perl@DarrenDuncan.net>)
 This file is part of the Rosetta database portability library.
 
 Rosetta is Copyright (c) 2002-2005, Darren R. Duncan.  All rights reserved.
-Address comments, suggestions, and bug reports to C<perl@DarrenDuncan.net>, or
-visit L<http://www.DarrenDuncan.net/> for more information.
+Address comments, suggestions, and bug reports to C<perl@DarrenDuncan.net>,
+or visit L<http://www.DarrenDuncan.net/> for more information.
 
-Rosetta is free software; you can redistribute it and/or modify it under the
-terms of the GNU General Public License (GPL) as published by the Free Software
-Foundation (L<http://www.fsf.org/>); either version 2 of the License, or (at your
-option) any later version.  You should have received a copy of the GPL as part
-of the Rosetta distribution, in the file named "GPL"; if not, write to the Free
-Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301,
-USA.
+Rosetta is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License (GPL) as published by the Free
+Software Foundation (L<http://www.fsf.org/>); either version 2 of the
+License, or (at your option) any later version.  You should have received a
+copy of the GPL as part of the Rosetta distribution, in the file named
+"GPL"; if not, write to the Free Software Foundation, Inc., 51 Franklin St,
+Fifth Floor, Boston, MA  02110-1301, USA.
 
 Linking Rosetta statically or dynamically with other modules is making a
 combined work based on Rosetta.  Thus, the terms and conditions of the GPL
-cover the whole combination.  As a special exception, the copyright holders of
-Rosetta give you permission to link Rosetta with independent modules,
-regardless of the license terms of these independent modules, and to copy and
-distribute the resulting combined work under terms of your choice, provided
-that every copy of the combined work is accompanied by a complete copy of the
-source code of Rosetta (the version of Rosetta used to produce the combined
-work), being distributed under the terms of the GPL plus this exception.  An
-independent module is a module which is not derived from or based on Rosetta,
-and which is fully useable when not linked to Rosetta in any form.
+cover the whole combination.  As a special exception, the copyright holders
+of Rosetta give you permission to link Rosetta with independent modules,
+regardless of the license terms of these independent modules, and to copy
+and distribute the resulting combined work under terms of your choice,
+provided that every copy of the combined work is accompanied by a complete
+copy of the source code of Rosetta (the version of Rosetta used to produce
+the combined work), being distributed under the terms of the GPL plus this
+exception.  An independent module is a module which is not derived from or
+based on Rosetta, and which is fully useable when not linked to Rosetta in
+any form.
 
 Any versions of Rosetta that you modify and distribute must carry prominent
 notices stating that you changed the files and the date of any changes, in
 addition to preserving this original copyright notice and other credits.
 Rosetta is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE.
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.
 
 While it is by no means required, the copyright holders of Rosetta would
 appreciate being informed any time you create a modified version of Rosetta
