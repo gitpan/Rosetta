@@ -2,9 +2,9 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta::Validator;
-use version; our $VERSION = qv('0.48.1');
+use version; our $VERSION = qv('0.48.2');
 
-use only 'Rosetta' => '0.48.0-';
+use only 'Rosetta' => '0.48.2';
 
 ######################################################################
 ######################################################################
@@ -398,7 +398,7 @@ Rosetta::Validator - A common comprehensive test suite to run against all Engine
 
 =head1 VERSION
 
-This document describes Rosetta::Validator version 0.48.1.
+This document describes Rosetta::Validator version 0.48.2.
 
 =head1 SYNOPSIS
 
@@ -660,7 +660,7 @@ conceptually be built-in to Perl, but aren't, so they are on CPAN instead.
 
 It also requires these modules that are in the current distribution:
 
-    Rosetta 0.48.0
+    Rosetta 0.48.2
 
 =head1 INCOMPATIBILITIES
 

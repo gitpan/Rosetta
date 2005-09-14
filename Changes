@@ -1,6 +1,42 @@
                               Rosetta
 ----------------------------------------------------------------------
 
+2005-09-14   Darren Duncan <perl@DarrenDuncan.net>
+
+    * Rosetta Release 0.48.2 (SVN r813).
+
+    * New code file versions are: Rosetta.pm and Validator.pm 0.48.2.
+
+    * Merged Details.pod into Rosetta.pm:  The Rosetta.pm main
+    documentation section BRIEF FUNCTION AND METHOD LIST was deleted, and
+    all of the significant content of Details.pod was placed in the same
+    location.  These 23 main documentation sections were moved from
+    Details.pod to Rosetta.pm: STRUCTURE, FEATURE SUPPORT VALIDATION,
+    CONSTRUCTOR WRAPPER FUNCTIONS, INTERFACE OBJECT METHODS, INDIRECT
+    APPLICATION OBJECT METHODS, plus [* CONSTRUCTOR FUNCTIONS, * OBJECT
+    METHODS] where '*' is each of [APPLICATION, ENVIRONMENT, CONNECTION,
+    CURSOR, LITERAL, SUCCESS, PREPARATION, ERROR], ENGINE OBJECT FUNCTIONS
+    AND METHODS, DISPATCHER OBJECT FUNCTIONS AND METHODS.  These 5
+    remaining Details.pod documentation sections were redundant and simply
+    deleted with their now superfluous file: NAME, DESCRIPTION, SEE ALSO,
+    AUTHOR, LICENSE AND COPYRIGHT.  Removed all references to Details.pod
+    in all other distribution files.
+
+    * Updated the BRIEF MODULE LIST of Framework.pod to remove the
+    references to SQL::Routine::Details and Rosetta::Details, both of which
+    no longer exist.
+
+    * Updated Framework.pod to remove all references to possible versions
+    of this library that are written in other languages, such as C or
+    Parrot/Pugs/Perl 6.  A C version is unlikely to ever happen, or by that
+    time these references would be severely out of date, and either way
+    they are clutter now.  The Perl 6 version is happening now, but since
+    that is a clone of the Perl 5 version, there's no point for its
+    documentation to refer to itself as a potential future project. Removed
+    the last STRUCTURE paragraph, which specified details about a C
+    representation of Rosetta.  Removed the whole main documentation
+    section AN ALTERNATIVE SECOND VERSION, which mentioned Parrot etc.
+
 2005-09-12   Darren Duncan <perl@DarrenDuncan.net>
 
     * Rosetta Release 0.48.1 (SVN r808).
