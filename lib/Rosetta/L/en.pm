@@ -2,128 +2,158 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta::L::en;
-use version; our $VERSION = qv('0.19.1');
+use version; our $VERSION = qv('0.19.2');
 
 ######################################################################
 
 my $GEN = 'Rosetta Generic Engine Error';
 
 my %text_strings = (
-    'ROS_CLASS_METH_ARG_UNDEF' => 
-        '{CLASS}.{METH}(): undefined (or missing) {ARGNM} argument',
-    'ROS_CLASS_METH_ARG_NO_ARY' => 
-        '{CLASS}.{METH}(): invalid {ARGNM} argument; '.
-        'it is not a Array ref, but rather is "{ARGVL}"',
-    'ROS_CLASS_METH_ARG_NO_HASH' => 
-        '{CLASS}.{METH}(): invalid {ARGNM} argument; '.
-        'it is not a Hash ref, but rather is "{ARGVL}"',
-    'ROS_CLASS_METH_ARG_NO_SUB' => 
-        '{CLASS}.{METH}(): invalid {ARGNM} argument; '.
-        'it is not a Perl anonymous subroutine / "CODE" ref / closure, but rather is "{ARGVL}"',
-    'ROS_CLASS_METH_ARG_NO_OBJ' => 
-        '{CLASS}.{METH}(): invalid {ARGNM} argument; '.
-        'it is not an object, but rather is "{ARGVL}"',
-    'ROS_CLASS_METH_ARG_NO_NODE' => 
-        '{CLASS}.{METH}(): invalid {ARGNM} argument; '.
-        'it is not a SQL::Routine Node object, but rather is "{ARGVL}"',
+    'ROS_CLASS_METH_ARG_UNDEF' =>
+        q[{CLASS}.{METH}(): ]
+        . q[undefined (or missing) {ARGNM} argument],
+    'ROS_CLASS_METH_ARG_NO_ARY' =>
+        q[{CLASS}.{METH}(): ]
+        . q[invalid {ARGNM} argument; ]
+        . q[it is not a Array ref, but rather is "{ARGVL}"],
+    'ROS_CLASS_METH_ARG_NO_HASH' =>
+        q[{CLASS}.{METH}(): ]
+        . q[invalid {ARGNM} argument; ]
+        . q[it is not a Hash ref, but rather is "{ARGVL}"],
+    'ROS_CLASS_METH_ARG_NO_SUB' =>
+        q[{CLASS}.{METH}(): ]
+        . q[invalid {ARGNM} argument; ]
+        . q[it is not a Perl anonymous subroutine / "CODE" ref / closure, but rather is "{ARGVL}"],
+    'ROS_CLASS_METH_ARG_NO_OBJ' =>
+        q[{CLASS}.{METH}(): ]
+        . q[invalid {ARGNM} argument; ]
+        . q[it is not an object, but rather is "{ARGVL}"],
+    'ROS_CLASS_METH_ARG_NO_FH' =>
+        q[{CLASS}.{METH}(): ]
+        . q[invalid {ARGNM} argument; ]
+        . q[it is not an open file handle, but rather is "{ARGVL}"],
+    'ROS_CLASS_METH_ARG_NO_NODE' =>
+        q[{CLASS}.{METH}(): ]
+        . q[invalid {ARGNM} argument; ]
+        . q[it is not a SQL::Routine Node object, but rather is "{ARGVL}"],
 
-    'ROS_CLASS_METH_ARG_WRONG_OBJ_TYPE' => 
-        '{CLASS}.{METH}(): invalid {ARGNM} argument; '.
-        'it is not a "{EXPOTYPE}" object, but rather is a "{ARGOTYPE}" object',
+    'ROS_CLASS_METH_ARG_WRONG_OBJ_TYPE' =>
+        q[{CLASS}.{METH}(): ]
+        . q[invalid {ARGNM} argument; ]
+        . q[it is not a "{EXPOTYPE}" object, but rather is a "{ARGOTYPE}" object],
 
-    'ROS_CLASS_METH_ARG_WRONG_NODE_TYPE' => 
-        '{CLASS}.{METH}(): invalid {ARGNM} argument; '.
-        'it is not a "{EXPNTYPE}" Node, but rather is a "{ARGNTYPE}" Node',
+    'ROS_CLASS_METH_ARG_WRONG_NODE_TYPE' =>
+        q[{CLASS}.{METH}(): ]
+        . q[invalid {ARGNM} argument; ]
+        . q[it is not a "{EXPNTYPE}" Node, but rather is a "{ARGNTYPE}" Node],
 
     'ROS_CLASS_METH_ARG_NODE_NOT_SAME_CONT' =>
-        '{CLASS}.{METH}(): invalid {ARGNM} argument; '.
-        'the "{NTYPE}" Node with Id "{NID}" and Surrogate Id Chain "{SIDCH}" '.
-        'is not in the SQL::Routine Container used by this Rosetta Interface tree',
+        q[{CLASS}.{METH}(): ]
+        . q[invalid {ARGNM} argument; ]
+        . q[the "{NTYPE}" Node with Id "{NID}" and Surrogate Id Chain "{SIDCH}" ]
+        . q[is not in the SQL::Routine Container used by this Rosetta Interface tree],
 
     'ROS_CLASS_METH_ENG_MISC_EXCEPTION' =>
-        '{CLASS}.{METH}(): when trying to invoke the "{ENG_CLASS}" Rosetta Engine, '.
-        'an exception was thrown that is neither a Rosetta::Interface::Error '.
-        'nor a Locale::KeyedText::Message, but rather is "{ERR}"',
+        q[{CLASS}.{METH}(): ]
+        . q[when trying to invoke the "{ENG_CLASS}" Rosetta Engine, ]
+        . q[an exception was thrown that is neither a Rosetta::Interface::Error ]
+        . q[nor a Locale::KeyedText::Message, but rather is "{ERR}"],
 
-    'ROS_CLASS_METH_ENG_RESULT_UNDEF' => 
-        '{CLASS}.{METH}(): undefined (or missing) return value '.
-        'from the Rosetta Engine method {ENG_CLASS}.{METH}()',
-    'ROS_CLASS_METH_ENG_RESULT_NO_OBJ' => 
-        '{CLASS}.{METH}(): invalid return value '.
-        'from the Rosetta Engine method {ENG_CLASS}.{METH}(); '.
-        'it is not an object, but rather is "{RESULTVL}"',
+    'ROS_CLASS_METH_ENG_RESULT_UNDEF' =>
+        q[{CLASS}.{METH}(): ]
+        . q[undefined (or missing) return value ]
+        . q[from the Rosetta Engine method {ENG_CLASS}.{METH}()],
+    'ROS_CLASS_METH_ENG_RESULT_NO_OBJ' =>
+        q[{CLASS}.{METH}(): ]
+        . q[invalid return value ]
+        . q[from the Rosetta Engine method {ENG_CLASS}.{METH}(); ]
+        . q[it is not an object, but rather is "{RESULTVL}"],
 
-    'ROS_CLASS_METH_ENG_RESULT_WRONG_OBJ_TYPE' => 
-        '{CLASS}.{METH}(): invalid return value '.
-        'from the Rosetta Engine method {ENG_CLASS}.{METH}(); '.
-        'it is not a "{EXPOTYPE}" object, but rather is a "{RESULTOTYPE}" object',
+    'ROS_CLASS_METH_ENG_RESULT_WRONG_OBJ_TYPE' =>
+        q[{CLASS}.{METH}(): ]
+        . q[invalid return value ]
+        . q[from the Rosetta Engine method {ENG_CLASS}.{METH}(); ]
+        . q[it is not a "{EXPOTYPE}" object, but rather is a "{RESULTOTYPE}" object],
 
-    'ROS_CLASS_METH_ENG_RESULT_WRONG_ITREE' => 
-        '{CLASS}.{METH}(): invalid return value '.
-        'from the Rosetta Engine method {ENG_CLASS}.{METH}(); '.
-        'that Rosetta Interface does not share a common Rosetta Interface tree '.
-        'with the invocant Interface',
+    'ROS_CLASS_METH_ENG_RESULT_WRONG_ITREE' =>
+        q[{CLASS}.{METH}(): ]
+        . q[invalid return value ]
+        . q[from the Rosetta Engine method {ENG_CLASS}.{METH}(); ]
+        . q[that Rosetta Interface does not share a common Rosetta Interface tree ]
+        . q[with the invocant Interface],
 
     'ROS_I_NEW_ARGS_DIFF_ITREES' =>
-        '{CLASS}.new(): invalid PARENT_BYC[RE|XT]_INTF arguments; '.
-        'they do not share a common Rosetta Interface tree, so no '.
-        'new Interface can be made that has both of them as parents',
+        q[{CLASS}.new(): ]
+        . q[invalid PARENT_BYC[RE|XT]_INTF arguments; ]
+        . q[they do not share a common Rosetta Interface tree, so no ]
+        . q[new Interface can be made that has both of them as parents],
 
     'ROS_IN_NEW_ENGINE_NO_LOAD' =>
-        '{CLASS}.new(): the Engine class "{ENG_CLASS}" failed to load: {ERR}',
+        q[{CLASS}.new(): ]
+        . q[the Engine class "{ENG_CLASS}" failed to load: {ERR}],
     'ROS_IN_NEW_ENGINE_NO_ENGINE' =>
-        '{CLASS}.new(): the class "{ENG_CLASS}" does not sub-class Rosetta::Engine so it is not a valid Engine class',
+        q[{CLASS}.new(): ]
+        . q[the class "{ENG_CLASS}" does not sub-class Rosetta::Engine so it is not a valid Engine class],
 
     'ROS_I_FEATURES_BAD_ARG' =>
-        '{CLASS}.features(): invalid FEATURE_NAME argument; '.
-        '"{ARGVL}" does not match any known Rosetta Feature Name',
+        q[{CLASS}.features(): ]
+        . q[invalid FEATURE_NAME argument; ]
+        . q["{ARGVL}" does not match any known Rosetta Feature Name],
     'ROS_I_FEATURES_BAD_RESULT_SCALAR' =>
-        '{CLASS}.features(): the "{ENG_CLASS}" Rosetta Engine '.
-        'did not return a valid boolean value (or undef), as expressed by "0" or "1", '.
-        'for the scalar query on the Rosetta feature named "{FNAME}"; it is instead: "{VALUE}"',
+        q[{CLASS}.features(): ]
+        . q[the "{ENG_CLASS}" Rosetta Engine ]
+        . q[did not return a valid boolean value (or undef), as expressed by "0" or "1", ]
+        . q[for the scalar query on the Rosetta feature named "{FNAME}"; it is instead: "{VALUE}"],
     'ROS_I_FEATURES_BAD_RESULT_LIST_UNDEF' =>
-        '{CLASS}.features(): the "{ENG_CLASS}" Rosetta Engine '.
-        'did not return a defined value for the list query, but rather: "{VALUE}"',
+        q[{CLASS}.features(): ]
+        . q[the "{ENG_CLASS}" Rosetta Engine ]
+        . q[did not return a defined value for the list query, but rather: "{VALUE}"],
     'ROS_I_FEATURES_BAD_RESULT_LIST_NO_HASH' =>
-        '{CLASS}.features(): the "{ENG_CLASS}" Rosetta Engine '.
-        'did not return a valid Hash ref for the list query, but rather: "{VALUE}"',
+        q[{CLASS}.features(): ]
+        . q[the "{ENG_CLASS}" Rosetta Engine ]
+        . q[did not return a valid Hash ref for the list query, but rather: "{VALUE}"],
     'ROS_I_FEATURES_BAD_RESULT_ITEM_NAME' =>
-        '{CLASS}.features(): the "{ENG_CLASS}" Rosetta Engine '.
-        'returned a list key that does not match any known Rosetta feature name: "{FNAME}"',
+        q[{CLASS}.features(): ]
+        . q[the "{ENG_CLASS}" Rosetta Engine ]
+        . q[returned a list key that does not match any known Rosetta feature name: "{FNAME}"],
     'ROS_I_FEATURES_BAD_RESULT_ITEM_NO_VAL' =>
-        '{CLASS}.features(): the "{ENG_CLASS}" Rosetta Engine '.
-        'did not return a valid boolean value, as expressed by "0" or "1", '.
-        'for the "{FNAME}" feature name in this list query; it is instead undefined',
+        q[{CLASS}.features(): ]
+        . q[the "{ENG_CLASS}" Rosetta Engine ]
+        . q[did not return a valid boolean value, as expressed by "0" or "1", ]
+        . q[for the "{FNAME}" feature name in this list query; it is instead undefined],
     'ROS_I_FEATURES_BAD_RESULT_ITEM_BAD_VAL' =>
-        '{CLASS}.features(): the "{ENG_CLASS}" Rosetta Engine '.
-        'did not return a valid boolean value, as expressed by "0" or "1", '.
-        'for the "{FNAME}" feature name in this list query; it is instead: "{VALUE}"',
+        q[{CLASS}.features(): ]
+        . q[the "{ENG_CLASS}" Rosetta Engine ]
+        . q[did not return a valid boolean value, as expressed by "0" or "1", ]
+        . q[for the "{FNAME}" feature name in this list query; it is instead: "{VALUE}"],
 
     'ROS_E_METH_NOT_IMPL' =>
-        'Rosetta::Engine.{METH}(): this method is not implemented by the "{CLASS}" Rosetta Engine class',
+        q[Rosetta::Engine.{METH}(): ]
+        . q[this method is not implemented by the "{CLASS}" Rosetta Engine class],
 
     'ROS_D_PREPARE_NO_ENGINE_DETERMINED' =>
-        'Rosetta::Dispatcher.prepare(): can\'t determine what Rosetta Engine to dispatch this App invocation to',
+        q[Rosetta::Dispatcher.prepare(): ]
+        . q[can't determine what Rosetta Engine to dispatch this App invocation to],
 
     'ROS_G_PERL_COMPILE_FAIL' =>
-        $GEN.' 00001 - {CLASS} - concerning the SRT routine "{RNAME}"; '.
-        'can"t compile a generated Perl routine ({PERL_ERROR}): \n{PERL_CODE}',
+        $GEN . q[ 00001 - {CLASS} - concerning the SRT routine "{RNAME}"; ]
+        . q[can"t compile a generated Perl routine ({PERL_ERROR}):\n{PERL_CODE}],
     'ROS_G_RTN_TP_NO_INVOK' =>
-        $GEN.' 00002 - {CLASS} - concerning the SRT routine "{RNAME}"; '.
-        'can"t directly invoke a "{RTYPE}" routine (only FUNCTION and PROCEDURE calls are allowed)',
+        $GEN . q[ 00002 - {CLASS} - concerning the SRT routine "{RNAME}"; ]
+        . q[can"t directly invoke a "{RTYPE}" routine (only FUNCTION and PROCEDURE calls are allowed)],
     'ROS_G_NEST_RTN_NO_INVOK' =>
-        $GEN.' 00003 - {CLASS} - concerning the SRT routine "{RNAME}"; '.
-        'can"t externally invoke a nested routine (a routine that is declared inside '.
-        'another routine) or a routine that lives in a schema',
+        $GEN . q[ 00003 - {CLASS} - concerning the SRT routine "{RNAME}"; ]
+        . q[can"t externally invoke a nested routine (a routine that is declared inside ]
+        . q[another routine) or a routine that lives in a schema],
     'ROS_G_STD_RTN_NO_IMPL' =>
-        $GEN.' 00004 - {CLASS} - concerning the SRT routine "{RNAME}"; '.
-        'can"t invoke the standard routine "{SRNAME}"; it isn"t implemented',
+        $GEN . q[ 00004 - {CLASS} - concerning the SRT routine "{RNAME}"; ]
+        . q[can"t invoke the standard routine "{SRNAME}"; it isn"t implemented],
     'ROS_G_CATALOG_OPEN_CONN_STATE_OPEN' =>
-        $GEN.' 00005 - {CLASS} - concerning the SRT routine "{RNAME}"; '.
-        'failure in standard routine "CATALOG_OPEN"; the given CONN_CX is already open',
+        $GEN . q[ 00005 - {CLASS} - concerning the SRT routine "{RNAME}"; ]
+        . q[failure in standard routine "CATALOG_OPEN"; the given CONN_CX is already open],
     'ROS_G_CATALOG_CLOSE_CONN_STATE_CLOSED' =>
-        $GEN.' 00006 - {CLASS} - concerning the SRT routine "{RNAME}"; '.
-        'failure in standard routine "CATALOG_CLOSE"; the given CONN_CX is already closed',
+        $GEN . q[ 00006 - {CLASS} - concerning the SRT routine "{RNAME}"; ]
+        . q[failure in standard routine "CATALOG_CLOSE"; the given CONN_CX is already closed],
 );
 
 ######################################################################
@@ -146,7 +176,7 @@ Rosetta::L::en - Localization of Rosetta for English
 
 =head1 VERSION
 
-This document describes Rosetta::L::en version 0.19.1.
+This document describes Rosetta::L::en version 0.19.2.
 
 =head1 SYNOPSIS
 
@@ -155,7 +185,7 @@ This document describes Rosetta::L::en version 0.19.1.
 
     # do work ...
 
-    my $translator = Locale::KeyedText->new_translator( 
+    my $translator = Locale::KeyedText->new_translator(
         ['Rosetta::L::', 'SQL::Routine::L::'], ['en'] );
 
     # do work ...
@@ -163,7 +193,7 @@ This document describes Rosetta::L::en version 0.19.1.
     eval {
         # do work with Rosetta, which may throw an exception ...
     };
-    if( my $error_message_object = $@ ) {
+    if (my $error_message_object = $@) {
         # examine object here if you want and programmatically recover...
 
         # or otherwise do the next few lines...
@@ -175,7 +205,7 @@ This document describes Rosetta::L::en version 0.19.1.
 
 =head1 DESCRIPTION
 
-The Rosetta::L::en Perl 5 module contains localization data for Rosetta. 
+The Rosetta::L::en Perl 5 module contains localization data for Rosetta.
 It is designed to be interpreted by Locale::KeyedText.  Besides localizing
 generic error messages that Rosetta produces itself, this file also
 provides a ready-made set of generic database error strings that can be

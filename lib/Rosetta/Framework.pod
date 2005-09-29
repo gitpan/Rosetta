@@ -16,7 +16,7 @@ database implementations because any proprietary details of each are
 abstracted away.  At the same time, it is designed to be fast and
 efficient.  Applications use Rosetta as a virtual embedded database, whose
 API is called the "Rosetta Native Interface" or "RNI", and whose feature
-set is an opaque normalized superset of all common database feature sets. 
+set is an opaque normalized superset of all common database feature sets.
 The feature superset includes both data manipulation (with multi-table
 selects and updates plus subqueries or stored procedure calls) and schema
 manipulation (tables, views, procedures). Rosetta is designed to work
@@ -128,10 +128,10 @@ privileges, and their actions can be audited.
 
 The Rosetta framework can be considered a low-level service because it
 allows a fine level of granularity or detail for the commands you can make
-of it and the results you get back; you get a detailed level of control. 
+of it and the results you get back; you get a detailed level of control.
 But it is not low-level in the way that you would be entering any raw SQL,
 or even small fragments of raw SQL; that is expressly avoided because it
-would expose implementation details that aren't true on all databases. 
+would expose implementation details that aren't true on all databases.
 Rather, this framework provides the means for you to specify in an
 RDBMS-generic fashion exactly what it is you want to happen, and your
 request is mapped to native or emulated functionality for the actual RDBMS
@@ -201,7 +201,7 @@ non-memory-protected OS, would break if the implementation of that OS
 changed).
 
 Included in a Rosetta distribution will be several applications which serve
-as examples of Rosetta in use, but in some cases are useful themselves. 
+as examples of Rosetta in use, but in some cases are useful themselves.
 One example will be a utility for copying one database to another, such as
 for backup or restore, or just migration.  Another example will be a web
 app that works sort of like "PHPPgAdmin" or "PHPMyAdmin" (letting users
@@ -274,7 +274,7 @@ database connections.  It is common for Interface objects to hold Model
 objects as properties, to help them know how to do their actions, such as
 how to create a table or select from it.
 
-The Engine modules are what enable Rosetta to use each type of database. 
+The Engine modules are what enable Rosetta to use each type of database.
 They are what handle (interface to or implement) all the details of using a
 specific RDBMS product; you need at least one for each unique RDBMS product
 you plan to run your application on; they are "action" modules.  They take
@@ -471,8 +471,8 @@ I<Note: more databases (and data access protocols) can be found listed at
     Rosetta::Engine::xBase (binding to XBase db accessor library)
     Rosetta::Engine::Ingres (interface to Ingres db)
     Rosetta::Engine::Illustra (interface to Illustra database)
-    Rosetta::Engine::Valentina (binding to Paradigma Software's Valentina embedded db) 
-    Rosetta::Engine::RelX (binding to relX' embedded db) 
+    Rosetta::Engine::Valentina (binding to Paradigma Software's Valentina embedded db)
+    Rosetta::Engine::RelX (binding to relX' embedded db)
     Rosetta::Engine::4D (interface to 4D db)
     Rosetta::Engine::mSQL (interface to mSQL db)
     Rosetta::Engine::Helix (interface to Helix db)
@@ -546,7 +546,7 @@ errors there were).  For some command types, execute_command() may only
 start the process that needs doing (eg: get a select cursor), and invoking
 execute_command() again on the Result object (which is a subclass) will
 continue or finish the process (eg: fetch a row). Instantiated by itself,
-this class stores globals that are shared by all Engines or connections. 
+this class stores globals that are shared by all Engines or connections.
 Subclasses include: Result, Connection.
 
 =item
@@ -645,20 +645,20 @@ transactions, and subselects.  This Engine is intended mainly for programs
 that are used by one person at a time, as locks will grab the whole
 database.  Given that the actual database is embedded into the Engine, we
 simply use the latest version available at the time of each Engine update,
-so mention of version ranges being supported or not is not applicable. 
+so mention of version ranges being supported or not is not applicable.
 That said, given that SQLite recently went through a major revision that
 involves a file format change, where the current version can't read files
 of the older version, this class will temporarily embed both main versions,
-v3.2.5 and v2.8.16 (both of which are declared stable); the 2.x support is
+v3.2.7 and v2.8.16 (both of which are declared stable); the 2.x support is
 deprecated.
 
 =item
 
 B<Rosetta::Engine::MySQL> - This class implements an Engine for talking to
-MySQL databases.  It is recommended for use only with MySQL versions 5.0.12
-(beta) and greater.  Support for MySQL versions 4.1.14 and 4.0.26 and
-3.23.58 (all 3 stable) is present but deprecated.  v3.22.x and earlier will
-not be supported at all, without great demand.
+MySQL databases.  It is recommended for use only with MySQL versions 5.0.13
+(release candidate) and greater.  Support for MySQL versions 4.1.14 and
+4.0.26 and 3.23.58 (all 3 stable) is present but deprecated.  v3.22.x and
+earlier will not be supported at all, without great demand.
 
 =item
 
@@ -729,7 +729,7 @@ Another form of Wrapper is a command parser for various SQL dialects.  For
 example, if you want to quickly port an application, which already includes
 SQL statements that are tailored to a specific database product, to a
 different database for which it is incompatible, a Wrapper module could
-parse that statement into the object representation that Interface uses. 
+parse that statement into the object representation that Interface uses.
 This is effectively an SQL-to-SQL translator.  I would expect that, citing
 reasons of performance or application code simplicity, one wouldn't want to
 use this functionality long-term, but replace the SQL with Interface object
@@ -760,16 +760,16 @@ Rosetta.pm is loosely derived from this, and that is up to date.
         },
         question_list => [
             {
-                visible_title => "What's your name?",
+                visible_title => q{What's your name?},
                 type => 'str',
                 name => 'name',
                 is_required => 1,
             }, {
-                visible_title => "What's the combination?",
+                visible_title => q{What's the combination?},
                 type => 'int',
                 name => 'words',
             }, {
-                visible_title => "What's your favorite colour?",
+                visible_title => q{What's your favorite colour?},
                 type => 'str',
                 name => 'color',
             },
@@ -782,64 +782,68 @@ Rosetta.pm is loosely derived from this, and that is up to date.
     use strict;
     use warnings;
 
-    &script_main();
+    script_main();
 
     sub script_main {
-        my $base_url = 'http://'.($ENV{'HTTP_HOST'} || '127.0.0.1').$ENV{'SCRIPT_NAME'};
-        my ($curr_mode) = $ENV{'QUERY_STRING'} =~ m/mode=([^&]*)/;
+        my $base_url = 'http://' . ($ENV{'HTTP_HOST'} || '127.0.0.1') . $ENV{'SCRIPT_NAME'};
+        my ($curr_mode) = $ENV{'QUERY_STRING'} =~ m/ mode = ([^&]*) /x;
 
-        my $form_data_str = '';
-        read( STDIN, $form_data_str, $ENV{'CONTENT_LENGTH'} );
-        chomp( $form_data_str );
+        my $form_data_str = q{};
+        read STDIN, $form_data_str, $ENV{'CONTENT_LENGTH'};
+        chomp $form_data_str;
         my %form_values = ();
-        foreach my $pair (split( '&', $form_data_str )) {
-            my ($key, $value) = split( '=', $pair, 2 );
-            next if( $key eq "" );
+        PAIR:
+        for my $pair (split '&', $form_data_str) {
+            my ($key, $value) = split '=', $pair, 2;
+            next PAIR
+                if ($key eq q{});
             $key =~ tr/+/ /;
-            $key =~ s/%([0-9a-fA-F]{2})/pack("c",hex($1))/ge;
+            $key =~ s/ % ([0-9a-fA-F]{2}) / pack 'c', hex $1 /xge;
             $value =~ tr/+/ /;
-            $value =~ s/%([0-9a-fA-F]{2})/pack("c",hex($1))/ge;
+            $value =~ s/ % ([0-9a-fA-F]{2}) / pack 'c', hex $1 /xge;
             $form_values{$key} = $value;
         }
 
         my $fn_prefs = 'survey_prefs.pl';
 
-        print
-            "Status: 200 OK\n",
-            "Content-type: text/html\n\n",
-            "<html><head>\n",
-            "<title>Simple Web Survey</title>\n",
-            "</head><body>\n",
-            "<p><a href=\"$base_url?mode=install\">Install Schema</a>\n",
-            " | <a href=\"$base_url?mode=remove\">Remove Schema</a>\n",
-            " | <a href=\"$base_url?mode=fillin\">Fill In Form</a>\n",
-            " | <a href=\"$base_url?mode=report\">See Report</a></p>\n",
-            "<hr />\n",
-            "<form method=\"POST\" action=\"$base_url?mode=$curr_mode\">\n",
-            "<p>\n",
-            (&script_make_screen( $fn_prefs, $curr_mode, \%form_values )),
-            "</p>\n",
-            "<p><input type=\"submit\" name=\"OK\" value=\"Do It Now\" /></p>\n",
-            "</form>\n",
-            "</body></html>\n";
+        print <<"__ENDQUOTE";
+    Status: 200 OK
+    Content-type: text/html
+
+    <html><head>
+    <title>Simple Web Survey</title>
+    </head><body>
+    <p><a href="$base_url?mode=install">Install Schema</a>
+     | <a href="$base_url?mode=remove">Remove Schema</a>
+     | <a href="$base_url?mode=fillin">Fill In Form</a>
+     | <a href="$base_url?mode=report">See Report</a></p>
+    <hr />
+    <form method="POST" action="$base_url?mode=$curr_mode">
+    <p>
+    @{[script_make_screen( $fn_prefs, $curr_mode, \%form_values )]}
+    </p>
+    <p><input type="submit" name="OK" value="Do It Now" /></p>
+    </form>
+    </body></html>
+    __ENDQUOTE
     }
 
     sub script_make_screen {
         my ($fn_prefs, $curr_mode, $form_values) = @_;
 
         my $prefs = do $fn_prefs;
-        unless( ref( $prefs ) eq 'HASH' ) {
-            return "Error: can't obtain required preferences hash from '$fn_prefs': ".
-                (defined( $prefs ) ? "result not a hash ref, but '$prefs'" : 
-                $@ ? "compilation or runtime error of '$@'" : $!);
-        }
+        return "Error: can't obtain required preferences hash from '$fn_prefs': "
+            . ( defined $prefs ? "result not a hash ref, but '$prefs'"
+              : $@             ? "compilation or runtime error of '$@'"
+              :                  $!
+              )
+            if ref $prefs ne 'HASH';
 
         eval {
             require Rosetta; # also compiles SQL::Routine
         };
-        if( $@ ) {
-            return "Error: can't compile Rosetta modules: $@";
-        }
+        return "Error: can't compile Rosetta modules: $@"
+            if $@;
 
         my $interface = Rosetta->new_interface();
         $interface->throw_error( 0 ); # on error, ret result obj, do not throw exception
@@ -849,18 +853,16 @@ Rosetta.pm is loosely derived from this, and that is up to date.
             'engine' => $prefs->{database_engine},
             'args' => $prefs->{database_open_args}, # includes server name, user/pass
         } );
-        if( $dbh->is_error() ) {
-            return "Error: can't open database: ".$dbh->get_error();
-        }
+        return q{Error: can't open database: } . $dbh->get_error()
+            if $dbh->is_error();
 
-        my $html_output = &script_while_opened( $prefs, $dbh, $curr_mode, $form_values );
+        my $html_output = script_while_opened( $prefs, $dbh, $curr_mode, $form_values );
 
         my $rv = $dbh->execute_command( {
             'type' => 'database_close',
         } );
-        if( $rv->is_error() ) {
-            return "Error: can't close database: ".$rv->get_error();
-        }
+        return q{Error: can't close database: } . $rv->get_error()
+            if $rv->is_error();
 
         return $html_output;
     }
@@ -869,119 +871,115 @@ Rosetta.pm is loosely derived from this, and that is up to date.
         my ($prefs, $dbh, $curr_mode, $form_values) = @_;
 
         my $questions = $prefs->{question_list};
-        unless( ref( $questions ) eq 'ARRAY' and scalar( @{$questions} ) > 0 ) {
-            return "Error: no survey question list defined in prefs file";
-        }
+        return 'Error: no survey question list defined in prefs file'
+            if ref $questions ne 'ARRAY' or @{$questions} == 0;
 
         my $dd_table = SQL::Routine->new_table( 'survey_data' );
 
-        foreach my $question (@{$questions}) {
-            unless( ref( $question ) eq 'HASH' and $question->{visible_title} ) {
-                return "Error: invalid question defined in prefs file";
-            }
-            $dd_table->add_column( { 
-                'name' => $question->{name},
-                'data_type' => { 'base_type' => $question->{type}, },
-                'is_req' => $question->{is_required},
-            } ) or return "Error: invalid question defined in prefs file";
+        for my $question (@{$questions}) {
+            return 'Error: invalid question defined in prefs file'
+                if ref $question ne 'HASH' or !$question->{visible_title};
+            return 'Error: invalid question defined in prefs file'
+                if !$dd_table->add_column( {
+                    'name' => $question->{name},
+                    'data_type' => { 'base_type' => $question->{type}, },
+                    'is_req' => $question->{is_required},
+                } );
         }
 
-        if( $curr_mode eq 'install' ) {
-            return &script_do_install( $dbh, $dd_table, $questions, $form_values );
+        if ($curr_mode eq 'install') {
+            return script_do_install( $dbh, $dd_table, $questions, $form_values );
         }
 
-        if( $curr_mode eq 'remove' ) {
-            return &script_do_remove( $dbh, $dd_table, $questions, $form_values );
+        if ($curr_mode eq 'remove') {
+            return script_do_remove( $dbh, $dd_table, $questions, $form_values );
         }
 
-        if( $curr_mode eq 'fillin' ) {
-            return &script_do_fillin( $dbh, $dd_table, $questions, $form_values );
+        if ($curr_mode eq 'fillin') {
+            return script_do_fillin( $dbh, $dd_table, $questions, $form_values );
         }
 
-        if( $curr_mode eq 'report' ) {
-            return &script_do_report( $dbh, $dd_table, $questions, $form_values );
+        if ($curr_mode eq 'report') {
+            return script_do_report( $dbh, $dd_table, $questions, $form_values );
         }
 
-        return "This is a simple demo.  Click on the menu items to do them.";
+        return 'This is a simple demo.  Click on the menu items to do them.';
     }
 
     sub script_to_install {
         my ($dbh, $dd_table, $questions, $form_values) = @_;
 
-        unless( $form_values->{OK} ) {  
+        if (!$form_values->{OK}) {
             # user is seeing screen for first time (did not click 'OK' button)
-            return join( "", 
-                "<h1>Install Schema</h1>\n",
-                "<p>Do you want to install new schema to store answers for ", 
-                "the following questions?</p>\n",
-                "<ol>\n",
-                (map { "<li>".$_->{visible_title}."</li>\n" } @{$questions}),
-                "</ol>\n",
-            );
+            return join q{},
+                '<h1>Install Schema</h1>' . "\n",
+                '<p>Do you want to install new schema to store answers for ',
+                'the following questions?</p>' . "\n",
+                '<ol>' . "\n",
+                (map { '<li>' . $_->{visible_title} . '</li>' . "\n" } @{$questions}),
+                '</ol>' . "\n",
+            ;
         }
 
         # user saw screen and clicked the 'OK' button, so try to install;
         # the following makes a Command of type 'table_create' and executes it
 
         my $rv = $dbh->execute_command( $dd_table->new_command_create() );
-        if( $rv->is_error() ) {
-            return "Error: can't create survey table: ".$rv->get_error();
-        }
+        return q{Error: can't create survey table: } . $rv->get_error()
+            if $rv->is_error();
 
-        return "The new schema was successfully created.";
+        return 'The new schema was successfully created.';
     }
 
     sub script_to_remove {
         my ($dbh, $dd_table, $questions, $form_values) = @_;
 
-        unless( $form_values->{OK} ) {  
+        if (!$form_values->{OK}) {
             # user is seeing screen for first time (did not click 'OK' button)
-            return join( "", 
-                "<h1>Remove Schema</h1>\n",
-                "<p>Do you want to remove existing schema to store answers for ", 
-                "the following questions?</p>\n",
-                "<ol>\n",
-                (map { "<li>".$_->{visible_title}."</li>\n" } @{$questions}),
-                "</ol>\n",
-            );
+            return join q{},
+                '<h1>Remove Schema</h1>' . "\n",
+                '<p>Do you want to remove existing schema to store answers for ',
+                'the following questions?</p>' . "\n",
+                '<ol>' . "\n",
+                (map { '<li>' . $_->{visible_title} . '</li>' . "\n" } @{$questions}),
+                '</ol>' . "\n",
+            ;
         }
 
         # user saw screen and clicked the 'OK' button, so try to destroy;
         # the following makes a Command of type 'table_destroy' and executes it
 
         my $rv = $dbh->execute_command( $dd_table->new_command_destroy() );
-        if( $rv->is_error() ) {
-            return "Error: can't remove survey table: ".$rv->get_error();
-        }
+        return q{Error: can't remove survey table: } . $rv->get_error()
+            if $rv->is_error();
 
-        return "The new schema was successfully removed.";
+        return 'The new schema was successfully removed.';
     }
 
     sub script_to_fillin {
         my ($dbh, $dd_table, $questions, $form_values) = @_;
 
-        unless( $form_values->{OK} ) {  
+        if (!$form_values->{OK}) {
             # user is seeing screen for first time (did not click 'OK' button)
-            return join( "", 
-                "<h1>Fill In Form</h1>\n",
-                "<p>Please answer the following questions.  ",
-                "Those marked with a '*' are required.</p>\n",
-                (map { 
-                        '<p>'.($_->{is_required} ? '*' : '').$_->{visible_title}.":".
-                        '<input type="text" name="'.$_->{name}.'" /></p>'."\n"
+            return join q{},
+                '<h1>Fill In Form</h1>' . "\n",
+                '<p>Please answer the following questions.  ',
+                'Those marked with a '*' are required.</p>' . "\n",
+                (map {
+                        '<p>' . ($_->{is_required} ? '*' : q{}) . $_->{visible_title} . ':'
+                        . '<input type="text" name="' . $_->{name} . '" /></p>' . "\n"
                     } @{$questions}),
-            );
+            ;
         }
 
         # user saw screen and clicked the 'OK' button, so try to fillin;
         # the following makes a Command of type 'data_insert' and executes it
         my $dd_view = SQL::Routine->new_view( $dd_table );
         my $rv = $dbh->execute_command( $dd_view->new_command_insert( $form_values ) );
-        if( $rv->is_error() ) {
-            return "Error: can't save form values in database: ".$rv->get_error();
-        }
+        return q{Error: can't save form values in database: } . $rv->get_error()
+            if $rv->is_error();
 
-        return "Your form submission was saved successfully.";
+        return 'Your form submission was saved successfully.';
     }
 
     sub script_to_report {
@@ -990,30 +988,29 @@ Rosetta.pm is loosely derived from this, and that is up to date.
         # the following makes a Command of type 'data_select' and executes it
         my $dd_view = SQL::Routine->new_view( $dd_table );
         my $cursor = $dbh->execute_command( $dd_view->new_command_select() );
-        if( $cursor->is_error() ) {
-            return "Error: can't fetch form values from database: ".$cursor->get_error();
-        }
+        return q{Error: can't fetch form values from database: } . $cursor->get_error()
+            if $cursor->is_error();
         my $rowset = $cursor->get_all_rows();
 
         my @html_output = (
-            "<h1>See Report</h1>\n",
-            "<p>Here are the answers that previous visitors gave:</p>\n",
-            "<table>\n",
-            "<tr>\n",
-            (map { "<th>".$_->{visible_title}."</th>\n" } @{$questions}),
-            "</tr>\n",
+            '<h1>See Report</h1>' . "\n",
+            '<p>Here are the answers that previous visitors gave:</p>' . "\n",
+            '<table>' . "\n",
+            '<tr>' . "\n",
+            (map { '<th>' . $_->{visible_title} . '</th>' . "\n" } @{$questions}),
+            '</tr>' . "\n",
         );
         my @question_names = map { $_->{name} } @{$questions};
-        foreach my $row (@{$rowset}) {
-            push( @html_output, 
-                "<tr>\n",
-                (map { "<td>".$row->{$_}."</td>\n" } @question_names),
-                "</tr>\n",
-            );
+        for my $row (@{$rowset}) {
+            push @html_output,
+                '<tr>' . "\n",
+                (map { '<td>' . $row->{$_} . '</td>' . "\n" } @question_names),
+                '</tr>' . "\n",
+            ;
         }
-        push( @html_output, "</table>\n" );
+        push @html_output, '</table>' . "\n";
 
-        return join( "", @html_output );
+        return join q{}, @html_output;
     }
 
     1;

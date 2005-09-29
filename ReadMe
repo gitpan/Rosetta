@@ -56,13 +56,11 @@ This distribution requires any version of Perl 5.x.y that is at least
 It also requires the Perl modules 'version' and 'only', which would
 conceptually be built-in to Perl, but aren't, so they are on CPAN instead.
 
-It also requires the Perl module Scalar::Util, which would conceptually be
-built-in to Perl, but is bundled with it instead.
+It also requires the Perl modules Scalar::Util and List::Util, which would
+conceptually be built-in to Perl, but are bundled with it instead.
 
-It also requires these modules that are on CPAN:
-
-    Locale::KeyedText 1.6.0 (for error messages)
-    SQL::Routine 0.70.0
+It also requires these modules that are on CPAN: Locale::KeyedText '1.6.0-'
+(for error messages), SQL::Routine '0.70.0-'.
 
 This distribution also requires Test::More for its test suite, and that
 module is bundled with Perl.

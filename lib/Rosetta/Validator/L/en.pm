@@ -2,7 +2,7 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta::Validator::L::en;
-use version; our $VERSION = qv('0.14.1');
+use version; our $VERSION = qv('0.14.2');
 
 ######################################################################
 
@@ -11,45 +11,57 @@ my $FAIL = 'Rosetta::Validator Test Failure';
 
 my %text_strings = (
     'ROS_VAL_V_CONN_SETUP_OPTS_NO_ARG' =>
-        $CV.'.validate_connection_setup_options(): missing SETUP_OPTIONS argument',
+        $CV . q[.validate_connection_setup_options(): ]
+        . q[missing SETUP_OPTIONS argument],
     'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG' =>
-        $CV.'.validate_connection_setup_options(): invalid SETUP_OPTIONS argument; '.
-        'it must be a hash ref, but you tried to set it to "{ARG}"',
-    'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_NTYPE' => 
-        $CV.'.validate_connection_setup_options(): invalid SETUP_OPTIONS argument element; '.
-        'the settable Node types are "{ALLOWED}"; you gave "{GIVEN}"',
+        $CV . q[.validate_connection_setup_options(): ]
+        . q[invalid SETUP_OPTIONS argument; ]
+        . q[it must be a hash ref, but you tried to set it to "{ARG}"],
+    'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_NTYPE' =>
+        $CV . q[.validate_connection_setup_options(): ]
+        . q[invalid SETUP_OPTIONS argument element; ]
+        . q[the settable Node types are "{ALLOWED}"; you gave "{GIVEN}"],
     'ROS_VAL_V_CONN_SETUP_OPTS_NO_ARG_ELEM' =>
-        $CV.'.validate_connection_setup_options(): invalid SETUP_OPTIONS argument element; the value '.
-        'with the "{NTYPE}" Node type key is missing',
+        $CV . q[.validate_connection_setup_options(): ]
+        . q[invalid SETUP_OPTIONS argument element; the value ]
+        . q[with the "{NTYPE}" Node type key is missing],
     'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_ELEM' =>
-        $CV.'.validate_connection_setup_options(): invalid SETUP_OPTIONS argument element; the value '.
-        'with the "{NTYPE}" Node type key must be a hash ref, but you tried to set it to "{ARG}"',
-    'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_OPTNM' => 
-        $CV.'.validate_connection_setup_options(): invalid SETUP_OPTIONS argument element; '.
-        'the settable options for "{NTYPE}" Nodes are "{ALLOWED}"; you gave "{GIVEN}"',
-    'ROS_VAL_V_CONN_SETUP_OPTS_NO_ENG_NM' => 
-        $CV.'.validate_connection_setup_options(): missing SETUP_OPTIONS argument element; '.
-        'you must provide a "data_link_product"."product_code", which is a Rosetta Engine class name',
+        $CV . q[.validate_connection_setup_options(): ]
+        . q[invalid SETUP_OPTIONS argument element; the value ]
+        . q[with the "{NTYPE}" Node type key must be a hash ref, but you tried to set it to "{ARG}"],
+    'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_OPTNM' =>
+        $CV . q[.validate_connection_setup_options(): ]
+        . q[invalid SETUP_OPTIONS argument element; ]
+        . q[the settable options for "{NTYPE}" Nodes are "{ALLOWED}"; you gave "{GIVEN}"],
+    'ROS_VAL_V_CONN_SETUP_OPTS_NO_ENG_NM' =>
+        $CV . q[.validate_connection_setup_options(): ]
+        . q[missing SETUP_OPTIONS argument element; ]
+        . q[you must provide a "data_link_product"."product_code", which is a Rosetta Engine class name],
 
-    'ROS_VAL_DESC_LOAD' => 
-        'compiles and declares the Engine class',
+    'ROS_VAL_V_MAIN_ARG_TRACE_NO_FH' =>
+        $CV . q[.main(): ]
+        . q[invalid TRACE_FH argument; ]
+        . q[it is not an open file handle, but rather is "{ARGVL}"],
 
-    'ROS_VAL_DESC_CATALOG_LIST' => 
-        'gather a list of auto-detectable database instances',
+    'ROS_VAL_DESC_LOAD' =>
+        q[compiles and declares the Engine class],
 
-    'ROS_VAL_DESC_CATALOG_INFO' => 
-        'gather more details on a specific database instance',
+    'ROS_VAL_DESC_CATALOG_LIST' =>
+        q[gather a list of auto-detectable database instances],
 
-    'ROS_VAL_DESC_CONN_BASIC' => 
-        'open and close a connection to a specific database instance',
+    'ROS_VAL_DESC_CATALOG_INFO' =>
+        q[gather more details on a specific database instance],
 
-    'ROS_VAL_DESC_TRAN_BASIC' => 
-        'full basic support for transactions',
+    'ROS_VAL_DESC_CONN_BASIC' =>
+        q[open and close a connection to a specific database instance],
 
-    'ROS_VAL_FAIL_MISC_STR' => 
-        $FAIL.': Miscellaneous Error: {VALUE}',
-    'ROS_VAL_FAIL_MISC_OBJ' => 
-        $FAIL.': Miscellaneous Error',
+    'ROS_VAL_DESC_TRAN_BASIC' =>
+        q[full basic support for transactions],
+
+    'ROS_VAL_FAIL_MISC_STR' =>
+        $FAIL . q[: Miscellaneous Error: {VALUE}],
+    'ROS_VAL_FAIL_MISC_OBJ' =>
+        $FAIL . q[: Miscellaneous Error],
 );
 
 ######################################################################
@@ -72,7 +84,7 @@ Rosetta::Validator::L::en - Localization of Rosetta::Validator for English
 
 =head1 VERSION
 
-This document describes Rosetta::Validator::L::en version 0.14.1.
+This document describes Rosetta::Validator::L::en version 0.14.2.
 
 =head1 SYNOPSIS
 
@@ -81,7 +93,7 @@ This document describes Rosetta::Validator::L::en version 0.14.1.
 
     # do work ...
 
-    my $translator = Locale::KeyedText->new_translator( 
+    my $translator = Locale::KeyedText->new_translator(
         ['Rosetta::Validator::L::', 'Rosetta::L::', 'SQL::Routine::L::'], ['en'] );
 
     # do work ...
@@ -89,7 +101,7 @@ This document describes Rosetta::Validator::L::en version 0.14.1.
     eval {
         # do work with Rosetta::Validator, which may throw an exception ...
     };
-    if( my $error_message_object = $@ ) {
+    if (my $error_message_object = $@) {
         # examine object here if you want and programmatically recover...
 
         # or otherwise do the next few lines...

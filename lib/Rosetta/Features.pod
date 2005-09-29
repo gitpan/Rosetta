@@ -80,7 +80,7 @@ The Engine can open at least one new and independent connection to a
 database instance while it simultaneously already has one or more open
 connections to the same database instance.  The use of any open connection
 will not interfere with any of the other connections, except that blocking
-due to resource contention (such as write locks or transactions) is okay. 
+due to resource contention (such as write locks or transactions) is okay.
 Also, the Engine can close any of these independent connections without
 affecting the other ones. This RNI feature depends on: CONN_BASIC.
 
@@ -103,7 +103,7 @@ service is still responsive.  This RNI feature depends on: CONN_BASIC.
 The Engine has full basic support for transactions, which allows for
 accumulations of multiple otherwise separate actions against the database
 to be atomic.  Consecutive transactions are separated by a commit or
-roll-back action; said action will end one transaction and start another. 
+roll-back action; said action will end one transaction and start another.
 A commit will preserve the just-ended action set, and a roll-back will
 discard it.  When an Engine supports transactions, they will always be
 used; Rosetta intentionally does not support the concept of "auto commit
@@ -113,7 +113,7 @@ transactions anyway.  Basic transaction support means that at least one
 independent transaction can operate at a time on each open database
 connection; support for multiple parallel transactions within one
 connection, whether nested or not, is not implied to be supported; neither
-is support for a certain transaction recovery behaviour on process death. 
+is support for a certain transaction recovery behaviour on process death.
 This RNI feature depends on: CONN_BASIC.
 
 =head2 TRAN_ROLLBACK_ON_DEATH
@@ -124,7 +124,7 @@ death (from any means such as power failure or hardware fault or killed or
 crashed process) of the data storage product itself or a prematurely
 severed connection from the Rosetta Engine (such as a killed or crashed
 Perl program, or network failure).  This feature is intrinsic to the data
-storage product itself, and the Rosetta Engine can't do anything about it. 
+storage product itself, and the Rosetta Engine can't do anything about it.
 This feature is separate from or additional to a prerequisite feature
 behaviour (CONN_BASIC) that guarantees a roll back on disconnection when
 there is no process death or network failure. If the data storage product's
@@ -141,7 +141,7 @@ contexts which operate over a single actual connection to a database.  The
 database actions performed on each lightweight connection are completely
 isolated from any others, and commit or roll-back actions only affect one
 transaction context at once.  The closure of a lightweight connection will
-roll-back actions made on it, and not affect other transaction contexts. 
+roll-back actions made on it, and not affect other transaction contexts.
 For all intents and purposes, each lightweight connection behaves
 identically to a normal connection, except they use fewer resources and
 don't require their own authentications.  This RNI feature depends on:
@@ -256,7 +256,7 @@ primary key constraints where each constraint encompasses exactly one table
 column; support for multiple column keys is not implied.  Any definable
 unique key constraints are enforced.  (The primary key of a table is
 defined to be the first unique key definition whose columns all have
-required-value constraints; if none do, then there is no primary key.) 
+required-value constraints; if none do, then there is no primary key.)
 This RNI feature depends on: TABLE_DEFN_BASIC.
 
 =head2 TABLE_UKEY_MULTI
@@ -370,7 +370,7 @@ depends on: QUERY_BASIC.
 =head2 QUERY_STRING_EXPR
 
 The Engine can take a query that contains string value expressions
-(SCONCAT, SLENGTH, SINDEX, SUBSTR, SREPEAT, STRIM, SPAD, SPADL, LC, UC). 
+(SCONCAT, SLENGTH, SINDEX, SUBSTR, SREPEAT, STRIM, SPAD, SPADL, LC, UC).
 This RNI feature depends on: QUERY_BASIC.
 
 =head2 QUERY_LIKE_PRED
@@ -412,12 +412,12 @@ expressions for controlling the aggregation of returned rows by related
 column values.  This feature also includes support for the use of basic
 aggregate functions (COUNT, MIN, MAX, SUM, AVG) in other appropriate parts
 of the query, such as the returned column value expressions.  This feature
-does not imply support for either existence predicates or OLAP extensions. 
+does not imply support for either existence predicates or OLAP extensions.
 This RNI feature depends on: QUERY_GROUP_BY_NONE.
 
 =head2 QUERY_AGG_CONCAT
 
-The Engine can take a query that contains the CONCAT aggregate function. 
+The Engine can take a query that contains the CONCAT aggregate function.
 This RNI feature depends on: QUERY_GROUP_BY_NONE.
 
 =head2 QUERY_AGG_EXIST
@@ -449,7 +449,7 @@ feature depends on: QUERY_RETURN_SPEC_COLS.
 
 The Engine can take a query that contains a low intelligence LIMIT clause
 for reducing how many rows are returned to a specified number N (either to
-the "first" N rows, or another specified number can be skipped first). 
+the "first" N rows, or another specified number can be skipped first).
 This RNI feature depends on: QUERY_BASIC.
 
 =head2 QUERY_COMPOUND

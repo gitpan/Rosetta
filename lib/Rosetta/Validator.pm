@@ -1,55 +1,78 @@
 #!perl
 use 5.008001; use utf8; use strict; use warnings;
 
+use only 'Rosetta' => '0.48.3';
+
 package Rosetta::Validator;
-use version; our $VERSION = qv('0.48.2');
+use version; our $VERSION = qv('0.48.3');
 
-use only 'Rosetta' => '0.48.2';
+use Scalar::Util qw( openhandle );
 
 ######################################################################
 ######################################################################
 
-# Names of properties for objects of the Rosetta::Validator class are declared here:
+# Names of properties for objects of the Rosetta::Validator class are
+# declared here:
 # These are static configuration properties:
-my $PROP_TRACE_FH = 'trace_fh'; # ref to writeable Perl file handle
-my $PROP_SETUP_OPTS = 'setup_opts'; # hash(str,hash(str,str)) - 
-    # Says what Engine to test and how to configure it to work in the tester's environment.
-    # Outer hash has a SRT Node name as a key and a hash of attribute name/value pairs as the value.
+my $PROP_TRACE_FH = 'trace_fh';
+    # ref to writeable Perl file handle
+my $PROP_SETUP_OPTS = 'setup_opts';
+    # hash(str,hash(str,str)) -
+    # Says what Engine to test and how to configure it to work in the
+    # tester's environment.  Outer hash has a SRT Node name
+    # as a key and a hash of attribute name/value pairs as the value.
 # These are just used internally for holding state:
-my $PROP_TEST_RESULTS = 'test_results'; # Accumulate test results while tests being run.
-my $PROP_ENG_ENV_FEAT = 'eng_env_feat'; # The Engine's declared feature support at Env level.
-my $PROP_ENG_CONN_FEAT = 'eng_conn_feat'; # The Engine's declared feature support at Conn level.
+my $PROP_TEST_RESULTS = 'test_results';
+    # Accumulate test results while tests being run.
+my $PROP_ENG_ENV_FEAT = 'eng_env_feat';
+    # The Engine's declared feature support at Env level.
+my $PROP_ENG_CONN_FEAT = 'eng_conn_feat';
+    # The Engine's declared feature support at Conn level.
 
 # Names of $PROP_TEST_RESULTS list elements go here:
 my $TR_FEATURE_KEY = 'FEATURE_KEY';
 my $TR_FEATURE_STATUS = 'FEATURE_STATUS';
-my $TR_FEATURE_DESC_MSG = 'FEATURE_DESC_MSG'; # object (Locale::KeyedText::Message) - 
-    # This is the Validator module's description of what DBMS/Engine feature is being tested.
-my $TR_VAL_ERROR_MSG = 'VAL_ERROR_MSG'; # object (Locale::KeyedText::Message) - 
+my $TR_FEATURE_DESC_MSG = 'FEATURE_DESC_MSG';
+    # object (Locale::KeyedText::Message) -
+    # This is the Validator module's description of what DBMS/Engine
+    # feature is being tested.
+my $TR_VAL_ERROR_MSG = 'VAL_ERROR_MSG';
+    # object (Locale::KeyedText::Message) -
     # This is the Validator module's own Error Message, if a test failed.
-    # This is made for a failure regardless of whether the Engine threw its own exception.
-my $TR_ENG_ERROR_MSG = 'ENG_ERROR_MSG'; # object (Locale::KeyedText::Message) - 
-    # This is the Error Message that the Rosetta Interface or Engine threw, if any.
+    # This is made for a failure regardless of whether the Engine threw its
+    # own exception.
+my $TR_ENG_ERROR_MSG = 'ENG_ERROR_MSG';
+    # object (Locale::KeyedText::Message) -
+    # This is the Error Message that the Rosetta Interface or Engine threw,
+    # if any.
 
 # Possible values for $TR_STATUS go here:
-my $TRS_SKIP = 'SKIP'; # the test was not run at all (Engine said it lacked feature to be tested)
-my $TRS_PASS = 'PASS'; # the test was run and passed (Engine said it had feature to be tested)
-my $TRS_FAIL = 'FAIL'; # the test was run and failed (Engine said it had feature to be tested)
+my $TRS_SKIP = 'SKIP';
+    # the test was not run at all (Engine said it lacked feature to be
+    # tested)
+my $TRS_PASS = 'PASS';
+    # the test was run and passed (Engine said it had feature to be tested)
+my $TRS_FAIL = 'FAIL';
+    # the test was run and failed (Engine said it had feature to be tested)
 
 # Other constant values go here:
-my $TOTAL_POSSIBLE_TESTS = 5; # how many elements should be in results array (S+P+F) 
+my $EMPTY_STR = q{};
+my $TOTAL_POSSIBLE_TESTS = 5;
+    # how many elements should be in results array (S+P+F)
 
-# Names of SRT Node types and attributes that may be given in SETUP_OPTIONS for main():
+# Names of SRT Node types and attributes that may be given in SETUP_OPTIONS
+# for main():
 my %BC_SETUP_NODE_TYPES = ();
-foreach my $_node_type (qw( 
+for my $_node_type (qw(
             data_storage_product data_link_product catalog_instance catalog_link_instance
         )) {
     my $attrs = $BC_SETUP_NODE_TYPES{$_node_type} = {}; # node type accepts only specific key names
-    foreach my $attr_name (keys %{SQL::Routine->valid_node_type_literal_attributes( $_node_type ) || {}}) {
-        $attr_name eq 'si_name' and next; # All 'si_name' attrs are set by us, not the user.
+    ATTR_NAME:
+    for my $attr_name (keys %{SQL::Routine->valid_node_type_literal_attributes( $_node_type ) || {}}) {
+        $attr_name eq 'si_name' and next ATTR_NAME; # All 'si_name' attrs are set by us, not the user.
         $attrs->{$attr_name} = 1;
     }
-    foreach my $attr_name (keys %{SQL::Routine->valid_node_type_enumerated_attributes( $_node_type ) || {}}) {
+    for my $attr_name (keys %{SQL::Routine->valid_node_type_enumerated_attributes( $_node_type ) || {}}) {
         $attrs->{$attr_name} = 1;
     }
     # All nref attrs are set by us, not the user.
@@ -67,43 +90,46 @@ sub total_possible_tests {
 
 sub validate_connection_setup_options {
     my ($validator, $setup_options) = @_;
-    defined( $setup_options ) or die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_NO_ARG' );
-    unless( ref($setup_options) eq 'HASH' ) {
-        die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG', { 'ARG' => $setup_options } );
-    }
-    while( my ($node_type, $rh_attrs) = each %{$setup_options} ) {
-        unless( $BC_SETUP_NODE_TYPES{$node_type} ) {
-            die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_NTYPE', 
-            { 'GIVEN' => $node_type, 'ALLOWED' => "@{[keys %BC_SETUP_NODE_TYPES]}" } );
+    die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_NO_ARG' )
+        if !defined $setup_options;
+    die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG',
+        { 'ARG' => $setup_options } )
+        if ref $setup_options ne 'HASH';
+    OPTS_BY_NODE_TYPE:
+    while (my ($node_type, $rh_attrs) = each %{$setup_options}) {
+        die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_NTYPE',
+            { 'GIVEN' => $node_type, 'ALLOWED' => "@{[keys %BC_SETUP_NODE_TYPES]}" } )
+            if !$BC_SETUP_NODE_TYPES{$node_type};
+        die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_NO_ARG_ELEM',
+            { 'NTYPE' => $node_type } )
+            if !defined $rh_attrs;
+        die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_ELEM',
+            { 'NTYPE' => $node_type, 'ARG' => $rh_attrs } )
+            if ref $rh_attrs ne 'HASH';
+        next OPTS_BY_NODE_TYPE
+            if ref $BC_SETUP_NODE_TYPES{$node_type} ne 'HASH'; # all opt names accepted
+        while (my ($option_name, $option_value) = each %{$rh_attrs}) {
+            die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_OPTNM',
+                { 'NTYPE' => $node_type, 'GIVEN' => $option_name,
+                'ALLOWED' => "@{[keys %{$BC_SETUP_NODE_TYPES{$node_type}}]}" } )
+                if !$BC_SETUP_NODE_TYPES{$node_type}->{$option_name};
         }
-        defined( $rh_attrs ) or die Locale::KeyedText->new_message( 
-            'ROS_VAL_V_CONN_SETUP_OPTS_NO_ARG_ELEM', { 'NTYPE' => $node_type } );
-        unless( ref($rh_attrs) eq 'HASH' ) {
-            die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_ELEM', 
-                { 'NTYPE' => $node_type, 'ARG' => $rh_attrs } );
-        }
-        ref($BC_SETUP_NODE_TYPES{$node_type}) eq 'HASH' or next; # all opt names accepted
-        while( my ($option_name, $option_value) = each %{$rh_attrs} ) {
-            unless( $BC_SETUP_NODE_TYPES{$node_type}->{$option_name} ) {
-                die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_BAD_ARG_OPTNM', 
-                    { 'NTYPE' => $node_type, 'GIVEN' => $option_name, 
-                    'ALLOWED' => "@{[keys %{$BC_SETUP_NODE_TYPES{$node_type}}]}" } );
-            }
-        }
     }
-    unless( $setup_options->{'data_link_product'} and 
-            $setup_options->{'data_link_product'}->{'product_code'} ) {
-        die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_NO_ENG_NM' );
-    }
+    die Locale::KeyedText->new_message( 'ROS_VAL_V_CONN_SETUP_OPTS_NO_ENG_NM' )
+        if !$setup_options->{'data_link_product'}
+            or !$setup_options->{'data_link_product'}->{'product_code'};
 }
 
 ######################################################################
 
 sub main {
     my ($class, $setup_options, $trace_fh) = @_;
-    my $validator = bless( {}, ref($class) || $class );
+    my $validator = bless {}, ref $class || $class;
 
     $validator->validate_connection_setup_options( $setup_options ); # dies on problem
+    die Locale::KeyedText->new_message( 'ROS_VAL_V_MAIN_ARG_TRACE_NO_FH',
+        { 'ARGVL' => $trace_fh } )
+        if defined $trace_fh and !defined openhandle $trace_fh;
 
     $validator->{$PROP_TRACE_FH} = $trace_fh; # may be undef
     $validator->{$PROP_SETUP_OPTS} = $setup_options;
@@ -123,9 +149,9 @@ sub new_result {
     my $result = {
         $TR_FEATURE_KEY => $feature_key,
         $TR_FEATURE_STATUS => $TRS_SKIP,
-        $TR_FEATURE_DESC_MSG => Locale::KeyedText->new_message( 'ROS_VAL_DESC_'.$feature_key ),
+        $TR_FEATURE_DESC_MSG => Locale::KeyedText->new_message( 'ROS_VAL_DESC_' . $feature_key ),
     };
-    push( @{$validator->{$PROP_TEST_RESULTS}}, $result );
+    push @{$validator->{$PROP_TEST_RESULTS}}, $result;
     return $result;
 }
 
@@ -138,8 +164,8 @@ sub fail_result {
     my ($validator, $result, $error_msg_key, $error_msg_args, $eng_message) = @_;
     $result->{$TR_FEATURE_STATUS} = $TRS_FAIL;
     $result->{$TR_VAL_ERROR_MSG} = Locale::KeyedText->new_message( $error_msg_key, $error_msg_args );
-    if( $eng_message ) {
-        if( ref($eng_message) and UNIVERSAL::isa( $eng_message, 'Rosetta::Interface' ) ) {
+    if ($eng_message) {
+        if (ref $eng_message and UNIVERSAL::isa( $eng_message, 'Rosetta::Interface' )) {
             $eng_message = $eng_message->get_error_message();
         }
         $result->{$TR_ENG_ERROR_MSG} = $eng_message;
@@ -148,13 +174,15 @@ sub fail_result {
 
 sub misc_result {
     my ($validator, $result, $exception) = @_;
-    if( $exception ) {
-        if( ref($exception) ) {
+    if ($exception) {
+        if (ref $exception) {
             $validator->fail_result( $result, 'ROS_VAL_FAIL_MISC_OBJ', undef, $exception );
-        } else {
+        }
+        else {
             $validator->fail_result( $result, 'ROS_VAL_FAIL_MISC_STR', { 'VALUE' => $exception } );
         }
-    } else {
+    }
+    else {
         $validator->pass_result( $result );
     }
 }
@@ -171,14 +199,16 @@ sub setup_env {
     $container->may_match_surrogate_node_ids( 1 );
 
     my $app_bp_node = $container->build_node( 'application', { 'si_name' => 'val_app_bp' } );
-    my $app_inst_node = $container->build_node( 'application_instance', 
+    my $app_inst_node = $container->build_node( 'application_instance',
         { 'si_name' => 'val_app_inst', 'blueprint' => $app_bp_node } );
 
-    my $dlp_node = $container->build_node( 'data_link_product', 
+    my $dlp_node = $container->build_node( 'data_link_product',
         { 'si_name' => 'val_dlp', 'product_code' => $setup_options->{'data_link_product'}->{'product_code'} } );
 
     my $app_intf = Rosetta->new_application_interface( $app_inst_node );
-    $app_intf->set_trace_fh( $validator->{$PROP_TRACE_FH} );
+    if ($validator->{$PROP_TRACE_FH}) {
+        $app_intf->set_trace_fh( $validator->{$PROP_TRACE_FH} );
+    }
     my $env_intf = $app_intf->new_environment_interface( $app_intf, $dlp_node ); # dies if bad Engine
     return $env_intf;
 }
@@ -193,43 +223,43 @@ sub setup_conn {
     $container->may_match_surrogate_node_ids( 1 );
 
     my $app_bp_node = $container->build_node( 'application', { 'si_name' => 'val_app_bp' } );
-    my $app_inst_node = $container->build_node( 'application_instance', 
+    my $app_inst_node = $container->build_node( 'application_instance',
         { 'si_name' => 'val_app_inst', 'blueprint' => $app_bp_node } );
 
-    $container->build_node( 'data_storage_product', 
+    $container->build_node( 'data_storage_product',
         { 'si_name' => 'val_dsp', %{$setup_options->{'data_storage_product'} || {}} } );
-    my $dlp_node = $container->build_node( 'data_link_product', 
+    my $dlp_node = $container->build_node( 'data_link_product',
         { 'si_name' => 'val_dlp', 'product_code' => $setup_options->{'data_link_product'}->{'product_code'} } );
 
     $container->build_node( 'catalog', { 'si_name' => 'val_cat_bp' } );
-    my $cat_inst_node = $container->build_child_node_tree( 'catalog_instance', { 'si_name' => 'val_cat_inst', 
+    my $cat_inst_node = $container->build_child_node_tree( 'catalog_instance', { 'si_name' => 'val_cat_inst',
         'product' => 'val_dsp', 'blueprint' => 'val_cat_bp', %{$setup_options->{'catalog_instance'} || {}} } );
-    while( my ($opt_key, $opt_value) = each %{$setup_options->{'catalog_instance_opt'} || {}} ) {
-        $cat_inst_node->build_child_node( 'catalog_instance_opt', 
+    while (my ($opt_key, $opt_value) = each %{$setup_options->{'catalog_instance_opt'} || {}}) {
+        $cat_inst_node->build_child_node( 'catalog_instance_opt',
             { 'si_key' => $opt_key, 'value' => $opt_value } );
     }
 
     $app_bp_node->build_child_node( 'catalog_link', { 'si_name' => 'val_cat_link_bp', 'target' => 'val_cat_bp' } );
-    my $cat_link_inst_node = $app_inst_node->build_child_node( 'catalog_link_instance', 
-        { 'product' => 'val_dlp', 'blueprint' => 'val_cat_link_bp', 'target' => $cat_inst_node, 
+    my $cat_link_inst_node = $app_inst_node->build_child_node( 'catalog_link_instance',
+        { 'product' => 'val_dlp', 'blueprint' => 'val_cat_link_bp', 'target' => $cat_inst_node,
         %{$setup_options->{'catalog_link_instance'} || {}} } );
-    while( my ($opt_key, $opt_value) = each %{$setup_options->{'catalog_link_instance_opt'} || {}} ) {
-        $cat_link_inst_node->build_child_node( 'catalog_link_instance_opt', 
+    while (my ($opt_key, $opt_value) = each %{$setup_options->{'catalog_link_instance_opt'} || {}}) {
+        $cat_link_inst_node->build_child_node( 'catalog_link_instance_opt',
             { 'si_key' => $opt_key, 'value' => $opt_value } );
     }
 
-    my $routine_node = $app_bp_node->build_child_node_tree( 'routine', { 'si_name' => 'setup_conn', 
+    my $routine_node = $app_bp_node->build_child_node_tree( 'routine', { 'si_name' => 'setup_conn',
             'routine_type' => 'FUNCTION', 'return_cont_type' => 'CONN', 'return_conn_link' => 'val_cat_link_bp', }, [
         [ 'routine_var', { 'si_name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => 'val_cat_link_bp', }, ],
         [ 'routine_stmt', { 'call_sroutine' => 'RETURN', }, [
-            [ 'routine_expr', { 'call_sroutine_arg' => 'RETURN_VALUE', 
+            [ 'routine_expr', { 'call_sroutine_arg' => 'RETURN_VALUE',
                 'cont_type' => 'CONN', 'valf_p_routine_item' => 'conn_cx', }, ],
         ], ],
     ] );
 
-    $container->build_child_node( 'scalar_data_type', { 'si_name' => 'login_auth', 
+    $container->build_child_node( 'scalar_data_type', { 'si_name' => 'login_auth',
         'base_type' => 'STR_CHAR', 'max_chars' => 20, 'char_enc' => 'UTF8', } );
-    $app_bp_node->build_child_node_tree( 'routine', { 'si_name' => 'sroutine_catalog_open', 
+    $app_bp_node->build_child_node_tree( 'routine', { 'si_name' => 'sroutine_catalog_open',
             'routine_type' => 'PROCEDURE', }, [
         [ 'routine_context', { 'si_name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => 'val_cat_link_bp', }, ],
         [ 'routine_arg', { 'si_name' => 'login_name', 'cont_type' => 'SCALAR', 'scalar_data_type' => 'login_auth' }, ],
@@ -241,7 +271,7 @@ sub setup_conn {
         ], ],
     ] );
 
-    $app_bp_node->build_child_node_tree( 'routine', { 'si_name' => 'sroutine_catalog_close', 
+    $app_bp_node->build_child_node_tree( 'routine', { 'si_name' => 'sroutine_catalog_close',
             'routine_type' => 'PROCEDURE', }, [
         [ 'routine_context', { 'si_name' => 'conn_cx', 'cont_type' => 'CONN', 'conn_link' => 'val_cat_link_bp', }, ],
         [ 'routine_stmt', { 'call_sroutine' => 'CATALOG_CLOSE', }, [
@@ -250,7 +280,9 @@ sub setup_conn {
     ] );
 
     my $app_intf = Rosetta->new_application_interface( $app_inst_node );
-    $app_intf->set_trace_fh( $validator->{$PROP_TRACE_FH} );
+    if ($validator->{$PROP_TRACE_FH}) {
+        $app_intf->set_trace_fh( $validator->{$PROP_TRACE_FH} );
+    }
     my $env_intf = $app_intf->new_environment_interface( $app_intf, $dlp_node ); # dies if bad Engine
     my $conn_intf = $env_intf->do( $routine_node );
     return $conn_intf;
@@ -273,27 +305,36 @@ sub test_load {
     my ($validator) = @_;
     my $result = $validator->new_result( 'LOAD' );
 
-    SWITCH: {
+    SWITCH:
+    {
         my $env_intf = eval {
             return $validator->setup_env();
         };
-        $validator->misc_result( $result, $@ ); $@ and last SWITCH;
+        $validator->misc_result( $result, $@ );
+        last SWITCH
+            if $@;
 
         $validator->{$PROP_ENG_ENV_FEAT} = eval {
             return $env_intf->features();
         };
-        $validator->misc_result( $result, $@ ); $@ and last SWITCH;
+        $validator->misc_result( $result, $@ );
+        last SWITCH
+            if $@;
 
         my $conn_intf = eval {
             return $validator->setup_conn( 'declare_db_conn' );
         };
-        $validator->misc_result( $result, $@ ); $@ and last SWITCH;
+        $validator->misc_result( $result, $@ );
+        last SWITCH
+            if $@;
 
         $validator->{$PROP_ENG_CONN_FEAT} = eval {
             return $conn_intf->features();
         };
 
-        $validator->misc_result( $result, $@ ); $@ and last SWITCH;
+        $validator->misc_result( $result, $@ );
+        last SWITCH
+            if $@;
     }
 }
 
@@ -303,19 +344,21 @@ sub test_catalog_list {
     my ($validator) = @_;
     my $result = $validator->new_result( 'CATALOG_LIST' );
 
-    $validator->{$PROP_ENG_ENV_FEAT}->{'CATALOG_LIST'} or return;
+    return
+        if !$validator->{$PROP_ENG_ENV_FEAT}->{'CATALOG_LIST'};
 
     my $env_intf = $validator->setup_env();
     my $container = $env_intf->get_srt_container();
 
-    SWITCH: {
+    SWITCH:
+    {
         my $payload = eval {
             my $app_inst_node = $env_intf->get_root_interface()->get_app_inst_node();
             my $app_bp_node = $app_inst_node->get_attribute( 'blueprint' );
-            my $routine_node = $app_bp_node->build_child_node_tree( 'routine', { 'si_name' => 'sroutine_catalog_list', 
+            my $routine_node = $app_bp_node->build_child_node_tree( 'routine', { 'si_name' => 'sroutine_catalog_list',
                     'routine_type' => 'FUNCTION', 'return_cont_type' => 'SRT_NODE_LIST', }, [
                 [ 'routine_stmt', { 'call_sroutine' => 'RETURN', }, [
-                    [ 'routine_expr', { 'call_sroutine_arg' => 'RETURN_VALUE', 
+                    [ 'routine_expr', { 'call_sroutine_arg' => 'RETURN_VALUE',
                         'cont_type' => 'SRT_NODE_LIST', 'valf_call_sroutine' => 'CATALOG_LIST', }, ],
                 ], ],
             ] );
@@ -324,14 +367,16 @@ sub test_catalog_list {
             $container->assert_deferrable_constraints();
             return $payload;
         };
-        $validator->misc_result( $result, $@ ); $@ and last SWITCH;
+        $validator->misc_result( $result, $@ );
+        last SWITCH
+            if $@;
 
-        if( my $trace_fh = $validator->{$PROP_TRACE_FH} ) {
+        if (my $trace_fh = $validator->{$PROP_TRACE_FH}) {
             my $engine_name = $validator->{$PROP_SETUP_OPTS}->{'data_link_product'}->{'product_code'};
-            print $trace_fh "$engine_name returned a Literal Interface having this payload:".
-                "\n----------\n".
-                join( "", map { $_->get_all_properties_as_xml_str() } @{$payload} ).
-                "\n----------\n";
+            print $trace_fh "$engine_name returned a Literal Interface having this payload:"
+                . "\n----------\n"
+                . (join $EMPTY_STR, map { $_->get_all_properties_as_xml_str() } @{$payload})
+                . "\n----------\n";
         }
     }
 }
@@ -342,7 +387,8 @@ sub test_catalog_info {
     my ($validator) = @_;
     my $result = $validator->new_result( 'CATALOG_INFO' );
 
-    $validator->{$PROP_ENG_ENV_FEAT}->{'CATALOG_INFO'} or return;
+    return
+        if !$validator->{$PROP_ENG_ENV_FEAT}->{'CATALOG_INFO'};
 
     # ... TODO ...
 }
@@ -353,23 +399,29 @@ sub test_conn_basic {
     my ($validator) = @_;
     my $result = $validator->new_result( 'CONN_BASIC' );
 
-    $validator->{$PROP_ENG_ENV_FEAT}->{'CONN_BASIC'} or return;
+    return
+        if !$validator->{$PROP_ENG_ENV_FEAT}->{'CONN_BASIC'};
 
     my $conn_intf = $validator->setup_conn( 'declare_db_conn' );
     my $container = $conn_intf->get_srt_container();
 
-    SWITCH: {
+    SWITCH:
+    {
         eval {
-            $conn_intf->do( $container->find_child_node_by_surrogate_id( 
+            $conn_intf->do( $container->find_child_node_by_surrogate_id(
                 [undef,'root','blueprints','val_app_bp','sroutine_catalog_open'] ) );
         };
-        $validator->misc_result( $result, $@ ); $@ and last SWITCH;
+        $validator->misc_result( $result, $@ );
+        last SWITCH
+            if $@;
 
         eval {
-            $conn_intf->do( $container->find_child_node_by_surrogate_id( 
+            $conn_intf->do( $container->find_child_node_by_surrogate_id(
                 [undef,'root','blueprints','val_app_bp','sroutine_catalog_close'] ) );
         };
-        $validator->misc_result( $result, $@ ); $@ and last SWITCH;
+        $validator->misc_result( $result, $@ );
+        last SWITCH
+            if $@;
     }
 }
 
@@ -379,7 +431,8 @@ sub test_tran_basic {
     my ($validator) = @_;
     my $result = $validator->new_result( 'TRAN_BASIC' );
 
-    $validator->{$PROP_ENG_ENV_FEAT}->{'TRAN_BASIC'} or return;
+    return
+        if !$validator->{$PROP_ENG_ENV_FEAT}->{'TRAN_BASIC'};
 
     # ... TODO ...
 }
@@ -398,7 +451,7 @@ Rosetta::Validator - A common comprehensive test suite to run against all Engine
 
 =head1 VERSION
 
-This document describes Rosetta::Validator version 0.48.2.
+This document describes Rosetta::Validator version 0.48.3.
 
 =head1 SYNOPSIS
 
@@ -468,37 +521,39 @@ This is a generalized version of Rosetta_Engine_Generic.t:
 
     sub print_result {
         my ($result) = @_;
-        my ($feature_key, $feature_status, $feature_desc_msg, $val_error_msg, $eng_error_msg) = 
-            @{$result}{'FEATURE_KEY', 'FEATURE_STATUS', 'FEATURE_DESC_MSG', 'VAL_ERROR_MSG', 'ENG_ERROR_MSG'};
-        my $result_str = 
-            $feature_key.' - '.object_to_string( $feature_desc_msg ).
-            ($val_error_msg ? ' - '.object_to_string( $val_error_msg ) : '').
-            ($eng_error_msg ? ' - '.object_to_string( $eng_error_msg ) : '');
-        if( $feature_status eq 'PASS' ) {
+        my ($feature_key, $feature_status, $feature_desc_msg, $val_error_msg, $eng_error_msg)
+            = @{$result}{'FEATURE_KEY', 'FEATURE_STATUS', 'FEATURE_DESC_MSG', 'VAL_ERROR_MSG', 'ENG_ERROR_MSG'};
+        my $result_str
+            = $feature_key . ' - ' . object_to_string( $feature_desc_msg )
+              . ($val_error_msg ? ' - ' . object_to_string( $val_error_msg ) : q{})
+              . ($eng_error_msg ? ' - ' . object_to_string( $eng_error_msg ) : q{});
+        if ($feature_status eq 'PASS') {
             pass( $result_str ); # prints "ok N - $result_str\n"
-        } elsif( $feature_status eq 'FAIL' ) {
+        }
+        elsif ($feature_status eq 'FAIL') {
             fail( $result_str ); # prints "not ok N - $result_str\n"
-        } else { # $feature_status eq 'SKIP'
-            SKIP: {
+        }
+        else { # $feature_status eq 'SKIP'
+            SKIP:
+            {
                 skip( $result_str, 1 ); # prints "ok N # skip $result_str\n"
-                fail( '' ); # this text will NOT be output; call required by skip()
+                fail( q{} ); # this text will NOT be output; call required by skip()
             }
         }
     }
 
     sub object_to_string {
         my ($message) = @_;
-        if( ref($message) and UNIVERSAL::isa( $message, 'Rosetta::Interface' ) ) {
+        if (ref $message and UNIVERSAL::isa( $message, 'Rosetta::Interface' )) {
             $message = $message->get_error_message();
         }
-        if( ref($message) and UNIVERSAL::isa( $message, 'Locale::KeyedText::Message' ) ) {
-            my $translator = Locale::KeyedText->new_translator( ['Rosetta::Engine::Generic::L::', 
+        if (ref $message and UNIVERSAL::isa( $message, 'Locale::KeyedText::Message' )) {
+            my $translator = Locale::KeyedText->new_translator( ['Rosetta::Engine::Generic::L::',
                 'Rosetta::Validator::L::', 'Rosetta::L::', 'SQL::Routine::L::'], ['en'] );
             my $user_text = $translator->translate_message( $message );
-            unless( $user_text ) {
-                return 'internal error: can\'t find user text for a message: '.
-                    $message->as_string().' '.$translator->as_string();
-            }
+            return q{internal error: can't find user text for a message: }
+                . $message->as_string() . ' ' . $translator->as_string();
+                if !$user_text;
             return $user_text;
         }
         return $message; # if this isn't the right kind of object
@@ -506,40 +561,41 @@ This is a generalized version of Rosetta_Engine_Generic.t:
 
     sub import_setup_options {
         my ($setup_filepath) = @_;
-        my $err_str = "can't obtain test setup specs from Perl file '".$setup_filepath."'; ";
+        my $err_str = "can't obtain test setup specs from Perl file '$setup_filepath'; ";
         my $setup_options = do $setup_filepath;
-        unless( ref($setup_options) eq 'HASH' ) {
-            if( defined( $setup_options ) ) {
+        if (ref $setup_options ne 'HASH') {
+            if (defined $setup_options) {
                 $err_str .= "result is not a hash ref, but '$setup_options'";
-            } elsif( $@ ) {
+            }
+            elsif ($@) {
                 $err_str .= "compilation or runtime error of '$@'";
-            } else {
+            }
+            else {
                 $err_str .= "file system error of '$!'";
             }
             die "$err_str\n";
         }
-        unless( scalar( keys %{$setup_options} ) ) {
-            die $err_str."result is a hash ref that contains no elements\n";
-        }
+        die $err_str . "result is a hash ref that contains no elements\n"
+            if !keys %{$setup_options};
         eval {
             Rosetta::Validator->validate_connection_setup_options( $setup_options ); # dies on problem
         };
-        if( my $exception = $@ ) {
-            die $err_str."result is a hash ref having invalid elements; ".
-                object_to_string( $exception )."\n";
+        if (my $exception = $@) {
+            die $err_str . 'result is a hash ref having invalid elements; '
+                . object_to_string( $exception ) . "\n";
         }
         return $setup_options;
     }
 
-    my $setup_filepath = shift( @ARGV ) || 't_setup.pl'; # set from first command line arg; '0' means use default name
-    my $trace_to_stdout = shift( @ARGV ) ? 1 : 0; # set from second command line arg
+    my $setup_filepath = (shift @ARGV) || 't_setup.pl'; # set from first command line arg; '0' means use default name
+    my $trace_to_stdout = (shift @ARGV) ? 1 : 0; # set from second command line arg
 
     my $setup_options = import_setup_options( $setup_filepath ); # dies if bad config file
     my $trace_fh = $trace_to_stdout ? \*STDOUT : undef;
 
     my $test_results = Rosetta::Validator->main( $setup_options, $trace_fh ); # shouldn't ever die
 
-    foreach my $result (@{$test_results}) {
+    for my $result (@{$test_results}) {
         print_result( $result );
     }
 
@@ -658,9 +714,11 @@ This module requires any version of Perl 5.x.y that is at least 5.8.1.
 It also requires the Perl modules L<version> and L<only>, which would
 conceptually be built-in to Perl, but aren't, so they are on CPAN instead.
 
-It also requires these modules that are in the current distribution:
+It also requires the Perl module L<Scalar::Util>, which would conceptually
+be built-in to Perl, but is bundled with it instead.
 
-    Rosetta 0.48.2
+It also requires these modules that are in the current distribution:
+L<Rosetta> '0.48.3'.
 
 =head1 INCOMPATIBILITIES
 

@@ -1,6 +1,138 @@
                               Rosetta
 ----------------------------------------------------------------------
 
+2005-09-28   Darren Duncan <perl@DarrenDuncan.net>
+
+    * Rosetta Release 0.48.3 (SVN r878).
+
+    * New code file versions are: Rosetta.pm and Validator.pm 0.48.3 and
+    Rosetta/L/en.pm 0.19.2 and Validator/L/en.pm 0.14.2.
+
+    * From now on, any ordinary 'use [|only ]Foo' statements that appear
+    within *.pm files will be located in different places than before; the
+    'use' statements for modules that do not export anything, particularly
+    object oriented modules, will appear near the top of the file, above
+    all package declarations, but just below the use-pragma statements; the
+    'use' statements for modules whose exported functions we are using will
+    be placed just below the declarations of each package in which the
+    relevant exported functions are used.
+
+    * Removed any line-trailing whitespace from all distribution files.
+
+    * Reformatted all code by swapping various string quoting delimiters.
+
+    * Reformatted Rosetta.pm and Validator.pm to un-cuddle all 'else' and
+    'elsif' blocks.
+
+    * Updated Rosetta.pm and Validator.pm and Framework.pod to replace all
+    of their 'unless' conditionals with equivalent 'if' conditionals.
+
+    * Updated Rosetta.pm and Validator.pm and Framework.pod to rename all
+    of their 'foreach' loops to 'for'.
+
+    * Updated Rosetta.pm and Validator.pm to move their collective 5 switch
+    statement labels upwards to their own lines.
+
+    * Updated Framework.pod to reformat all 3 regular expressions so that
+    they use the /x flag.
+
+    * Reformatted all code to change any "if( ... ) {" to "if (...) {".
+
+    * Updated Validator.pm to reformat all 4 'while' like the 'if' were.
+
+    * Added named constant $EMPTY_STR to Rosetta.pm and Validator.pm.
+
+    * In Framework.pod, removed redundant leading '&' from sub invocations.
+
+    * Updated Rosetta.pm, Validator.pm, Framework.pod to add labels to all
+    un-labeled [next|last|redo] statements (3,1,2), and their innermost
+    bounding loop controls (2,1,2).
+
+    * Reformatted all code so that any uses of the named unary operators
+    [defined|ref] no longer have parenthesis around their argument.
+
+    * Updated Rosetta.pm to reformat 2 uses of 'delete' like with 'ref';
+    likewise updated Framework.pod with 2 uses of 'hex'.
+
+    * Removed 1 superfluous use of 'scalar' in each of Validator.pm and
+    Framework.pod.
+
+    * In Validator.pm, split up 7 multi-statement lines so each statement
+    is on its own line.
+
+    * Updated Rosetta.pm to replace 5 "<condition> and return ...;" each
+    with "return ... if <condition>;".
+
+    * Updated Rosetta.pm to replace 3 "<condition> or return ...;" each
+    with "return ... if <complement-condition>;".  Likewise replaced 4 in
+    Validator.pm and 1 in Framework.pod.
+
+    * Updated Rosetta.pm and Validator.pm to replace (2,8) "<condition>
+    [and|or] [next|last] ...;" with "[next|last] ... if ..." like with
+    'return'.
+
+    * Updated Framework.pod to replace 10 "if ... return ..." with their
+    postfix-if equivalents; Validator.pm also had 1 such change.
+
+    * Updated Validator.pm to rearrange 8 conditional 'die' statements so
+    they have postfix-if conditionals.
+
+    * Updated Rosetta.pm to rearrange 29 conditional '_throw...' statements
+    so they have postfix-if conditionals.
+
+    * Reformatted all code, in Rosetta.pm and Validator.pm and
+    Framework.pod, so that any uses of the built-in operators or functions
+    named [bless|chomp|join|pack|push|read|shift|split] no longer have
+    parenthesis around their argument lists; either the parens were just
+    removed, or they were moved to surround both the operator/function name
+    and its arguments.
+
+    * Updated Rosetta.pm to reformat all 3 uses of the honorary built-in
+    function Scalar::Util::weaken() so it looks like a built-in; for each
+    use, the package-name qualifier was removed, as were the parenthesis
+    around its lone argument.  Since Scalar::Util exports nothing by
+    default, added a 'qw( weaken )' suffix to its 'use' statement.
+
+    * Added new external dependency on the honorary built-in function
+    List::Util::first() to Rosetta.pm.  Then replaced a last-terminated
+    for-loop in _prepare__call_engine() with an invocation of it.
+
+    * Added new external dependency on the honorary built-in function
+    Scalar::Util::openhandle() to both the set_trace_fh() method of
+    Rosetta.pm and the main() function of Validator.pm; both of these can
+    now reliably test if their [NEW|TRACE]_FH argument is a valid open file
+    handle, and they will now throw an exception if not.  Correspondingly,
+    added 'ROS_CLASS_METH_ARG_NO_FH' user text message to Rosetta/L/en.pm,
+    and 'ROS_VAL_V_MAIN_ARG_TRACE_NO_FH' to Validator/L/en.pm.  Also
+    updated the setup_[env|conn]() methods of Validator.pm to only
+    conditionally invoke set_trace_fh(), since passing it undef now results
+    in an exception toss by the latter.
+
+    * Split up some long lines in both en.pm.
+
+    * Updated any DEPENDENCIES documentation to reformat any indented
+    sections as paragraphs, and show version ranges like 'only' takes them.
+
+    * Reformatted all code so that every occurance of the string
+    concatenation operator (.) has a space between the operator and each of
+    its 2 arguments, rather than their all being in contact.  Also
+    reformatted any lines that are split on this operator so the operator
+    appears at the start of the second line, rather than the end of the
+    first line.
+
+    * Reformatted a few multi-line statements so that any [=|and|or] that
+    are split on appear at the start of a line rather than the end of one.
+
+    * Reformatted all of the code comments at the top of Rosetta.pm and
+    Validator.pm, where its object property names, and constant values, are
+    declared, so that all comment lines don't exceed the 75 character line
+    length.
+
+    * In Framework.pod, reformatted 1 cascading ternary statement into
+    aligned columns.
+
+    * Other miscellaneous code line alignments and splitting.
+
 2005-09-14   Darren Duncan <perl@DarrenDuncan.net>
 
     * Rosetta Release 0.48.2 (SVN r813).
