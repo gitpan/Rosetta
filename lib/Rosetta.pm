@@ -2,10 +2,10 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 use only 'Locale::KeyedText' => '1.6.0-';
-use only 'SQL::Routine' => '0.70.0-';
+use only 'Rosetta::Model' => '0.71.0-';
 
 package Rosetta;
-use version; our $VERSION = qv('0.48.3');
+use version; our $VERSION = qv('0.71.0');
 
 ######################################################################
 ######################################################################
@@ -64,17 +64,17 @@ my $IPROP_ENGINE = 'engine';
 # (IA) class are declared here:
     # An Application Intf exists to be the root context in which all other
     # Intfs operate, that form an Intf tree beneath it.  An Application
-    # Intf represents a 'application_instance' SQL::Routine Node, which
+    # Intf represents a 'application_instance' Rosetta::Model Node, which
     # represents a complete set of database schemas and client-side
     # routines used by the current Rosetta-using application program
     # in conjunction with specific database instances.
-my $IAPROP_SRT_CONT = 'srt_cont';
-    # ref to SQL::Routine Container this Intf's tree is associated with
+my $IAPROP_MODEL_CONT = 'model_cont';
+    # ref to Rosetta::Model Container this Intf's tree is associated with
     # We must ref the Container explicitly, or it can easily be garbage
     # collected from under us.  This property can be accessed through
     # methods on any Intf in this tree.
 my $IAPROP_APP_INST_NODE = 'app_inst_node';
-    # ref to SRT 'application_instance' Node in the Container
+    # ref to ROS M 'application_instance' Node in the Container
 my $IAPROP_TRACE_FH = 'trace_fh';
     # ref to writeable Perl file handle
     # This property is set after Intf creation and can be cleared or set at
@@ -85,31 +85,31 @@ my $IAPROP_TRACE_FH = 'trace_fh';
 
 # Names of properties for objects of the Rosetta::Interface::Environment
 # (IN) class are declared here:
-    # An Environment Intf represents a 'data_link_product' SQL::Routine
+    # An Environment Intf represents a 'data_link_product' Rosetta::Model
     # Node, which represents a single Rosetta Engine class
     # that will implement parts of the Rosetta Interface for this app,
     # and is the parent for Connection Intfs using the Engine.
 my $INPROP_LINK_PROD_NODE = 'link_prod_node';
-    # ref to SRT 'data_link_product' Node in the Container
+    # ref to ROS M 'data_link_product' Node in the Container
 
 # Names of properties for objects of the Rosetta::Interface::Connection
 # (IC) class are declared here:
-    # A Connection Intf represents a (usually context) var having SRT
+    # A Connection Intf represents a (usually context) var having ROS M
     # container_type of 'CONN' and that links indirectly to an app-specific
-    # 'catalog_link' SQL::Routine Node describing it.
+    # 'catalog_link' Rosetta::Model Node describing it.
 my $ICPROP_CAT_LINK_NODE = 'cat_link_node';
-    # ref to SRT 'catalog_link' Node in the Container
-    # Note: a SQL::Routine constraint ensures that only one
+    # ref to ROS M 'catalog_link' Node in the Container
+    # Note: a Rosetta::Model constraint ensures that only one
     # catalog_link_instance Node exists per distinct catalog_link
     # beneath each application_instance.
 
 # Names of properties for objects of the Rosetta::Interface::Cursor (IU)
 # class are declared here:
-    # A Connection Intf represents a (usually context) var having SRT
+    # A Connection Intf represents a (usually context) var having ROS M
     # container_type of 'CURSOR' and that links to a 'external_cursor'
-    # SQL::Routine Node that indirectly defines it.
+    # Rosetta::Model Node that indirectly defines it.
 my $IUPROP_EXTERN_CURS_NODE = 'extern_curs_node';
-    # ref to SRT 'external_cursor' Node in the Container
+    # ref to ROS M 'external_cursor' Node in the Container
 
 # Names of properties for objects of the Rosetta::Interface::Literal (IL)
 # class are declared here:
@@ -124,7 +124,7 @@ my $IUPROP_EXTERN_CURS_NODE = 'extern_curs_node';
     #       (Perl Array of Hashes)
     #      - Eg, queries that respectively return one table row, one table
     #       column, a full row set
-    #   3. a reference to a single or list of SQL::Routine Nodes, usually
+    #   3. a reference to a single or list of Rosetta::Model Nodes, usually
     #       created by an Engine
     #      - Eg, built-in routines such as *_LIST or *_INFO or *_CLONE ret
     #       ref to newly created Nodes
@@ -144,10 +144,10 @@ my $IUPROP_EXTERN_CURS_NODE = 'extern_curs_node';
 
 # Names of properties for objects of the Rosetta::Interface::Preparation
 # (IP) class are declared here:
-    # A Preparation Intf represents a 'routine' SQL::Routine Node, which
+    # A Preparation Intf represents a 'routine' Rosetta::Model Node, which
     # represents a procedure or function to be executed.
 my $IPPROP_RTN_NODE = 'rtn_node';
-    # ref to SRT 'routine' Node in the Container
+    # ref to ROS M 'routine' Node in the Container
 
 # Names of properties for objects of the Rosetta::Interface::Error (IE)
 # class are declared here:
@@ -169,13 +169,13 @@ my $DPROP_LIT_PAYLOAD = 'lit_payload';
     # If Eng fronts a Literal Intf, put payload it represents here.
 my $DPROP_PREP_RTN = 'prep_rtn';
     # ref to a Perl anonymous subroutine
-    # This Perl closure is generated, by prepare(), from the SRT Node tree
+    # This Perl closure is generated, by prepare(), from the ROS M Node tree
     # that RTN_NODE refers to; the resulting Preparation's
     # execute() will simply invoke the closure.
 
 # Names of all possible features that a Rosetta Engine can claim to
 # support, and that Rosetta::Validator will individually test for.
-# This list may resemble SQL::Routine's "standard_routine" enumerated list
+# This list may resemble Rosetta::Model's "standard_routine" enumerated list
 # in part, but it is a lot more broad than that.
 my %POSSIBLE_FEATURES = map { ($_ => 1) } qw(
     CATALOG_LIST CATALOG_INFO
@@ -261,7 +261,7 @@ sub _assert_arg_node_type {
         if !defined $arg_value;
     $self->_throw_error_message( 'ROS_CLASS_METH_ARG_NO_NODE',
         { 'METH' => $meth_name, 'ARGNM' => $arg_name, 'ARGVL' => $arg_value } )
-        if !ref $arg_value or !UNIVERSAL::isa( $arg_value, 'SQL::Routine::Node' );
+        if !ref $arg_value or !UNIVERSAL::isa( $arg_value, 'Rosetta::Model::Node' );
     return
         if @{$exp_node_types} == 0; # any Node type is acceptable
     my $given_node_type = $arg_value->get_node_type();
@@ -269,10 +269,10 @@ sub _assert_arg_node_type {
         { 'METH' => $meth_name, 'ARGNM' => $arg_name,
         'EXPNTYPE' => $exp_node_types, 'ARGNTYPE' => $given_node_type } )
         if !grep { $given_node_type eq $_ } @{$exp_node_types};
-    $arg_value->get_container()->assert_deferrable_constraints(); # SRT throws own exceptions on problem.
+    $arg_value->get_container()->assert_deferrable_constraints(); # ROS M throws own exceptions on problem.
     if ($parent_intf or ref $self and UNIVERSAL::isa( $self, 'Rosetta::Interface' )
             and !UNIVERSAL::isa( $self, 'Rosetta::Interface::Application' )) {
-        my $expected_container = ($parent_intf || $self)->{$IPROP_ROOT_INTF}->{$IAPROP_SRT_CONT};
+        my $expected_container = ($parent_intf || $self)->{$IPROP_ROOT_INTF}->{$IAPROP_MODEL_CONT};
         $self->_throw_error_message( 'ROS_CLASS_METH_ARG_NODE_NOT_SAME_CONT',
             { 'METH' => $meth_name, 'ARGNM' => $arg_name, 'NTYPE' => $arg_value->get_node_type(),
             'NID' => $arg_value->get_node_id(), 'SIDCH' => $arg_value->get_surrogate_id_chain() } )
@@ -594,9 +594,9 @@ sub get_engine {
 
 ######################################################################
 
-sub get_srt_container {
+sub get_model_container {
     my ($interface) = @_;
-    return $interface->{$IPROP_ROOT_INTF}->{$IAPROP_SRT_CONT};
+    return $interface->{$IPROP_ROOT_INTF}->{$IAPROP_MODEL_CONT};
 }
 
 ######################################################################
@@ -644,7 +644,7 @@ sub new {
     my $app_eng = Rosetta::Dispatcher->new_application_engine();
 
     $app_intf->_new__set_common_properties( undef, undef, $app_eng );
-    $app_intf->{$IAPROP_SRT_CONT} = $app_inst_node->get_container();
+    $app_intf->{$IAPROP_MODEL_CONT} = $app_inst_node->get_container();
     $app_intf->{$IAPROP_APP_INST_NODE} = $app_inst_node;
     $app_intf->{$IAPROP_TRACE_FH} = undef;
 
@@ -722,7 +722,7 @@ sub new {
     $env_intf->_new__set_common_properties( $parent_intf, $parent_intf, $env_eng );
     $env_intf->{$INPROP_LINK_PROD_NODE} = $link_prod_node;
         # Note: Once a Rosetta Environment + Engine is associated with a 'data_link_product',
-        # any later changes (if any) to that SQL::Routine Node's 'product_code' will be ignored
+        # any later changes (if any) to that Rosetta::Model Node's 'product_code' will be ignored
         # by this Rosetta Intf tree, and the Engine specified by the Node's earlier value will
         # continue being used, until said Environment is garbage collected and a fresh one made.
 
@@ -914,10 +914,10 @@ sub payload {
     elsif ($ret_cont_type eq 'LIST') {
         # TODO
     }
-    elsif ($ret_cont_type eq 'SRT_NODE') {
+    elsif ($ret_cont_type eq 'ROS_M_NODE') {
         # TODO
     }
-    elsif ($ret_cont_type eq 'SRT_NODE_LIST') {
+    elsif ($ret_cont_type eq 'ROS_M_NODE_LIST') {
         # TODO
     }
     else {} # We should never get any of ERROR, CONN, CURSOR.
@@ -1034,10 +1034,10 @@ sub execute {
         elsif ($cont_type eq 'LIST') {
             # TODO
         }
-        elsif ($cont_type eq 'SRT_NODE') {
+        elsif ($cont_type eq 'ROS_M_NODE') {
             # TODO
         }
-        elsif ($cont_type eq 'SRT_NODE_LIST') {
+        elsif ($cont_type eq 'ROS_M_NODE_LIST') {
             # TODO
         }
         else {} # We should never get here
@@ -1222,7 +1222,7 @@ sub features {
 
     # First gather the feature results from each available Engine.
     my @results = ();
-    my $container = $app_intf->get_srt_container();
+    my $container = $app_intf->get_model_container();
     for my $link_prod_node (@{$container->get_child_nodes( 'data_link_product' )}) {
         my $env_intf = $app_intf->new_environment_interface( $app_intf, $link_prod_node );
         my $result = $env_intf->features( $feature_name );
@@ -1415,7 +1415,7 @@ Rosetta - Rigorous database portability
 
 =head1 VERSION
 
-This document describes Rosetta version 0.48.3.
+This document describes Rosetta version 0.71.0.
 
 =head1 SYNOPSIS
 
@@ -1473,10 +1473,10 @@ respectively don't have to; otherwise, an Engine has complete freedom to
 fulfill requests how it wishes.
 
 The main difference between Rosetta and the DBI is that Rosetta takes its
-input primarily as SQL::Routine (SRT) objects, where DBI takes SQL strings.
- See the documentation for SQL::Routine (distributed separately) for
+input primarily as Rosetta::Model (ROS M) objects, where DBI takes SQL strings.
+ See the documentation for Rosetta::Model (distributed separately) for
 details on how to define those objects.  Also, when Rosetta dumps a scanned
-database schema, it does so as SRT objects, while DBI dumps as either SQL
+database schema, it does so as ROS M objects, while DBI dumps as either SQL
 strings or simple Perl arrays, depending on the schema object type.  Each
 'routine' that Rosetta takes as input is equivalent to one or more SQL
 statements, where later statements can use the results of earlier ones as
@@ -1484,11 +1484,11 @@ their input.  The named argument list of a 'routine' is analogous to the
 bind var list of DBI; each one defines what values can be given to the
 statements at "execute" time.
 
-Unlike SQL strings, SRT objects have very little redundancy, and the parts
+Unlike SQL strings, ROS M objects have very little redundancy, and the parts
 are linked by references rather than by name; the spelling of each SQL
 identifier (such as a table or column name) is stored exactly once; if you
 change the single copy, then all code that refers to the entity updates at
-once.  SRT objects can also store meta-data that SQL strings can't
+once.  ROS M objects can also store meta-data that SQL strings can't
 accomodate, and you define database actions with the objects in exactly the
 same way regardless of the database product in use; you do not write
 slightly different versions for each as you do with SQL strings.
@@ -1562,7 +1562,7 @@ and Alzabo, or a custom solution (these can, of course, be layered on top
 of Rosetta).
 
 Perhaps a number of other CPAN modules' authors will see value in adding
-back-end support for Rosetta and/or SQL::Routine to their offerings, either
+back-end support for Rosetta and/or Rosetta::Model to their offerings, either
 as a supplement to their DBI-using native database SQL back-ends, or as a
 single replacement for the lot of them.  Particularly in the latter case,
 the authors will be more freed up to focus on their added value, such as
@@ -1571,7 +1571,7 @@ portability issues.  As quid quo pro, perhaps some of the other CPAN
 modules (or parts of them) can be used by a Rosetta Engine to help it do
 its work.
 
-I<To cut down on the size of the SQL::Routine module itself, some of the
+I<To cut down on the size of the Rosetta::Model module itself, some of the
 POD documentation is in these other files: L<Rosetta::Features>,
 L<Rosetta::Framework>.>
 
@@ -1615,7 +1615,7 @@ databases that Rosetta can access without regard for which Engine mediates
 access.  As a second example, you can invoke a CATALOG_OPEN built-in off of
 the root Application Interface rather than having to do it against the
 correct Environment Interface; Dispatcher will detect which Environment is
-required (based on info in your SQL::Routine) and load/dispatch to the
+required (based on info in your Rosetta::Model) and load/dispatch to the
 appropriate Engine that mediates the database connection.
 
 =head1 STRUCTURE
@@ -1626,7 +1626,7 @@ alternately, it is a command interpreter.  This module is implemented with
 2 groups of classes that work together, which are "Interface"
 (Rosetta::Interface::*) and "Engine" (Rosetta::Engine::*).  To use Rosetta,
 you first create a root Application Interface object (or several; one is
-normal), that is associated with a SQL::Routine "application_instance"
+normal), that is associated with a Rosetta::Model "application_instance"
 Node, using Rosetta->new_application_interface(), which provides a context
 in which you can prepare and execute commands against a database or three.
 One of your first commands is likely to open a connection to a database,
@@ -1637,9 +1637,9 @@ defined inside the Rosetta core module is a simple common super-class for
 all Engine plug-in modules.
 
 Note that each distinct Rosetta Engine class is represented by a distinct
-SQL::Routine "data_link_product" Node that you create; you put the name of
+Rosetta::Model "data_link_product" Node that you create; you put the name of
 the Rosetta Engine Class, such as "Rosetta::Engine::foo", in that Node's
-"product_code" attribute.  The SQL::Routine documentation refers to that
+"product_code" attribute.  The Rosetta::Model documentation refers to that
 attribute as being just for recognition by an external "mediation layer";
 when you use Rosetta, then Rosetta *is* said "mediation layer".
 
@@ -1653,7 +1653,7 @@ returned data container.  Each class of Interface object represents
 something different and has a distinct set of properties and methods,
 though all Interface objects have some of both in common.  Each Interface
 object has a "type" property which says what kind of thing it represents
-and how it behaves.  All Interface types have a "get_srt_container()"
+and how it behaves.  All Interface types have a "get_model_container()"
 method but only a literal type, for example, has a "payload()" method.
 
 Each Interface object may also have its own Engine object associated with
@@ -1742,7 +1742,7 @@ thrown as an exception any time something fails.
 A few more notes about a conceptualization in progress; very rough draft:
 
     stages of doingness:
-    1. define in a SQL::Routine model (can be done during app's init, prior to forking)
+    1. define in a Rosetta::Model model (can be done during app's init, prior to forking)
     2. compile to a Perl closure (can be done during server app's init, prior to forking workers)
         2.1 by definition, no external resources (eg, databases) are contacted
         2.2 this may or may not (probably will be) done by an Engine
@@ -1933,11 +1933,11 @@ objects in a Rosetta Interface tree will act as proxies of the Application
 at the root of the tree; invoking these methods on any tree object is the
 same as doing so on the root Application.
 
-=head2 get_srt_container()
+=head2 get_model_container()
 
-    my $container = $interface->get_srt_container();
+    my $container = $interface->get_model_container();
 
-This "getter" method returns by reference the SQL::Routine::Container
+This "getter" method returns by reference the Rosetta::Model::Container
 object that is shared by this Interface tree, if there is one.
 
 =head2 get_app_inst_node()
@@ -1945,7 +1945,7 @@ object that is shared by this Interface tree, if there is one.
     my $app_inst_node = $interface->get_app_inst_node();
 
 This "getter" method returns by reference the 'application_instance'
-SQL::Routine::Node object property of this tree's root Application.
+Rosetta::Model::Node object property of this tree's root Application.
 
 =head2 get_trace_fh()
 
@@ -1985,7 +1985,7 @@ class name or an existing Application object, with the same result.
 
 This "getter" function will create and return a single Application (or
 subclass) object.  The APP_INST_NODE argument is a 'application_instance'
-SQL::Routine Node that this new Application is to represent.
+Rosetta::Model Node that this new Application is to represent.
 
 =head1 APPLICATION OBJECT METHODS
 
@@ -2031,7 +2031,7 @@ This "getter" function will return a single Environment (or subclass)
 object that it either finds or creates.  The PARENT_INTF argument is an
 Application object that is meant to be both of the parent-by-creation and
 parent-by-context Interfaces of the new Environment.  The LINK_PROD_NODE
-argument is a 'data_link_product' SQL::Routine Node that this new
+argument is a 'data_link_product' Rosetta::Model Node that this new
 Environment is to represent. Any particular 'data_link_product' Node can
 only be associated with a single Environment under the same Application;
 this method will only create a new Environment if no existing one uses the
@@ -2051,7 +2051,7 @@ objects.
     my $link_prod_node = $env_intf->get_link_prod_node();
 
 This "getter" method returns by reference the 'data_link_product'
-SQL::Routine::Node object property of this Environment.
+Rosetta::Model::Node object property of this Environment.
 
 =head2 features([ FEATURE_NAME ])
 
@@ -2067,7 +2067,7 @@ documentation for Connection.features() and Application.features().
 
 =head2 prepare( ROUTINE_DEFN )
 
-This "getter"/"setter" method takes a "routine" SQL::Routine Node in its
+This "getter"/"setter" method takes a "routine" Rosetta::Model Node in its
 ROUTINE_DEFN argument, then "compiles" it into a new "Preparation"
 Interface (returned) which is ready to execute the specified action.  This
 method will mainly just invoke the same-name method on its Engine object,
@@ -2101,7 +2101,7 @@ subclass) object.  The PARENT_BYCRE_INTF and PARENT_BYCXT_INTF arguments
 are typically Preparation and Environment objects, respectively, that are
 meant to be the parent-by-creation and parent-by-context Interfaces,
 respectively, of the new Connection.  The LINK_PROD_NODE argument is a
-'catalog_link' SQL::Routine Node that this new Connection is to represent.
+'catalog_link' Rosetta::Model Node that this new Connection is to represent.
 This method is not typically invoked by a user application, but rather by
 the Engine of the parent-by-creation.
 
@@ -2115,7 +2115,7 @@ objects.
     my $cat_link_node = $conn_intf->get_cat_link_node();
 
 This "getter" method returns by reference the 'catalog_link'
-SQL::Routine::Node object property of this Connection.
+Rosetta::Model::Node object property of this Connection.
 
 =head2 features([ FEATURE_NAME ])
 
@@ -2157,7 +2157,7 @@ object.  The PARENT_BYCRE_INTF and PARENT_BYCXT_INTF arguments are
 typically Preparation and Connection objects, respectively, that are meant
 to be the parent-by-creation and parent-by-context Interfaces,
 respectively, of the new Cursor.  The EXTERN_CURS_NODE argument is a
-'external_cursor' SQL::Routine Node that this new Cursor is to represent.
+'external_cursor' Rosetta::Model Node that this new Cursor is to represent.
 This method is not typically invoked by a user application, but rather by
 the Engine of the parent-by-creation.
 
@@ -2170,7 +2170,7 @@ These methods are stateful and may only be invoked off of Cursor objects.
     my $extern_curs_node = $curs_intf->get_extern_curs_node();
 
 This "getter" method returns by reference the 'external_cursor'
-SQL::Routine::Node object property of this Cursor.
+Rosetta::Model::Node object property of this Cursor.
 
 =head2 prepare( ROUTINE_DEFN )
 
@@ -2208,7 +2208,7 @@ These methods are stateful and may only be invoked off of Literal objects.
 
 This "getter" method will return the actual payload that the "Literal"
 Interface represents.  This can either be an ordinary string or number or
-boolean, or a SRT Node ref, or an array ref or hash ref containing other
+boolean, or a ROS M Node ref, or an array ref or hash ref containing other
 literal values.  This method calls back to the Engine to produce the
 literal value rather than storing that in itself; this way, the value could
 be fetched or produced right on demand rather than earlier.  Therefore, it
@@ -2246,7 +2246,7 @@ This "getter" function will create and return a single Preparation (or
 subclass) object.  The PARENT_BYCRE_INTF argument is an object whose type
 is one of [Application, Environment, Connection, Cursor], that is meant to
 be the parent-by-creation Interface of the new Preparation.  The
-ROUTINE_NODE argument is a 'routine' SQL::Routine Node that this new
+ROUTINE_NODE argument is a 'routine' Rosetta::Model Node that this new
 Preparation is to represent. This method is not typically invoked by a user
 application, but rather by the Engine of the parent-by-creation.
 
@@ -2258,7 +2258,7 @@ These methods are stateful and may only be invoked off of Preparation objects.
 
     my $routine_node = $prep_intf->get_routine_node();
 
-This "getter" method returns by reference the 'routine' SQL::Routine::Node
+This "getter" method returns by reference the 'routine' Rosetta::Model::Node
 object property of this Preparation.
 
 =head2 execute([ ROUTINE_ARGS ])
@@ -2342,7 +2342,7 @@ It also requires the Perl modules L<Scalar::Util> and L<List::Util>, which
 would conceptually be built-in to Perl, but are bundled with it instead.
 
 It also requires these modules that are on CPAN: L<Locale::KeyedText>
-'1.6.0-' (for error messages), L<SQL::Routine> '0.70.0-'.
+'1.6.0-' (for error messages), L<Rosetta::Model> '0.71.0-'.
 
 =head1 INCOMPATIBILITIES
 
@@ -2351,7 +2351,7 @@ None reported.
 =head1 SEE ALSO
 
 L<perl(1)>, L<Rosetta::L::en>, L<Rosetta::Features>, L<Rosetta::Framework>,
-L<Locale::KeyedText>, L<SQL::Routine>, L<Rosetta::Validator>,
+L<Locale::KeyedText>, L<Rosetta::Model>, L<Rosetta::Validator>,
 L<Rosetta::Engine::Generic>, L<Rosetta::Emulator::DBI>, L<DBI>, L<Alzabo>,
 L<SPOPS>, L<Class::DBI>, L<Tangram>, L<HDB>, L<Genezzo>,
 L<DBIx::RecordSet>, L<DBIx::SearchBuilder>, L<SQL::Schema>,

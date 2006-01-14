@@ -2,7 +2,7 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta::Validator::L::en;
-use version; our $VERSION = qv('0.14.2');
+use version; our $VERSION = qv('0.15.0');
 
 ######################################################################
 
@@ -84,7 +84,7 @@ Rosetta::Validator::L::en - Localization of Rosetta::Validator for English
 
 =head1 VERSION
 
-This document describes Rosetta::Validator::L::en version 0.14.2.
+This document describes Rosetta::Validator::L::en version 0.15.0.
 
 =head1 SYNOPSIS
 
@@ -94,7 +94,7 @@ This document describes Rosetta::Validator::L::en version 0.14.2.
     # do work ...
 
     my $translator = Locale::KeyedText->new_translator(
-        ['Rosetta::Validator::L::', 'Rosetta::L::', 'SQL::Routine::L::'], ['en'] );
+        ['Rosetta::Validator::L::', 'Rosetta::L::', 'Rosetta::Model::L::'], ['en'] );
 
     # do work ...
 

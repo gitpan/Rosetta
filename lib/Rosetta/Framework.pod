@@ -72,7 +72,7 @@ features with Rosetta (but support can be added).  Rosetta does not
 automate installation of any separate database software or configure it
 (like a package manager); you will have to do that yourself.
 
-Note: see also the SQL::Routine library, which is the foundation for the
+Note: see also the Rosetta::Model library, which is the foundation for the
 Rosetta API; see the Language.pod file in particular.
 
 =head1 DESCRIPTION
@@ -214,7 +214,7 @@ performance than an emulator would provide.
 
 The modules composing the Rosetta framework are grouped into several main
 categories, which can be called: "Locale" (Locale::KeyedText), "Model"
-(SQL::Routine), "Interface", "Engine", "Proxy" (Server/Client),
+(Rosetta::Model), "Interface", "Engine", "Proxy" (Server/Client),
 "Validator", "Emulator", and others.
 
 Note: the file Language.pod should be read next, after Framework.pod.
@@ -353,7 +353,7 @@ these modules don't exist yet, but are being planned to exist, as they are
 implemented over time.
 
 Note:  As an analogy to the DBI framework, 'Rosetta' is akin to 'DBI',
-'SQL-Routine' is akin to 'SQL-Statement', 'Rosetta-Engine-*' is akin to
+'Rosetta-Model' is akin to 'SQL-Statement', 'Rosetta-Engine-*' is akin to
 'DBD-*', and 'Rosetta-Emulator-*' is akin to 'Oraperl' etc; the
 Builder/Parser are optional utilities that can be used by
 Engine/Emulator/etc.
@@ -367,23 +367,21 @@ beneath.>
         Locale::KeyedText::Message (stores details of a machine-readable message)
         Locale::KeyedText::Translator (converts a m-r message to a human readable form)
 
-=head2 In distribution "SQL-Routine"
-
-    SQL::Routine (Specify all database tasks with SQL routines)
-        SQL::Routine::Container (a context for Nodes, one of these per parent)
-            SQL::Routine::ContainerStorage
-        SQL::Routine::Node (a semi-atomic model component)
-            SQL::Routine::NodeStorage
-        SQL::Routine::Group (a group of Nodes)
-    SQL::Routine::L::en (Localization of SQL::Routine for English)
-    SQL::Routine::L::fr (Localization of SQL::Routine for French)
-    SQL::Routine::L::* ... like German, Spanish, Dutch, Chinese, etc
-
-    SQL::Routine::Language (What language or grammar SQL::Routine speaks)
-    SQL::Routine::EnumTypes (What enumerated types are part of SQL::Routine's language or grammar)
-    SQL::Routine::NodeTypes (What Node types are part of SQL::Routine's language or grammar)
-
 =head2 In distribution "Rosetta"
+
+    Rosetta::Model (Specify all database tasks with SQL routines)
+        Rosetta::Model::Container (a context for Nodes, one of these per parent)
+            Rosetta::Model::ContainerStorage
+        Rosetta::Model::Node (a semi-atomic model component)
+            Rosetta::Model::NodeStorage
+        Rosetta::Model::Group (a group of Nodes)
+    Rosetta::Model::L::en (Localization of Rosetta::Model for English)
+    Rosetta::Model::L::fr (Localization of Rosetta::Model for French)
+    Rosetta::Model::L::* ... like German, Spanish, Dutch, Chinese, etc
+
+    Rosetta::Language (What language or grammar Rosetta::Model speaks)
+    Rosetta::EnumTypes (What enumerated types are part of Rosetta::Model's language or grammar)
+    Rosetta::NodeTypes (What Node types are part of Rosetta::Model's language or grammar)
 
     Rosetta (Framework for RDBMS-generic apps and schemas)
         Rosetta::Interface (defines the whole Rosetta public API, is largely a shim)
@@ -410,15 +408,15 @@ beneath.>
     Rosetta::Validator::L::fr (Localization of Rosetta::Validator for French)
     Rosetta::Validator::L::* ... like German, Spanish, Dutch, Chinese, etc
 
-=head2 In distribution "SQL-Routine-SQLBuilder"
+=head2 In distribution "Rosetta-Utility-SQLBuilder"
 
-    SQL::Routine::SQLBuilder (Generate ANSI/ISO SQL:2003 and other SQL variants)
-    SQL::Routine::SQLBuilder::L::en (Localization of SQL::Routine::SQLBuilder for English)
+    Rosetta::Utility::SQLBuilder (Generate ANSI/ISO SQL:2003 and other SQL variants)
+    Rosetta::Utility::SQLBuilder::L::en (Localization of Rosetta::Utility::SQLBuilder for English)
 
-=head2 In distribution "SQL-Routine-SQLParser"
+=head2 In distribution "Rosetta-Utility-SQLParser"
 
-    SQL::Routine::SQLParser (Parse ANSI/ISO SQL:2003 and other SQL variants)
-    SQL::Routine::SQLParser::L::en (Localization of SQL::Routine::SQLParser for English)
+    Rosetta::Utility::SQLParser (Parse ANSI/ISO SQL:2003 and other SQL variants)
+    Rosetta::Utility::SQLParser::L::en (Localization of Rosetta::Utility::SQLParser for English)
 
 =head2 In distribution "Rosetta-Utilities" or a multiplicity of similarly named
 
@@ -553,10 +551,10 @@ Subclasses include: Result, Connection.
 
 B<Rosetta::Command> - This Interface class describes an action that needs
 to be done against a database; its objects encapsulate
-SQL::Routine::Command objects and also encapsulates the resolved host
+Rosetta::Model::Command objects and also encapsulates the resolved host
 params, or live objects like 'Cursor'.  Code using these objects should be
 doing something like both calling DBI->prepare() and DBI->execute().  I<See
-also SQL::Routine::Command.>
+also Rosetta::Model::Command.>
 
 =item
 
@@ -608,7 +606,7 @@ interfaces.
 
 =item
 
-B<SQL::Routine::SQLBuilder> - This is a utility class containing common
+B<Rosetta::Utility::SQLBuilder> - This is a utility class containing common
 functionality for multiple Engines.  Given that a majority of commonly used
 RDBMS systems use SQL as their primary command language, this class will
 take care of translating RNI commands into SQL commands.  While a large
@@ -630,8 +628,8 @@ am providing to get Rosetta up and working quickly with a wide variety of
 databases, specifically all those that have a DBI driver (eg, DBD::Oracle)
 and are "normal" SQL databases (or are the likes of DBD::ODBC who front
 "normal" databases).  This distribution has a dependency in the
-SQL-Routine-SQLBuilder distribution, which handles the meat of the SQL
-generation, and the SQL-Routine-SQLParser distribution, which handles
+Rosetta-Utility-SQLBuilder distribution, which handles the meat of the SQL
+generation, and the Rosetta-Utility-SQLParser distribution, which handles
 parsing in the case of reverse-engineering some schemas; it also,
 obviously, has a dependency on DBI and one or more DBD modules.
 
@@ -840,7 +838,7 @@ Rosetta.pm is loosely derived from this, and that is up to date.
             if ref $prefs ne 'HASH';
 
         eval {
-            require Rosetta; # also compiles SQL::Routine
+            require Rosetta; # also compiles Rosetta::Model
         };
         return "Error: can't compile Rosetta modules: $@"
             if $@;
@@ -874,7 +872,7 @@ Rosetta.pm is loosely derived from this, and that is up to date.
         return 'Error: no survey question list defined in prefs file'
             if ref $questions ne 'ARRAY' or @{$questions} == 0;
 
-        my $dd_table = SQL::Routine->new_table( 'survey_data' );
+        my $dd_table = Rosetta::Model->new_table( 'survey_data' );
 
         for my $question (@{$questions}) {
             return 'Error: invalid question defined in prefs file'
@@ -974,7 +972,7 @@ Rosetta.pm is loosely derived from this, and that is up to date.
 
         # user saw screen and clicked the 'OK' button, so try to fillin;
         # the following makes a Command of type 'data_insert' and executes it
-        my $dd_view = SQL::Routine->new_view( $dd_table );
+        my $dd_view = Rosetta::Model->new_view( $dd_table );
         my $rv = $dbh->execute_command( $dd_view->new_command_insert( $form_values ) );
         return q{Error: can't save form values in database: } . $rv->get_error()
             if $rv->is_error();
@@ -986,7 +984,7 @@ Rosetta.pm is loosely derived from this, and that is up to date.
         my ($dbh, $dd_table, $questions, $form_values) = @_;
 
         # the following makes a Command of type 'data_select' and executes it
-        my $dd_view = SQL::Routine->new_view( $dd_table );
+        my $dd_view = Rosetta::Model->new_view( $dd_table );
         my $cursor = $dbh->execute_command( $dd_view->new_command_select() );
         return q{Error: can't fetch form values from database: } . $cursor->get_error()
             if $cursor->is_error();

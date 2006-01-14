@@ -1,10 +1,10 @@
 #!perl
 use 5.008001; use utf8; use strict; use warnings;
 
-use only 'Rosetta' => '0.48.3';
+use only 'Rosetta' => '0.71.0';
 
 package Rosetta::Validator;
-use version; our $VERSION = qv('0.48.3');
+use version; our $VERSION = qv('0.71.0');
 
 use Scalar::Util qw( openhandle );
 
@@ -19,7 +19,7 @@ my $PROP_TRACE_FH = 'trace_fh';
 my $PROP_SETUP_OPTS = 'setup_opts';
     # hash(str,hash(str,str)) -
     # Says what Engine to test and how to configure it to work in the
-    # tester's environment.  Outer hash has a SRT Node name
+    # tester's environment.  Outer hash has a ROS M Node name
     # as a key and a hash of attribute name/value pairs as the value.
 # These are just used internally for holding state:
 my $PROP_TEST_RESULTS = 'test_results';
@@ -60,7 +60,7 @@ my $EMPTY_STR = q{};
 my $TOTAL_POSSIBLE_TESTS = 5;
     # how many elements should be in results array (S+P+F)
 
-# Names of SRT Node types and attributes that may be given in SETUP_OPTIONS
+# Names of ROS M Node types and attributes that may be given in SETUP_OPTIONS
 # for main():
 my %BC_SETUP_NODE_TYPES = ();
 for my $_node_type (qw(
@@ -68,11 +68,11 @@ for my $_node_type (qw(
         )) {
     my $attrs = $BC_SETUP_NODE_TYPES{$_node_type} = {}; # node type accepts only specific key names
     ATTR_NAME:
-    for my $attr_name (keys %{SQL::Routine->valid_node_type_literal_attributes( $_node_type ) || {}}) {
+    for my $attr_name (keys %{Rosetta::Model->valid_node_type_literal_attributes( $_node_type ) || {}}) {
         $attr_name eq 'si_name' and next ATTR_NAME; # All 'si_name' attrs are set by us, not the user.
         $attrs->{$attr_name} = 1;
     }
-    for my $attr_name (keys %{SQL::Routine->valid_node_type_enumerated_attributes( $_node_type ) || {}}) {
+    for my $attr_name (keys %{Rosetta::Model->valid_node_type_enumerated_attributes( $_node_type ) || {}}) {
         $attrs->{$attr_name} = 1;
     }
     # All nref attrs are set by us, not the user.
@@ -193,7 +193,7 @@ sub setup_env {
     my ($validator) = @_;
     my $setup_options = $validator->{$PROP_SETUP_OPTS};
 
-    my $container = SQL::Routine->new_container();
+    my $container = Rosetta::Model->new_container();
     $container->auto_assert_deferrable_constraints( 1 );
     $container->auto_set_node_ids( 1 );
     $container->may_match_surrogate_node_ids( 1 );
@@ -217,7 +217,7 @@ sub setup_conn {
     my ($validator, $rt_si_name) = @_;
     my $setup_options = $validator->{$PROP_SETUP_OPTS};
 
-    my $container = SQL::Routine->new_container();
+    my $container = Rosetta::Model->new_container();
     $container->auto_assert_deferrable_constraints( 1 );
     $container->auto_set_node_ids( 1 );
     $container->may_match_surrogate_node_ids( 1 );
@@ -348,7 +348,7 @@ sub test_catalog_list {
         if !$validator->{$PROP_ENG_ENV_FEAT}->{'CATALOG_LIST'};
 
     my $env_intf = $validator->setup_env();
-    my $container = $env_intf->get_srt_container();
+    my $container = $env_intf->get_model_container();
 
     SWITCH:
     {
@@ -356,10 +356,10 @@ sub test_catalog_list {
             my $app_inst_node = $env_intf->get_root_interface()->get_app_inst_node();
             my $app_bp_node = $app_inst_node->get_attribute( 'blueprint' );
             my $routine_node = $app_bp_node->build_child_node_tree( 'routine', { 'si_name' => 'sroutine_catalog_list',
-                    'routine_type' => 'FUNCTION', 'return_cont_type' => 'SRT_NODE_LIST', }, [
+                    'routine_type' => 'FUNCTION', 'return_cont_type' => 'ROS_M_NODE_LIST', }, [
                 [ 'routine_stmt', { 'call_sroutine' => 'RETURN', }, [
                     [ 'routine_expr', { 'call_sroutine_arg' => 'RETURN_VALUE',
-                        'cont_type' => 'SRT_NODE_LIST', 'valf_call_sroutine' => 'CATALOG_LIST', }, ],
+                        'cont_type' => 'ROS_M_NODE_LIST', 'valf_call_sroutine' => 'CATALOG_LIST', }, ],
                 ], ],
             ] );
             my $lit_intf = $env_intf->do( $routine_node );
@@ -403,7 +403,7 @@ sub test_conn_basic {
         if !$validator->{$PROP_ENG_ENV_FEAT}->{'CONN_BASIC'};
 
     my $conn_intf = $validator->setup_conn( 'declare_db_conn' );
-    my $container = $conn_intf->get_srt_container();
+    my $container = $conn_intf->get_model_container();
 
     SWITCH:
     {
@@ -451,7 +451,7 @@ Rosetta::Validator - A common comprehensive test suite to run against all Engine
 
 =head1 VERSION
 
-This document describes Rosetta::Validator version 0.48.3.
+This document describes Rosetta::Validator version 0.71.0.
 
 =head1 SYNOPSIS
 
@@ -549,7 +549,7 @@ This is a generalized version of Rosetta_Engine_Generic.t:
         }
         if (ref $message and UNIVERSAL::isa( $message, 'Locale::KeyedText::Message' )) {
             my $translator = Locale::KeyedText->new_translator( ['Rosetta::Engine::Generic::L::',
-                'Rosetta::Validator::L::', 'Rosetta::L::', 'SQL::Routine::L::'], ['en'] );
+                'Rosetta::Validator::L::', 'Rosetta::L::', 'Rosetta::Model::L::'], ['en'] );
             my $user_text = $translator->translate_message( $message );
             return q{internal error: can't find user text for a message: }
                 . $message->as_string() . ' ' . $translator->as_string();
@@ -657,17 +657,17 @@ function is not thorough; except for the 'data_link_product'.'product_code'
 (Rosetta Engine class name), it does not test that Node attribute entries
 in SETUP_OPTIONS have defined values, and even that single attribute isn't
 tested beyond that it is defined.  Testing for defined and mandatory option
-values is left to the SQL::Routine methods.
+values is left to the Rosetta::Model methods.
 
 =head2 main( SETUP_OPTIONS[, TRACE_FH] )
 
 This function comprises the core of the Rosetta::Validator module, and is
 what actually performs the tests on the Rosetta Engines.  This method will
-instantiate a new Rosetta Interface tree, and a SQL::Routine Container,
+instantiate a new Rosetta Interface tree, and a Rosetta::Model Container,
 populate the latter, invoke the former, saying to use the Engine and
 related configuration settings in SETUP_OPTIONS, try all sorts of database
 actions, and record the results as "test results", and then let the Rosetta
-and SQL::Routine objects be auto-destructed.  This function returns a new
+and Rosetta::Model objects be auto-destructed.  This function returns a new
 array ref having the details of the test results.  The SETUP_OPTIONS
 argument is a two-dimensional hash, where each outer hash element
 corresponds to a Node type and each inner hash element corresponds to an
@@ -680,7 +680,7 @@ that you choose.  The "setup options" say what Rosetta Engine to test and
 how to configure it to work in your customized environment. The actual
 attributes of the first 4 Node types should be recognized by all Engines
 and have the same meaning to them; you can set any or all of them (see the
-SQL::Routine documentation for the list) except for "id" and "si_name",
+Rosetta::Model documentation for the list) except for "id" and "si_name",
 which are given default generated values.  The build_connection() function
 requires that, at the very least, you provide a
 'data_link_product'.'product_code' SETUP_OPTIONS value, since that
@@ -718,7 +718,7 @@ It also requires the Perl module L<Scalar::Util>, which would conceptually
 be built-in to Perl, but is bundled with it instead.
 
 It also requires these modules that are in the current distribution:
-L<Rosetta> '0.48.3'.
+L<Rosetta> '0.71.0'.
 
 =head1 INCOMPATIBILITIES
 
@@ -726,7 +726,7 @@ None reported.
 
 =head1 SEE ALSO
 
-L<perl(1)>, L<Rosetta::Validator::L::en>, L<Rosetta>, L<SQL::Routine>,
+L<perl(1)>, L<Rosetta::Validator::L::en>, L<Rosetta>, L<Rosetta::Model>,
 L<Locale::KeyedText>, L<Rosetta::Engine::Generic>.
 
 =head1 BUGS AND LIMITATIONS

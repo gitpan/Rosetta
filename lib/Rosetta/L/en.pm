@@ -2,7 +2,7 @@
 use 5.008001; use utf8; use strict; use warnings;
 
 package Rosetta::L::en;
-use version; our $VERSION = qv('0.19.2');
+use version; our $VERSION = qv('0.20.0');
 
 ######################################################################
 
@@ -35,7 +35,7 @@ my %text_strings = (
     'ROS_CLASS_METH_ARG_NO_NODE' =>
         q[{CLASS}.{METH}(): ]
         . q[invalid {ARGNM} argument; ]
-        . q[it is not a SQL::Routine Node object, but rather is "{ARGVL}"],
+        . q[it is not a Rosetta::Model Node object, but rather is "{ARGVL}"],
 
     'ROS_CLASS_METH_ARG_WRONG_OBJ_TYPE' =>
         q[{CLASS}.{METH}(): ]
@@ -51,7 +51,7 @@ my %text_strings = (
         q[{CLASS}.{METH}(): ]
         . q[invalid {ARGNM} argument; ]
         . q[the "{NTYPE}" Node with Id "{NID}" and Surrogate Id Chain "{SIDCH}" ]
-        . q[is not in the SQL::Routine Container used by this Rosetta Interface tree],
+        . q[is not in the Rosetta::Model Container used by this Rosetta Interface tree],
 
     'ROS_CLASS_METH_ENG_MISC_EXCEPTION' =>
         q[{CLASS}.{METH}(): ]
@@ -136,23 +136,23 @@ my %text_strings = (
         . q[can't determine what Rosetta Engine to dispatch this App invocation to],
 
     'ROS_G_PERL_COMPILE_FAIL' =>
-        $GEN . q[ 00001 - {CLASS} - concerning the SRT routine "{RNAME}"; ]
+        $GEN . q[ 00001 - {CLASS} - concerning the ROS M routine "{RNAME}"; ]
         . q[can"t compile a generated Perl routine ({PERL_ERROR}):\n{PERL_CODE}],
     'ROS_G_RTN_TP_NO_INVOK' =>
-        $GEN . q[ 00002 - {CLASS} - concerning the SRT routine "{RNAME}"; ]
+        $GEN . q[ 00002 - {CLASS} - concerning the ROS M routine "{RNAME}"; ]
         . q[can"t directly invoke a "{RTYPE}" routine (only FUNCTION and PROCEDURE calls are allowed)],
     'ROS_G_NEST_RTN_NO_INVOK' =>
-        $GEN . q[ 00003 - {CLASS} - concerning the SRT routine "{RNAME}"; ]
+        $GEN . q[ 00003 - {CLASS} - concerning the ROS M routine "{RNAME}"; ]
         . q[can"t externally invoke a nested routine (a routine that is declared inside ]
         . q[another routine) or a routine that lives in a schema],
     'ROS_G_STD_RTN_NO_IMPL' =>
-        $GEN . q[ 00004 - {CLASS} - concerning the SRT routine "{RNAME}"; ]
+        $GEN . q[ 00004 - {CLASS} - concerning the ROS M routine "{RNAME}"; ]
         . q[can"t invoke the standard routine "{SRNAME}"; it isn"t implemented],
     'ROS_G_CATALOG_OPEN_CONN_STATE_OPEN' =>
-        $GEN . q[ 00005 - {CLASS} - concerning the SRT routine "{RNAME}"; ]
+        $GEN . q[ 00005 - {CLASS} - concerning the ROS M routine "{RNAME}"; ]
         . q[failure in standard routine "CATALOG_OPEN"; the given CONN_CX is already open],
     'ROS_G_CATALOG_CLOSE_CONN_STATE_CLOSED' =>
-        $GEN . q[ 00006 - {CLASS} - concerning the SRT routine "{RNAME}"; ]
+        $GEN . q[ 00006 - {CLASS} - concerning the ROS M routine "{RNAME}"; ]
         . q[failure in standard routine "CATALOG_CLOSE"; the given CONN_CX is already closed],
 );
 
@@ -176,7 +176,7 @@ Rosetta::L::en - Localization of Rosetta for English
 
 =head1 VERSION
 
-This document describes Rosetta::L::en version 0.19.2.
+This document describes Rosetta::L::en version 0.20.0.
 
 =head1 SYNOPSIS
 
@@ -186,7 +186,7 @@ This document describes Rosetta::L::en version 0.19.2.
     # do work ...
 
     my $translator = Locale::KeyedText->new_translator(
-        ['Rosetta::L::', 'SQL::Routine::L::'], ['en'] );
+        ['Rosetta::L::', 'Rosetta::Model::L::'], ['en'] );
 
     # do work ...
 

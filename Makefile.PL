@@ -11,9 +11,9 @@ WriteMakefile(
         'only' => 0,
         'Scalar::Util' => 0,
         'List::Util' => 0,
+        'List::MoreUtils' => '0.12',
         'Test::More' => 0, # but only for the test suite
         'Locale::KeyedText' => '1.6.0',
-        'SQL::Routine' => '0.70.0',
     },
 );
 

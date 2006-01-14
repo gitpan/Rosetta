@@ -15,8 +15,9 @@ CONTENTS
 PREFACE
 
 This distribution features the Perl 5 module named "Rosetta", as well as
-the "Rosetta::Validator"; see the files lib/Rosetta.pm and
-lib/Rosetta/Framework.pod for the roots of the main documentation, which is
+"Rosetta::Model" and "Rosetta::Validator"; see the files lib/Rosetta.pm,
+lib/Rosetta/Framework.pod, lib/Rosetta/Model.pm and
+lib/Rosetta/Language.pod for the roots of the main documentation, which is
 in POD format.  The distribution also includes a ChangeLog file to say what
 changes already happened, and a TODO file to say what changes have yet to
 happen.  The file INSTALL should help with installation issues.  Read below
@@ -59,8 +60,11 @@ conceptually be built-in to Perl, but aren't, so they are on CPAN instead.
 It also requires the Perl modules Scalar::Util and List::Util, which would
 conceptually be built-in to Perl, but are bundled with it instead.
 
+It also requires the Perl module List::MoreUtils '0.12-', which would
+conceptually be built-in to Perl, but isn't, so it is on CPAN instead.
+
 It also requires these modules that are on CPAN: Locale::KeyedText '1.6.0-'
-(for error messages), SQL::Routine '0.70.0-'.
+(for error messages).
 
 This distribution also requires Test::More for its test suite, and that
 module is bundled with Perl.
@@ -116,7 +120,22 @@ suggesting improvements to the standard version.
 
 ACKNOWLEDGEMENTS
 
-None besides myself so far.
+Besides myself as the creator ...
+
+* 2004.05.20 - Thanks to Jarrell Dunson (jarrell_dunson@asburyseminary.edu)
+for inspiring me to add some concrete SYNOPSIS documentation examples to
+Rosetta::Model, which demonstrate actual SQL statements that can be
+generated from parts of a model, when he wrote me asking for examples of
+how to use Rosetta::Model.
+
+* 2005.03.21 - Thanks to Stevan Little (stevan@iinteractive.com) for
+feedback towards improving Rosetta::Model's documentation, particularly
+towards using a much shorter SYNOPSIS, so that it is easier for newcomers
+to understand the module at a glance, and not be intimidated by large
+amounts of detailed information.  Also thanks to Stevan for introducing me
+to Scalar::Util::weaken(); by using it, Rosetta::Model objects can be
+garbage collected normally despite containing circular references, and
+users no longer need to invoke destructor methods.
 
 FIN
 
