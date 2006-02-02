@@ -1,9 +1,204 @@
-                              Rosetta
-----------------------------------------------------------------------
+                                  Rosetta
+---------------------------------------------------------------------------
+
+2006-02-01   Darren Duncan <perl@DarrenDuncan.net>
+
+    * Rosetta Release 0.720.0/0.720000 (SVN r1203).
+
+    * This release is concurrently available in both Perl 5 and Perl 6
+    versions.  The Perl 5 version is in the same distribution as this
+    Changes file.  The Perl 6 version is bundled with Pugs-6.2.11 (released
+    on 2006-02-01), in its ext/Rosetta/ subdirectory.
+
+    * This is the first CPAN release of the second major codebase of
+    Rosetta, which was written mainly between 2005-10 and later.
+
+    * Added "Changes" entry dated 2005-12-01, which should have been there
+    as of the previous release 0.71.0, but wasn't.
+
+    * The changes with this release, relative to the previous release which
+    was of the first major codebase, are all summed up by that almost
+    everything has been rewritten from scratch, code and documentation
+    alike, but that the higher-level design plans and framework structure
+    are the same as before, and any corresponding files and packages have
+    the same names.  The first and second major codebases of Rosetta are
+    definitely incompatible with each other, so any external code written
+    to work with any previous releases will have to be rewritten or at
+    least severely edited to work with this one.  Or rather, to work with
+    subsequent releases, since this one is almost entirely documentation
+    and doesn't have much working code to talk to yet.
+
+    * Here are the file manifest differences between the last release and
+    this one; the (-) and (+) respectively indicate files that were removed
+    and added, while those without a flag are in both releases and yet had
+    their contents mostly rewritten (but GPL and INSTALL are unchanged):
+
+          Changes
+        + docs/OSCON2005LightningTalk.txt
+          GPL
+          INSTALL
+          lib/Rosetta.pm
+        + lib/Rosetta/Copying.pod
+        - lib/Rosetta/EnumTypes.pod
+        + lib/Rosetta/FAQ.pod
+        - lib/Rosetta/Features.pod
+        - lib/Rosetta/Framework.pod
+          lib/Rosetta/L/en.pm
+          lib/Rosetta/Language.pod
+        + lib/Rosetta/Migration.pod
+          lib/Rosetta/Model.pm
+          lib/Rosetta/Model/L/en.pm
+        - lib/Rosetta/NodeTypes.pod
+        + lib/Rosetta/Overview.pod
+        + lib/Rosetta/TODO.pod
+          lib/Rosetta/Validator.pm
+          lib/Rosetta/Validator/L/en.pm
+          Makefile.PL
+          MANIFEST
+          META.yml
+        - ReadMe
+        + README
+        - t/lib/t_ROS_Abstract.pm
+        - t/lib/t_ROS_Synopsis.pm
+        - t/lib/t_ROS_Terse.pm
+        - t/lib/t_ROS_Util.pm
+        - t/lib/t_ROS_Verbose.pm
+          t/ROS_00_Compile.t
+        - t/ROS_10_Identity.t
+        - t/ROS_11_Circular.t
+        - t/ROS_40_Verbose.t
+        - t/ROS_41_Terse.t
+        - t/ROS_42_Abstract.t
+        - t/ROS_43_Synopsis.t
+        - t/ROS_50_Cloning.t
+          TODO
+
+    * Raised and multiplied the minor version number so that the current
+    X.Y.Z formatted version numbers are backwards compatible with the older
+    releases in X.0Y format, with respect to determing which version
+    numbers are larger or smaller.  The new version 0.720.0 is equivalent
+    to 0.72 under the old format, in which the last release was both 0.69
+    (SQL-Routine) and 0.47 (Rosetta).
+
+    * New code file versions are: Rosetta.pm and Model.pm and Validator.pm
+    0.720.0 and Rosetta/L/en.pm 0.210.0 and Model/L/en.pm 0.400.0 and
+    Validator/L/en.pm 0.160.0.
+
+    * All 3 of the above non-en.pm files are now void of any functions or
+    methods except Model.pm, which has a total of 4 public ones plus 7
+    private ones.  All 3 of the en.pm files are code-complete but that they
+    are void of any user text messages, but for Model's, which has 2.
+
+    * Updated external dependency on Locale::KeyedText to 1.72.0.
+
+    * Added new external dependencies on 'Readonly', Class::Std,
+    Class::Std::Utils.  Removed old external dependencies on List::Util and
+    List::MoreUtils (they may return if needed later).  Maintained external
+    dependencies on 'version', 'only', Scalar::Util, Test::More.
+
+    * Altered the license of the Rosetta framework in regards to the GPL's
+    default requirements of combined works based on Rosetta needing to be
+    GPL.  Previously, an exemption was given to linked components of any
+    license at all (letting those components retain their own licenses),
+    free or closed, if those components were fully functional independently
+    of Rosetta, meaning Rosetta's use was an optional feature of theirs.
+    Now instead, an exemption is given to any linked components whose own
+    licenses qualify as free software (according to the FSF), regardless of
+    whether their use of Rosetta is mandatory or optional.  This change
+    should make things a lot more fair and practical for everyone.  Other
+    free software developers won't have to maintain parallel functionality
+    just to keep their alternate licenses on a technicality.  I also added
+    an explicit statement offering alternate and proprietary licenses for
+    an additional fee, so non-free software developers can bundle Rosetta.
+
+    * Rosetta and Rosetta::Model are now implemented as inside-out objects,
+    so the privacy of their attributes is now enforced.  Also, Rosetta.pm
+    and Model.pm themselves now have BUILD() methods internally instead of
+    new() functions (Model.pm has them now, Rosetta.pm will later).  Also,
+    all private methods now use Class::Std's ": PRIVATE" trait, which
+    enforces their privacy.
+
+    * Updated all object argument validation to use Scalar::Util's
+    blessed() function plus the method form of UNIVERSAL's isa() rather
+    than the latter's functional form.  The changed version should work
+    more like Perl 6's does(), and should permit one to use mock objects
+    that claim to be of the expected types instead of genuine ones.
+
+    * The package Rosetta::Model::Container has been renamed to
+    Rosetta::Model::Document, while ::Node kept its old name.  The packages
+    ::ContainerStorage, ::NodeStorage, and ::Group were eliminated.
+
+    * "Rosetta" no longer has any functions and exists just as the namesake
+    of this distribution (and of its file); the 8 new_*_interface() wrapper
+    functions are gone.  You now just use the previously-wrapped
+    corresponding functions Rosetta::Interface::*->new() instead (they
+    still have yet to be rewritten, though).  Likewise, "Rosetta::Model" no
+    longer has any functions and exists just as the namesake of its file;
+    the new_container() and new_node() wrapper functions are gone.  You now
+    just use the previously-wrapped functions
+    Rosetta::Model::Document->new() and Rosetta::Model::Node->new()
+    instead (these 2 actually have been rewritten).
+
+    * All new() constructor functions now have named parameters instead of
+    positional ones (the ones that were rewritten anyway; the others simply
+    don't exist), which should make it easier to add functionality to
+    Rosetta and Rosetta::Model later if one wants to.  But all object
+    methods (that exist) still have positional parameters like before.
+
+    * Deleted the whole data dictionary in Rosetta::Model (%NODE_TYPES and
+    related constants); a new one will be made later.
+
+    * Merged the functionality of the Rosetta::Model's old build_*()
+    functions and methods into its new() constructor functions, so you can
+    now construct entire Node trees with a single invocation of new().  The
+    new Document constructor now has a single "root_nodes" array-ref
+    parameter, and the new Node constructor now has 5 parameters;
+    "document", "parent_node", "node_type", "attributes" (hash-ref),
+    "child_nodes" (array-ref); the "root_nodes" and "child_nodes"
+    parameters are the same.
+
+    * The new object Rosetta::Model methods export_as_hash() replace the
+    old get_all_properties() methods.  The related methods which produce
+    translated strings have not yet been rewritten.
+
+    * Any INTERFACE documentation now uses the word 'parameter' in many
+    places where the word 'argument' was used, which is more correct.
+
+    * Roughly speaking, the pod-only files were restructured as follows: 1.
+    EnumTypes and NodeTypes are merged into Language; 2. Framework is split
+    into Overview and TODO.pod and part of Copying; 3. Features will be
+    replaced later; 4. FAQ, Migration, and much of Copying is just new; 5.
+    pod from Model.pm and Rosetta.pm has been shuffled between the pod
+    files and vice-versa.
+
+    * Added new SYNOPSIS to Rosetta.pm, which had none before; also, the
+    SYNOPSIS of Model.pm and Validator.pm are gone, for now.
+
+    * Added new file docs/OSCON2005LightningTalk.txt, which has the
+    pristine text for a lightning talk I gave, and outlined in 5 minutes
+    what at-that-time Rosetta was and was to be.
+
+    * Removed the whole test suite but the compilation test; it will be
+    replaced later.  As such, the new modules have not yet been proven to
+    actually work (though most of their code isn't rewritten yet).
+
+    * Renamed the ReadMe file to README and chopped out all of its parts
+    that were redundant with Rosetta.pm's own POD.  All that remains now is
+    the PREFACE, KEEPING UP TO DATE (also rewritten), and SUPPORT sections.
+
+    * Updated the Makefile.PL to output a message saying this distro
+    prefers the latest Perl version (currently 5.8.8), if we aren't running
+    under it.  But the minimum hard dependency is unchanged at 5.8.1.
+
+    * Rewrote the TODO file to just reference lib/Rosetta/TODO.pod for now.
+
+    * Synchronized common headings for these files: Changes, README, TODO.
+
+    * There were many more changes that aren't enumerated here.
 
 2006-01-13   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.71.0 (SVN r1184).
+    * Rosetta Release 0.71.0/0.071000 (SVN r1184).
 
     * This is a retroactive release, made on intended to help ease the
     transition between the first and second major code bases of the Rosetta
@@ -85,9 +280,19 @@
     SQL::
     ::Routine         adpOg Specify all database tasks with SQL routines DUNCAND
 
+2005-12-01   Darren Duncan <perl@DarrenDuncan.net>
+
+    Record update in the PAUSE modules database:
+
+    statd: [a] was [c]
+
+    The resulting entry will be:
+
+    Rosetta           adpOg Rigorous database portability                DUNCAND
+
 2005-09-28   Darren Duncan <perl@DarrenDuncan.net>
 
-    * SQL-Routine Release 0.70.3 (SVN r878).
+    * SQL-Routine Release 0.70.3/0.070003 (SVN r878).
 
     * New code file versions are: Routine.pm 0.70.3 and en.pm 0.38.2.
 
@@ -230,7 +435,7 @@
 
 2005-09-28   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.48.3 (SVN r878).
+    * Rosetta Release 0.48.3/0.048003 (SVN r878).
 
     * New code file versions are: Rosetta.pm and Validator.pm 0.48.3 and
     Rosetta/L/en.pm 0.19.2 and Validator/L/en.pm 0.14.2.
@@ -362,7 +567,7 @@
 
 2005-09-14   Darren Duncan <perl@DarrenDuncan.net>
 
-    * SQL-Routine Release 0.70.2 (SVN r813).
+    * SQL-Routine Release 0.70.2/0.070002 (SVN r813).
 
     * New code file versions are: Routine.pm 0.70.2.
 
@@ -401,7 +606,7 @@
 
 2005-09-14   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.48.2 (SVN r813).
+    * Rosetta Release 0.48.2/0.048002 (SVN r813).
 
     * New code file versions are: Rosetta.pm and Validator.pm 0.48.2.
 
@@ -437,7 +642,7 @@
 
 2005-09-12   Darren Duncan <perl@DarrenDuncan.net>
 
-    * SQL-Routine Release 0.70.1 (SVN r808).
+    * SQL-Routine Release 0.70.1/0.070001 (SVN r808).
 
     * New code file versions are: Routine.pm 0.70.1 and en.pm 0.38.1.
 
@@ -456,7 +661,7 @@
 
 2005-09-12   Darren Duncan <perl@DarrenDuncan.net>
 
-    * Rosetta Release 0.48.1 (SVN r808).
+    * Rosetta Release 0.48.1/0.048001 (SVN r808).
 
     * New code file versions are: Rosetta.pm and Validator.pm 0.48.1 and
     Rosetta/L/en.pm 0.19.1 and Validator/L/en.pm 0.14.1.
@@ -480,13 +685,13 @@
 
 2005-09-08   Darren Duncan <perl@DarrenDuncan.net>
 
-    * SQL-Routine Release 0.70.0 (SVN r787), containing SQL::Routine
-    0.70.0, was released on CPAN.  This is the first release of this
-    distribution and its modules for which they had 3-part version numbers,
-    rather than floating point version numbers.
+    * SQL-Routine Release 0.70.0/0.070000 (SVN r787), containing
+    SQL::Routine 0.70.0, was released on CPAN.  This is the first release
+    of this distribution and its modules for which they had 3-part version
+    numbers, rather than floating point version numbers.
 
-    * Rosetta Release 0.48.0 (SVN r787), containing Rosetta 0.48.0 and
-    Rosetta::Validator 0.48.0, was released on CPAN.  This is the first
+    * Rosetta Release 0.48.0/0.048000 (SVN r787), containing Rosetta 0.48.0
+    and Rosetta::Validator 0.48.0, was released on CPAN.  This is the first
     release of this distribution and its modules for which they had 3-part
     version numbers, rather than floating point version numbers.
 
@@ -495,14 +700,14 @@
 
 2005-09-01   Darren Duncan <perl@DarrenDuncan.net>
 
-    * SQL-Routine Release 0.69, containing SQL::Routine 0.69, was released
-    on CPAN.  This is the last release of this distribution and its modules
-    for which they had floating point version numbers, rather than 3-part
-    version numbers.
+    * SQL-Routine Release 0.69/0.690000, containing SQL::Routine 0.69, was
+    released on CPAN.  This is the last release of this distribution and
+    its modules for which they had floating point version numbers, rather
+    than 3-part version numbers.
 
-    * Rosetta Release 0.47, containing Rosetta 0.47 and Rosetta::Validator
-    0.47, was released on CPAN.  This is the first release of
-    Rosetta::Validator following its merger with
+    * Rosetta Release 0.47/0.470000, containing Rosetta 0.47 and
+    Rosetta::Validator 0.47, was released on CPAN.  This is the first
+    release of Rosetta::Validator following its merger with
     Rosetta::Utility::EasyBake.  This is the last release of this
     distribution and its modules for which they had floating point version
     numbers, rather than 3-part version numbers.
@@ -905,7 +1110,7 @@
     * This is when I started writing self-contained code components that
     were explicitly designed to enable external code that used them to work
     seamlessly on multiple database products, and hence 2002 is the start
-    of my declared copyright date range for Rosetta.
+    of my declared copyright date range for the Rosetta framework.
 
 2001-11-24
 

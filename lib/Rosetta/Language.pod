@@ -1,706 +1,568 @@
+=pod
+
 =encoding utf8
 
 =head1 NAME
 
-Rosetta::Language - What language or grammar Rosetta::Model speaks
+Rosetta::Language -
+Design document of the Intermediate Relational Language
 
 =head1 DESCRIPTION
 
-Rosetta::Model contains SQL schemas and queries, represented as a tree of
-atomic tokens; it is structurally like an abstract syntax tree or an XML
-DOM, but one that only accepts, respectively, a specific source language or
-XML schema.  See L<Rosetta::Model> for more details.
+Rosetta::Model provides an effective language for defining relational data
+models, both the means to create them and the means to interact with them.
+The language is IRL (Intermediate Relational Language); see the
+documentation of L<Rosetta::Model> itself (in the current distribution) for
+a further introduction.
 
-The module's API and code make it look like a generic tree, composed of
-related Nodes.  The restrictions for which attributes each Node can have,
-and its relationship to others, is defined by data (though for efficiency,
-that data is also contained in the same module and can't be changed at
-runtime).
+This document, Rosetta::Language ("Language"), is the human readable
+authoritative design document for that language.  The file Rosetta::Model
+itself contains the machine readable language specification, which is
+derived from the human readable version.  If there's a conflict between the
+two, then either Rosetta::Model is in error, or the developers were
+negligent in updating it before Language, so you can yell at them.
+Likewise, believe Language before any other conflicting documents, unless
+the other documents are emails from Rosetta::Model developers, in which
+case they can be yelled at again for not keeping Language up to date.
 
-As an analogy, the module has an API like a generic XML DOM, but it can
-enforce a specific XML Schema (the data).  The context in which it is used
-is like a generic database interface.  The API basically has an "execute"
-function, to which a SQL string is given, within that, there is a huge
-amount of flexibility of what the SQL string can say, but it must conform
-to a specific grammar.
+Since IRL is largely derived from pre-existing language specifications such
+as Christopher J. Date's and Hugh Darwen's Tutorial D and the ANSI/ISO
+SQL:2003 standard, it may be tempting to just assume everything you know
+from them is also true here.  While that will work in some cases (and in
+fact I intentionally don't repeat many details here for brevity), it won't
+in others, so you should always check here for any possible conflicts.
 
-This document, Rosetta::Language, is meant to say what all the 'types'
-of Nodes are, and what attributes and relationships are allowed for each.
-It is meant to say what 'grammar' for Rosetta::Model's 'language' is, or what
-'schema' it accepts.
+IRL is primarily declarative, in that it defines how implementations should
+appear and behave from a user's point of view, and it does not typically
+make any demands as to how implementations accomplish this behind the
+scenes.
 
-The type of information this document would provide is functionally similar
-to the SQL design documents, or vendor-specific ones.
+=head1 OPERATIONAL CONTEXT
 
-=head1 FEATURE SCOPE AND STANDARDS COMPLIANCE
+IRL is designed for a specific virtual environment, that provides
+usually-persistent repositories (or "depots") in which can live user
+defined data structures and routines to operate on them, as is the case
+with a typical computer programming language.  Broadly speaking, IRL
+provides the means to create, read, modify, and delete both entire depots
+and other items that live in them.  An implementation (or instance thereof)
+of IRL is a "depot management system" (or "depot manager"); it is the job
+of the depot manager to facilitate access to depots implemented with it.
 
-Rosetta::Model mainly follows its own path regarding its language structure;
-it approximates other SQL variants, including both ANSI/ISO standard SQL
-and proprietary versions like PL-SQL and T-SQL, but it matches none of
-those.  I believe that such existing versions of SQL are simply too large
-and complex to support in their entirety.  Moreover, such as with most
-software, we have a situation where 10% of the features are used 90% of the
-time, or 90% of users never exercise more than the same 10% of the
-available features.  Or, perhaps those numbers should read 99% and 1%
-instead of 90 and 10.
+A B<depot> is is a fully self-contained and fully addressable database.  It
+is what your application opens a connection to when it wants to use a
+database.  A depot has its own set of user accounts, and its own catalogs
+(containing schemas, which in turn contain tables and other data structures
+plus stored routines), which are owned by and operated on by said users.  A
+depot by definition never shares ownership of catalogs or users with
+another depot, even another managed by the same depot manager.  When an
+application opens a connection to a database, a "depot" I<is> what it is
+connecting to, and everything it sees within that connection is from within
+the context of the depot.  In other terms, when you hold a "data source
+name" / DSN, a single "depot" is what it points to.
 
-Rosetta::Model aims to be a "90%+ solution", natively supporting what I
-consider to be the "most important" features of SQL, those which have stood
-the test of time, become widely used, and supported by multiple vendors.
-This includes many "advanced" features which shipping database products
-often lack, and even a handful which no database may support now but
-"should".  I have mainly avoided features which are new and unused, or
-unproven, or complicated, or badly designed, or antiquated, or otherwise
-look like a product of creeping featuritis.  This is not to say that I
-reject new and little used features; if I see their benefit and they are
-easy to implement, they get supported now.
+A B<depot manager> is software that takes the form of either a library
+embedded in the current application process or one instance of a separate
+server process that is running somewhere.  When an application wants to
+invoke a depot from an application, the invocation must be qualified with
+what depot manager is going to be used, plus any necessary manager
+implementation specific details to locate the depot itself.
 
-Rosetta::Model is designed largely in the hindsight of the ANSI/ISO SQL:1999
-standard (and with some foresight of the yet-unfinalized SQL:2003) and aims
-to conform to it as much as possible.  Where SQL:2003 and other SQL
-versions talk about the same features using different words, Rosetta::Model
-will either match the standard or resemble it the most.  Similarly, as
-SQL:2003 and SQL:1999 are fully upward compatible with SQL:1992, so the
-latter will be matched.  Unlike most shipping database products, which
-support mainly SQL:1992, I will support SQL:2003 (and 1999).  Note that
-SQL:2003 and SQL:1999 has identical ANSI and ISO standards, while SQL:1992
-does not; this is a practical reason to focus on just 2003 and 1999.
+With a "file based" implementation, such as one using the SQLite database
+manager, there is a one-to-one mapping between a depot and a file system
+file, the SQLite database file in this case; to use this depot, it is
+identified simply using the manager name and the file name.  Likewise with
+MS Access, or standalone CSV or tabular database files.  One such database
+manager can typically manage several depots/files at once, each accessed
+with a separate connection.  Rosetta::Engine::Native is also "file based".
+
+With a "client-server" implementation, such as Oracle or PostgreSQL, a
+depot is identified (directly or under abstraction) by both the network
+address of the server itself (qualified with such as an IP address and
+port, or a socket name), and a "database name".  Or that is the case with
+many client-server databases like PostgreSQL, so for those each "database
+at a server" corresponds one-to-one with a depot, assuming that these
+databases do not share a common set of users.  Oracle is different in that
+"the server equals the database", so therefore one Oracle server equals one
+depot.  MySQL muddies the waters, where it seems that all "databases"
+managed by a MySQL server process share a common set of users.  By
+definition, a depot contains everything that a single database manager
+provided user account is privileged to own, so perhaps everything under a
+MySQL server process is a single depot.
+
+Of course, the exact mapping of concepts for a federated implementation of
+a depot manager (and most depot managers are anticipated to be federated)
+are left to its creator, but the above are my recommendations.
+
+A B<user> is whom the application or its user authenticates themselves as
+against a depot connection, if the depot manager has a concept of users
+(SQLite natively does not, Oracle natively does, etc).  IRL defines 3 types
+of users, called ROOT, NAMED, ANONYMOUS; there is 1 ROOT user that owns the
+depot and was created with it, and NAMED users are what a typical person
+connects as, unless they are ANONYMOUS.  Note that some database managers
+underlying a depot manager will display a different view of the database
+depending on what user logged in, but the depot manager should abstract
+away this per-user difference where possible, mainly by using fully
+qualified identifiers for all depot contents.  A user can have privileges
+that authorize what it can do in the depot.
+
+A depot provides 2 levels of namespace in which its main contents are
+organized; the higher level namespace is B<catalog> and the lower level
+namespace is B<schema>.  The main contents themselves (data structures and
+routines) are collectively referred to as B<schema objects>.  Schema
+objects are like the package qualified global variables of Perl;
+authorization permitting, you can directly invoke any of them at any time,
+either from within another schema object or within a client side routine
+operating over an open connection to the depot containing them.  The fully
+qualified name of a schema object is "<catalog>.<schema>.<object>", which
+is fully unambiguous and works anywhere.  Partially qualified
+("<schema>.<object>") or unqualified ("<object>") names can also be used to
+invoke a schema object, but they only work within the same namespace
+(catalog or schema respectively) as the invocant.
+
+As with typical programming languages, IRL also provides lexically scoped
+data structures (and sometimes routines).  Mainly it is data structures
+declared within a routine that are lexical, and these are only visible
+within that routine.
+
+Unlike typical SQL databases, but like typical programming languages, you
+can define instances of all the same data structure types at both the
+global and lexical level.  So for example you can define a table or view
+that only exists within a routine (and has the life of its execution), and
+you can also declare a standalone scalar container that is a schema object.
+(The latter would be implemented as a table with a single column and row
+in a typical SQL database back-end.)
+
+IRL defines 4 types of catalogs, called LOCAL, SYSTEM, TEMPORARY, and
+REMOTE; a depot can potentially have all of these kinds at once, but
+typically it has exactly 1 each of the first 3 types.  The LOCAL catalog
+type is the normal one, and contains all the typical persistent schema
+objects.  The TEMPORARY catalog type is for schema objects whose fates are
+tied to open connections; each connection has its own private instance of
+one TEMPORARY catalog, and its contents disappear when the connection is
+closed.  The SYSTEM catalog type provides read-only schema objects that are
+views into that depot's meta-data; they are analagous to an "information
+schema", but that all the meta-data is atomic like IRL itself.
+
+The REMOTE catalog type is used when you cause the depot / depot manager
+you are connected with to turn around and connect to another depot (whether
+under the same depot manager doesn't matter), so its contents also become
+visible to you like they were an extension of the current depot; by default
+all catalogs in the other depo are "mounted" as remote catalogs in the
+current one.  In SQLite terms, when you "attach" one or more database files
+to the "main" one you have open, then a new "remote" catalog appears that
+represents each one. In terms of MySQL, I would guess that tables of its
+"federated" table type qualify to conceptually live in a remote catalog.
+Any other database, presumably such as Oracle, that lets you "connect to" a
+remote depot_manager is implementing the REMOTE catalog feature.  In terms
+of a hypothetical federated depot manager that lets you use a single
+"connection" to access multiple remote depots at once, such as for a
+database cloning utility or a multiplexer, I<all> of the visible catalogs
+would be the REMOTE type, and there wouldn't be any of the LOCAL type.
+
+=head1 DATA TYPES AND VALUES
+
+IRL is natively built around strong data types and
+values, which is part of its rigor and simplicity.  Every B<data value> is
+considered to have a specific B<data type>, and a data type is considered
+to be a domain of one or more representable values.  Examples of data types
+are booleans, numerics, character strings, bit strings, temporals,
+spatials, sets, relations, tuples, arrays, and nulls.  A B<data container>
+is a named and/or addressable site, considered to be of a specific data
+type, that always holds exactly one data value of the same data type.
+Generally speaking, any two data types are considered to be mutually
+exclusive, such that a data value can only be in the domain of one of the
+types, and not the other.  (The exception is if type A is declared to be a
+restriction of type B, or both are restrictions of type C.)
+
+If you want to compare two values that have different data types, you must
+explicitly cast one or both values into the same data type.  Likewise, if
+you want to use a value of one type in an operation that requires a value
+of a different type, such as when assigning to a container, the value must
+be cast into the needed type.  The details of casting depend on the two
+types involved, but often you must choose from several possible methods of
+casting; for example, when casting between a numeric and a character
+string, you must choose what numeric radix to use.  However, no casting
+choice is necessary if the data type of the value in hand is a restriction
+of the needed data type.
+
+IRL gains rigor from this requirement for strong typing and explicit
+casting methods because you have to be very explicit as to what behaviour
+is expected; as a result, there should be no ambiguity in the system and
+the depot manager should perform exactly as you intended. This reduces
+troublesome subtle bugs in your programs, making development faster, and
+making your programs more reliable.  Your data integrity is greatly
+improved, with certain causes of corruption removed, which is an important
+goal of any data management system, and supports the ideals of the
+relational data model.
+
+IRL gains simplicity from this same requirement, because your depot-centric
+routines can neatly avoid the combinatorial complexity that comes from
+being given a range of data types as values when you conceptually just want
+one type, and your code doesn't have to deal with all the possible cases.
+The simpler routines are easier for developers to write, as they don't have
+to worry about several classes of error detection and handling (due to
+improper data formats), and the routines would also execute faster since
+they do less actual work.  Any necessary work to move less strict data from
+the outside to within the depot manager environment is handled by the depot
+manager itself and/or your external application components (the latter is
+where any user interaction takes place), so that work is un-necessary to do
+once the data is inside the depot manager environment.
+
+=head2 Classifications
+
+IRL has 2 main classes of data types, which are opaque data types and
+transparent data types.
+
+An opaque data type is like a black box whose internal representation is
+completely unknown to the user (and is determined by the depot manager),
+though its external interace and behaviour are clearly defined.  Or, an
+opaque data type is like an object in a typical programming language whose
+attributes are all private.  Conceptually speaking, all opaque data values
+are atomic and no sub-components are externally addressable for reading and
+changing, although the data type can provide its own specific methods or
+operators to extract or modify sub-components of an opaque data value.  An
+example is extracting a sub-string of a character string to produce a new
+character string, or extracting a calendar-specific month-day from a
+temporal type.
+
+A transparent data type is like a partitioned open box, such that each
+partition is a visibly distinct container or value that can be directly
+addressed for reading or writing.  Or, an opaque data type is like an
+object in a typical programming language whose attributes are all public.
+Conceptually speaking, all transparent data types are named collections of
+zero or more other data types, as if the transparent data value or
+container was an extra level of namespace.  Accessing these sub-component
+partitions individually is unambiguous and can be done without an accessor
+method.  An example is a single element in an array, or a single member of
+a set, or a single field in a tuple, or a single tuple in a relation.
+
+Opaque data types are further classified into unrestricted opaque data
+types and restricted opaque data types.  An unrestricted opaque type has
+the full natural domain of possible values, and that domain is infinite in
+size for most of them; eg, the unrestricted numerical type can accomodate
+any number from negative to positive infinity, though the unrestricted
+boolean type still only has 2 values, false and true.  A restricted opaque
+type is defined as a sub-type of another opaque type (restricted or not)
+which excludes part of the parent type's domain; eg a new type of numerical
+type can be defined that can only represent integers between 1 and 100.  A
+trivial case of a restricted type is one declared to be identical in range
+to the parent type, such as if it simply served as an alias; that is also
+how you always declare a boolean type.  A restricted type can implicitly be
+used as input to all operations that its parent type could be, though it
+can only be used conditionally as output.
+
+Note that, for considerations of practicality, as computers are not
+infinite, IRL requires you to explicitly declare a container (but not a
+value) to be of a restricted opaque type, having a defined finite range in
+its domain, though that domain can still be very large.  This allows depot
+manager implementations to know whether or not they need to do something
+very inefficient in order to store extremely large possible values (such as
+implement a numeric using a LOB), or whether a more efficient but more
+limited solution will work (using an implementation-native numeric type);
+stating your intentions by defining a finite range helps everything work
+better.
+
+Transparent data types are further classified into collective and
+disjunctive transparent data types.  A collective transparent data type is
+what you normally think of with transparent types, and includes arrays,
+sets, relations, and tuples; each one can contain zero or more distinct
+sub-values at once.  A disjunctive transparent data type is the means that
+IRL provides to simulate both weak data types and normal-but-nullable data
+types.  It looks like a tuple where only one field is allowed to contain a
+non-empty value at once, and it has a distinct field for each possible
+strong data type that the weak type can encompass (one being of the null
+type when simulating nullability); it actually has one more field than
+that, always valued, which says which of the other fields contains the
+important value.
+
+=head1 OLDER DOCUMENTATION TO REWRITE/REMOVE: DATA TYPES OVERVIEW
+
+IRL is strongly typed, following the relational model's ideals of stored
+data integrity, and the actual practice of SQL and many database products,
+and Rosetta's own ideals of being rigorously defined.  However, its
+native set of data types also includes ones that have the range of typical
+weak types such as some database products and languages like Perl use.
+
+A data type is a set of representable values.  All data types are based on
+the concept of domains; any variable or literal that is of a particular
+data type may only hold a value that is part of the domain that defines the
+data type.  IRL has some native data types that it implicitly understands
+(eg, booleans, integers, rational numbers, character strings, bit strings,
+arrays, rows, tables), and you can define custom ones too that are based on
+these (eg, counting numbers, character strings that are limited to 10
+characters in length, rows having 3 specific fields).
+
+All Rosetta::Model "domain" Nodes (and schema objects) are user defined,
+having a name that you pick, regardless of whether the domain corresponds
+directly to a native data type, or to one you customized; this is so
+there won't be any name conflicts regardless of any same named data types
+that a particular database implementation used in conjunction with
+Rosetta::Model may have.
+
+=head2 Generalities
+
+It is the general case that every data type defines a domain of values that
+is mutually exclusive from every other data type; 2 artifacts having a
+common data type (eg, 2 character strings) can always be compared for
+equality or inequality, and 2 artifacts of different data types (eg, 1
+character string and 1 bit string) can not be compared and hence are always
+considered inequal.  Following this, it is mandatory that every native
+and custom data type define the 'eq' (equal) and 'ne' (not equal) operators
+for comparing 2 artifacts that are of that same data type.  Moreover, it is
+mandatory that no data type defines for themselves any 'eq' or 'ne'
+operators for comparing 2 artifacts of different data types.
+
+In order to compare 2 artifacts of different data types for equality or
+inequality, either one must be cast into the other's data type, or they
+must both be cast into a common third data type.  How exactly this is done
+depends on the situation at hand.
+
+The simplest casting scenario is when there is a common domain that both
+artifacts belong to, such as happens when either one artifact's data type
+is a sub-domain of the other (eg, an integer and a rational number), or the
+data types of both are sub-domains of a common third data type (eg, even
+numbers and square whole numbers).  Then both artifacts are cast as the
+common parent type (eg, rationals and integers respectively).
+
+A more difficult but still common casting scenario is when the data types
+of two artifacts do not have a common actual domain, but yet there is one
+or more commonly known or explicitly defined way of mapping members of one
+type's domain to members of the other type's domain.  Then both artifacts
+can be cast according to one of the candidate mappings.  A common example
+of this is numbers and character strings, since numbers are often expressed
+as characters, such as when they come from user input or will be displayed
+to the user; sometimes characters are expressed as numbers too, as an
+encoding.  One reason the number/character scenario is said to be more
+difficult is due to there being multiple ways to express numbers in
+character strings, such as octal vs decimal vs hexadecimal, so you have to
+explicitly choose between multiple casting methods or formats for the
+version you want; in other words, there are multiple members of one domain
+that map to the same member of another domain, so you have to choose; a
+cast method can not be picked simply on the data type of the operands.
+
+A different casting scenario occurs when one or both of the data types are
+composite types, such as 2 tuples that are either of different degrees or
+that have different attribute names or value types.  Dealing with these
+involves mapping all the attributes of each tuple against the other, with
+or without casting of the individual attributes, possibly into a third data
+type having attributes to represent all of those from the two.
+
+Most data types support the extraction of part of an artifact to form a new
+artifact, which is either of the same data type or a different one.  In
+some cases, even if 2 artifacts can't be compared as wholes, it is possible
+to compare an extract from one with the other, or extractions from both
+with each other.  Commonly this is done with composite data types like
+tuples, where some attributes are extracted for comparison, such when
+joining the tuples, or filtering a tuple from a relation.
+
+Aside from the 'eq' and 'ne' comparison operators, there are no other
+mandatory operators that must be defined for a given custom data type,
+though the native ones will include others.  However, it is strongly
+recommended that each data type implement the 'cmp' (comparison) operator
+so that linearly sorting 2 artifacts of that common data type is a
+deterministic activity.
+
+IRL requires that all data types are actually self-contained, regardless of
+their complexity or size.  So nothing analagous to a "reference" or
+"pointer" in the Perl or C or SQL:2003 sense may be stored; the only valid
+way to say that two artifacts are related is for them to be equal, or have
+attributes that are equal, or be stored in common or adjoining locations.
+
+=head2 Native Null Type
+
+IRL natively supports the special NULL data type, whose value domain is by
+definition mutually exclusive of the domains of all other data types; in
+practice, a NULL is distinct from all possible values that the other IRL
+native primitive types can have.  But some native complex types and user
+customized types could be defined where their domains are a super-set of
+NULL; those latter types are described as "nullable", while types whose
+domains are not a super-set of NULL are described as "not nullable".
+
+The NULL data type represents situations where a value of an arbitrary data
+type is desired but none is yet known; it sits in place of the absent value
+to indicate that fact.  NULL artifacts will always explicitly compare as
+being unequal to each other; since they all represent unknowns, we can not
+logically say any are equal, so they are all treated as distinct.  This
+data type corresponds to SQL's concept of NULL, and is similar to Perl's
+concept of "undef".  A NULL does not natively cast between any data types.
+
+Rosetta::Model does not allow you to declare "domain" Nodes that are simply
+of or based on the data type NULL; rather, to use NULL you must declare
+"domain" Nodes that are either based on a not-nullable data type unioned
+with the NULL type, or are based on a nullable data type.  The "domain"
+Node type provides a short-hand to indicate the union of its base type with
+NULL, in the form of the boolean "is_nullable" attribute; if the attribute
+is undefined, then the nullability status of the base data type is
+inherited; if it is defined, then it overrides the parent's status.
+
+All not-nullable native data types default to their concept of empty or
+nothingness, such as zero or the empty string.  All nullable native
+types, and all not-nullable native types that you customize with a true
+is_nullable, will default to NULL.  In either case, you can define an
+explicit default value for your custom data type, which will override those
+behaviours; details are given further below.
+
+=head2 Native Primitive Types
+
+These are the simplest data types, from which all others are derived:
+
+=over
+
+=item C<BOOLEAN>
+
+This data type is a single logical boolean, whose only possible values are
+FALSE and TRUE.  Its concept of nothingness is FALSE.
+
+=item C<NUMERIC>
+
+This data type is a single rational number.  Its concept of nothingness is
+zero.  A subtype of NUMERIC must specify the radix-agnostic "num_precision"
+and "num_scale" attributes, which determine the maximum valid range of the
+subtype's values, and the subtype's storage representation can often be
+derived from it too.
+
+The "num_precision" attribute is an integer >= 1; it specifies the maximum
+number of significant values that the subtype can represent.  The
+"num_scale" attribute is an integer >= 0 and <= "num_precision"; if it is
+>= 1, the subtype is a fixed radix point rational number, such that 1 /
+"num_scale" defines the increment size between adjacent possible values;
+the trivial case of "num_scale" = 1 means the increment size is 1, and the
+number is an integer; if "num_scale" = 0, the subtype is a floating radix
+point rational number where "num_precision" represents the product of the
+maximum number of significant values that the subtype's mantissa and
+exponent can represent.  IRL does not currently specify how much
+of a floating point number's "num_precision" is for the mantissa and how
+much for the exponent, but commonly the exponent takes a quarter.
+
+The meanings of "precision" and "scale" are more generic for IRL than they
+are in the SQL:2003 standard; in SQL, "precision" (P) means the maximum
+number of significant figures, and the "scale" (S) says how many of those
+are on the right side of the radix point.  Translating from base-R (eg, R
+being 10 or 2) to the IRL meanings are as follows (assuming negative
+numbers are allowed and zero is always in the middle of a range). For
+fixed-point numerics, a (P,S) becomes (2*R^P,R^S), meaning an integer (P,0)
+becomes (2*R^P,1).  For floating-point numerics, a (P) sort-of becomes
+(2*R^P,0); I say sort-of because SQL:2003 says that the P shows significant
+figures in just the mantissa, but IRL currently says that the size of the
+exponent eats away from that, commonly a quarter.
+
+As examples, a base-10 fixed in SQL defined as [p=10,s=0] (an integer in
+-10^10..10^10-1) becomes [p=20_000_000_000,s=1] in IRL; the base-10
+[p=5,s=2] (a fixed in -1_000.00..999.99) becomes [p=200_000,s=100]; the
+base-2 [p=15,s=0] (a 16-bit int in -32_768..32_767) becomes [p=65_536,s=1];
+the base-2 float defined as [p=31] (a 32-bit float in
++/-8_388_608*2^+/-128) becomes [p=4_294_967_296,s=0].
+
+A subtype of NUMERIC may specify the "num_min_value" and/or "num_max_value"
+attributes, which further reduces the subtype's valid range.  For example,
+a minimum of 1 and maximum of 10 specifies that only numbers in the range
+1..10 (inclusive) are allowed.  Simply setting the minimum to zero and
+leaving the maximum unset is the recommended way in IRL to specify that you
+want to allow any non-negative number.  Setting the minimum >= 0 also
+causes the maximum value range allowable by "num_precision" to shift into
+the positive, rather than it being half there and half in the negative.
+Eg, an (P,S) of (256,1) becomes 0..255 when the minimum = 0, whereas it
+would be -128..127 if the min/max are unset.
+
+=item C<CHAR_STR>
+
+This data type is a string of characters.  Its concept of nothingness is
+the empty string.  A subtype of CHAR_STR must specify the "char_max_length"
+and "char_repertoire" attributes, which determine the maximum valid range
+of the subtype's values, and the subtype's storage representation can often
+be derived from it too.
+
+The "char_max_length" attribute is an integer >= 0; it specifies the
+maximum length of the string in characters (eg, a 100 means a string of
+0..100 characters can be stored).  The "char_repertoire" enumerated
+attribute specifies what individual characters there are to choose from
+(eg, Unicode 4.1, Ascii 7-bit, Ansel; Unicode is the recommended choice).
+
+A subtype of CHAR_STR may specify the "char_min_length" attribute, which
+means the length of the character string must be at least that long (eg, to
+say strings of length 6..10 are required, set min to 6 and max to 10).
+
+=item C<STR_BIT>
+
+This data type is a string of bits.  Its concept of nothingness is the
+empty string.  A subtype of BIT_STR must specify the "bit_max_length"
+attribute, which determines the maximum valid range of the subtype's
+values, and the subtype's storage representation can often be derived from
+it too.
+
+The "bit_max_length" attribute is an integer >= 0; it specifies the maximum
+length of the string in characters (eg, an 8000 means a string of 0..8000
+bits can be stored).
+
+A subtype of BIT_STR may specify the "bit_min_length" attribute, which
+means the length of the bit string must be at least that long (eg, to say
+strings of length 24..32 are required, set min to 24 and max to 32).
+
+=back
+
+A subtype of any of these native primitive types can define a default value
+for the subtype, it can define whether the subtype is nullable or not (they
+are all not-nullable by default), and it can enumerate an explicit list of
+allowed values (eg, [4, 8, 15, 16, 23, 42], or ['foo', 'bar', 'baz'], or
+[B'1100', B'1001']), one each in a child Node (these must fall within the
+specified range/size limits otherwise defined for the subtype).
+
+=head2 Native Scalar Type
+
+IRL has native support for a special SCALAR data type, which is akin to
+SQLite's weakly typed table columns, or to Perl's weakly typed default
+scalar variables.  This data type is a union of the domains of the BOOLEAN,
+NUMERIC, CHAR_STR, and BIT_STR data types; it is not-nullable by default.
+Its concept of nothingness is the empty string.
+
+=head1 SEE ALSO
 
 During my work on this project, I found the following resources to be
 particularly useful:
 
-=over 4
+=over
 
-=item
+=item L<http://www.acm.org/classics/nov95/toc.html>
 
-L<http://www.wiscorp.com/SQLStandards.html>
+Edgar F. Codd - "A Relational Model of Data for Large Shared Data Banks"
 
-=item
+Reprinted from I<Communications of the ACM>, Vol. 13, No. 6, June 1970, pp.
+377-387. Copyright © 1970, Association for Computing Machinery, Inc.
 
-L<http://www.wiscorp.com/sql/sql1999_c3.zip> (warning, large file)
+This is the famous 1970 publication that first presented a relational model
+of data to the world, which is the basis for the modern database industry.
 
-=item
+=item L<http://www.oreilly.com/catalog/databaseid/>
 
-L<http://www.wiscorp.com/sql/sql_2003_standard.zip> (warning, large file)
+Chris J. Date - "Database in Depth: Relational Theory for Practitioners"
 
-=item
+First Edition, May 2005.  Published by O'reilly.  ISBN: 0-596-10012-4
 
-L<http://www.sql-scripts.com/BookExcerpts/SQL99.zip> (warning, large file)
+This book lays out what the relational data model really is, in partial
+contrast to how SQL does it, from the man that was closer to and more
+directly involved with Edgar F. Codd in this work work than anyone.
 
-=back
+=item L<http://www.wiscorp.com/SQLStandards.html>
 
-Likewise, the vendor documentation for MySQL and SQLite was consulted, plus
-third-party and vendor documentation for Oracle, and the odd other SQL
-site.
+This web page of Whitemarsh Information Systems Corporation, run by one of
+the people on the SQL standard drafting community, has copies of the
+official SQL:2003 and SQL:1999 specification documents, and other related
+helpful documents about SQL, in PDF format.  For example, "an almost
+indistinguishable delta on the actual SQL 2003 database standard" is at
+L<http://www.wiscorp.com/sql/sql_2003_standard.zip> (warning, large file).
 
-This is a brief and incomplete list of major supported features (the rest
-of this document goes into more detail on them):
+=item L<http://www.unicode.org/standard/standard.html>
 
-    - native Unicode 4 (UTF-8) support for all identifiers and character data
-    - multiple character encoding support in the same database for character data
-    - global binary/bit object/data support
-    - both exact and inexact numbers, the former being of any length
-    - large object support; all character or binary fields can contain 2GB or more
-    - multi-column indexes, unique constraints, foreign key constraints
-    - large/full text indexing
-    - boolean data type
-    - datetime/date, interval/time data types
-    - multiple schemas in the same catalogue
-    - objects in any schema can reference those in other schemas or other catalogues
-    - identifiers are internally case-sensitive; case-insensitive ones match as fully uppercase
-    - no effective limits; eg: number of tables or columns or rows, size of data per field or row
-    - simple domains and user-defined data types (UDTs)
-    - enumerated data types
-    - arbitrary 'check' constraints (?)
-    - routines (stored procedures, user defined functions, triggers)
-    - named sub-routines inside routines
-    - row, array/rowset data types as variables inside routines, and arguments and return values
-    - multiple column unique and foreign key constraints on tables
-    - viewed tables / views
-    - expressions in any part of a query
-    - regular expressions / pattern matching
-    - multiple-column predicates in any part of a query
-    - cross, inner, and full|left|right outer table joins
-    - self joins (same table or view joined to itself N times)
-    - compound queries such as union, difference (except), intersection, exclusion
-    - 'all' and 'distinct' set quantifiers on both normal and compound queries
-    - 'where', 'group by', 'having', 'order by', 'limit'
-    - anonymous subqueries in any part of main query
-    - named subqueries ("with") likewise
-    - both correlated (takes arguments) and uncorrelated (no arguments) subqueries
-    - recursive queries
-    - all routine and subquery args are declared and used with named syntax (rather than positional)
-    - all built-in standard routine args are used with named syntax (rather than positional)
-    - select/insert/update/delete rows in tables and viewed tables
-    - named (rather than positional) mapping of 'into' clause to 'select list'
-    - named (rather than positional) mapping of all input data for both inserts and updates
-    - OLAP extensions, rollup, cube, grouping sets (related to group-by)
-    - updateable views; inserts, updates, deletes through any view (if key data not lost)
-    - "insert as select"
-    - multiple users, roles, privileges
-    - create/alter/delete schema objects, including user defined functions
-    - create/alter/delete catalogs, schemas, users
-    - cursors
-    - multiple row insert / "write cursors"
-    - application host parameters for any data type
-    - all host parameters are named (rather than positional)
-    - explicit transactions and nested transactions (and savepoints?)
-    - record locking for read and locking for write
-    - throwing exceptions
-    - catching and handling exceptions
-    - create, use simple sequence generators, named and on table cols
-    - temporary objects, usually tables
-    - triggers firing on DML events of either tables or views
-    - "base tables" and "temporary base tables"
+Unicode Standard official documentation.
 
-This is a brief list of major non-supported features (at present), or
-current limitations:
+=item L<http://en.wikipedia.org/wiki/Relational_model>
 
-    - multiple distinct values per row field (this violates level-1 normalization)
-    - complex domains and compound user-defined data types
-    - 'set' data types
-    - collection types, such as arrays, stored in table fields
-    - reference data types, stored in tables
-    - table hierarchies or subtables; anything not a "base table" or "viewed table"
-    - object data types
-    - user defined "operators" (as being distinct from user defined functions)
-    - geographical data types and related extensions
-    - referencing objects in an "information schema" by users like normal schema objects (?)
-    - dynamic SQL; eg: generating and executing new SQL in a stored procedure
-    - creating user defined functions that aren't SQL (though they can be called)
-    - sequence generators will only produce integers, and not fractions or strings
-    - explic ref most "optimization" features; eg: hints, cache sett, res pre-alloc or limits, "tablespaces"
-    - explicit references to logs or replication managed by the database product itself
-    - named Oracle "synonyms" (?)
-    - triggers firing on non-DML events
-
-Generally speaking, Rosetta::Model holds to a purely relational database
-model, where every intersection of a column and a row in a table or view is
-an atomic value.  Anything which breaks from this mold is currently not
-supported. This said, transient data such as variables in routines (stored
-procedures) can and often are more complex types like arrays or records or
-references; likewise input and output values of routines, and host
-parameters, can be complex types.
-
-=head1 CIRCUMVENTING FEATURE LIMITATIONS
-
-For such situations where you want to use Rosetta::Model to mediate your
-access to a database, and it doesn't natively support a database product
-feature that you want to use, Rosetta::Model does provide a "back door" where
-you have un-mediated access to the database.  Speaking more accurately,
-Rosetta::Model can store fragments of any raw SQL that you specify, to be
-injected into the SQL that is generated from its objects.
-
-The trade-off is that these portions probably won't work with more than one
-database product, and so you would be best to just use them for
-"optimization" type SQL that will help your app on a supported product, but
-the app will still work (perhaps slower) without them.  If you can't do
-that, then Rosetta::Model lets you store alternative SQL fragments that are
-keyed to a database product; if you store fragments with the same function
-in multiple versions, then the one for the product you are interfacing now
-will be used and the others ignored.
-
-SQL fragments can either be pieces of a larger to-be-generated statement
-which you attach them to, or they can be complete SQL statements on their
-own, where you specify that they run between certain generated statements,
-or inside a generated routine.
-
-For the present, you can also store "SQL comments" in this fashion.
-
-All this said and done, the use of the circumvention features are not
-recommended, and should only be attempted by savvy / power users or DBAs.
-Ultimately, adding native support for a feature is better.
-
-=head1 LANGUAGE CONCEPT STRUCTURE
-
-Rosetta::Model manages SQL concepts that we arrange into 5 main categories
-for convenience: 'elements', 'blueprints', 'tools', 'sites',
-'circumventions'.
-
-The first two of these, 'elements' and 'blueprints', are the most
-important; they describe completely the composition and behaviour of your
-database schemas and application-level routines that talk to them.  For all
-intents and purposes, they are part of your core application code and would
-get distributed as such; like your core application code, everyone's
-installation will be identical.  We keep simple and widely re-used details
-in 'elements', such as scalar and row data type definitions.  We describe
-most model structures in 'blueprints', including database tables (with
-constraints), arbitrarily complex database views, and various kinds of
-routines (such as stored procedures, user defined functions, and basic DML
-like selects, inserts, updates, deletes), both those stored in a database
-schema or in an application.  We can represent multiple database catalogs
-and applications at once, whether or not they talk to each other; how they
-inter-relate is also represented.
-
-The second two categories, 'tools' and 'sites', are effectively locale or
-site-specific configuration data, and each installation of your application
-would be different in these areas.  We use 'tools' to store a small list of
-one or more externally (to Rosetta::Model and your application core)
-recognizable database product identifiers (such as SQLite or Oracle) that
-are used on a site to implement the database catalogs.  We use 'sites' to
-indicate localized details of your database (and application)
-installations, such as the product used for each catalog instance, or its
-DSN or server address or file path, or what users it has and their
-privileges.  If you have multiple copies of a database installed, such as
-for test data vs production data, you can distinguish between them in
-'sites'.
-
-The last category, 'circumventions', is used to implement Rosetta::Model's
-"circumvention" features, to access concepts that a specific database
-product understands but nothing in the Rosetta::Model code does.
-
-While a database and application are actually being *used*
-(post-installation at a site), structures belonging to each of the 5
-categories would be stored persistantly in two main places.  One of these
-is the native schema of a database itself.  The second of these is
-structures that are not stored in a database, but in an application that
-uses the database.  Many structures, such as views and routines, can be
-stored in either place; some, like tables, can probably only be stored in
-the database; either way, the places can overlap greatly.  In practice, you
-would pick what to put in each place on a per-case basis, accounting for
-how powerful your database is, what arrangement is more secure, or is
-faster, or is easier to manage, and so on.
-
-Here is a tree diagram, formatted visually like XML, which shows the high
-level Rosetta::Model language concepts; each distinct concept is represented
-by one tree node.  Parent nodes provide a context in which their children
-live (eg: a table only exists within a schema).  The top 2 tree levels
-don't represent anything themselves, but just group the actual concepts
-that exist in the 3rd level and below.  The node attribute 'c' shows the
-cardinality of that node type beneath its parent; a value of 'M' means
-'many' and '1' means 'one'. The node attribute 'r' indicates recursion,
-where a node can be a child of another of the same type (eg: a sub-query or
-sub-routine).
-
-    <root>
-        <elements c="1">
-            <scalar_data_type c="M">
-                <scalar_data_type_opt c="M" />
-            </scalar_data_type>
-            <row_data_type c="M">
-                <row_data_type_field c="M" />
-            </row_data_type>
-            <external_cursor c="M" />
-        </elements>
-        <blueprints c="1">
-            <catalog c="M">
-                <owner c="M" />
-                <catalog_link c="M" />
-                <schema c="M">
-                    <scalar_domain c="M" />
-                    <row_domain c="M" />
-                    <sequence c="M" />
-                    <table c="M" />
-                    <view c="M" />
-                    <routine c="M" />
-                </schema>
-                <role c="M">
-                    <privilege_on c="M">
-                        <privilege_for c="M" />
-                    </privilege_on>
-                </role>
-            </catalog>
-            <application c="M">
-                <catalog_link c="M" />
-                <scalar_domain c="M" />
-                <row_domain c="M" />
-                <sequence c="M" />
-                <table c="M" />
-                <view c="M" />
-                <routine c="M" />
-            </application>
-        </blueprints>
-        <tools c="1">
-            <data_storage_product c="M" />
-            <data_link_product c="M" />
-        </tools>
-        <sites c="1">
-            <catalog_instance c="M">
-                <catalog_instance_opt c="M" />
-                <catalog_link_instance c="M" />
-                <user c="M">
-                    <user_role c="M" />
-                </user>
-            </catalog_instance>
-            <application_instance c="M">
-                <catalog_link_instance c="M" />
-            </application_instance>
-        </sites>
-        <circumventions c="1">
-            <sql_fragment c="M" />
-        </circumventions>
-    </root>
-
-    <table>
-        <table_field c="M" />
-        <table_index c="M">
-            <table_index_field c="M" />
-        </table_index>
-    </table>
-
-    <view r="Y">
-        <view_arg c="M" />
-        <view_src c="M">
-            <view_src_arg c="M" />
-            <view_src_field c="M" />
-        </view_src>
-        <view_field c="M" />
-        <view_join c="M">
-            <view_join_field c="M" />
-        </view_join>
-        <view_compound_elem c="M" />
-        <view_expr c="M" r="Y" />
-    </view>
-
-    <routine r="Y">
-        <routine_context c="1" />
-        <routine_arg c="M" />
-        <routine_var c="M">
-            <view c="1" />
-        </routine_var>
-        <routine_stmt c="M">
-            <view c="1" />
-            <routine_expr c="M" r="Y" />
-        </routine_stmt>
-    </routine>
-
-    <catalog_link_instance r="Y">
-        <catalog_link_instance_opt c="M" />
-    </catalog_link_instance>
-
-For the most part, each 'concept' shown in the tree above corresponds to a
-single Rosetta::Model Node Type.  Each Node Type is explained in further
-detail below.
-
-Besides the Node it is a child of, a Node can reference other Nodes almost
-anywhere else in the tree, with the following exceptions: 1. Considering
-the order of the 5 main categories above, Nodes in any category can not
-reference Nodes in a later category; they can only reference self or
-earlier; 2. Nodes in 'tools' can't reference anything else; 3. Catalog
-Nodes can't reference Application Nodes.
-
-=head1 LANGUAGE PROCEDURAL STRUCTURE
-
-The Rosetta::Model language is designed with an embedded SQL paradigm in
-mind, where all SQL can be invoked as if it was written in the same
-language as the program code which invokes it.  The SQL can take arguments
-like a normal program routine, and it can hand return values like a normal
-program routine; either of those can be considered named host parameters.
-
-The Rosetta::Model language is designed so that you would do B<all> types of
-database interaction with it; not only would you use SQL to issue typical
-DML or DDL commands, but you would attach (connect to) or create a database
-in the first place using SQL.  This is much like CLI database clients and
-their "connect to ... identified by ..." or "attach ... as ..." SQL
-statements, or similar statements that run inside a database stored
-procedure that connect to a second database.  In fact, the Rosetta::Model
-language is designed such that you should be able to run the same SQL
-commands either in a client application or in a database stored procedure,
-without changes.  Likewise, your application should be able to invoke a SQL
-routine the same way whether it is stored in the application or the
-database.  By contrast, some other modules for letting your application
-talk to a database require you to call non-sql routines for some operations
-like connecting to a database.
-
-The Rosetta::Model language takes a broad definition as to what constitutes a
-SQL routine.  While some RDBMS products don't support this in stored
-procedures, my understanding is that the SQL standard defines a SQL routine
-as an ordered (and usually named) sequence of any type of SQL statements
-that are to be run together.  Usually, SQL routines stored in a database
-only contain DML, but some RDBMS products also let you manipulate users or
-schema objects within stored procedures.  Regardless of those limitations,
-my understanding is that any SQL which an RDBMS product understands at all
-can be issued from an application based routine.
-
-In practice, the way of providing arguments to named database stored
-routines can be different from a way passing arguments to un-named routines
-or queries constructed on a client application; the latter often uses 'host
-parameters' for sending or receiving data, while the former uses named
-routine arguments and/or has an explicit return value.  The Rosetta::Model
-language unifies these concepts and makes it as if all SQL statements take
-named arguments, and "return" a value; in database stored procedures, this
-is the same as usual; on the client side, the named arguments each
-correspond to a named host parameter.
-
-Similarly, all SQL "select" queries are treated as cursors; on the database
-side this is the same as usual; on the application/client side, this may or
-may not be the same as usual.  When an application invokes a "select", they
-will get a cursor handle returned to them (either a real cursor or a fake
-cursor), off of which they fetch the rows or values that the "select"
-retrieves.
-
-It is expected that modules which interface a database on an application's
-behalf, and that take Rosetta::Model language constructs as input, will be
-structured with a B<Command Design Pattern>.  They should essentially
-provide a "SQL Engine" object that has a single "Execute" function.  The
-latter would take a Rosetta::Model "routine" Node (or an object wrapping one
-that also holds values for the routine's arguments) as input.  The function
-would return a "Result" object that encapsulates any return values from the
-SQL, such as a select cursor handle or other types of returned data or
-details of an error that occurred.  The object returned as output from
-"Execute" should also have its own "Execute" method when the object can be
-considered a context for future commands; eg: the object returned from an
-"open database" command should represent that database for further queries
-against it.
-
-The Rosetta::Model language does not require you to explicitly run a
-connect/open/attach command before running SQL against a database.  Since
-the info it needs to do this is provided in 'catalog link' definitions that
-are already related to the SQL definitions, an implementer can just
-implicitely connect to a database for you when you ask it to run the SQL.
-And that implicit link can either be cached or new, such as the implementer
-decides. I<Note that this idea may need to be thought out further.>
-
-=head1 NODE ATTRIBUTE TYPES
-
-There are 4 major Rosetta::Model Node attribute types.  Each major type may
-be further sub-divided into minor types, which are tested for by the above
-methods.  Each instance of a Node attribute corresponds to one XML tag
-attribute, if a Node object were an XML tag.  The major types are:
-
-=over 4
-
-=item
-
-B<node_id> - There is exactly one of these per Node; it is a positive
-(<gt>=1) integer which uniquely identifies this particular Node among all
-others of the same Node Type.  There are no minor types under this major
-type.
-
-=item
-
-B<literal> - This is the normal kind of Node attribute, and it can contain
-any scalar value, such as a string or a number.  Some attributes of this
-type may actually be restricted, such as to only valid integer or date or
-boolean values; that restriction is what differentiates the literal minor
-types.
-
-=item
-
-B<enumerated> - This is like B<literal> except that the values you can
-store are restricted to an explicit enumerated set of values.  Each minor
-type is a specific enumerated value set.  (A subsequent documentation
-section lists the currently known enumerated sets.)
-
-=item
-
-B<node_ref> - This is a number which is equal to the B<node_id> of another
-Node that has a particular Node Type; it is used to implement relations
-between Nodes.  This attribute type is for attributes whose conceptual
-values are either multi-part or are possibly shared by multiple Nodes.
-Each minor type is a Node Type.
+The Wikipedia article on the relational data model, and related topics.
 
 =back
 
-=head1 LITERAL ATTRIBUTE TYPES
-
-Currently, Rosetta::Model recognizes these explicit literal attribute types:
-
-=over 4
-
-=item
-
-B<bool> - This is a boolean type, and its values may only be '0' or '1'.
-Attributes of this type are "flags", saying 'true' when set or 'false' when
-not.
-
-=item
-
-B<uint> - This is an "unsigned integer", also known as a non-negative
-integer; its values may only be integers greater than or equal to 0.
-Attributes of this type indicate the "scale" of something, meaning how
-'big' or 'long' it is.
-
-=item
-
-B<sint> - This is an "signed integer", and its values may be any integer.
-Attributes of this type are normally used in concert with sequence
-generators.
-
-=item
-
-B<cstr> - This is a "character string" where each character can be anything
-except the null character.  Attributes of this type are usually "labels"
-and "name" something.
-
-=item
-
-B<misc> - This is a "miscellaneous scalar"; its values may be anything a
-Perl scalar can be.  Attributes of this type usually hold literal data that
-only has meaning to a user and is not interpreted by a machine;
-alternately, they are used to store any literal whose type varies or isn't
-a bool or uint or cstr.
-
-=back
-
-=head1 BRIEF ENUMERATED ATTRIBUTE TYPE LIST
-
-Here is a compact list of the enumerated attribute types that Rosetta::Model
-knows about.  For full details on each one, please see
-L<Rosetta::EnumTypes>.
-
-    container_type
-    exception_type
-    standard_routine
-    standard_routine_context
-    standard_routine_arg
-    simple_scalar_type
-    char_enc_type
-    calendar
-    privilege_type
-    table_index_type
-    view_type
-    compound_operator
-    join_operator
-    view_part
-    routine_type
-    basic_trigger_event
-    user_type
-
-=head1 BRIEF NODE TYPE LIST
-
-Here is a compact list of the Node Types that Rosetta::Model knows about;
-each one corresponds to a Rosetta::Model concept.  A Node Ref attribute of a
-certain type will reference another Node of that Node Type.  For full
-details on each one, please see L<Rosetta::NodeTypes>.
-
-PSEUDO-NODE TYPES:
-
-    root
-    elements
-    blueprints
-    tools
-    sites
-    circumventions
-
-ELEMENTS CATEGORY NODE TYPES:
-
-    scalar_data_type
-    scalar_data_type_opt
-    row_data_type
-    row_data_type_field
-    external_cursor
-
-BLUEPRINTS CATEGORY NODE TYPES:
-
-    catalog
-    application
-    owner
-    catalog_link
-    schema
-    role
-    privilege_on
-    privilege_for
-    scalar_domain
-    row_domain
-    sequence
-    table
-    table_field
-    table_index
-    table_index_field
-    view
-    view_arg
-    view_src
-    view_src_arg
-    view_src_field
-    view_field
-    view_join
-    view_join_field
-    view_compound_elem
-    view_expr
-    routine
-    routine_context
-    routine_arg
-    routine_var
-    routine_stmt
-    routine_expr
-
-TOOLS CATEGORY NODE TYPES:
-
-    data_storage_product
-    data_link_product
-
-SITES CATEGORY NODE TYPES:
-
-    catalog_instance
-    catalog_instance_opt
-    application_instance
-    catalog_link_instance
-    catalog_link_instance_opt
-    user
-    user_role
-
-CIRCUMVENTIONS CATEGORY NODE TYPES:
-
-    sql_fragment
-
-=head1 OLDER DOCUMENTATION
-
-These paragraphs were more or less the original documentation for
-high-level Rosetta::Model concepts, back when each concept was planned to be
-a separate class of its own.  They were originally published in
-Framework.pod since the first release of the Rosetta distribution
-(2003-01-05), and up until 2004-02-04 inclusive. They are here in
-Language.pod as of 2004-02-12.  Some details you see here shouldn't be
-considered accurate.
-
-B<Rosetta::Model::Command> - This Model class describes an action that needs
-to be done against a database; the action may include several steps, and
-all of them must be done when executing the Command.  A Command object has
-one mandatory string property named 'type' (eg: 'database_open',
-'table_create', 'data_insert'), which sets the context for all of its other
-properties, which are in a hash property named 'args'.  Elements of 'args'
-often include other Model class objects like 'Table' or 'DataType'.  Like
-all Model objects, this is static and context-independent; it is intended
-to be serialized and passed to code like DBI->prepare().   While host
-params are often used with them (such as values to insert or update, or
-record matching conditions), it is always up to the calling code to resolve
-the host params such as with a user prompt (as SQL*Plus does), and pass
-those to code like DBI->execute().  I<See also Rosetta::Command.>
-
-B<Rosetta::Model::DataType> - This Model class describes a simple data type,
-which serves as metadata for a single atomic or scalar unit of data, or a
-column whose members are all of the same data type, such as in a regular
-database table or in row sets read from or to be written to one.  This
-class would be used both when manipulating database schema and when
-manipulating database data.
-
-B<Rosetta::Model::Table> - This Model class describes a single database
-table, and would be used for such things as managing schema for the table
-(eg: create, alter, destroy), and describing the table's "public interface"
-so other functionality like views or various DML operations know how to use
-the table. In its simplest sense, a Table object consists of a table name,
-a list of table columns, a list of keys, a list of constraints, and a few
-other implementation details.  This class does not describe anything that
-is changed by DML activity, such as a count of stored records, or the
-current values of sequence generators attached to columns.  This class
-would be used both when manipulating database schema and when manipulating
-database data.  This class can generate Rosetta::Model::Command objects
-having types of: 'table_verify', 'table_create', 'table_alter',
-'table_destroy'.
-
-B<Rosetta::Model::View> - This Model class describes a single database view,
-which conceptually looks like a table, but it is used differently.  Tables
-and views are similar in that they both represent or store a matrix of
-data, which has uniquely identifiable columns, and rows which can be
-uniquely identifiable but may not be.  With the way that Rosetta implements
-views, you can do all of the same DML operations with them that you can do
-with tables: select, insert, update, delete rows; that said, the process
-for doing any of those with views is more complicated than with tables, but
-this complexity is usually internal to Rosetta so you shouldn't have to
-code any differently between them.  Tables and views are different in that
-tables actually store data in themselves, while views don't.  A view is
-actually a custom abstracted interface to one or more database tables which
-are related to each other in a specific way; when you issue DML against a
-view, you are actually fetching from or modifying the data stored in one
-(simplest case) or more tables.  This class can generate
-Rosetta::Model::Command objects having types of: 'data_select',
-'data_insert', 'data_update', 'data_delete', 'data_lock', 'data_unlock',
-'view_verify', 'view_create', 'view_alter', 'view_destroy'.
-
-=head1 SEE ALSO
-
-L<Rosetta::Model> and the various other modules mentioned in its SEE ALSO.
+Also, the vendor documentation for various relational and/or SQL databases
+such as MySQL and SQLite were regularly consulted, and various other sites.
 
 =head1 AUTHOR
 
@@ -710,41 +572,12 @@ Darren R. Duncan (C<perl@DarrenDuncan.net>)
 
 This file is part of the Rosetta database portability library.
 
-Rosetta is Copyright (c) 2002-2005, Darren R. Duncan.  All rights reserved.
-Address comments, suggestions, and bug reports to perl@DarrenDuncan.net, or
-visit http://www.DarrenDuncan.net/ for more information.
+Rosetta is Copyright (c) 2002-2006, Darren R. Duncan.
 
-Rosetta is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License (GPL) as published by the Free
-Software Foundation (http://www.fsf.org/); either version 2 of the License,
-or (at your option) any later version.  You should have received a copy of
-the GPL as part of the Rosetta distribution, in the file named "GPL"; if
-not, write to the Free Software Foundation, Inc., 51 Franklin St, Fifth
-Floor, Boston, MA  02110-1301, USA.
+See the LICENCE AND COPYRIGHT of L<Rosetta> for details.
 
-Linking Rosetta statically or dynamically with other modules is making a
-combined work based on Rosetta.  Thus, the terms and conditions of the GPL
-cover the whole combination.  As a special exception, the copyright holders
-of Rosetta give you permission to link Rosetta with independent modules,
-regardless of the license terms of these independent modules, and to copy
-and distribute the resulting combined work under terms of your choice,
-provided that every copy of the combined work is accompanied by a complete
-copy of the source code of Rosetta (the version of Rosetta used to produce
-the combined work), being distributed under the terms of the GPL plus this
-exception.  An independent module is a module which is not derived from or
-based on Rosetta, and which is fully useable when not linked to Rosetta in
-any form.
+=head1 ACKNOWLEDGEMENTS
 
-Any versions of Rosetta that you modify and distribute must carry prominent
-notices stating that you changed the files and the date of any changes, in
-addition to preserving this original copyright notice and other credits.
-Rosetta is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.
-
-While it is by no means required, the copyright holders of Rosetta would
-appreciate being informed any time you create a modified version of Rosetta
-that you are willing to distribute, because that is a practical way of
-suggesting improvements to the standard version.
+The ACKNOWLEDGEMENTS in L<Rosetta> apply to this file too.
 
 =cut
