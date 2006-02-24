@@ -6,7 +6,7 @@ use warnings;
 
 # External packages used by packages in this file, that don't export symbols:
 use only 'Locale::KeyedText' => '1.72.0-';
-use only 'Rosetta' => '0.721.0';
+use only 'Rosetta' => '0.721.0-';
 
 ###########################################################################
 ###########################################################################
@@ -18,13 +18,14 @@ use only 'Readonly' => '1.03-';
 ###########################################################################
 ###########################################################################
 
-{ package Rosetta::Validator; # module
+{ package Rosetta::Engine::Example; # class
     use version; our $VERSION = qv('0.721.0');
 
-    # External packages used by the Rosetta::Validator module, that do export symbols:
-    # (None Yet)
+    # External packages used by the Rosetta::Engine::Example class, that do export symbols:
+    use only 'Class::Std' => '0.0.4-';
+    use only 'Class::Std::Utils' => '0.0.2-';
 
-    # Attributes of every Rosetta::Validator object:
+    # Attributes of every Rosetta::Engine::Example object:
     # (None Yet)
 
 ###########################################################################
@@ -33,7 +34,7 @@ use only 'Readonly' => '1.03-';
 
 ###########################################################################
 
-} # module Rosetta::Validator
+} # class Rosetta::Engine::Example
 
 ###########################################################################
 ###########################################################################
@@ -47,12 +48,12 @@ __END__
 
 =head1 NAME
 
-Rosetta::Validator -
-A common comprehensive test suite to run against all Engines
+Rosetta::Engine::Example -
+Self-contained reference implementation of a Rosetta Engine
 
 =head1 VERSION
 
-This document describes Rosetta::Validator version 0.721.0.
+This document describes Rosetta::Engine::Example version 0.721.0.
 
 =head1 SYNOPSIS
 
@@ -81,6 +82,13 @@ This file requires any version of Perl 5.x.y that is at least 5.8.1.
 It also requires the Perl 5 packages L<version> and L<only>, which would
 conceptually be built-in to Perl, but aren't, so they are on CPAN instead.
 
+It also requires these Perl 5 packages that are on CPAN:
+L<Readonly-(1.03...)|Readonly>.
+
+It also requires these Perl 5 packages that are on CPAN:
+L<Class::Std-(0.0.4...)|Class::Std>,
+L<Class::Std::Utils-(0.0.2...)|Class::Std::Utils>.
+
 It also requires these Perl 5 classes that are on CPAN:
 L<Locale::KeyedText-(1.72.0...)|Locale::KeyedText> (for error messages).
 
@@ -93,9 +101,7 @@ None reported.
 
 =head1 SEE ALSO
 
-These Perl 5 packages implement Rosetta Engine classes and their test
-suites are the initial main dependents of Rosetta::Validator:
-L<Rosetta::Engine::Example>.
+I<This documentation is pending.>
 
 =head1 BUGS AND LIMITATIONS
 

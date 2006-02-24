@@ -1,6 +1,116 @@
                                   Rosetta
 ---------------------------------------------------------------------------
 
+2006-02-23   Darren Duncan <perl@DarrenDuncan.net>
+
+    * Rosetta Release 0.721.0/0.721000 (SVN r1220).
+
+    * This release is a snapshot to show a particular mid-way point in the
+    middle of a large set of changes.  You should not pay too much
+    attention to it yet as its documentation is internally inconsistent.
+
+    * This distribution is partly the result of merging the briefly
+    separate Rosetta-Engine-Native distribution into the core Rosetta
+    distribution.  The component modules were also renamed from Native.pm
+    to Example.pm, and Native/L/en.pm to Example/L/en.pm, which better
+    reflects what purpose they serve now.  As a result of this merger, a
+    logical circular dependency in the test suite is now resolved; the
+    Rosetta core can be completely tested without requiring an Engine from
+    a separate distribution.  The Example.pm version has been raised and
+    synchronized to match Rosetta.pm; the en.pm has simply been
+    incremented by 0.1.0 to reflect the name change.
+
+    * New code file versions are: Rosetta.pm and Model.pm and Validator.pm
+    and Example.pm 0.721.0 and Example/L/en.pm 0.2.0; unchanged code file
+    versions are: Rosetta/L/en.pm 0.210.0 and Model/L/en.pm 0.400.0 and
+    Validator/L/en.pm 0.160.0.
+
+    * Added new external dependency on Parse::RecDescent v1.94 as it will
+    be used by Model.pm in a near-subsequent release.  Possibly, the load
+    of this module may be made optional, but for now it always loads.
+
+    * Added a warning to Makefile.PL so that it requests users would ignore
+    test failures of the depended-on 'only' module.  Also removed the
+    warning about preferring the latest Perl 5.8.x version.
+
+    * Changed the prerequisites list in Makefile.PL so that all minimum
+    versions are specified as floating point numbers, and none as strings;
+    as a result, the prerequisites check by MakeMaker should work correctly
+    with installed modules that satisfy the requirements but don't match
+    the specific versions mentioned.
+
+    * This release is primarily for a rewrite of Language.pod, or rather, a
+    rewrite of the top portion of it, citing the snapshot.  As part of
+    this, the Rosetta native language "IRL" was renamed to "Rosetta D", and
+    Rosetta is now officially an implemenation of "The Third Manifesto";
+    some sections of the Rosetta documentation still need updating though.
+
+    * Changed the NAME pod of Language.pod from "Design document of the
+    Intermediate Relational Language" to "Design document of the Rosetta D
+    language".  Rewrote the main pod section DESCRIPTION.  Replaced the
+    main pod section "OPERATIONAL CONTEXT" with a new larger section
+    "10,000 MILE VIEW OF ROSETTA D".  Renamed the main pod section "DATA
+    TYPES AND VALUES" to prepend "OLDER DOCUMENTATION TO REWRITE/REMOVE: ".
+    Updated the main pod section SEE ALSO.
+
+    * Changed the NAME pod of Overview.pod from "10,000 mile view of
+    Rosetta" to "Rosetta compared to DBI".  Removed the 2 old main pod
+    sections [OLDER DOCUMENTATION TO REWRITE/REMOVE: HIGH LEVEL DATA
+    STRUCTURES, HIGH LEVEL ROSETTA INTERFACE CLASSES/ROLES], and emptied
+    the SEE ALSO section.  The file Overview.pod is now deprecated, with
+    its current content likely to move (with changes) to somewhere else.
+
+    * Changed the NAME pod of Model.pm from "Intermediate Relational
+    Language" to "Abstract syntax tree for the Rosetta D language".
+
+    * Updated all copyright notices to say "This file is part of the
+    Rosetta DBMS framework" instead of "This file is part of the Rosetta
+    database portability library".
+
+    * Added new file docs/OSCON2006SessionProposal.txt, which contains the
+    pristine text of my 2006 Feb 13th proposal (not yet approved) for a 45
+    minute conference session at OSCON 2006 this upcoming July.
+
+    * Updated the SEE ALSO pod of [Model.pm, Rosetta.pm, Validator.pm] to
+    remove mentions of Rosetta::Utility::SQL[Builder|Parser] and
+    Rosetta::Engine::Generic, since they won't be re-made any time soon.
+
+2006-02-01   Darren Duncan <perl@DarrenDuncan.net>
+
+    * Rosetta-Engine-Native Release 0.1.0/0.001000 (SVN r1203).
+
+    * This release is concurrently available in both Perl 5 and Perl 6
+    versions.  The Perl 5 version is in the same distribution as this
+    Changes file.  The Perl 6 version is bundled with Pugs-6.2.11 (released
+    on 2006-02-01), in its ext/Rosetta-Engine-Native/ subdirectory.
+
+    * Initial code file versions are: Native.pm 0.1.0 and en.pm 0.1.0.
+
+    * Initial external dependencies are: 'version', 'only', 'Readonly'
+    1.03, Class::Std 0.0.4, Class::Std::Utils 0.0.2, Locale::KeyedText
+    1.72.0, 'Rosetta' 0.720.0, Test::More, Rosetta::Validator 0.720.0.
+
+    * This is the first release of the Rosetta-Engine-Native distribution.
+    This is the first release of any distribution to contain
+    Rosetta::Engine::Native.  This is the first release of any distribution
+    for which some of the existing work that became the
+    Rosetta-Engine-Native distribution was in the form of executable code,
+    and not just design documentation.
+
+    * This is the initial file manifest:
+
+        Changes
+        GPL
+        INSTALL
+        lib/Rosetta/Engine/Native.pm
+        lib/Rosetta/Engine/Native/L/en.pm
+        Makefile.PL
+        MANIFEST
+        META.yml
+        README
+        t/Rosetta_Engine_Native.t
+        TODO
+
 2006-02-01   Darren Duncan <perl@DarrenDuncan.net>
 
     * Rosetta Release 0.720.0/0.720000 (SVN r1203).

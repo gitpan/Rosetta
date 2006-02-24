@@ -1,9 +1,12 @@
 Changes
 docs/OSCON2005LightningTalk.txt
+docs/OSCON2006SessionProposal.txt
 GPL
 INSTALL
 lib/Rosetta.pm
 lib/Rosetta/Copying.pod
+lib/Rosetta/Engine/Example.pm
+lib/Rosetta/Engine/Example/L/en.pm
 lib/Rosetta/FAQ.pod
 lib/Rosetta/L/en.pm
 lib/Rosetta/Language.pod

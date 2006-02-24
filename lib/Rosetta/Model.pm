@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 # External packages used by packages in this file, that don't export symbols:
+use only 'Parse::RecDescent' => '1.94-'; # TODO: make load of this optional
 use only 'Locale::KeyedText' => '1.72.0-';
 
 ###########################################################################
@@ -18,7 +19,7 @@ Readonly my $EMPTY_STR => q{};
 ###########################################################################
 
 { package Rosetta::Model; # package
-    use version; our $VERSION = qv('0.720.0');
+    use version; our $VERSION = qv('0.721.0');
     # Note: This given version applies to all of this file's packages.
 } # package Rosetta::Model
 
@@ -289,11 +290,11 @@ __END__
 =head1 NAME
 
 Rosetta::Model -
-Intermediate Relational Language
+Abstract syntax tree for the Rosetta D language
 
 =head1 VERSION
 
-This document describes Rosetta::Model version 0.720.0.
+This document describes Rosetta::Model version 0.721.0.
 
 It also describes the same-number versions of Rosetta::Model::Document
 ("Document") and Rosetta::Model::Node ("Node").
@@ -625,6 +626,9 @@ It also requires these Perl 5 packages that are bundled with Perl:
 L<Scalar::Util>.
 
 It also requires these Perl 5 classes that are on CPAN:
+L<Parse::RecDescent-(1.94...)|Parse::RecDescent> (for parsing Rosetta D).
+
+It also requires these Perl 5 classes that are on CPAN:
 L<Locale::KeyedText-(1.72.0...)|Locale::KeyedText> (for error messages).
 
 =head1 INCOMPATIBILITIES
@@ -635,9 +639,6 @@ None reported.
 
 The Perl 6 package L<Rosetta> is bundled with Rosetta::Model and is its
 primary dependent.
-
-These Perl 5 packages are also early dependents of Rosetta::Model:
-L<Rosetta::Utility::SQLBuilder>, L<Rosetta::Utility::SQLParser>.
 
 These Perl 5 packages work to solve similar problems as Rosetta::Model:
 L<SQL::Statement>, L<SQL::Parser>, L<SQL::Translator>, L<SQL::YASP>,
@@ -654,7 +655,7 @@ Darren R. Duncan (C<perl@DarrenDuncan.net>)
 
 =head1 LICENCE AND COPYRIGHT
 
-This file is part of the Rosetta database portability library.
+This file is part of the Rosetta DBMS framework.
 
 Rosetta is Copyright (c) 2002-2006, Darren R. Duncan.
 

@@ -6,7 +6,7 @@ use warnings;
 
 # External packages used by packages in this file, that don't export symbols:
 use only 'Locale::KeyedText' => '1.72.0-';
-use only 'Rosetta::Model' => '0.720.0-';
+use only 'Rosetta::Model' => '0.721.0';
 
 ###########################################################################
 ###########################################################################
@@ -19,7 +19,7 @@ use only 'Readonly' => '1.03-';
 ###########################################################################
 
 { package Rosetta; # package
-    use version; our $VERSION = qv('0.720.0');
+    use version; our $VERSION = qv('0.721.0');
     # Note: This given version applies to all of this file's packages.
 } # package Rosetta
 
@@ -80,7 +80,7 @@ Rigorous database portability
 
 =head1 VERSION
 
-This document describes Rosetta version 0.720.0.
+This document describes Rosetta version 0.721.0.
 
 It also describes the same-number versions of Rosetta::Interface
 ("Interface"), and Rosetta::Engine ("Engine").
@@ -100,7 +100,7 @@ code; instead refer to other above-named packages in this file.>
 
     # Define how to talk to our database and where it is.
     my %DB_CONFIG = (
-        'engine_name' => 'Rosetta::Engine::Native',
+        'engine_name' => 'Rosetta::Engine::Example',
         'depot_identity' => {
             'file_name' => 'My Data',
         },
@@ -361,7 +361,7 @@ back-ends implement (each of which is usually made by a third party); the
 former is called the RNI (Rosetta Native Interface), and the latter are
 called Rosetta Engines.  Usually, each Engine implements a persistent data
 store for long term use, but some can be RAM-based for use as a short-term
-cache.  L<Rosetta::Engine::Native> is the reference implementation of an
+cache.  L<Rosetta::Engine::Example> is the reference implementation of an
 Engine and provides both kinds of storage; it is distributed separately
 from 'Rosetta' since it isn't needed if you use an alternate Engine.
 
@@ -436,7 +436,7 @@ It also requires these Perl 5 classes that are on CPAN:
 L<Locale::KeyedText-(1.72.0...)|Locale::KeyedText> (for error messages).
 
 It also requires these Perl 5 classes that are in the current distribution:
-L<Rosetta::Model-(0.720.0...)|Rosetta::Model>.
+L<Rosetta::Model-(0.721.0)|Rosetta::Model>.
 
 =head1 INCOMPATIBILITIES
 
@@ -451,7 +451,7 @@ The Perl 5 module L<Rosetta::Validator> is bundled with Rosetta and can be
 used to test Rosetta Engine classes.
 
 These Perl 5 packages implement Rosetta Engine classes:
-L<Rosetta::Engine::Native>, L<Rosetta::Engine::Generic>.
+L<Rosetta::Engine::Example>.
 
 These Perl 5 packages are the initial main dependents of Rosetta:
 L<Rosetta::Emulator::DBI>.
@@ -477,7 +477,7 @@ Darren R. Duncan (C<perl@DarrenDuncan.net>)
 
 =head1 LICENCE AND COPYRIGHT
 
-This file is part of the Rosetta database portability library.
+This file is part of the Rosetta DBMS framework.
 
 Rosetta is Copyright (c) 2002-2006, Darren R. Duncan.  All rights reserved.
 Address comments, suggestions, and bug reports to C<perl@DarrenDuncan.net>,

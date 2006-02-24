@@ -6,16 +6,19 @@ by Darren Duncan <perl@DarrenDuncan.net>
 PREFACE
 
 This distribution features the Perl 5 module named "Rosetta", as well as
-"Rosetta::Model" and "Rosetta::Validator"; see the files lib/Rosetta.pm,
-lib/Rosetta/Model.pm and lib/Rosetta/Language.pod for the roots of the main
-documentation, which is in POD format, plus the Dependencies and Copyright
-(temporarily, also see lib/Rosetta/Overview.pod, lib/Rosetta/TODO.pod, and
-lib/Rosetta/Copying.pod for more of the same).  The distribution also
-includes a Changes file to say what changes already happened, and a TODO
-file to say what changes have yet to happen.  The file INSTALL should help
-with installation issues.  The extra file docs/OSCON2005LightningTalk.txt
-contains a snapshot of what Rosetta both was and was intended to be as of
-early 2005.08; it is the pristine text of a brief talk I gave then.  Read
+"Rosetta::Model" and "Rosetta::Validator" and "Rosetta::Engine::Example";
+see the files lib/Rosetta.pm, lib/Rosetta/Model.pm and
+lib/Rosetta/Language.pod for the roots of the main documentation, which is
+in POD format, plus the Dependencies and Copyright (temporarily, also see
+lib/Rosetta/Overview.pod, lib/Rosetta/TODO.pod, and lib/Rosetta/Copying.pod
+for more of the same).  The distribution also includes a Changes file to
+say what changes already happened, and a TODO file to say what changes have
+yet to happen.  The file INSTALL should help with installation issues.  The
+extra file docs/OSCON2005LightningTalk.txt contains a snapshot of what
+Rosetta both was and was intended to be as of early 2005.08; it is the
+pristine text of a brief talk I gave then.  The extra file
+docs/OSCON2006SessionProposal.txt contains a similar snapshot for early
+2006.02; it proposes a 45 minute talk that has not yet been approved.  Read
 below for how to get support or keep up to date.
 
 KEEPING UP TO DATE

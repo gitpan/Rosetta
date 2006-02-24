@@ -1,14 +1,15 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Rosetta
-version:      v0.720.0
+version:      v0.721.0
 version_from: lib/Rosetta.pm
 installdirs:  site
 requires:
-    Class::Std:                    0.0.4
-    Class::Std::Utils:             0.0.2
-    Locale::KeyedText:             1.72.0
+    Class::Std:                    4e-06
+    Class::Std::Utils:             2e-06
+    Locale::KeyedText:             1.072
     only:                          0
+    Parse::RecDescent:             1.94
     Readonly:                      1.03
     Scalar::Util:                  0
     Test::More:                    0
