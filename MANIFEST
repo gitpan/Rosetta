@@ -1,6 +1,7 @@
 Changes
 docs/OSCON2005LightningTalk.txt
 docs/OSCON2006SessionProposal.txt
+examples/shell.pl
 GPL
 INSTALL
 lib/Rosetta.pm
@@ -14,6 +15,9 @@ lib/Rosetta/Migration.pod
 lib/Rosetta/Model.pm
 lib/Rosetta/Model/L/en.pm
 lib/Rosetta/Overview.pod
+lib/Rosetta/SeeAlso.pod
+lib/Rosetta/Shell.pm
+lib/Rosetta/Shell/L/en.pm
 lib/Rosetta/TODO.pod
 lib/Rosetta/Validator.pm
 lib/Rosetta/Validator/L/en.pm

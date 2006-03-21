@@ -1,6 +1,82 @@
                                   Rosetta
 ---------------------------------------------------------------------------
 
+2006-03-20   Darren Duncan <perl@DarrenDuncan.net>
+
+    * Rosetta Release 0.722.0/0.722000 (SVN r1234).
+
+    * This release is a snapshot to show a particular mid-way point in the
+    middle of a large set of changes.  As a whole, the documentation is
+    internally inconsistent; however, you should be able to read the
+    DESCRIPTION of Rosetta.pm and the whole top half of Language.pod, which
+    are up to date and self-sufficient.
+
+    * As of this release, Rosetta is officially (intended to be) a full
+    implementation of Chris Date's and Hugh Darwen's "The Third Manifesto",
+    rather than simply using TTM as a source of ideas.  Moreover, Rosetta
+    is now officially (intended to be) a DBMS in its own right, rather than
+    just a client library or wrapper for such (but an implementation can
+    still choose to use an existing DBMS as its engine).
+
+    * Added new core modules Rosetta::Shell and Rosetta::Shell::L::en,
+    which implement a simple interactive command shell around Rosetta, with
+    which users can try out Rosetta using the least effort; it also is a
+    great vehicle to develop and test new features without necessitating
+    new testing code.  This initial version has a basic command loop
+    working, but the commands are not actually executed yet.
+
+    * Also added new file examples/shell.pl which uses the new module; it
+    can be invoked from the command line as an actual Rosetta application.
+
+    * New code file versions are: Rosetta.pm and Model.pm and Validator.pm
+    and Example.pm 0.722.0 and Shell.pm 0.1.0 and Shell/L/en.pm 0.1.0;
+    unchanged code file versions are: Rosetta/L/en.pm 0.210.0 and
+    Model/L/en.pm 0.400.0 and Validator/L/en.pm 0.160.0 and Example/L/en.pm
+    0.2.0.
+
+    * Updated external dependency on Class::Std to v0.0.8 from v0.0.4.
+
+    * In the Makefile.PL only, specified that the minimum required
+    'version' version is v0.57.
+
+    * In Model.pm, added missing _die_with_msg() private method to the
+    Document class.
+
+    * Split up Language.pod into itself and new lib/Rosetta/SeeAlso.pod;
+    the latter contains the entire SEE ALSO content of the former, but that
+    info is now in a more centrally accessable location.  Reformatted the
+    DESCRIPTION of Language.pod so that the hyperlinks would be interpreted
+    correctly by Pod2Html such as CPAN uses.
+
+    * In Rosetta.pm, rewrote the DESCRIPTION.  In Model.pm, removed the
+    DESCRIPTION; a new one will be added later.  In Language.pod and
+    Migration.pod, rewrote the first paragraph of the DESCRIPTION plus made
+    a few smaller changes.
+
+    * In Rosetta.pm, removed the Rosetta::Interface and Rosetta::Engine
+    classes, in their place adding Rosetta::Interface::[DBMS, Exception,
+    Command, Value, Variable]; the new classes are also mentioned in
+    Language.pod a few times.  Also added an initial BUILD() submethod to
+    ::DBMS so that the new Shell can invoke it properly.  In Rosetta.pm,
+    renamed the SYNOPSIS to OLD SYNOPSIS TO REWRITE, and added the start of
+    a new SYNOPSIS.
+
+    * In Language.pod, renamed the main pod section "10,000 MILE VIEW OF
+    ROSETTA D" to prepend "OLDER DOCUMENTATION TO REWRITE/REMOVE: ", and
+    wrote a brand new main pod section "10,000 MILE VIEW" above it; this is
+    true but that the opening paragraph from the older main section was
+    moved into the new one as its opener.  The brand new content is in the
+    4 sub-sections named: "Environment", "Command Structure and
+    Processing", "Named Users and Privileges", "States, Transactions and
+    Concurrency"; 2 empty sub-sections named "Data Types" and "Grammar and
+    Name Spaces" still need to be (re-)written.
+
+    * Note that the subsequent Rosetta release should feature the
+    completion of Language.pod's 10,000 mile view plus templates for the
+    other main sections, one of which will list Rosetta D's built-in
+    packages and data types with their operators, and one of which will
+    detail the schema of the Rosetta DBMS' system catalog relvars.
+
 2006-02-23   Darren Duncan <perl@DarrenDuncan.net>
 
     * Rosetta Release 0.721.0/0.721000 (SVN r1220).

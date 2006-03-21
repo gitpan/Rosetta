@@ -19,7 +19,7 @@ Readonly my $EMPTY_STR => q{};
 ###########################################################################
 
 { package Rosetta::Model; # package
-    use version; our $VERSION = qv('0.721.0');
+    use version; our $VERSION = qv('0.722.0');
     # Note: This given version applies to all of this file's packages.
 } # package Rosetta::Model
 
@@ -29,7 +29,7 @@ Readonly my $EMPTY_STR => q{};
 { package Rosetta::Model::Document; # class
 
     # External packages used by the Rosetta::Model::Document class, that do export symbols:
-    use only 'Class::Std' => '0.0.4-';
+    use only 'Class::Std' => '0.0.8-';
     use only 'Class::Std::Utils' => '0.0.2-';
 
     # Attributes of every Rosetta::Model::Document object:
@@ -78,6 +78,14 @@ sub export_as_hash {
 
 ###########################################################################
 
+sub _die_with_msg : PRIVATE {
+    my ($self, $msg_key, $msg_vars_ref) = @_;
+    $msg_vars_ref ||= {};
+    $msg_vars_ref->{'CLASS'} = 'Rosetta::Model::Document';
+    die Locale::KeyedText::Message->new({
+        'msg_key' => $msg_key, 'msg_vars' => $msg_vars_ref });
+}
+
 sub _assert_arg_rt_nd_aoh : PRIVATE {
     my ($self, $meth, $arg, $val) = @_;
     $self->_die_with_msg( 'LKT_ARG_UNDEF',
@@ -112,7 +120,7 @@ sub _assert_arg_rt_nd_aoh : PRIVATE {
 { package Rosetta::Model::Node; # class
 
     # External packages used by the Rosetta::Model::Node class, that do export symbols:
-    use only 'Class::Std' => '0.0.4-';
+    use only 'Class::Std' => '0.0.8-';
     use only 'Class::Std::Utils' => '0.0.2-';
     use Scalar::Util qw( blessed );
 
@@ -294,7 +302,7 @@ Abstract syntax tree for the Rosetta D language
 
 =head1 VERSION
 
-This document describes Rosetta::Model version 0.721.0.
+This document describes Rosetta::Model version 0.722.0.
 
 It also describes the same-number versions of Rosetta::Model::Document
 ("Document") and Rosetta::Model::Node ("Node").
@@ -311,35 +319,7 @@ I<This documentation is pending.>
 
 =head1 DESCRIPTION
 
-Rosetta::Model provides an effective language for defining relational data
-models, both the means to create them and the means to interact with them.
-The language is IRL (Intermediate Relational Language), and it loosely
-resembles both Christopher J. Date's and Hugh Darwen's Tutorial D language
-and the ANSI/ISO SQL:2003 standard in purpose and structure, but its
-details are different.  This is partly so that it can more elegantly
-support the specific relational model that E. F. Codd proposed in his 1970
-publication titled "A Relational Model of Data for Large Shared Data
-Banks", but that SQL diverged from in some ways.  Regardless, it should be
-easy to translate database definitions and queries between IRL and both
-Tutorial D and SQL.
-
-Please see the pod-only file L<Rosetta::Language> ("Language"), which is
-the human readable authoritative design document for IRL; the file
-Rosetta::Model itself is a machine readable language specification that is
-derived from the human readable version, and in the case of a conflict,
-Language takes precedence.
-
-Rosetta::Model is implemented as abstract syntax trees, and you use it by
-creating, manipulating, and reading nodes in these trees.  Each tree node
-is atomic, so you can just build the trees by copying scalar values from a
-data dictionary; no stitching or parsing more complicated command strings
-is necessary like with Tutorial D and SQL.
-
-L<Rosetta> (in the current distribution) is a relational database access
-solution that uses Rosetta::Model objects as its native instruction set
-rather than SQL strings.  But Rosetta::Model can also be used independently
-of Rosetta, such as when translating SQL from one dialect to another, or
-between Tutorial D and SQL.
+I<This documentation is pending.>
 
 =head1 INTERFACE
 
@@ -619,7 +599,7 @@ It also requires these Perl 5 packages that are on CPAN:
 L<Readonly-(1.03...)|Readonly>.
 
 It also requires these Perl 5 packages that are on CPAN:
-L<Class::Std-(0.0.4...)|Class::Std>,
+L<Class::Std-(0.0.8...)|Class::Std>,
 L<Class::Std::Utils-(0.0.2...)|Class::Std::Utils>.
 
 It also requires these Perl 5 packages that are bundled with Perl:

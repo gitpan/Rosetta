@@ -4,37 +4,34 @@ use utf8;
 use strict;
 use warnings;
 
-# External packages used by packages in this file, that don't export symbols:
-use only 'Locale::KeyedText' => '1.72.0-';
-use only 'Rosetta' => '0.722.0-';
-
 ###########################################################################
 ###########################################################################
 
 # Constant values used by packages in this file:
 use only 'Readonly' => '1.03-';
-# (None Yet)
+Readonly my %TEXT_STRINGS => (
+    'ROS_S_HELLO' => q[Welcome to the Rosetta DBMS!],
+    'ROS_S_GOODBYE' => q[Goodbye!],
+    'ROS_S_DBMS_INIT_FAIL'
+        => q[Initialization of the Engine "<ENGINE_NAME>" has failed.],
+    'ROS_S_DBMS_INIT_SUCCESS'
+        => q[Initialization of the Engine "<ENGINE_NAME>" is successful.],
+    'ROS_S_PROMPT'
+        => q[Enter a Rosetta D command to execute (all on one line),]
+           . q[ or press ENTER to quit.],
+    'ROS_S_TODO_RESULT' => q[TODO: prepare and execute that command.],
+);
 
 ###########################################################################
 ###########################################################################
 
-{ package Rosetta::Engine::Example; # class
-    use version; our $VERSION = qv('0.722.0');
-
-    # External packages used by the Rosetta::Engine::Example class, that do export symbols:
-    use only 'Class::Std' => '0.0.8-';
-    use only 'Class::Std::Utils' => '0.0.2-';
-
-    # Attributes of every Rosetta::Engine::Example object:
-    # (None Yet)
-
-###########################################################################
-
-
-
-###########################################################################
-
-} # class Rosetta::Engine::Example
+{ package Rosetta::Shell::L::en; # module
+    use version; our $VERSION = qv('0.1.0');
+    sub get_text_by_key {
+        my (undef, $msg_key) = @_;
+        return $TEXT_STRINGS{$msg_key};
+    }
+} # module Rosetta::Shell::L::en
 
 ###########################################################################
 ###########################################################################
@@ -48,12 +45,12 @@ __END__
 
 =head1 NAME
 
-Rosetta::Engine::Example -
-Self-contained reference implementation of a Rosetta Engine
+Rosetta::Shell::L::en -
+Localization of Rosetta::Shell for English
 
 =head1 VERSION
 
-This document describes Rosetta::Engine::Example version 0.722.0.
+This document describes Rosetta::Shell::L::en version 0.1.0.
 
 =head1 SYNOPSIS
 
@@ -84,16 +81,6 @@ conceptually be built-in to Perl, but aren't, so they are on CPAN instead.
 
 It also requires these Perl 5 packages that are on CPAN:
 L<Readonly-(1.03...)|Readonly>.
-
-It also requires these Perl 5 packages that are on CPAN:
-L<Class::Std-(0.0.8...)|Class::Std>,
-L<Class::Std::Utils-(0.0.2...)|Class::Std::Utils>.
-
-It also requires these Perl 5 classes that are on CPAN:
-L<Locale::KeyedText-(1.72.0...)|Locale::KeyedText> (for error messages).
-
-It also requires these Perl 5 classes that are in the current distribution:
-L<Rosetta-0.722.0|Rosetta>.
 
 =head1 INCOMPATIBILITIES
 
