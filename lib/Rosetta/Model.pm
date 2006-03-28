@@ -19,7 +19,7 @@ Readonly my $EMPTY_STR => q{};
 ###########################################################################
 
 { package Rosetta::Model; # package
-    use version; our $VERSION = qv('0.722.0');
+    use version; our $VERSION = qv('0.723.0');
     # Note: This given version applies to all of this file's packages.
 } # package Rosetta::Model
 
@@ -302,7 +302,7 @@ Abstract syntax tree for the Rosetta D language
 
 =head1 VERSION
 
-This document describes Rosetta::Model version 0.722.0.
+This document describes Rosetta::Model version 0.723.0.
 
 It also describes the same-number versions of Rosetta::Model::Document
 ("Document") and Rosetta::Model::Node ("Node").
@@ -617,13 +617,8 @@ None reported.
 
 =head1 SEE ALSO
 
-The Perl 6 package L<Rosetta> is bundled with Rosetta::Model and is its
-primary dependent.
-
-These Perl 5 packages work to solve similar problems as Rosetta::Model:
-L<SQL::Statement>, L<SQL::Parser>, L<SQL::Translator>, L<SQL::YASP>,
-L<SQL::Generator>, L<SQL::Schema>, L<SQL::Abstract>, L<SQL::Snippet>,
-L<SQL::Catalog>.
+Go to L<Rosetta> for the majority of distribution-internal references, and
+L<Rosetta::SeeAlso> for the majority of distribution-external references.
 
 =head1 BUGS AND LIMITATIONS
 

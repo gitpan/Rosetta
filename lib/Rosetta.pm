@@ -6,7 +6,7 @@ use warnings;
 
 # External packages used by packages in this file, that don't export symbols:
 use only 'Locale::KeyedText' => '1.72.0-';
-use only 'Rosetta::Model' => '0.722.0';
+use only 'Rosetta::Model' => '0.723.0';
 
 ###########################################################################
 ###########################################################################
@@ -19,7 +19,7 @@ use only 'Readonly' => '1.03-';
 ###########################################################################
 
 { package Rosetta; # package
-    use version; our $VERSION = qv('0.722.0');
+    use version; our $VERSION = qv('0.723.0');
     # Note: This given version applies to all of this file's packages.
 } # package Rosetta
 
@@ -151,7 +151,7 @@ Rigorous database portability
 
 =head1 VERSION
 
-This document describes Rosetta version 0.722.0.
+This document describes Rosetta version 0.723.0.
 
 It also describes the same-number versions of Rosetta::Interface::DBMS
 ("DBMS"), Rosetta::Interface::Exception ("Exception"),
@@ -463,7 +463,7 @@ next simplest usage scenario adds commands that declare and assign to and
 read from user-defined temporary variables, which includes relation typed
 variables; this actually is using the DBMS to implement a relational
 database, but that the database is not persistent beyond the life of the
-DBMS object itself.
+DBMS object itself; rather, it is like an in-memory sharable data cache.
 
 Following that in complexity, we have commands that mount and/or create a
 persistent repository, and declaring and assigning to or reading from
@@ -494,11 +494,11 @@ can be migrated to use the Rosetta DBMS with little trouble.
 
 One distinctive feature of a Rosetta DBMS (compared to a typical other
 vendor's DBMS) is that data definition commands are structured as standard
-data manipulation commands but that the target relations are system catalog
-relations rather than user-defined relations.  In SQL terms, you create or
-alter tables by adding or updating their "information schema" records,
-which in SQL are read-only, not by using special 'create' or 'alter'
-statements.
+data manipulation commands but that the target relation variables are
+system catalog relation variables rather than user-defined relation
+variables.  In SQL terms, you create or alter tables by adding or updating
+their "information schema" records, which in SQL are read-only, not by
+using special 'create' or 'alter' statements.
 
 Each Rosetta Engine has the complete freedom to implement the Rosetta DBMS
 and Rosetta D however it likes; all Rosetta cares about is that the user
@@ -527,8 +527,8 @@ databases before, especially given that the Perl DBI purports to provide
 "Database Independence".  However, the level of DBI's provided independence
 is I<Database Driver Independence>, and not I<Database Language
 Independence>.  To further demonstrate the difference, it is useful to
-compare the DBI and Rosetta.  See the file docs/Overview.pod in this
-distribution for that comparison.
+compare the DBI and Rosetta.  See the file L<Rosetta::Overview>
+documentation in this distribution for that comparison.
 
 =head1 INTERFACE
 
@@ -589,7 +589,7 @@ It also requires these Perl 5 classes that are on CPAN:
 L<Locale::KeyedText-(1.72.0...)|Locale::KeyedText> (for error messages).
 
 It also requires these Perl 5 classes that are in the current distribution:
-L<Rosetta::Model-(0.722.0)|Rosetta::Model>.
+L<Rosetta::Model-(0.723.0)|Rosetta::Model>.
 
 =head1 INCOMPATIBILITIES
 
@@ -603,22 +603,13 @@ L<Rosetta::Language>, L<Rosetta::Migration>.
 The Perl 5 module L<Rosetta::Validator> is bundled with Rosetta and can be
 used to test Rosetta Engine classes.
 
-These Perl 5 packages implement Rosetta Engine classes:
-L<Rosetta::Engine::Example>.
+The Perl 5 package L<Rosetta::Engine::Example> is bundled with Rosetta and
+implements a reference implementation of a Rosetta Engine.
 
-These Perl 5 packages are the initial main dependents of Rosetta:
-L<Rosetta::Shell>.
+The Perl 5 module L<Rosetta::Shell> is bundled with Rosetta and implements
+a command shell for the Rosetta DBMS.
 
-These Perl 5 applications and frameworks are at the front of the line to
-get Rosetta bindings: L<Catalyst>, L<Maypole>, L<Bricolage>, L<RT>.
-
-These Perl 5 packages work to solve similar problems as Rosetta:
-L<DBI>, L<Tangram>, L<DBIx::Class>, L<HDB>, L<Genezzo>, L<Class::DBI>,
-L<Pixie>, L<Alzabo>, L<DBIx::SQLEngine>, L<SPOPS>, L<DBIx::SearchBuilder>,
-L<DBIx::RecordSet>, L<DBIx::Abstract>, L<DBIx::AnyDBD>, L<DBIx::Browse>,
-L<DBIx::DBH>, L<MKDoc::SQL>, L<Data::Transactional>, L<DBIx::ModelUpdate>,
-L<DBIx::ProcedureCall>, L<DB::Ent>, L<DBIx::DBSchema>, L<DBIx::Namespace>,
-L<TripleStore>, L<Data::Table>.
+Go to the L<Rosetta::SeeAlso> file for the majority of external references.
 
 =head1 BUGS AND LIMITATIONS
 

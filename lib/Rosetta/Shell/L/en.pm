@@ -26,7 +26,7 @@ Readonly my %TEXT_STRINGS => (
 ###########################################################################
 
 { package Rosetta::Shell::L::en; # module
-    use version; our $VERSION = qv('0.1.0');
+    use version; our $VERSION = qv('0.1.1');
     sub get_text_by_key {
         my (undef, $msg_key) = @_;
         return $TEXT_STRINGS{$msg_key};
@@ -50,7 +50,7 @@ Localization of Rosetta::Shell for English
 
 =head1 VERSION
 
-This document describes Rosetta::Shell::L::en version 0.1.0.
+This document describes Rosetta::Shell::L::en version 0.1.1.
 
 =head1 SYNOPSIS
 
@@ -88,7 +88,8 @@ None reported.
 
 =head1 SEE ALSO
 
-I<This documentation is pending.>
+Go to L<Rosetta> for the majority of distribution-internal references, and
+L<Rosetta::SeeAlso> for the majority of distribution-external references.
 
 =head1 BUGS AND LIMITATIONS
 

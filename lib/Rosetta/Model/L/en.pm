@@ -31,7 +31,7 @@ Readonly my %TEXT_STRINGS => (
 ###########################################################################
 
 { package Rosetta::Model::L::en; # module
-    use version; our $VERSION = qv('0.400.0');
+    use version; our $VERSION = qv('0.400.1');
     sub get_text_by_key {
         my (undef, $msg_key) = @_;
         return $TEXT_STRINGS{$msg_key};
@@ -55,7 +55,7 @@ Localization of Rosetta::Model for English
 
 =head1 VERSION
 
-This document describes Rosetta::Model::L::en version 0.400.0.
+This document describes Rosetta::Model::L::en version 0.400.1.
 
 =head1 SYNOPSIS
 
@@ -93,7 +93,8 @@ None reported.
 
 =head1 SEE ALSO
 
-I<This documentation is pending.>
+Go to L<Rosetta> for the majority of distribution-internal references, and
+L<Rosetta::SeeAlso> for the majority of distribution-external references.
 
 =head1 BUGS AND LIMITATIONS
 

@@ -1,6 +1,29 @@
                                   Rosetta
 ---------------------------------------------------------------------------
 
+2006-03-28   Darren Duncan <perl@DarrenDuncan.net>
+
+    * Rosetta Release 0.723.0/0.723000 (SVN r1239).
+
+    * New code file versions are: Rosetta.pm and Model.pm and Validator.pm
+    and Example.pm 0.723.0, Rosetta/L/en.pm 0.210.1 and Model/L/en.pm
+    0.400.1 and Validator/L/en.pm 0.160.1 and Example/L/en.pm 0.2.1 and
+    Shell.pm 0.1.1 and Shell/L/en.pm 0.1.1.
+
+    * Made a few small documentation fixes in Rosetta.pm and Language.pod
+    and TODO.pod.
+
+    * Fleshed out the SeeAlso.pod file, and consolidated there most
+    external links from other parts of the distribution.  Updated the SEE
+    ALSO pod of all other files so they refer to Rosetta.pm (except
+    Rosetta.pm) and SeeAlso.pod; this caused most 0.0.1 version increments.
+
+    * In Language.pod, rewrote half of the 10,000 MILE VIEW documentation
+    sub-section "States, Transactions and Concurrency"; transactions now
+    come in lexical scope bound varieties, and non-scope bound /
+    traditional transactions are now only allowed in anonymous /
+    directly-application-invoked routines.
+
 2006-03-20   Darren Duncan <perl@DarrenDuncan.net>
 
     * Rosetta Release 0.722.0/0.722000 (SVN r1234).
