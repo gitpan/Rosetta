@@ -1,6 +1,49 @@
                                   Rosetta
 ---------------------------------------------------------------------------
 
+2006-04-13   Darren Duncan <perl@DarrenDuncan.net>
+
+    * Rosetta Release 0.724.0/0.724000 (SVN r1258).
+
+    * This release is primarily to correct or update some documentation,
+    mostly in Rosetta.pm and SeeAlso.pod, so errors don't confuse people; a
+    larger set of changes should be pending.
+
+    * New code file versions are: Rosetta.pm and Model.pm and Validator.pm
+    and Example.pm 0.724.0 and Shell.pm 0.1.2; unchanged code file versions
+    are: Rosetta/L/en.pm 0.210.1 and Model/L/en.pm 0.400.1 and
+    Validator/L/en.pm 0.160.1 and Example/L/en.pm 0.2.1 and Shell/L/en.pm
+    0.1.1.
+
+    * In Rosetta.pm, rewrote the middle half of the DESCRIPTION pod to add
+    emphasis on Rosetta D being an application programming language, and to
+    focus the nature of Rosetta.pm as being more on glue to that language
+    from Perl rather than being a virtual machine.  Also removed the
+    mis-placed example usage descriptions.  Also added emphasis on the use
+    of Genezzo as a favored back-end.
+
+    * In Language.pod, updated the 10,000 MILE VIEW opening paragraph to
+    better describe what type of language Rosetta D is, saying that it is
+    computationally complete with integrated database functionality.  Also
+    updated the DESCRIPTION regarding influences, to mention functional
+    languages like Haskell.
+
+    * In SeeAlso.pod, split and reorganized the project groups so we have
+    distinct categories for fully and partially TTM/D related projects; the
+    latter now contains Genezzo, Dataphor, and new entry Teradata.  Also
+    split up the entry for "The Third Manifesto" so the web site and book
+    are separate list items, expanding each one, and updated the links to
+    book chapter PDFs from the book so they are from the third edition
+    rather than the second edition.  Also added new entry Valentina to the
+    non-TTM and non-SQL category.  Also clarified what the list of Perl
+    modules was about.
+
+    * In Shell.pm, changed its dependency on 'Rosetta' so that any version
+    at or after 0.722.0 is fine, rather than only version 0.723.0 working.
+
+    * Updated the header of docs/OSCON2006SessionProposal.txt and the
+    comment about it in the README file to say the talk was not approved.
+
 2006-03-28   Darren Duncan <perl@DarrenDuncan.net>
 
     * Rosetta Release 0.723.0/0.723000 (SVN r1239).

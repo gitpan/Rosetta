@@ -19,7 +19,7 @@ Readonly my $EMPTY_STR => q{};
 ###########################################################################
 
 { package Rosetta::Model; # package
-    use version; our $VERSION = qv('0.723.0');
+    use version; our $VERSION = qv('0.724.0');
     # Note: This given version applies to all of this file's packages.
 } # package Rosetta::Model
 
@@ -302,7 +302,7 @@ Abstract syntax tree for the Rosetta D language
 
 =head1 VERSION
 
-This document describes Rosetta::Model version 0.723.0.
+This document describes Rosetta::Model version 0.724.0.
 
 It also describes the same-number versions of Rosetta::Model::Document
 ("Document") and Rosetta::Model::Node ("Node").
